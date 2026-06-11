@@ -77,7 +77,7 @@ See `crossub_web/README.md` for Postgres, Redis, and API env vars.
 | **Region** | Singapore (or your preference) |
 | **Branch** | `main` |
 | **Root Directory** | *(blank)* |
-| **Build Command** | `corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm build:inspector` |
+| **Build Command** | `corepack pnpm install --frozen-lockfile && corepack pnpm build:inspector` |
 | **Start Command** | `corepack pnpm --filter @crossub/inspector start` |
 | **Health Check Path** | `/login` |
 | **Plan** | Starter (or higher) |
@@ -111,6 +111,10 @@ CORS_ORIGINS=https://crossub-mobile-inspector.onrender.com,https://crossub-mobil
 ```
 
 Leave `COOKIE_DOMAIN` empty so auth cookies bind to the inspector app hostname.
+
+### Troubleshooting builds
+
+**`EROFS: read-only file system, unlink '/usr/bin/pnpm'`** — Do not run `corepack enable` on Render. The filesystem is read-only; use `corepack pnpm` directly (as in `render.yaml` and the build command above).
 
 ### Step 5 — Verify
 
