@@ -1,0 +1,28 @@
+export const ROUTES = {
+  DASHBOARD: '/dashboard',
+  JOB_POOL: '/job-pool',
+  JOBS: '/jobs',
+  TRIBUNAL: '/tribunal',
+  EARNINGS: '/earnings',
+  MESSAGES: '/messages',
+  NOTIFICATIONS: '/notifications',
+  PROFILE: '/profile',
+  SETTINGS: '/settings',
+  LOGIN: '/login',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
+} as const;
+
+export const PUBLIC_ROUTE_PATTERNS = [
+  /^\/login\/?$/,
+  /^\/forgot-password\/?$/,
+  /^\/reset-password(\/|$)/,
+];
+
+export const isPublicRoute = (pathname: string): boolean =>
+  PUBLIC_ROUTE_PATTERNS.some((rx) => rx.test(pathname));
+
+export const jobDetail = (id: string) => `/jobs/${id}`;
+export const jobWorkflow = (id: string, type: string) => `/jobs/${id}/${type}`;
+export const tribunalDetail = (id: string) => `/tribunal/${id}`;
+export const messageDetail = (id: string) => `/messages/${id}`;

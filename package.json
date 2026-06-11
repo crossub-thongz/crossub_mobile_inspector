@@ -1,0 +1,24 @@
+{
+  "name": "crossub-mobile-inspector",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CROSSUB inspector app — field operations platform for inspections and tribunal hearings (consumes crossub_web API).",
+  "scripts": {
+    "preinstall": "npx -y only-allow pnpm",
+    "dev": "bash scripts/dev-clean.sh",
+    "dev:raw": "pnpm -r --parallel run dev",
+    "dev:inspector": "pnpm --filter @crossub/inspector dev",
+    "build": "pnpm -r run build",
+    "build:inspector": "pnpm --filter @crossub/inspector build",
+    "start": "pnpm -r --parallel run start",
+    "start:inspector": "pnpm --filter @crossub/inspector start",
+    "lint": "pnpm -r run lint"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9",
+    "npm": "please-use-pnpm",
+    "yarn": "please-use-pnpm"
+  }
+}
