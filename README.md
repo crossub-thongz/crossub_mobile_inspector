@@ -130,7 +130,8 @@ Leave `COOKIE_DOMAIN` empty so auth cookies bind to the inspector app hostname.
 |-------------|-------|
 | Inspector Dashboard | `/dashboard` |
 | Job Pool | `/job-pool` |
-| Manager Assignment / My Jobs | `/jobs` |
+| Inspections (OPEN / INGOING / OUTGOING / ROUTINE) | `/inspections` |
+| Manager Assignment | `/inspections` (redirect from `/jobs`) |
 | Job Detail & Navigation | `/jobs/[id]` |
 | Open Inspection | `/jobs/[id]/open` |
 | Ingoing Inspection | `/jobs/[id]/ingoing` |

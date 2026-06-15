@@ -2,18 +2,36 @@
 
 import Link from 'next/link';
 import { ChevronRight, Scale } from 'lucide-react';
+import { useMemo } from 'react';
 
 import { JobCard } from '@/components/inspector/job-card';
 import { KpiTile } from '@/components/inspector/kpi-tile';
 import { PageIntro } from '@/components/inspector/page-intro';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
-import { ROUTES } from '@/constants/routes';
+import {
+  CORE_INSPECTION_TYPES,
+  INSPECTION_TYPE_LABEL,
+  type CoreInspectionType,
+} from '@/constants/inspection';
+import { ROUTES, inspectionsByType } from '@/constants/routes';
 import { formatDateTime } from '@/lib/utils';
 
 export default function DashboardPage() {
   const { summary, todaysJobs, tribunals } = useInspectorData();
   const upcomingTribunal = tribunals.find((t) => t.status === 'upcoming');
+
+  const todayByType = useMemo(
+    () =>
+      CORE_INSPECTION_TYPES.reduce(
+        (acc, type) => {
+          acc[type] = todaysJobs.filter((j) => j.type === type).length;
+          return acc;
+        },
+        {} as Record<CoreInspectionType, number>,
+      ),
+    [todaysJobs],
+  );
 
   return (
     <InspectorShell title="Dashboard">
@@ -28,13 +46,13 @@ export default function DashboardPage() {
             <KpiTile
               label="Today's Jobs"
               value={summary.todaysJobs}
-              href={ROUTES.JOBS}
+              href={ROUTES.INSPECTIONS}
               highlight={summary.todaysJobs > 0}
             />
             <KpiTile
               label="Upcoming Jobs"
               value={summary.upcomingJobs}
-              href={ROUTES.JOBS}
+              href={ROUTES.INSPECTIONS}
             />
             <KpiTile
               label="Tribunal Hearings"
@@ -45,7 +63,7 @@ export default function DashboardPage() {
             <KpiTile
               label="Completed This Week"
               value={summary.completedThisWeek}
-              href={ROUTES.JOBS}
+              href={ROUTES.INSPECTIONS}
             />
             <KpiTile
               label="Weekly Earnings"
@@ -59,6 +77,23 @@ export default function DashboardPage() {
               href={ROUTES.JOB_POOL}
               highlight={summary.availableInPool > 0}
             />
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-border/80 bg-card">
+          <div className="border-b border-border/80 px-4 py-3.5">
+            <h2 className="text-sm font-semibold">Inspections by Type</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-2 p-3">
+            {CORE_INSPECTION_TYPES.map((type) => (
+              <KpiTile
+                key={type}
+                label={INSPECTION_TYPE_LABEL[type]}
+                value={todayByType[type]}
+                href={inspectionsByType(type)}
+                highlight={todayByType[type] > 0}
+              />
+            ))}
           </div>
         </section>
 
@@ -80,19 +115,40 @@ export default function DashboardPage() {
           </Link>
         )}
 
-        <section className="space-y-3">
+        <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Today&apos;s Jobs</h2>
-            <Link href={ROUTES.JOBS} className="text-primary text-xs font-medium">
+            <h2 className="text-sm font-semibold">Today&apos;s Inspections</h2>
+            <Link href={ROUTES.INSPECTIONS} className="text-primary text-xs font-medium">
               View all
             </Link>
           </div>
           {todaysJobs.length === 0 ? (
             <p className="text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
-              No jobs scheduled for today.
+              No inspections scheduled for today.
             </p>
           ) : (
-            todaysJobs.map((job) => <JobCard key={job.id} job={job} />)
+            CORE_INSPECTION_TYPES.map((type) => {
+              const typeJobs = todaysJobs.filter((j) => j.type === type);
+              if (typeJobs.length === 0) return null;
+              return (
+                <div key={type} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold tracking-widest text-primary">
+                      {INSPECTION_TYPE_LABEL[type]}
+                    </h3>
+                    <Link
+                      href={inspectionsByType(type)}
+                      className="text-muted-foreground text-[10px] hover:text-primary"
+                    >
+                      See all
+                    </Link>
+                  </div>
+                  {typeJobs.map((job) => (
+                    <JobCard key={job.id} job={job} />
+                  ))}
+                </div>
+              );
+            })
           )}
         </section>
       </div>

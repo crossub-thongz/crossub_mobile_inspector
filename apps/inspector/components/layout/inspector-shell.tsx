@@ -24,7 +24,7 @@ import { cn, displayName } from '@/lib/utils';
 const PRIMARY_NAV = [
   { href: ROUTES.DASHBOARD, label: 'Home', icon: LayoutDashboard },
   { href: ROUTES.JOB_POOL, label: 'Pool', icon: Briefcase },
-  { href: ROUTES.JOBS, label: 'Jobs', icon: ClipboardCheck },
+  { href: ROUTES.INSPECTIONS, label: 'Inspect', icon: ClipboardCheck },
   { href: ROUTES.TRIBUNAL, label: 'Tribunal', icon: Scale },
 ] as const;
 
@@ -186,7 +186,7 @@ export function InspectorShell({
             const badge =
               href === ROUTES.JOB_POOL && summary.availableInPool > 0
                 ? summary.availableInPool
-                : href === ROUTES.JOBS && summary.todaysJobs > 0
+                : href === ROUTES.INSPECTIONS && summary.todaysJobs > 0
                   ? summary.todaysJobs
                   : 0;
             return (

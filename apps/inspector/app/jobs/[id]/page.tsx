@@ -31,7 +31,7 @@ export default function JobDetailPage() {
 
   if (!job) {
     return (
-      <InspectorShell title="Job not found" backHref={ROUTES.JOBS}>
+      <InspectorShell title="Job not found" backHref={ROUTES.INSPECTIONS}>
         <p className="text-muted-foreground text-sm">This job could not be found.</p>
       </InspectorShell>
     );
@@ -42,7 +42,7 @@ export default function JobDetailPage() {
     job.status === 'arrived' || job.status === 'in_progress';
 
   return (
-    <InspectorShell title="Job Details" backHref={ROUTES.JOBS}>
+    <InspectorShell title="Job Details" backHref={ROUTES.INSPECTIONS}>
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
           <JobTypeBadge type={job.type} />

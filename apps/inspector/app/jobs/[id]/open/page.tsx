@@ -15,7 +15,7 @@ import {
   OPEN_FINISH_CHECKS,
   OPEN_READINESS_PHOTOS,
 } from '@/constants/inspection';
-import { jobDetail } from '@/constants/routes';
+import { jobDetail, ROUTES } from '@/constants/routes';
 
 const STEPS = [
   'Property Readiness',
@@ -37,7 +37,7 @@ export default function OpenInspectionPage() {
 
   if (!job) {
     return (
-      <InspectorShell title="Job not found" backHref="/jobs">
+      <InspectorShell title="Job not found" backHref={ROUTES.INSPECTIONS}>
         <p className="text-muted-foreground text-sm">Job not found.</p>
       </InspectorShell>
     );

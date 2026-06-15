@@ -18,6 +18,30 @@ export const INSPECTION_PAY_LABEL: Record<InspectionType, string> = {
   tribunal: 'Tribunal',
 };
 
+/** Core field inspection types (excludes tribunal — separate module). */
+export const CORE_INSPECTION_TYPES = [
+  'open',
+  'ingoing',
+  'outgoing',
+  'routine',
+] as const;
+
+export type CoreInspectionType = (typeof CORE_INSPECTION_TYPES)[number];
+
+export const INSPECTION_TYPE_LABEL: Record<CoreInspectionType, string> = {
+  open: 'OPEN',
+  ingoing: 'INGOING',
+  outgoing: 'OUTGOING',
+  routine: 'ROUTINE',
+};
+
+export const INSPECTION_TYPE_DESCRIPTION: Record<CoreInspectionType, string> = {
+  open: 'Property readiness, QR registration, and open reports',
+  ingoing: 'Room-by-room condition at lease start',
+  outgoing: 'Bond claims, damage comparison, end of lease',
+  routine: 'Physical or tenant self-inspection during tenancy',
+};
+
 export const INGOING_AREAS = [
   'Entry',
   'Living Room',
