@@ -170,6 +170,14 @@ export default function LoginPage() {
             )}
           </Button>
         </form>
+
+        <p className="text-muted-foreground mt-6 text-center text-xs">
+          New inspector? Sign in first, then complete{' '}
+          <Link href={ROUTES.REGISTER} className="text-primary hover:underline">
+            inspector registration
+          </Link>{' '}
+          before accepting jobs.
+        </p>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { INSPECTION_PAY_LABEL } from '@/constants/inspection';
+import { INSPECTION_PAY_LABEL, INSPECTION_TYPE_LABEL } from '@/constants/inspection';
 import type { InspectionType, JobPriority, JobStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -23,15 +23,18 @@ const STATUS_STYLES: Record<string, string> = {
 export function StatusBadge({
   label,
   variant,
+  className,
 }: {
   label: string;
   variant: string;
+  className?: string;
 }) {
   return (
     <span
       className={cn(
         'inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize',
         STATUS_STYLES[variant] ?? STATUS_STYLES.normal,
+        className,
       )}
     >
       {label}
@@ -40,8 +43,20 @@ export function StatusBadge({
 }
 
 export function JobTypeBadge({ type }: { type: InspectionType }) {
+  const coreLabel =
+    type === 'open' ||
+    type === 'ingoing' ||
+    type === 'outgoing' ||
+    type === 'routine'
+      ? INSPECTION_TYPE_LABEL[type]
+      : INSPECTION_PAY_LABEL[type];
+
   return (
-    <StatusBadge label={INSPECTION_PAY_LABEL[type]} variant={type} />
+    <StatusBadge
+      label={coreLabel}
+      variant={type}
+      className="normal-case uppercase tracking-wide"
+    />
   );
 }
 

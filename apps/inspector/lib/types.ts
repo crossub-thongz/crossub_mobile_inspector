@@ -19,6 +19,38 @@ export type JobStatus =
 
 export type JobSource = 'pool' | 'assigned';
 
+export type InspectorRegistrationStatus =
+  | 'not_started'
+  | 'pending_review'
+  | 'approved'
+  | 'rejected';
+
+export interface InspectorRegistration {
+  firstName: string;
+  lastName: string;
+  email: string;
+  mobile: string;
+  dateOfBirth: string;
+  residentialAddress: string;
+  abn?: string;
+  licenceNumber: string;
+  licenceType: string;
+  licenceExpiry: string;
+  insuranceProvider: string;
+  insurancePolicyNumber: string;
+  insuranceExpiry: string;
+  serviceRegions: string[];
+  tribunalQualified: boolean;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  bankAccountName: string;
+  bankBsb: string;
+  bankAccountNumber: string;
+  registrationStatus: InspectorRegistrationStatus;
+  submittedAt?: string;
+  reviewedAt?: string;
+}
+
 export interface InspectorProfile {
   id: string;
   name: string;
@@ -26,6 +58,8 @@ export interface InspectorProfile {
   phone: string;
   tribunalQualified: boolean;
   weeklyEarnings: number;
+  registration?: InspectorRegistration | null;
+  registrationComplete: boolean;
 }
 
 export interface InspectionJob {
@@ -47,6 +81,8 @@ export interface InspectionJob {
   agentName?: string;
   agentCompany?: string;
   notes?: string;
+  /** Estimated on-site hours for fee calculation */
+  estimatedHours: number;
   payAmount: number;
   workflowStep?: number;
   workflowData?: Record<string, unknown>;
@@ -87,7 +123,10 @@ export interface EarningsRecord {
   type: InspectionType;
   propertyAddress: string;
   completedAt: string;
+  hoursWorked: number;
+  hourlyRate: number;
   amount: number;
+  accountingSynced: boolean;
 }
 
 export interface MessageThread {

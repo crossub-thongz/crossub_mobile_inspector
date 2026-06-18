@@ -30,6 +30,7 @@ const PRIMARY_NAV = [
 
 const MORE_NAV = [
   { href: ROUTES.EARNINGS, label: 'Earnings' },
+  { href: ROUTES.REGISTER, label: 'Registration' },
   { href: ROUTES.MESSAGES, label: 'Messages' },
   { href: ROUTES.NOTIFICATIONS, label: 'Notifications' },
   { href: ROUTES.SETTINGS, label: 'Settings' },

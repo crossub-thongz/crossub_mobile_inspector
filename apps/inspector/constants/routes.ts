@@ -9,6 +9,7 @@ export const ROUTES = {
   MESSAGES: '/messages',
   NOTIFICATIONS: '/notifications',
   PROFILE: '/profile',
+  REGISTER: '/register',
   SETTINGS: '/settings',
   LOGIN: '/login',
   FORGOT_PASSWORD: '/forgot-password',

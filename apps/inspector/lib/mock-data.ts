@@ -1,13 +1,49 @@
-import { INSPECTION_PAY_RATES_AUD } from '@/constants/inspection';
+import {
+  ESTIMATED_HOURS_BY_TYPE,
+  INSPECTOR_HOURLY_RATE_AUD,
+} from '@/constants/inspection';
+import { calculateInspectionFee } from '@/lib/inspector-pay';
 import type {
   EarningsRecord,
   InspectionJob,
+  InspectionType,
   InspectorNotification,
   InspectorProfile,
+  InspectorRegistration,
   MessageThread,
   ThreadMessage,
   TribunalHearing,
 } from '@/lib/types';
+
+const jobFee = (type: InspectionType) => {
+  const estimatedHours = ESTIMATED_HOURS_BY_TYPE[type];
+  return {
+    estimatedHours,
+    payAmount: calculateInspectionFee(estimatedHours),
+  };
+};
+
+const earn = (
+  id: string,
+  jobId: string,
+  type: InspectionType,
+  propertyAddress: string,
+  completedAt: string,
+  hoursWorked?: number,
+): EarningsRecord => {
+  const hours = hoursWorked ?? ESTIMATED_HOURS_BY_TYPE[type];
+  return {
+    id,
+    jobId,
+    type,
+    propertyAddress,
+    completedAt,
+    hoursWorked: hours,
+    hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
+    amount: calculateInspectionFee(hours),
+    accountingSynced: true,
+  };
+};
 
 const today = new Date();
 const tomorrow = new Date(today);
@@ -23,13 +59,41 @@ const iso = (d: Date, hour = 10, minute = 0) => {
   return copy.toISOString();
 };
 
+export const DEMO_INSPECTOR_REGISTRATION: InspectorRegistration = {
+  firstName: 'Alex',
+  lastName: 'Chen',
+  email: 'alex.chen@crossub.com.au',
+  mobile: '0412 345 678',
+  dateOfBirth: '1988-04-12',
+  residentialAddress: '42 Inspection Ave, Rhodes NSW 2138',
+  abn: '12 345 678 901',
+  licenceNumber: 'NSW-PI-88421',
+  licenceType: 'NSW Fair Trading — Property Inspection',
+  licenceExpiry: '2027-06-30',
+  insuranceProvider: 'QBE Insurance',
+  insurancePolicyNumber: 'QBE-INS-99281',
+  insuranceExpiry: '2026-12-31',
+  serviceRegions: ['Sydney Metro', 'Parramatta / Western Sydney', 'North Shore'],
+  tribunalQualified: true,
+  emergencyContactName: 'Jordan Chen',
+  emergencyContactPhone: '0411 222 333',
+  bankAccountName: 'Alex Chen',
+  bankBsb: '062-000',
+  bankAccountNumber: '12345678',
+  registrationStatus: 'approved',
+  submittedAt: '2025-11-01T09:00:00.000Z',
+  reviewedAt: '2025-11-03T14:00:00.000Z',
+};
+
 export const INSPECTOR_PROFILE: InspectorProfile = {
   id: 'insp-001',
   name: 'Alex Chen',
   email: 'alex.chen@crossub.com.au',
   phone: '0412 345 678',
   tribunalQualified: true,
-  weeklyEarnings: 385,
+  weeklyEarnings: 0,
+  registration: null,
+  registrationComplete: false,
 };
 
 export const JOBS: InspectionJob[] = [
@@ -49,7 +113,7 @@ export const JOBS: InspectionJob[] = [
     assignedBy: 'Sarah Mitchell',
     agentName: 'Sarah Mitchell',
     agentCompany: 'Harbour Property Group',
-    payAmount: INSPECTION_PAY_RATES_AUD.open,
+    ...jobFee('open'),
     workflowStep: 1,
   },
   {
@@ -70,7 +134,7 @@ export const JOBS: InspectionJob[] = [
     tenantPhone: '0423 111 222',
     agentName: 'James Wu',
     agentCompany: 'Western Sydney Realty',
-    payAmount: INSPECTION_PAY_RATES_AUD.ingoing,
+    ...jobFee('ingoing'),
   },
   {
     id: 'job-003',
@@ -86,7 +150,7 @@ export const JOBS: InspectionJob[] = [
     status: 'accepted',
     source: 'pool',
     tenantName: 'Michael Park',
-    payAmount: INSPECTION_PAY_RATES_AUD.routine,
+    ...jobFee('routine'),
   },
   {
     id: 'job-004',
@@ -101,7 +165,7 @@ export const JOBS: InspectionJob[] = [
     distanceKm: 9.8,
     status: 'available',
     source: 'pool',
-    payAmount: INSPECTION_PAY_RATES_AUD.outgoing,
+    ...jobFee('outgoing'),
   },
   {
     id: 'job-005',
@@ -116,7 +180,7 @@ export const JOBS: InspectionJob[] = [
     distanceKm: 2.1,
     status: 'available',
     source: 'pool',
-    payAmount: INSPECTION_PAY_RATES_AUD.open,
+    ...jobFee('open'),
   },
   {
     id: 'job-006',
@@ -132,7 +196,7 @@ export const JOBS: InspectionJob[] = [
     status: 'completed',
     source: 'assigned',
     assignedBy: 'Sarah Mitchell',
-    payAmount: INSPECTION_PAY_RATES_AUD.routine,
+    ...jobFee('routine'),
     workflowStep: 99,
   },
   {
@@ -148,7 +212,7 @@ export const JOBS: InspectionJob[] = [
     distanceKm: 11.2,
     status: 'completed',
     source: 'pool',
-    payAmount: INSPECTION_PAY_RATES_AUD.ingoing,
+    ...jobFee('ingoing'),
     workflowStep: 99,
   },
 ];
@@ -184,30 +248,27 @@ export const TRIBUNALS: TribunalHearing[] = [
 ];
 
 export const EARNINGS: EarningsRecord[] = [
-  {
-    id: 'earn-001',
-    jobId: 'job-006',
-    type: 'routine',
-    propertyAddress: '17 Pacific Hwy, St Leonards NSW 2065',
-    completedAt: iso(lastWeek, 11, 30),
-    amount: INSPECTION_PAY_RATES_AUD.routine,
-  },
-  {
-    id: 'earn-002',
-    jobId: 'job-007',
-    type: 'ingoing',
-    propertyAddress: '99 Victoria Ave, Chatswood NSW 2067',
-    completedAt: iso(lastWeek, 15, 0),
-    amount: INSPECTION_PAY_RATES_AUD.ingoing,
-  },
-  {
-    id: 'earn-003',
-    jobId: 'job-prev-001',
-    type: 'open',
-    propertyAddress: '14 King St, Newtown NSW 2042',
-    completedAt: iso(new Date(today.getTime() - 5 * 86400000), 12, 0),
-    amount: INSPECTION_PAY_RATES_AUD.open,
-  },
+  earn(
+    'earn-001',
+    'job-006',
+    'routine',
+    '17 Pacific Hwy, St Leonards NSW 2065',
+    iso(lastWeek, 11, 30),
+  ),
+  earn(
+    'earn-002',
+    'job-007',
+    'ingoing',
+    '99 Victoria Ave, Chatswood NSW 2067',
+    iso(lastWeek, 15, 0),
+  ),
+  earn(
+    'earn-003',
+    'job-prev-001',
+    'open',
+    '14 King St, Newtown NSW 2042',
+    iso(new Date(today.getTime() - 5 * 86400000), 12, 0),
+  ),
 ];
 
 export const MESSAGE_THREADS: MessageThread[] = [

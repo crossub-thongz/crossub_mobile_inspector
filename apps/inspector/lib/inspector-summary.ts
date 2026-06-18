@@ -1,4 +1,4 @@
-import { INSPECTION_PAY_RATES_AUD } from '@/constants/inspection';
+import { ESTIMATED_HOURS_BY_TYPE } from '@/constants/inspection';
 import type {
   DashboardSummary,
   EarningsRecord,
@@ -46,6 +46,9 @@ export function buildDashboardSummary(
   };
 }
 
-export function jobPayAmount(type: InspectionJob['type']): number {
-  return INSPECTION_PAY_RATES_AUD[type];
+import { calculateInspectionFee } from '@/lib/inspector-pay';
+
+export function jobPayAmount(type: InspectionJob['type'], hours?: number): number {
+  const h = hours ?? ESTIMATED_HOURS_BY_TYPE[type];
+  return calculateInspectionFee(h);
 }

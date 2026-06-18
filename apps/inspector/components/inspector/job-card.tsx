@@ -45,9 +45,14 @@ export function JobCard({
       </Link>
 
       <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3">
-        <span className="text-primary text-sm font-semibold tabular-nums">
-          {formatCurrency(job.payAmount)}
-        </span>
+        <div>
+          <span className="text-primary text-sm font-semibold tabular-nums">
+            {formatCurrency(job.payAmount)}
+          </span>
+          <p className="text-muted-foreground mt-0.5 text-[10px]">
+            {job.estimatedHours}h × $45/hr
+          </p>
+        </div>
         {job.source === 'assigned' && job.assignedBy && (
           <span className="text-muted-foreground text-[10px]">
             Assigned by {job.assignedBy}

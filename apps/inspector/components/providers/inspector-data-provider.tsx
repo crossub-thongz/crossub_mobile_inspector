@@ -11,10 +11,17 @@ import {
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/auth-provider';
-import { INSPECTION_PAY_RATES_AUD } from '@/constants/inspection';
+import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
 import { api, ApiError } from '@/lib/api';
 import { buildDashboardSummary } from '@/lib/inspector-summary';
+import { calculateInspectionFee } from '@/lib/inspector-pay';
 import {
+  isRegistrationComplete,
+  loadInspectorRegistration,
+  saveInspectorRegistration,
+} from '@/lib/inspector-registration';
+import {
+  DEMO_INSPECTOR_REGISTRATION,
   EARNINGS,
   JOBS,
   MESSAGE_THREADS,
@@ -33,6 +40,7 @@ import type {
   InspectionJob,
   InspectorNotification,
   InspectorProfile,
+  InspectorRegistration,
   JobStatus,
   MessageThread,
   ThreadMessage,
@@ -48,6 +56,9 @@ interface InspectorDataContextValue {
   refresh: () => Promise<void>;
   syncOfflineQueue: () => Promise<void>;
   profile: InspectorProfile;
+  registration: InspectorRegistration | null;
+  registrationComplete: boolean;
+  saveRegistration: (data: InspectorRegistration) => void;
   summary: DashboardSummary;
   jobs: InspectionJob[];
   poolJobs: InspectionJob[];
@@ -87,11 +98,13 @@ const InspectorDataContext = createContext<InspectorDataContextValue | null>(
 
 const DEMO_PROFILE: InspectorProfile = {
   id: 'insp-001',
-  name: 'Alex Chen',
-  email: 'alex.chen@crossub.com.au',
-  phone: '0412 345 678',
-  tribunalQualified: true,
+  name: 'Inspector',
+  email: '',
+  phone: '',
+  tribunalQualified: false,
   weeklyEarnings: 0,
+  registration: null,
+  registrationComplete: false,
 };
 
 export function InspectorDataProvider({
@@ -111,6 +124,29 @@ export function InspectorDataProvider({
   const [notifications, setNotifications] = useState(NOTIFICATIONS);
   const [messages, setMessages] = useState(MESSAGE_THREADS);
   const [threadMessages, setThreadMessages] = useState(THREAD_MESSAGES);
+  const [registration, setRegistration] = useState<InspectorRegistration | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const saved = loadInspectorRegistration();
+    if (saved) {
+      setRegistration(saved);
+      return;
+    }
+    // Demo: pre-approve sample registration for local development
+    if (process.env.NODE_ENV === 'development') {
+      saveInspectorRegistration(DEMO_INSPECTOR_REGISTRATION);
+      setRegistration(DEMO_INSPECTOR_REGISTRATION);
+    }
+  }, []);
+
+  const registrationComplete = isRegistrationComplete(registration);
+
+  const saveRegistration = useCallback((data: InspectorRegistration) => {
+    saveInspectorRegistration(data);
+    setRegistration(data);
+  }, []);
 
   const refreshPendingSync = useCallback(() => {
     setPendingSync(loadOfflineQueue().length);
@@ -247,7 +283,10 @@ export function InspectorDataProvider({
           type: job.type,
           propertyAddress: job.propertyAddress,
           completedAt: new Date().toISOString(),
-          amount: job.payAmount,
+          hoursWorked: job.estimatedHours,
+          hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
+          amount: calculateInspectionFee(job.estimatedHours),
+          accountingSynced: false,
         },
         ...prev,
       ]);
@@ -281,6 +320,7 @@ export function InspectorDataProvider({
           t.id === id ? { ...t, outcome, status: 'completed' } : t,
         ),
       );
+      const tribunalHours = 3;
       setEarnings((prev) => [
         {
           id: `earn-trib-${Date.now()}`,
@@ -289,7 +329,10 @@ export function InspectorDataProvider({
           propertyAddress:
             tribunals.find((t) => t.id === id)?.propertyAddress ?? '',
           completedAt: new Date().toISOString(),
-          amount: INSPECTION_PAY_RATES_AUD.tribunal,
+          hoursWorked: tribunalHours,
+          hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
+          amount: calculateInspectionFee(tribunalHours),
+          accountingSynced: false,
         },
         ...prev,
       ]);
@@ -371,10 +414,21 @@ export function InspectorDataProvider({
     [jobs, tribunals, earnings, pendingSync],
   );
 
-  const profile: InspectorProfile = useMemo(
-    () => ({ ...DEMO_PROFILE, weeklyEarnings: summary.weeklyEarnings }),
-    [summary.weeklyEarnings],
-  );
+  const profile: InspectorProfile = useMemo(() => {
+    const name = registration
+      ? `${registration.firstName} ${registration.lastName}`.trim()
+      : DEMO_PROFILE.name;
+    return {
+      ...DEMO_PROFILE,
+      name,
+      email: registration?.email ?? DEMO_PROFILE.email,
+      phone: registration?.mobile ?? DEMO_PROFILE.phone,
+      tribunalQualified: registration?.tribunalQualified ?? false,
+      weeklyEarnings: summary.weeklyEarnings,
+      registration,
+      registrationComplete,
+    };
+  }, [registration, registrationComplete, summary.weeklyEarnings]);
 
   const value: InspectorDataContextValue = {
     loading,
@@ -384,6 +438,9 @@ export function InspectorDataProvider({
     refresh,
     syncOfflineQueue,
     profile,
+    registration,
+    registrationComplete,
+    saveRegistration,
     summary,
     jobs,
     poolJobs,

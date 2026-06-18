@@ -64,6 +64,9 @@ export default function JobDetailPage() {
             <p className="text-primary text-lg font-bold">
               {formatCurrency(job.payAmount)}
             </p>
+            <p className="text-muted-foreground text-xs">
+              Est. {job.estimatedHours}h × $45/hr — no mileage allowance
+            </p>
             <MapLinks
               address={job.propertyAddress}
               lat={job.latitude}
