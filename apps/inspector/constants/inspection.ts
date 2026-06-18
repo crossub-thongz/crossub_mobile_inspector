@@ -2,28 +2,23 @@ import type { InspectionType } from '@/lib/types';
 
 export const INSPECTOR_PAY_CURRENCY = 'AUD' as const;
 
-/** Inspector pay rate — $45/hr. No fuel or mileage allowance. */
-export const INSPECTOR_HOURLY_RATE_AUD = 45;
+export {
+  FUEL_RATE_PER_KM_AUD,
+  INSPECTOR_HOURLY_RATE_AUD,
+  REGIONAL_MIDPOINTS,
+  APARTMENT_INSPECTION_HOURS,
+  HOUSE_AREA_MINUTES,
+  TRIBUNAL_INSPECTION_HOURS,
+} from '@/constants/inspection-rates';
+export type { ServiceRegionKey } from '@/constants/inspection-rates';
 
-/**
- * Estimated on-site hours per inspection type (confirmed with Inspection Dept).
- * Final fee = hours × INSPECTOR_HOURLY_RATE_AUD, synced to Accounting.
- */
+/** @deprecated Use property-based duration from inspection-rates guidelines */
 export const ESTIMATED_HOURS_BY_TYPE: Record<InspectionType, number> = {
   open: 1.5,
   ingoing: 2,
   outgoing: 2.5,
   routine: 1,
-  tribunal: 3,
-};
-
-/** @deprecated Flat per-job rates replaced by hourly billing */
-export const INSPECTION_PAY_RATES_AUD: Record<InspectionType, number> = {
-  open: 67.5,
-  ingoing: 90,
-  outgoing: 112.5,
-  routine: 45,
-  tribunal: 135,
+  tribunal: 2,
 };
 
 export const INSPECTION_PAY_LABEL: Record<InspectionType, string> = {

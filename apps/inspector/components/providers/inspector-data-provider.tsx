@@ -12,9 +12,10 @@ import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/auth-provider';
 import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
+import { TRIBUNAL_INSPECTION_HOURS } from '@/constants/inspection-rates';
 import { api, ApiError } from '@/lib/api';
 import { buildDashboardSummary } from '@/lib/inspector-summary';
-import { calculateInspectionFee } from '@/lib/inspector-pay';
+import { calculateLaborFee } from '@/lib/inspector-pay';
 import {
   isRegistrationComplete,
   loadInspectorRegistration,
@@ -285,7 +286,10 @@ export function InspectorDataProvider({
           completedAt: new Date().toISOString(),
           hoursWorked: job.estimatedHours,
           hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
-          amount: calculateInspectionFee(job.estimatedHours),
+          travelKmOneWay: job.travelKmOneWay,
+          fuelAllowance: job.fuelAllowance,
+          laborAmount: job.laborAmount,
+          amount: job.payAmount,
           accountingSynced: false,
         },
         ...prev,
@@ -320,7 +324,8 @@ export function InspectorDataProvider({
           t.id === id ? { ...t, outcome, status: 'completed' } : t,
         ),
       );
-      const tribunalHours = 3;
+      const tribunalHours = TRIBUNAL_INSPECTION_HOURS;
+      const laborAmount = calculateLaborFee(tribunalHours);
       setEarnings((prev) => [
         {
           id: `earn-trib-${Date.now()}`,
@@ -331,7 +336,10 @@ export function InspectorDataProvider({
           completedAt: new Date().toISOString(),
           hoursWorked: tribunalHours,
           hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
-          amount: calculateInspectionFee(tribunalHours),
+          travelKmOneWay: 0,
+          fuelAllowance: 0,
+          laborAmount,
+          amount: laborAmount,
           accountingSynced: false,
         },
         ...prev,

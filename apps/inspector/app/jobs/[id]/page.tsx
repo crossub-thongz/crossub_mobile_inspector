@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { MapPin, Phone, User } from 'lucide-react';
 
 import { MapLinks } from '@/components/inspector/map-links';
+import { PayBreakdown } from '@/components/inspector/pay-breakdown';
 import {
   JobStatusBadge,
   JobTypeBadge,
@@ -14,8 +15,9 @@ import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { REGIONAL_MIDPOINTS } from '@/constants/inspection';
 import { jobWorkflow, ROUTES } from '@/constants/routes';
-import { formatCurrency, formatDateTime } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 
 const STATUS_FLOW = [
   { status: 'accepted' as const, label: 'Accepted' },
@@ -58,15 +60,23 @@ export default function JobDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            <p className="text-muted-foreground text-sm">{job.durationLabel}</p>
             <p className="text-muted-foreground text-sm">
-              {formatDateTime(job.scheduledTime)} · {job.distanceKm} km away
-            </p>
-            <p className="text-primary text-lg font-bold">
-              {formatCurrency(job.payAmount)}
+              {formatDateTime(job.scheduledTime)} · {job.distanceKm} km to property
             </p>
             <p className="text-muted-foreground text-xs">
-              Est. {job.estimatedHours}h × $45/hr — no mileage allowance
+              Region: {REGIONAL_MIDPOINTS[job.serviceRegion].label} — fuel from{' '}
+              {REGIONAL_MIDPOINTS[job.serviceRegion].midpoint}
             </p>
+            <PayBreakdown
+              hours={job.estimatedHours}
+              laborAmount={job.laborAmount}
+              travelKmOneWay={job.travelKmOneWay}
+              fuelAllowance={job.fuelAllowance}
+              total={job.payAmount}
+              durationLabel={job.durationLabel}
+              serviceRegion={job.serviceRegion}
+            />
             <MapLinks
               address={job.propertyAddress}
               lat={job.latitude}

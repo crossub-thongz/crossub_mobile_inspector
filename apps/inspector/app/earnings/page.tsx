@@ -1,14 +1,16 @@
 'use client';
 
-import { Calculator, Wallet } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 
 import { EmptyState } from '@/components/inspector/empty-state';
+import { PayBreakdown, RatesGuidelinesCard } from '@/components/inspector/pay-breakdown';
 import { JobTypeBadge } from '@/components/inspector/status-badge';
 import { PageIntro } from '@/components/inspector/page-intro';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import {
   CORE_INSPECTION_TYPES,
+  FUEL_RATE_PER_KM_AUD,
   INSPECTOR_HOURLY_RATE_AUD,
   INSPECTION_TYPE_LABEL,
 } from '@/constants/inspection';
@@ -19,18 +21,12 @@ export default function EarningsPage() {
   const { earnings, summary } = useInspectorData();
 
   const totalHours = earnings.reduce((s, e) => s + e.hoursWorked, 0);
+  const totalLabor = earnings.reduce((s, e) => s + e.laborAmount, 0);
+  const totalFuel = earnings.reduce((s, e) => s + e.fuelAllowance, 0);
 
   const byType = earnings.reduce(
     (acc, e) => {
       acc[e.type] = (acc[e.type] ?? 0) + e.amount;
-      return acc;
-    },
-    {} as Record<InspectionType, number>,
-  );
-
-  const hoursByType = earnings.reduce(
-    (acc, e) => {
-      acc[e.type] = (acc[e.type] ?? 0) + e.hoursWorked;
       return acc;
     },
     {} as Record<InspectionType, number>,
@@ -41,7 +37,7 @@ export default function EarningsPage() {
   return (
     <InspectorShell title="Earnings">
       <div className="space-y-4">
-        <PageIntro description="Inspection fees at $45/hour — calculated from logged on-site hours. No fuel or mileage allowance. Synced with Accounting for payroll." />
+        <PageIntro description="Fees per Inspector Rates & Property Inspection Time Guidelines — $35/hr labour plus $0.80/km fuel (one-way from regional midpoint). Synced with Accounting." />
 
         <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-transparent p-5">
           <p className="text-muted-foreground text-xs font-medium uppercase">
@@ -51,27 +47,18 @@ export default function EarningsPage() {
             {formatCurrency(summary.weeklyEarnings)}
           </p>
           <p className="text-muted-foreground mt-1 text-xs">
-            {totalHours.toFixed(1)}h × ${INSPECTOR_HOURLY_RATE_AUD}/hr
+            Labour {formatCurrency(totalLabor)} + Fuel {formatCurrency(totalFuel)}{' '}
+            · {totalHours.toFixed(1)}h on-site
           </p>
         </div>
 
-        <div className="flex items-start gap-3 rounded-xl border border-border/80 bg-card p-4">
-          <Calculator className="text-primary mt-0.5 size-5 shrink-0" />
-          <div className="text-xs leading-relaxed">
-            <p className="font-semibold">Fee calculation</p>
-            <p className="text-muted-foreground mt-1">
-              Each completed inspection is billed as{' '}
-              <strong className="text-foreground">hours worked × $45</strong>.
-              The Inspection Department confirms hours per property; Accounting
-              processes payment. Mileage reimbursement has been removed.
-            </p>
-            {pendingAccounting > 0 && (
-              <p className="mt-2 text-amber-400">
-                {pendingAccounting} payment(s) pending Accounting sync
-              </p>
-            )}
-          </div>
-        </div>
+        <RatesGuidelinesCard />
+
+        {pendingAccounting > 0 && (
+          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+            {pendingAccounting} payment(s) pending Accounting sync
+          </p>
+        )}
 
         <section className="rounded-xl border bg-card p-4">
           <h2 className="mb-3 text-sm font-semibold">By inspection type</h2>
@@ -86,7 +73,7 @@ export default function EarningsPage() {
                   {formatCurrency(byType[type] ?? 0)}
                 </p>
                 <p className="text-muted-foreground text-[10px]">
-                  {(hoursByType[type] ?? 0).toFixed(1)}h · {INSPECTION_TYPE_LABEL[type]}
+                  {INSPECTION_TYPE_LABEL[type]}
                 </p>
               </div>
             ))}
@@ -95,9 +82,6 @@ export default function EarningsPage() {
                 <JobTypeBadge type="tribunal" />
                 <p className="mt-2 text-lg font-bold tabular-nums">
                   {formatCurrency(byType.tribunal ?? 0)}
-                </p>
-                <p className="text-muted-foreground text-[10px]">
-                  {(hoursByType.tribunal ?? 0).toFixed(1)}h
                 </p>
               </div>
             )}
@@ -110,7 +94,7 @@ export default function EarningsPage() {
             <EmptyState
               icon={Wallet}
               title="No earnings yet"
-              description="Complete inspections to see hourly fees here."
+              description="Complete inspections to see labour + fuel fees here."
             />
           ) : (
             earnings.map((e) => (
@@ -125,17 +109,27 @@ export default function EarningsPage() {
                   </span>
                 </div>
                 <p className="mt-2 text-sm">{e.propertyAddress}</p>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  {e.hoursWorked}h × ${e.hourlyRate}/hr ·{' '}
-                  {formatDateTime(e.completedAt)}
-                </p>
-                <p className="text-muted-foreground mt-1 text-[10px]">
-                  Accounting: {e.accountingSynced ? 'Synced' : 'Pending sync'}
+                <PayBreakdown
+                  compact
+                  hours={e.hoursWorked}
+                  laborAmount={e.laborAmount}
+                  travelKmOneWay={e.travelKmOneWay}
+                  fuelAllowance={e.fuelAllowance}
+                  total={e.amount}
+                />
+                <p className="text-muted-foreground mt-2 text-xs">
+                  {formatDateTime(e.completedAt)} · Accounting:{' '}
+                  {e.accountingSynced ? 'Synced' : 'Pending'}
                 </p>
               </div>
             ))
           )}
         </section>
+
+        <p className="text-muted-foreground text-center text-[10px]">
+          Rate: ${INSPECTOR_HOURLY_RATE_AUD}/hr · Fuel: ${FUEL_RATE_PER_KM_AUD}/km
+          one-way
+        </p>
       </div>
     </InspectorShell>
   );

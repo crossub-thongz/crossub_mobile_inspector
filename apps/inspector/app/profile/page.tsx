@@ -17,7 +17,10 @@ import { useInspectorData } from '@/components/providers/inspector-data-provider
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { REGISTRATION_STATUS_LABEL } from '@/constants/inspector-registration';
-import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
+import {
+  FUEL_RATE_PER_KM_AUD,
+  INSPECTOR_HOURLY_RATE_AUD,
+} from '@/constants/inspection';
 import { ROUTES } from '@/constants/routes';
 import { displayName, formatCurrency, formatDate } from '@/lib/utils';
 
@@ -41,8 +44,8 @@ export default function ProfilePage() {
       <div className="space-y-4">
         <p className="text-muted-foreground text-sm">
           Your registered inspector profile — managed by the Inspection Department
-          and synced with Accounting for fee payments at ${INSPECTOR_HOURLY_RATE_AUD}/hr
-          (no mileage allowance).
+          and synced with Accounting for labour (${INSPECTOR_HOURLY_RATE_AUD}/hr) and
+          fuel (${FUEL_RATE_PER_KM_AUD}/km one-way) payments.
         </p>
 
         {!reg ? (
@@ -145,7 +148,14 @@ export default function ProfilePage() {
                 <InfoRow label="Account name" value={reg.bankAccountName} />
                 <InfoRow label="BSB" value={reg.bankBsb} />
                 <InfoRow label="Account" value={`••••${reg.bankAccountNumber.slice(-4)}`} />
-                <InfoRow label="Pay rate" value={`$${INSPECTOR_HOURLY_RATE_AUD}/hour`} />
+                <InfoRow
+                  label="Labour rate"
+                  value={`$${INSPECTOR_HOURLY_RATE_AUD}/hour`}
+                />
+                <InfoRow
+                  label="Fuel allowance"
+                  value={`$${FUEL_RATE_PER_KM_AUD}/km one-way`}
+                />
                 <p className="text-muted-foreground pt-1 text-xs">
                   Weekly earnings: {formatCurrency(profile.weeklyEarnings)}
                 </p>

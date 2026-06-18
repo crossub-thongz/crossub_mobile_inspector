@@ -1,8 +1,11 @@
 import { ESTIMATED_HOURS_BY_TYPE } from '@/constants/inspection';
+import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection-rates';
+import { calculateJobPay } from '@/lib/inspector-pay';
 import type {
   DashboardSummary,
   EarningsRecord,
   InspectionJob,
+  PropertyInspectionSpec,
   TribunalHearing,
 } from '@/lib/types';
 import { isThisWeek, isToday } from '@/lib/utils';
@@ -46,9 +49,15 @@ export function buildDashboardSummary(
   };
 }
 
-import { calculateInspectionFee } from '@/lib/inspector-pay';
+export function jobPayAmount(
+  property: PropertyInspectionSpec,
+  travelKmOneWay: number,
+  type: InspectionJob['type'],
+): number {
+  return calculateJobPay(property, travelKmOneWay, type).payAmount;
+}
 
-export function jobPayAmount(type: InspectionJob['type'], hours?: number): number {
-  const h = hours ?? ESTIMATED_HOURS_BY_TYPE[type];
-  return calculateInspectionFee(h);
+/** @deprecated Use jobPayAmount with property spec */
+export function legacyJobPayAmount(type: InspectionJob['type']): number {
+  return ESTIMATED_HOURS_BY_TYPE[type] * INSPECTOR_HOURLY_RATE_AUD;
 }

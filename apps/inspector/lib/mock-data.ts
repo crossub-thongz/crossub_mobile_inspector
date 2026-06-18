@@ -1,8 +1,6 @@
-import {
-  ESTIMATED_HOURS_BY_TYPE,
-  INSPECTOR_HOURLY_RATE_AUD,
-} from '@/constants/inspection';
-import { calculateInspectionFee } from '@/lib/inspector-pay';
+import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection-rates';
+import { buildJobPayFields } from '@/lib/build-job-pay';
+import { calculateLaborFee, calculateFuelAllowance } from '@/lib/inspector-pay';
 import type {
   EarningsRecord,
   InspectionJob,
@@ -11,17 +9,11 @@ import type {
   InspectorProfile,
   InspectorRegistration,
   MessageThread,
+  PropertyInspectionSpec,
+  ServiceRegionKey,
   ThreadMessage,
   TribunalHearing,
 } from '@/lib/types';
-
-const jobFee = (type: InspectionType) => {
-  const estimatedHours = ESTIMATED_HOURS_BY_TYPE[type];
-  return {
-    estimatedHours,
-    payAmount: calculateInspectionFee(estimatedHours),
-  };
-};
 
 const earn = (
   id: string,
@@ -29,21 +21,33 @@ const earn = (
   type: InspectionType,
   propertyAddress: string,
   completedAt: string,
-  hoursWorked?: number,
+  hoursWorked: number,
+  travelKmOneWay: number,
 ): EarningsRecord => {
-  const hours = hoursWorked ?? ESTIMATED_HOURS_BY_TYPE[type];
+  const laborAmount = calculateLaborFee(hoursWorked);
+  const fuelAllowance = calculateFuelAllowance(travelKmOneWay);
   return {
     id,
     jobId,
     type,
     propertyAddress,
     completedAt,
-    hoursWorked: hours,
+    hoursWorked,
     hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
-    amount: calculateInspectionFee(hours),
+    travelKmOneWay,
+    fuelAllowance,
+    laborAmount,
+    amount: Math.round((laborAmount + fuelAllowance) * 100) / 100,
     accountingSynced: true,
   };
 };
+
+const pay = (
+  property: PropertyInspectionSpec,
+  region: ServiceRegionKey,
+  km: number,
+  type: InspectionType,
+) => buildJobPayFields(property, region, km, type);
 
 const today = new Date();
 const tomorrow = new Date(today);
@@ -113,7 +117,12 @@ export const JOBS: InspectionJob[] = [
     assignedBy: 'Sarah Mitchell',
     agentName: 'Sarah Mitchell',
     agentCompany: 'Harbour Property Group',
-    ...jobFee('open'),
+    ...pay(
+      { propertyKind: 'apartment', bedrooms: 2, bathrooms: 2 },
+      'cbd_inner',
+      4.2,
+      'open',
+    ),
     workflowStep: 1,
   },
   {
@@ -134,7 +143,12 @@ export const JOBS: InspectionJob[] = [
     tenantPhone: '0423 111 222',
     agentName: 'James Wu',
     agentCompany: 'Western Sydney Realty',
-    ...jobFee('ingoing'),
+    ...pay(
+      { propertyKind: 'apartment', bedrooms: 3, bathrooms: 2 },
+      'western_sydney',
+      18.5,
+      'ingoing',
+    ),
   },
   {
     id: 'job-003',
@@ -150,7 +164,12 @@ export const JOBS: InspectionJob[] = [
     status: 'accepted',
     source: 'pool',
     tenantName: 'Michael Park',
-    ...jobFee('routine'),
+    ...pay(
+      { propertyKind: 'apartment', bedrooms: 2, bathrooms: 2 },
+      'northern_sydney',
+      12.1,
+      'routine',
+    ),
   },
   {
     id: 'job-004',
@@ -165,7 +184,20 @@ export const JOBS: InspectionJob[] = [
     distanceKm: 9.8,
     status: 'available',
     source: 'pool',
-    ...jobFee('outgoing'),
+    ...pay(
+      {
+        propertyKind: 'house',
+        bedrooms: 3,
+        bathrooms: 2,
+        livingAreas: 1,
+        kitchens: 1,
+        laundries: 1,
+        hasYard: true,
+      },
+      'eastern_suburbs',
+      9.8,
+      'outgoing',
+    ),
   },
   {
     id: 'job-005',
@@ -180,7 +212,12 @@ export const JOBS: InspectionJob[] = [
     distanceKm: 2.1,
     status: 'available',
     source: 'pool',
-    ...jobFee('open'),
+    ...pay(
+      { propertyKind: 'apartment', bedrooms: 1, bathrooms: 1 },
+      'cbd_inner',
+      2.1,
+      'open',
+    ),
   },
   {
     id: 'job-006',
@@ -196,7 +233,12 @@ export const JOBS: InspectionJob[] = [
     status: 'completed',
     source: 'assigned',
     assignedBy: 'Sarah Mitchell',
-    ...jobFee('routine'),
+    ...pay(
+      { propertyKind: 'apartment', bedrooms: 2, bathrooms: 2 },
+      'northern_sydney',
+      8.4,
+      'routine',
+    ),
     workflowStep: 99,
   },
   {
@@ -212,7 +254,12 @@ export const JOBS: InspectionJob[] = [
     distanceKm: 11.2,
     status: 'completed',
     source: 'pool',
-    ...jobFee('ingoing'),
+    ...pay(
+      { propertyKind: 'apartment', bedrooms: 4, bathrooms: 3 },
+      'northern_sydney',
+      11.2,
+      'ingoing',
+    ),
     workflowStep: 99,
   },
 ];
@@ -254,6 +301,8 @@ export const EARNINGS: EarningsRecord[] = [
     'routine',
     '17 Pacific Hwy, St Leonards NSW 2065',
     iso(lastWeek, 11, 30),
+    1.5,
+    8.4,
   ),
   earn(
     'earn-002',
@@ -261,6 +310,8 @@ export const EARNINGS: EarningsRecord[] = [
     'ingoing',
     '99 Victoria Ave, Chatswood NSW 2067',
     iso(lastWeek, 15, 0),
+    2.5,
+    11.2,
   ),
   earn(
     'earn-003',
@@ -268,6 +319,8 @@ export const EARNINGS: EarningsRecord[] = [
     'open',
     '14 King St, Newtown NSW 2042',
     iso(new Date(today.getTime() - 5 * 86400000), 12, 0),
+    1,
+    5.5,
   ),
 ];
 

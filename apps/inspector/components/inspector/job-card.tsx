@@ -3,15 +3,17 @@
 import Link from 'next/link';
 import { Clock, MapPin, Navigation } from 'lucide-react';
 
+import { PayBreakdown } from '@/components/inspector/pay-breakdown';
 import {
   JobStatusBadge,
   JobTypeBadge,
   PriorityBadge,
 } from '@/components/inspector/status-badge';
 import { Button } from '@/components/ui/button';
+import { REGIONAL_MIDPOINTS } from '@/constants/inspection';
 import { jobDetail } from '@/constants/routes';
 import type { InspectionJob } from '@/lib/types';
-import { formatCurrency, formatDateTime } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 
 export function JobCard({
   job,
@@ -24,6 +26,8 @@ export function JobCard({
   onDecline?: (id: string) => void;
   showActions?: boolean;
 }) {
+  const region = REGIONAL_MIDPOINTS[job.serviceRegion];
+
   return (
     <div className="rounded-2xl border border-border/80 bg-card p-4">
       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -34,30 +38,27 @@ export function JobCard({
 
       <Link href={jobDetail(job.id)} className="block">
         <p className="text-sm font-semibold leading-snug">{job.propertyAddress}</p>
+        <p className="text-muted-foreground mt-1 text-xs">{job.durationLabel}</p>
         <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
           <MapPin className="size-3 shrink-0" />
-          {job.suburb} · {job.distanceKm} km
+          {job.suburb} · {region.label}
         </p>
         <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
           <Clock className="size-3 shrink-0" />
-          {formatDateTime(job.scheduledTime)}
+          {formatDateTime(job.scheduledTime)} · {job.estimatedHours}h allocated
         </p>
       </Link>
 
-      <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3">
-        <div>
-          <span className="text-primary text-sm font-semibold tabular-nums">
-            {formatCurrency(job.payAmount)}
-          </span>
-          <p className="text-muted-foreground mt-0.5 text-[10px]">
-            {job.estimatedHours}h × $45/hr
-          </p>
-        </div>
-        {job.source === 'assigned' && job.assignedBy && (
-          <span className="text-muted-foreground text-[10px]">
-            Assigned by {job.assignedBy}
-          </span>
-        )}
+      <div className="mt-3 border-t border-border/60 pt-3">
+        <PayBreakdown
+          compact
+          hours={job.estimatedHours}
+          laborAmount={job.laborAmount}
+          travelKmOneWay={job.travelKmOneWay}
+          fuelAllowance={job.fuelAllowance}
+          total={job.payAmount}
+          serviceRegion={job.serviceRegion}
+        />
       </div>
 
       {showActions && job.status === 'available' && (

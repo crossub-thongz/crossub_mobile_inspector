@@ -17,7 +17,10 @@ import {
   INSPECTOR_LICENCE_TYPES,
   INSPECTOR_SERVICE_REGIONS,
 } from '@/constants/inspector-registration';
-import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
+import {
+  FUEL_RATE_PER_KM_AUD,
+  INSPECTOR_HOURLY_RATE_AUD,
+} from '@/constants/inspection';
 import { ROUTES } from '@/constants/routes';
 import type { InspectorRegistration } from '@/lib/types';
 
@@ -113,8 +116,9 @@ export default function RegisterPage() {
         <h1 className="text-xl font-semibold">Inspector registration</h1>
         <PageIntro description="Complete your inspector profile before accepting jobs. Information is stored by the Inspection Department and shared with Accounting for payroll." />
         <p className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
-          Pay rate: ${INSPECTOR_HOURLY_RATE_AUD}/hour on-site. No fuel or mileage
-          allowance — fees calculated from logged inspection hours.
+          Pay: ${INSPECTOR_HOURLY_RATE_AUD}/hour on-site + ${FUEL_RATE_PER_KM_AUD}/km
+          fuel allowance (one-way from regional midpoint). Inspection duration set by
+          property type — see Earnings for full guidelines.
         </p>
       </div>
 
@@ -252,7 +256,8 @@ export default function RegisterPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold">Bank details (payroll)</h2>
           <p className="text-muted-foreground text-xs">
-            Shared with Accounting for inspection fee payments at ${INSPECTOR_HOURLY_RATE_AUD}/hr.
+            Shared with Accounting for labour (${INSPECTOR_HOURLY_RATE_AUD}/hr) and
+            fuel (${FUEL_RATE_PER_KM_AUD}/km) payments.
           </p>
           <div className="space-y-2">
             <Label htmlFor="bankAccountName">Account name</Label>

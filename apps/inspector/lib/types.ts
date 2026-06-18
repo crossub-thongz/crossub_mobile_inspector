@@ -19,6 +19,32 @@ export type JobStatus =
 
 export type JobSource = 'pool' | 'assigned';
 
+export type PropertyKind = 'apartment' | 'house';
+
+export type ServiceRegionKey =
+  | 'cbd_inner'
+  | 'eastern_suburbs'
+  | 'western_sydney'
+  | 'northern_sydney';
+
+export interface ApartmentSpec {
+  propertyKind: 'apartment';
+  bedrooms: number;
+  bathrooms: number;
+}
+
+export interface HouseSpec {
+  propertyKind: 'house';
+  bedrooms: number;
+  bathrooms: number;
+  livingAreas: number;
+  kitchens: number;
+  laundries: number;
+  hasYard: boolean;
+}
+
+export type PropertyInspectionSpec = ApartmentSpec | HouseSpec;
+
 export type InspectorRegistrationStatus =
   | 'not_started'
   | 'pending_review'
@@ -81,8 +107,14 @@ export interface InspectionJob {
   agentName?: string;
   agentCompany?: string;
   notes?: string;
-  /** Estimated on-site hours for fee calculation */
+  serviceRegion: ServiceRegionKey;
+  property: PropertyInspectionSpec;
+  durationLabel: string;
+  /** One-way km from regional midpoint to property (fuel allowance basis) */
+  travelKmOneWay: number;
   estimatedHours: number;
+  laborAmount: number;
+  fuelAllowance: number;
   payAmount: number;
   workflowStep?: number;
   workflowData?: Record<string, unknown>;
@@ -125,6 +157,9 @@ export interface EarningsRecord {
   completedAt: string;
   hoursWorked: number;
   hourlyRate: number;
+  travelKmOneWay: number;
+  fuelAllowance: number;
+  laborAmount: number;
   amount: number;
   accountingSynced: boolean;
 }
