@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { MessageSquare } from 'lucide-react';
 
 import { EmptyState } from '@/components/inspector/empty-state';
-import { PageIntro } from '@/components/inspector/page-intro';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { messageDetail } from '@/constants/routes';
@@ -16,8 +15,6 @@ export default function MessagesPage() {
   return (
     <InspectorShell title="Messages">
       <div className="space-y-4">
-        <PageIntro description="Communicate with agents, leasing, inspection, and maintenance teams. All records archived automatically." />
-
         {messages.length === 0 ? (
           <EmptyState
             icon={MessageSquare}

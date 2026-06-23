@@ -26,15 +26,27 @@ const proxy = async (
   context: { params: Promise<{ path: string[] }> },
 ): Promise<NextResponse> => {
   const { path } = await context.params;
-  const upstream = await fetch(buildUpstreamUrl(req, path), {
-    method: req.method,
-    headers: forwardHeaders(req),
-    body:
-      req.method === 'GET' || req.method === 'HEAD'
-        ? undefined
-        : await req.arrayBuffer(),
-    redirect: 'manual',
-  });
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(buildUpstreamUrl(req, path), {
+      method: req.method,
+      headers: forwardHeaders(req),
+      body:
+        req.method === 'GET' || req.method === 'HEAD'
+          ? undefined
+          : await req.arrayBuffer(),
+      redirect: 'manual',
+    });
+  } catch {
+    return NextResponse.json(
+      {
+        message:
+          'API unavailable. Start crossub_web with `pnpm dev:api` on port 3001, or use the demo login.',
+      },
+      { status: 503 },
+    );
+  }
 
   const response = new NextResponse(upstream.body, {
     status: upstream.status,

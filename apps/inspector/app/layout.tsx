@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 
 import { AuthProvider } from '@/components/providers/auth-provider';
+import { InactivityLogoutProvider } from '@/components/providers/inactivity-logout-provider';
 import { InspectorDataProvider } from '@/components/providers/inspector-data-provider';
 import { ProviderErrorBoundary } from '@/components/providers/provider-error-boundary';
 import { RegistrationGate } from '@/components/inspector/registration-gate';
@@ -46,7 +47,9 @@ export default function RootLayout({
         <AuthProvider>
           <ProviderErrorBoundary>
             <InspectorDataProvider>
-              <RegistrationGate>{children}</RegistrationGate>
+              <InactivityLogoutProvider>
+                <RegistrationGate>{children}</RegistrationGate>
+              </InactivityLogoutProvider>
             </InspectorDataProvider>
           </ProviderErrorBoundary>
         </AuthProvider>

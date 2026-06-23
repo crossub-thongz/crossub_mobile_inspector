@@ -6,7 +6,6 @@ import {
   CreditCard,
   FileText,
   MapPin,
-  Phone,
   Shield,
   User,
 } from 'lucide-react';
@@ -17,10 +16,7 @@ import { useInspectorData } from '@/components/providers/inspector-data-provider
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { REGISTRATION_STATUS_LABEL } from '@/constants/inspector-registration';
-import {
-  FUEL_RATE_PER_KM_AUD,
-  INSPECTOR_HOURLY_RATE_AUD,
-} from '@/constants/inspection';
+import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
 import { ROUTES } from '@/constants/routes';
 import { displayName, formatCurrency, formatDate } from '@/lib/utils';
 
@@ -42,12 +38,6 @@ export default function ProfilePage() {
   return (
     <InspectorShell title="Inspector Information">
       <div className="space-y-4">
-        <p className="text-muted-foreground text-sm">
-          Your registered inspector profile — managed by the Inspection Department
-          and synced with Accounting for labour (${INSPECTOR_HOURLY_RATE_AUD}/hr) and
-          fuel (${FUEL_RATE_PER_KM_AUD}/km one-way) payments.
-        </p>
-
         {!reg ? (
           <Card>
             <CardContent className="space-y-4 py-6 text-center">
@@ -83,16 +73,13 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="size-4" />
-                  Licence & insurance
+                  Licence
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <InfoRow label="Licence type" value={reg.licenceType} />
                 <InfoRow label="Licence no." value={reg.licenceNumber} />
-                <InfoRow label="Licence expiry" value={formatDate(reg.licenceExpiry)} />
-                <InfoRow label="Insurer" value={reg.insuranceProvider} />
-                <InfoRow label="Policy" value={reg.insurancePolicyNumber} />
-                <InfoRow label="Insurance expiry" value={formatDate(reg.insuranceExpiry)} />
+                <InfoRow label="Licence expiry" value={reg.licenceExpiry ? formatDate(reg.licenceExpiry) : undefined} />
               </CardContent>
             </Card>
 
@@ -114,26 +101,12 @@ export default function ProfilePage() {
                     </span>
                   ))}
                 </div>
-                <p className="mt-3 flex items-center gap-2 text-sm">
-                  <Award className="size-4 text-primary" />
-                  Tribunal qualified:{' '}
-                  <span className={reg.tribunalQualified ? 'text-primary' : 'text-muted-foreground'}>
-                    {reg.tribunalQualified ? 'Yes' : 'No'}
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="size-4" />
-                  Emergency contact
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <InfoRow label="Name" value={reg.emergencyContactName} />
-                <InfoRow label="Phone" value={reg.emergencyContactPhone} />
+                {reg.tribunalQualified && (
+                  <p className="mt-3 flex items-center gap-2 text-sm">
+                    <Award className="size-4 text-primary" />
+                    Tribunal qualified
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -151,10 +124,6 @@ export default function ProfilePage() {
                 <InfoRow
                   label="Labour rate"
                   value={`$${INSPECTOR_HOURLY_RATE_AUD}/hour`}
-                />
-                <InfoRow
-                  label="Fuel allowance"
-                  value={`$${FUEL_RATE_PER_KM_AUD}/km one-way`}
                 />
                 <p className="text-muted-foreground pt-1 text-xs">
                   Weekly earnings: {formatCurrency(profile.weeklyEarnings)}

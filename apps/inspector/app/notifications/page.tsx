@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Bell } from 'lucide-react';
 
 import { EmptyState } from '@/components/inspector/empty-state';
-import { PageIntro } from '@/components/inspector/page-intro';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { formatRelative } from '@/lib/utils';
@@ -15,8 +14,6 @@ export default function NotificationsPage() {
   return (
     <InspectorShell title="Notifications">
       <div className="space-y-4">
-        <PageIntro description="Real-time alerts for job assignments, tribunal hearings, and sync status." />
-
         {notifications.length === 0 ? (
           <EmptyState
             icon={Bell}

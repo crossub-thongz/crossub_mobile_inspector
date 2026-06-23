@@ -7,7 +7,6 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { PageIntro } from '@/components/inspector/page-intro';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
@@ -17,10 +16,7 @@ import {
   INSPECTOR_LICENCE_TYPES,
   INSPECTOR_SERVICE_REGIONS,
 } from '@/constants/inspector-registration';
-import {
-  FUEL_RATE_PER_KM_AUD,
-  INSPECTOR_HOURLY_RATE_AUD,
-} from '@/constants/inspection';
+import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
 import { ROUTES } from '@/constants/routes';
 import type { InspectorRegistration } from '@/lib/types';
 
@@ -32,16 +28,11 @@ const schema = z.object({
   dateOfBirth: z.string().min(1, 'Date of birth required'),
   residentialAddress: z.string().min(5, 'Address required'),
   abn: z.string().optional(),
-  licenceNumber: z.string().min(3, 'Licence number required'),
+  licenceNumber: z.string().optional(),
   licenceType: z.string().min(1, 'Select licence type'),
-  licenceExpiry: z.string().min(1, 'Licence expiry required'),
-  insuranceProvider: z.string().min(2, 'Insurance provider required'),
-  insurancePolicyNumber: z.string().min(3, 'Policy number required'),
-  insuranceExpiry: z.string().min(1, 'Insurance expiry required'),
+  licenceExpiry: z.string().optional(),
   serviceRegions: z.array(z.string()).min(1, 'Select at least one region'),
-  tribunalQualified: z.boolean(),
-  emergencyContactName: z.string().min(2, 'Emergency contact required'),
-  emergencyContactPhone: z.string().min(8, 'Emergency phone required'),
+  tribunalQualified: z.boolean().optional(),
   bankAccountName: z.string().min(2, 'Account name required'),
   bankBsb: z.string().min(6, 'BSB required'),
   bankAccountNumber: z.string().min(6, 'Account number required'),
@@ -92,10 +83,10 @@ export default function RegisterPage() {
   if (registrationComplete) {
     return (
       <div className="mx-auto flex min-h-screen max-w-lg flex-col px-4 py-8">
-        <PageIntro
-          title="Already registered"
-          description="Your inspector information is on file. Update details on your profile page."
-        />
+        <h1 className="text-xl font-semibold">Already registered</h1>
+        <p className="text-muted-foreground mt-2 text-sm">
+          Your inspector information is on file. Update details on your profile page.
+        </p>
         <div className="mt-6 flex gap-2">
           <Link href={ROUTES.PROFILE} className="flex-1">
             <Button className="w-full">View profile</Button>
@@ -114,11 +105,13 @@ export default function RegisterPage() {
     <div className="mx-auto min-h-screen max-w-lg bg-background px-4 py-8 pb-16">
       <div className="mb-6 space-y-2">
         <h1 className="text-xl font-semibold">Inspector registration</h1>
-        <PageIntro description="Complete your inspector profile before accepting jobs. Information is stored by the Inspection Department and shared with Accounting for payroll." />
+        <p className="text-muted-foreground text-sm">
+          One-time setup after sign-in. Login is email and password only — complete
+          this form once before accepting jobs.
+        </p>
         <p className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
-          Pay: ${INSPECTOR_HOURLY_RATE_AUD}/hour on-site + ${FUEL_RATE_PER_KM_AUD}/km
-          fuel allowance (one-way from regional midpoint). Inspection duration set by
-          property type — see Earnings for full guidelines.
+          Pay: ${INSPECTOR_HOURLY_RATE_AUD}/hour on-site. Inspection duration set by
+          property type.
         </p>
       </div>
 
@@ -163,7 +156,7 @@ export default function RegisterPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold">Licence & insurance</h2>
+          <h2 className="text-sm font-semibold">Licence (optional fields)</h2>
           <div className="space-y-2">
             <Label htmlFor="licenceType">Licence type</Label>
             <select
@@ -181,26 +174,12 @@ export default function RegisterPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="licenceNumber">Licence number</Label>
+              <Label htmlFor="licenceNumber">Licence number (optional)</Label>
               <Input id="licenceNumber" {...register('licenceNumber')} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="licenceExpiry">Licence expiry</Label>
+              <Label htmlFor="licenceExpiry">Licence expiry (optional)</Label>
               <Input id="licenceExpiry" type="date" {...register('licenceExpiry')} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="insuranceProvider">Insurance provider</Label>
-            <Input id="insuranceProvider" {...register('insuranceProvider')} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="insurancePolicyNumber">Policy number</Label>
-              <Input id="insurancePolicyNumber" {...register('insurancePolicyNumber')} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="insuranceExpiry">Insurance expiry</Label>
-              <Input id="insuranceExpiry" type="date" {...register('insuranceExpiry')} />
             </div>
           </div>
         </section>
@@ -232,7 +211,7 @@ export default function RegisterPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold">Tribunal qualification</h2>
+          <h2 className="text-sm font-semibold">Tribunal qualification (optional)</h2>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" {...register('tribunalQualified')} />
             I am qualified to accept tribunal assignments
@@ -240,25 +219,7 @@ export default function RegisterPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold">Emergency contact</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="emergencyContactName">Name</Label>
-              <Input id="emergencyContactName" {...register('emergencyContactName')} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="emergencyContactPhone">Phone</Label>
-              <Input id="emergencyContactPhone" {...register('emergencyContactPhone')} />
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-3">
           <h2 className="text-sm font-semibold">Bank details (payroll)</h2>
-          <p className="text-muted-foreground text-xs">
-            Shared with Accounting for labour (${INSPECTOR_HOURLY_RATE_AUD}/hr) and
-            fuel (${FUEL_RATE_PER_KM_AUD}/km) payments.
-          </p>
           <div className="space-y-2">
             <Label htmlFor="bankAccountName">Account name</Label>
             <Input id="bankAccountName" {...register('bankAccountName')} />

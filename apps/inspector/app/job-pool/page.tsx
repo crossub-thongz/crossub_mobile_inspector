@@ -9,7 +9,6 @@ import {
   type JobPoolFilter,
 } from '@/components/inspector/inspection-type-tabs';
 import { JobCard } from '@/components/inspector/job-card';
-import { PageIntro } from '@/components/inspector/page-intro';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import {
@@ -44,8 +43,6 @@ export default function JobPoolPage() {
   return (
     <InspectorShell title="Job Pool">
       <div className="space-y-4">
-        <PageIntro description="Filter available jobs by inspection type. Tap a tag to narrow the list." />
-
         <JobPoolTypeTags active={filter} onChange={setFilter} counts={counts} />
 
         {totalAvailable === 0 ? (

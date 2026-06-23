@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { MapPin, Phone, User } from 'lucide-react';
 
+import { AgentStrip } from '@/components/inspector/agent-strip';
+import { KeyAccessCard } from '@/components/inspector/key-access-card';
 import { MapLinks } from '@/components/inspector/map-links';
 import { PayBreakdown } from '@/components/inspector/pay-breakdown';
 import {
@@ -15,7 +17,6 @@ import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { REGIONAL_MIDPOINTS } from '@/constants/inspection';
 import { jobWorkflow, ROUTES } from '@/constants/routes';
 import { formatDateTime } from '@/lib/utils';
 
@@ -52,6 +53,17 @@ export default function JobDetailPage() {
           <JobStatusBadge status={job.status} />
         </div>
 
+        {(job.agentName || job.agentCompany) && (
+          <section className="space-y-1">
+            <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
+              Agent information
+            </p>
+            <AgentStrip job={job} />
+          </section>
+        )}
+
+        {job.keyAccess && <KeyAccessCard access={job.keyAccess} />}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-start gap-2">
@@ -64,18 +76,10 @@ export default function JobDetailPage() {
             <p className="text-muted-foreground text-sm">
               {formatDateTime(job.scheduledTime)} · {job.distanceKm} km to property
             </p>
-            <p className="text-muted-foreground text-xs">
-              Region: {REGIONAL_MIDPOINTS[job.serviceRegion].label} — fuel from{' '}
-              {REGIONAL_MIDPOINTS[job.serviceRegion].midpoint}
-            </p>
             <PayBreakdown
               hours={job.estimatedHours}
               laborAmount={job.laborAmount}
-              travelKmOneWay={job.travelKmOneWay}
-              fuelAllowance={job.fuelAllowance}
-              total={job.payAmount}
               durationLabel={job.durationLabel}
-              serviceRegion={job.serviceRegion}
             />
             <MapLinks
               address={job.propertyAddress}
@@ -85,32 +89,21 @@ export default function JobDetailPage() {
           </CardContent>
         </Card>
 
-        {(job.tenantName || job.agentName) && (
+        {job.tenantName && (
           <Card>
             <CardHeader>
-              <CardTitle>Contacts</CardTitle>
+              <CardTitle>Tenant</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {job.tenantName && (
-                <p className="flex items-center gap-2">
-                  <User className="size-4 text-muted-foreground" />
-                  Tenant: {job.tenantName}
-                  {job.tenantPhone && (
-                    <a href={`tel:${job.tenantPhone}`} className="text-primary ml-auto">
-                      <Phone className="size-4" />
-                    </a>
-                  )}
-                </p>
-              )}
-              {job.agentName && (
-                <p className="flex items-center gap-2">
-                  <User className="size-4 text-muted-foreground" />
-                  Agent: {job.agentName}
-                  {job.agentCompany && (
-                    <span className="text-muted-foreground">({job.agentCompany})</span>
-                  )}
-                </p>
-              )}
+            <CardContent className="text-sm">
+              <p className="flex items-center gap-2">
+                <User className="size-4 text-muted-foreground" />
+                {job.tenantName}
+                {job.tenantPhone && (
+                  <a href={`tel:${job.tenantPhone}`} className="text-primary ml-auto">
+                    <Phone className="size-4" />
+                  </a>
+                )}
+              </p>
             </CardContent>
           </Card>
         )}

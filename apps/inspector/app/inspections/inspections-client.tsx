@@ -10,7 +10,6 @@ import {
   InspectionTypeTabs,
 } from '@/components/inspector/inspection-type-tabs';
 import { JobCard } from '@/components/inspector/job-card';
-import { PageIntro } from '@/components/inspector/page-intro';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import {
@@ -69,8 +68,6 @@ export default function InspectionsPageClient() {
   return (
     <InspectorShell title="Inspections">
       <div className="space-y-4">
-        <PageIntro description="Browse inspections by type — OPEN, INGOING, OUTGOING, or ROUTINE." />
-
         <InspectionTypeTabs active={type} onChange={setType} counts={counts} />
         <InspectionTypeIntro type={type} />
 

@@ -25,6 +25,11 @@ import { PASSWORD_MAX, PASSWORD_MIN } from '@/constants/auth';
 import { ROUTES } from '@/constants/routes';
 import { ApiError, api } from '@/lib/api';
 import type { AuthUser } from '@/lib/auth-types';
+import {
+  DEMO_INSPECTOR_EMAIL,
+  DEMO_INSPECTOR_PASSWORD,
+  loginLocalAccount,
+} from '@/lib/local-auth';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -61,17 +66,28 @@ export default function LoginPage() {
       await api.post<{ user: AuthUser }>('/auth/login', values);
       await refresh();
       router.replace(ROUTES.DASHBOARD);
+      return;
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         toast.error('Invalid email or password.');
         return;
       }
-      if (err instanceof ApiError) {
-        toast.error(`Sign in failed (${err.status}). Check API connection.`);
+      if (err instanceof ApiError && err.status < 500 && err.status !== 401) {
+        toast.error(`Sign in failed (${err.status}).`);
         return;
       }
-      toast.error('Something went wrong. Please try again.');
+      /* API offline or proxy error — try local demo account */
     }
+
+    const localUser = loginLocalAccount(values.email, values.password);
+    if (localUser) {
+      await refresh();
+      router.replace(ROUTES.DASHBOARD);
+      toast.info('Signed in with demo account (API offline)');
+      return;
+    }
+
+    toast.error('Invalid email or password.');
   };
 
   return (
@@ -92,7 +108,7 @@ export default function LoginPage() {
         <div className="mb-6 space-y-1 text-center">
           <h1 className="text-xl font-semibold">Sign in</h1>
           <p className="text-sm text-muted-foreground">
-            Use your CROSSUB inspector account credentials
+            Email and password only — no registration details needed here
           </p>
         </div>
 
@@ -177,6 +193,9 @@ export default function LoginPage() {
             inspector registration
           </Link>{' '}
           before accepting jobs.
+        </p>
+        <p className="text-muted-foreground mt-3 text-center text-[10px]">
+          API offline? Demo: {DEMO_INSPECTOR_EMAIL} / {DEMO_INSPECTOR_PASSWORD}
         </p>
       </div>
     </div>

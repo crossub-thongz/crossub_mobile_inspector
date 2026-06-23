@@ -35,7 +35,10 @@ export function buildDashboardSummary(
   ).length;
   const weeklyEarnings = earnings
     .filter((e) => isThisWeek(e.completedAt))
-    .reduce((sum, e) => sum + e.amount, 0);
+    .reduce((sum, e) => sum + e.laborAmount, 0);
+  const unclaimedEarnings = earnings
+    .filter((e) => !e.accountingSynced)
+    .reduce((sum, e) => sum + e.laborAmount, 0);
   const tribunalHearings = tribunals.filter((t) => t.status === 'upcoming').length;
 
   return {
@@ -46,6 +49,7 @@ export function buildDashboardSummary(
     weeklyEarnings,
     availableInPool,
     pendingSync,
+    unclaimedEarnings,
   };
 }
 

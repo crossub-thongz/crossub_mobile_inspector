@@ -59,22 +59,26 @@ export interface InspectorRegistration {
   dateOfBirth: string;
   residentialAddress: string;
   abn?: string;
-  licenceNumber: string;
+  licenceNumber?: string;
   licenceType: string;
-  licenceExpiry: string;
-  insuranceProvider: string;
-  insurancePolicyNumber: string;
-  insuranceExpiry: string;
+  licenceExpiry?: string;
   serviceRegions: string[];
-  tribunalQualified: boolean;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
+  tribunalQualified?: boolean;
   bankAccountName: string;
   bankBsb: string;
   bankAccountNumber: string;
   registrationStatus: InspectorRegistrationStatus;
   submittedAt?: string;
   reviewedAt?: string;
+}
+
+export interface KeyAccess {
+  method: 'lockbox' | 'office' | 'agent';
+  code?: string;
+  location: string;
+  collectSteps: string[];
+  returnSteps: string[];
+  photoRequired: boolean;
 }
 
 export interface InspectorProfile {
@@ -106,6 +110,9 @@ export interface InspectionJob {
   tenantPhone?: string;
   agentName?: string;
   agentCompany?: string;
+  agentEmail?: string;
+  agentPhone?: string;
+  keyAccess?: KeyAccess;
   notes?: string;
   serviceRegion: ServiceRegionKey;
   property: PropertyInspectionSpec;
@@ -205,6 +212,7 @@ export interface DashboardSummary {
   weeklyEarnings: number;
   availableInPool: number;
   pendingSync: number;
+  unclaimedEarnings: number;
 }
 
 export interface RoomInspectionEntry {

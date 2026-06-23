@@ -8,6 +8,7 @@ import type {
   InspectorNotification,
   InspectorProfile,
   InspectorRegistration,
+  KeyAccess,
   MessageThread,
   PropertyInspectionSpec,
   ServiceRegionKey,
@@ -63,6 +64,23 @@ const iso = (d: Date, hour = 10, minute = 0) => {
   return copy.toISOString();
 };
 
+const LOCKBOX_ACCESS: KeyAccess = {
+  method: 'lockbox',
+  code: '4821',
+  location: 'Lockbox on front gate — left pillar',
+  collectSteps: [
+    'Enter code and open lockbox',
+    'Take keys and snap a photo of keys in hand',
+    'Close lockbox securely',
+  ],
+  returnSteps: [
+    'Return keys to lockbox after inspection',
+    'Snap photo of keys inside lockbox',
+    'Scramble lockbox code',
+  ],
+  photoRequired: true,
+};
+
 export const DEMO_INSPECTOR_REGISTRATION: InspectorRegistration = {
   firstName: 'Alex',
   lastName: 'Chen',
@@ -74,13 +92,8 @@ export const DEMO_INSPECTOR_REGISTRATION: InspectorRegistration = {
   licenceNumber: 'NSW-PI-88421',
   licenceType: 'NSW Fair Trading — Property Inspection',
   licenceExpiry: '2027-06-30',
-  insuranceProvider: 'QBE Insurance',
-  insurancePolicyNumber: 'QBE-INS-99281',
-  insuranceExpiry: '2026-12-31',
   serviceRegions: ['Sydney Metro', 'Parramatta / Western Sydney', 'North Shore'],
   tribunalQualified: true,
-  emergencyContactName: 'Jordan Chen',
-  emergencyContactPhone: '0411 222 333',
   bankAccountName: 'Alex Chen',
   bankBsb: '062-000',
   bankAccountNumber: '12345678',
@@ -117,6 +130,9 @@ export const JOBS: InspectionJob[] = [
     assignedBy: 'Sarah Mitchell',
     agentName: 'Sarah Mitchell',
     agentCompany: 'Harbour Property Group',
+    agentEmail: 'sarah.mitchell@harbourproperty.com.au',
+    agentPhone: '0412 998 441',
+    keyAccess: LOCKBOX_ACCESS,
     ...pay(
       { propertyKind: 'apartment', bedrooms: 2, bathrooms: 2 },
       'cbd_inner',
@@ -143,6 +159,21 @@ export const JOBS: InspectionJob[] = [
     tenantPhone: '0423 111 222',
     agentName: 'James Wu',
     agentCompany: 'Western Sydney Realty',
+    agentEmail: 'james.wu@westernsydneyrealty.com.au',
+    agentPhone: '0433 221 009',
+    keyAccess: {
+      method: 'office',
+      location: 'Western Sydney Realty — 45 George St foyer',
+      collectSteps: [
+        'Sign in at reception desk',
+        'Collect keys from leasing officer',
+      ],
+      returnSteps: [
+        'Return keys to reception before 5pm',
+        'Confirm return on the sign-out sheet',
+      ],
+      photoRequired: false,
+    },
     ...pay(
       { propertyKind: 'apartment', bedrooms: 3, bathrooms: 2 },
       'western_sydney',
@@ -164,6 +195,10 @@ export const JOBS: InspectionJob[] = [
     status: 'accepted',
     source: 'pool',
     tenantName: 'Michael Park',
+    agentName: 'Lisa Tran',
+    agentCompany: 'North Shore Leasing',
+    agentEmail: 'lisa.tran@northshoreleasing.com.au',
+    agentPhone: '0401 555 882',
     ...pay(
       { propertyKind: 'apartment', bedrooms: 2, bathrooms: 2 },
       'northern_sydney',
@@ -184,6 +219,23 @@ export const JOBS: InspectionJob[] = [
     distanceKm: 9.8,
     status: 'available',
     source: 'pool',
+    agentName: 'Tom Bradley',
+    agentCompany: 'Eastern Beaches Realty',
+    agentEmail: 'tom.bradley@easternbeaches.com.au',
+    agentPhone: '0422 334 118',
+    keyAccess: {
+      method: 'agent',
+      location: 'Meet agent on-site at 3:15pm',
+      collectSteps: [
+        'Call agent on arrival',
+        'Collect keys from agent at property',
+      ],
+      returnSteps: [
+        'Hand keys back to agent after inspection',
+        'Snap photo of keys returned',
+      ],
+      photoRequired: true,
+    },
     ...pay(
       {
         propertyKind: 'house',
@@ -313,15 +365,18 @@ export const EARNINGS: EarningsRecord[] = [
     2.5,
     11.2,
   ),
-  earn(
-    'earn-003',
-    'job-prev-001',
-    'open',
-    '14 King St, Newtown NSW 2042',
-    iso(new Date(today.getTime() - 5 * 86400000), 12, 0),
-    1,
-    5.5,
-  ),
+  {
+    ...earn(
+      'earn-003',
+      'job-prev-001',
+      'open',
+      '14 King St, Newtown NSW 2042',
+      iso(new Date(today.getTime() - 5 * 86400000), 12, 0),
+      1,
+      5.5,
+    ),
+    accountingSynced: false,
+  },
 ];
 
 export const MESSAGE_THREADS: MessageThread[] = [
