@@ -35,11 +35,15 @@ export default function MessageThreadPage() {
     <InspectorShell title={thread.subject} backHref={ROUTES.MESSAGES}>
       <div className="flex flex-col gap-4">
         <div className="space-y-3">
-          {threadMessages.map((msg) => (
+          {threadMessages.map((msg) => {
+            // Real threads carry server-resolved `fromSelf`; demo threads fall back to the
+            // mock inspector's display name.
+            const isSelf = msg.fromSelf ?? msg.from === 'Alex Chen';
+            return (
             <div
               key={msg.id}
               className={`rounded-xl border p-3 text-sm ${
-                msg.from === 'Alex Chen'
+                isSelf
                   ? 'border-primary/30 bg-primary/5 ml-4'
                   : 'border-border bg-card mr-4'
               }`}
@@ -58,7 +62,8 @@ export default function MessageThreadPage() {
                 </a>
               ))}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="flex gap-2">

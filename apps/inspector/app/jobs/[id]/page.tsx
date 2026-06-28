@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { MapPin, Phone, User } from 'lucide-react';
 
 import { AgentStrip } from '@/components/inspector/agent-strip';
+import { FindingsCard } from '@/components/inspector/findings-card';
 import { KeyAccessCard } from '@/components/inspector/key-access-card';
 import { MapLinks } from '@/components/inspector/map-links';
 import { PayBreakdown } from '@/components/inspector/pay-breakdown';
@@ -63,6 +64,8 @@ export default function JobDetailPage() {
         )}
 
         {job.keyAccess && <KeyAccessCard access={job.keyAccess} />}
+
+        <FindingsCard jobId={job.id} />
 
         <Card>
           <CardHeader>

@@ -187,6 +187,8 @@ export interface ThreadMessage {
   body: string;
   at: string;
   attachments?: { name: string; url: string }[];
+  /** True when the signed-in inspector sent it (server-resolved; absent for demo data). */
+  fromSelf?: boolean;
 }
 
 export interface InspectorNotification {

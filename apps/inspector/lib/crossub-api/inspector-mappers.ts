@@ -14,8 +14,10 @@
  */
 import {
   BILLING_SOURCE,
+  CONDITION_RATING_LABEL,
   INSPECTION_STATUS,
   INSPECTION_TYPE,
+  INSPECTOR_NOTIFICATION_TYPE,
   INVOICE_STATUS,
 } from '@/constants/api-enums';
 import {
@@ -26,12 +28,22 @@ import type {
   EarningsRecord,
   InspectionJob,
   InspectionType,
+  InspectorNotification,
   JobStatus,
+  MessageThread,
   PropertyInspectionSpec,
+  RoomInspectionEntry,
   ServiceRegionKey,
+  ThreadMessage,
 } from '@/lib/types';
 
-import type { InspectorInspection, InspectorJob } from './inspector-client';
+import type {
+  InspectorInspection,
+  InspectorInspectionDetail,
+  InspectorJob,
+  InspectorMessageThread,
+  InspectorNotificationDto,
+} from './inspector-client';
 
 /**
  * The generated contract types nullable columns inconsistently — some surface as
@@ -150,4 +162,133 @@ export function toEarningsRecord(dto: InspectorJob): EarningsRecord {
 
 export function mapInspectorEarnings(dtos: InspectorJob[]): EarningsRecord[] {
   return dtos.map(toEarningsRecord);
+}
+
+/** Map the API's ConditionRating enum to its display label, falling back to the raw code. */
+function conditionLabel(rating: string): string {
+  return (
+    CONDITION_RATING_LABEL[rating as keyof typeof CONDITION_RATING_LABEL] ??
+    rating
+  );
+}
+
+/**
+ * Flatten the findings tree (areas → items → photos, plus inspection-level photos) onto
+ * the flat per-room rows the read view renders. One row per area: its condition grade, a
+ * joined digest of the item comments, and the total photo count (area-level + each item's
+ * own). Inspection-level photos (areaId/itemId both null — the inspector's own evidence
+ * uploads) collapse into a synthetic "Inspection photos" row so they surface too.
+ */
+export function mapInspectionDetail(
+  dto: InspectorInspectionDetail,
+): RoomInspectionEntry[] {
+  const rooms: RoomInspectionEntry[] = dto.areas.map((area) => {
+    const itemPhotoCount = area.items.reduce(
+      (sum, item) => sum + item.photos.length,
+      0,
+    );
+    const comments = area.items
+      .map((item) => asString(item.comment))
+      .filter((c): c is string => c !== null)
+      .join(' · ');
+    return {
+      area: asString(area.name) ?? 'Unnamed area',
+      condition: conditionLabel(area.rating),
+      comments,
+      photoCount: area.photos.length + itemPhotoCount,
+    };
+  });
+
+  if (dto.photos.length > 0) {
+    rooms.push({
+      area: 'Inspection photos',
+      condition: '',
+      comments: '',
+      photoCount: dto.photos.length,
+    });
+  }
+
+  return rooms;
+}
+
+// ------------------------------- Messages --------------------------------
+
+/** Map one API thread message onto the FE ThreadMessage (carrying the server `fromSelf`). */
+function toThreadMessage(
+  m: InspectorMessageThread['messages'][number],
+): ThreadMessage {
+  return {
+    id: m.id,
+    from: m.from,
+    body: m.body,
+    at: m.at,
+    fromSelf: m.fromSelf,
+  };
+}
+
+/** Map one API message thread onto the FE MessageThread card (no nested messages). */
+export function toMessageThread(dto: InspectorMessageThread): MessageThread {
+  return {
+    id: dto.id,
+    subject: dto.subject,
+    participants: dto.participants,
+    lastMessage: asString(dto.lastMessage) ?? '',
+    lastAt: asString(dto.lastAt) ?? '',
+    unread: asNumber(dto.unread) ?? 0,
+    // A thread tagged to an inspection is an inspection conversation; a general enquiry
+    // (no inspectionId) is grouped with the staff/agent bucket.
+    category: asString(dto.inspectionId) ? 'inspection' : 'agent',
+  };
+}
+
+/**
+ * Split the API threads (each carrying its messages nested) into the two shapes the FE
+ * holds separately: the thread cards (`MessageThread[]`) and the per-thread message map
+ * (`Record<threadId, ThreadMessage[]>`) the detail screen reads.
+ */
+export function mapInspectorMessages(dtos: InspectorMessageThread[]): {
+  threads: MessageThread[];
+  messagesByThread: Record<string, ThreadMessage[]>;
+} {
+  const threads = dtos.map(toMessageThread);
+  const messagesByThread: Record<string, ThreadMessage[]> = {};
+  for (const dto of dtos) {
+    messagesByThread[dto.id] = dto.messages.map(toThreadMessage);
+  }
+  return { threads, messagesByThread };
+}
+
+// ----------------------------- Notifications -----------------------------
+
+/** API InspectorNotificationType (UPPER) -> the FE's lowercase notification union. */
+const NOTIFICATION_TYPE_VIEW: Record<
+  InspectorNotificationDto['type'],
+  InspectorNotification['type']
+> = {
+  [INSPECTOR_NOTIFICATION_TYPE.JOB_ASSIGNED]: 'job_assigned',
+  [INSPECTOR_NOTIFICATION_TYPE.JOB_AVAILABLE]: 'job_available',
+  [INSPECTOR_NOTIFICATION_TYPE.TRIBUNAL]: 'tribunal',
+  [INSPECTOR_NOTIFICATION_TYPE.MESSAGE]: 'message',
+  [INSPECTOR_NOTIFICATION_TYPE.SYNC_COMPLETE]: 'sync_complete',
+};
+
+/** Map one API notification onto the FE InspectorNotification view-model. */
+export function toInspectorNotification(
+  dto: InspectorNotificationDto,
+): InspectorNotification {
+  return {
+    id: dto.id,
+    type: NOTIFICATION_TYPE_VIEW[dto.type] ?? 'message',
+    title: dto.title,
+    body: dto.body,
+    href: dto.href,
+    read: dto.read,
+    createdAt: asString(dto.at) ?? '',
+  };
+}
+
+export function mapInspectorNotifications(
+  dtos: InspectorNotificationDto[],
+): InspectorNotification[] {
+  return dtos.map(toInspectorNotification);
 }

@@ -40,3 +40,48 @@ export const INVOICE_STATUS = {
   INVOICED: 'INVOICED',
   PAID: 'PAID',
 } as const;
+
+/**
+ * ConditionRating — the per-area condition grade carried by the inspection findings
+ * tree (`InspectorAreaDto.rating`). Mirrors `apps/api/prisma/schema.prisma`'s
+ * `ConditionRating` enum; the findings mapper labels each area from these.
+ */
+export const CONDITION_RATING = {
+  CLEAN_TIDY: 'CLEAN_TIDY',
+  GOOD: 'GOOD',
+  ABOVE_SATISFACTORY: 'ABOVE_SATISFACTORY',
+  SATISFACTORY: 'SATISFACTORY',
+  FAIR: 'FAIR',
+  AS_INDICATED: 'AS_INDICATED',
+  MESSY: 'MESSY',
+  POOR: 'POOR',
+  UNRATED: 'UNRATED',
+} as const;
+
+/**
+ * InspectorNotificationType — the API's per-inspector notification kind. Mirrors the
+ * Prisma enum; the mapper lowercases each to the FE's `InspectorNotification.type` union.
+ */
+export const INSPECTOR_NOTIFICATION_TYPE = {
+  JOB_ASSIGNED: 'JOB_ASSIGNED',
+  JOB_AVAILABLE: 'JOB_AVAILABLE',
+  TRIBUNAL: 'TRIBUNAL',
+  MESSAGE: 'MESSAGE',
+  SYNC_COMPLETE: 'SYNC_COMPLETE',
+} as const;
+
+/** Human-readable labels for each ConditionRating (used by the findings read view). */
+export const CONDITION_RATING_LABEL: Record<
+  keyof typeof CONDITION_RATING,
+  string
+> = {
+  CLEAN_TIDY: 'Clean & Tidy',
+  GOOD: 'Good',
+  ABOVE_SATISFACTORY: 'Above Satisfactory',
+  SATISFACTORY: 'Satisfactory',
+  FAIR: 'Fair',
+  AS_INDICATED: 'As Indicated',
+  MESSY: 'Messy',
+  POOR: 'Poor',
+  UNRATED: 'Unrated',
+};

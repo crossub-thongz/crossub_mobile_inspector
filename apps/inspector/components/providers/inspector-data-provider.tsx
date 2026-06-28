@@ -17,15 +17,26 @@ import { TRIBUNAL_INSPECTION_HOURS } from '@/constants/inspection-rates';
 import { api, ApiError } from '@/lib/api';
 import {
   acceptInspection as apiAcceptInspection,
+  completeInspection as apiCompleteInspection,
+  fetchInspectionDetail,
   fetchInspections,
+  fetchInspectorMessages,
+  fetchInspectorNotifications,
   fetchJobs as fetchInspectorJobs,
+  markInspectorNotificationRead,
+  replyInspectorMessage,
+  uploadInspectionPhoto,
 } from '@/lib/crossub-api/inspector-client';
 import {
+  mapInspectionDetail,
   mapInspections,
   mapInspectorEarnings,
+  mapInspectorMessages,
+  mapInspectorNotifications,
 } from '@/lib/crossub-api/inspector-mappers';
 import { buildDashboardSummary } from '@/lib/inspector-summary';
 import { calculateLaborFee } from '@/lib/inspector-pay';
+import { fileToBase64 } from '@/lib/utils';
 import {
   isRegistrationComplete,
   loadInspectorRegistration,
@@ -54,6 +65,7 @@ import type {
   InspectorRegistration,
   JobStatus,
   MessageThread,
+  RoomInspectionEntry,
   ThreadMessage,
   TribunalHearing,
   TribunalOutcome,
@@ -93,6 +105,18 @@ interface InspectorDataContextValue {
     data?: Record<string, unknown>,
   ) => void;
   completeJob: (id: string) => void;
+  /**
+   * Load the real seeded findings tree (areas → items → photos) for an API-backed
+   * inspection, flattened to the read view-model. Returns [] for demo jobs or when the
+   * facade is unreachable (the caller renders nothing rather than erroring).
+   */
+  loadInspectionFindings: (id: string) => Promise<RoomInspectionEntry[]>;
+  /**
+   * Upload inspection-level evidence photos for an API-backed inspection (base64 → R2).
+   * Returns the count uploaded (0 for demo jobs / offline); rejects if any upload fails so
+   * the caller can block completion. Uploaded photos surface via the findings read.
+   */
+  uploadInspectionPhotos: (id: string, files: File[]) => Promise<number>;
   updateTribunalChecklist: (
     id: string,
     key: keyof TribunalHearing['checklist'],
@@ -154,6 +178,10 @@ export function InspectorDataProvider({
   // Ids of jobs sourced from the live `/inspector/inspections` facade — lets the write
   // actions route an API-backed assignment to the real facade and a demo job to local.
   const apiInspectionIds = useRef<Set<string>>(new Set());
+  // Same idea for the live message threads + notifications: a write to an API-backed row
+  // hits the real facade; a demo row stays local-optimistic.
+  const apiThreadIds = useRef<Set<string>>(new Set());
+  const apiNotificationIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const saved = loadInspectorRegistration();
@@ -200,11 +228,13 @@ export function InspectorDataProvider({
     // Overlay live facade data onto the demo seeds — each domain independently, so a
     // failure in one leaves just that slice on demo data (the board never blanks).
     // `/inspector/inspections` -> assigned jobs; `/inspector/jobs` -> the billable
-    // earnings ledger. The job pool, tribunals and messages have no facade yet, so they
-    // stay on demo data.
-    const [inspections, ledger] = await Promise.allSettled([
+    // earnings ledger; `/inspector/messages` -> threads; `/inspector/notifications`.
+    // The job pool and tribunals have no facade yet, so they stay on demo data.
+    const [inspections, ledger, threads, notifs] = await Promise.allSettled([
       fetchInspections(),
       fetchInspectorJobs(),
+      fetchInspectorMessages(),
+      fetchInspectorNotifications(),
     ]);
     if (inspections.status === 'fulfilled') {
       const mapped = mapInspections(inspections.value);
@@ -214,6 +244,21 @@ export function InspectorDataProvider({
     }
     if (ledger.status === 'fulfilled') {
       setEarnings((prev) => upsertById(prev, mapInspectorEarnings(ledger.value)));
+      setApiConnected(true);
+    }
+    if (threads.status === 'fulfilled') {
+      const { threads: mappedThreads, messagesByThread } = mapInspectorMessages(
+        threads.value,
+      );
+      apiThreadIds.current = new Set(mappedThreads.map((t) => t.id));
+      setMessages((prev) => upsertById(prev, mappedThreads));
+      setThreadMessages((prev) => ({ ...prev, ...messagesByThread }));
+      setApiConnected(true);
+    }
+    if (notifs.status === 'fulfilled') {
+      const mapped = mapInspectorNotifications(notifs.value);
+      apiNotificationIds.current = new Set(mapped.map((n) => n.id));
+      setNotifications((prev) => upsertById(prev, mapped));
       setApiConnected(true);
     }
     setLoading(false);
@@ -333,32 +378,70 @@ export function InspectorDataProvider({
       const job = jobs.find((j) => j.id === id);
       if (!job) return;
 
+      const isApiJob = apiInspectionIds.current.has(id);
+
+      // Optimistic: flip the card to completed straight away on both paths.
       setJobs((prev) =>
         prev.map((j) =>
           j.id === id ? { ...j, status: 'completed', workflowStep: 99 } : j,
         ),
       );
-      setEarnings((prev) => [
-        {
-          id: `earn-${Date.now()}`,
-          jobId: id,
-          type: job.type,
-          propertyAddress: job.propertyAddress,
-          completedAt: new Date().toISOString(),
-          hoursWorked: job.estimatedHours,
-          hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
-          travelKmOneWay: job.travelKmOneWay,
-          fuelAllowance: job.fuelAllowance,
-          laborAmount: job.laborAmount,
-          amount: job.payAmount,
-          accountingSynced: false,
-        },
-        ...prev,
-      ]);
-      mutateWithOffline(id, 'complete', {});
+
+      if (isApiJob && apiConnected) {
+        // Real completion (IN_PROGRESS → COMPLETED): post the on-site attendance window
+        // so the server records a PENDING BillableAttendance — it computes the billable
+        // hours + the $45/hr amount itself; we never set the rate or the amount. The
+        // window is derived from the job's estimated hours (end = now). Then refresh so
+        // that genuine PENDING earnings row replaces the optimistic card, instead of
+        // synthesizing a fake local line.
+        const endTime = new Date();
+        const startTime = new Date(
+          endTime.getTime() - job.estimatedHours * 60 * 60 * 1000,
+        );
+        void apiCompleteInspection(id, {
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+        })
+          .then(() => refresh())
+          .catch(() => undefined);
+      } else {
+        // Demo/offline row (no facade behind it): synthesize the local earnings line.
+        setEarnings((prev) => [
+          {
+            id: `earn-${Date.now()}`,
+            jobId: id,
+            type: job.type,
+            propertyAddress: job.propertyAddress,
+            completedAt: new Date().toISOString(),
+            hoursWorked: job.estimatedHours,
+            hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
+            travelKmOneWay: job.travelKmOneWay,
+            fuelAllowance: job.fuelAllowance,
+            laborAmount: job.laborAmount,
+            amount: job.payAmount,
+            accountingSynced: false,
+          },
+          ...prev,
+        ]);
+        mutateWithOffline(id, 'complete', {});
+      }
       toast.success('Inspection completed — report generated');
     },
-    [jobs, mutateWithOffline],
+    [jobs, apiConnected, mutateWithOffline, refresh],
+  );
+
+  const loadInspectionFindings = useCallback(
+    async (id: string): Promise<RoomInspectionEntry[]> => {
+      // Findings only exist on the real facade — demo jobs carry no seeded tree.
+      if (!apiInspectionIds.current.has(id) || !apiConnected) return [];
+      try {
+        const detail = await fetchInspectionDetail(id);
+        return mapInspectionDetail(detail);
+      } catch {
+        return [];
+      }
+    },
+    [apiConnected],
   );
 
   const updateTribunalChecklist = useCallback(
@@ -410,31 +493,76 @@ export function InspectorDataProvider({
     [tribunals],
   );
 
-  const markNotificationRead = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
-  }, []);
+  const markNotificationRead = useCallback(
+    (id: string) => {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      );
+      // Persist on the real facade for API-backed notifications; an error just leaves the
+      // optimistic read state in place (demo rows have no facade and stay local).
+      if (apiNotificationIds.current.has(id) && apiConnected) {
+        void markInspectorNotificationRead(id).catch(() => undefined);
+      }
+    },
+    [apiConnected],
+  );
 
-  const sendMessage = useCallback((threadId: string, body: string) => {
-    const msg: ThreadMessage = {
-      id: `tm-${Date.now()}`,
-      from: 'Alex Chen',
-      body,
-      at: new Date().toISOString(),
-    };
-    setThreadMessages((prev) => ({
-      ...prev,
-      [threadId]: [...(prev[threadId] ?? []), msg],
-    }));
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === threadId
-          ? { ...m, lastMessage: body, lastAt: msg.at, unread: 0 }
-          : m,
-      ),
-    );
-  }, []);
+  const sendMessage = useCallback(
+    (threadId: string, body: string) => {
+      const msg: ThreadMessage = {
+        id: `tm-${Date.now()}`,
+        from: 'Alex Chen',
+        body,
+        at: new Date().toISOString(),
+        fromSelf: true,
+      };
+      // Optimistic append on both paths.
+      setThreadMessages((prev) => ({
+        ...prev,
+        [threadId]: [...(prev[threadId] ?? []), msg],
+      }));
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === threadId
+            ? { ...m, lastMessage: body, lastAt: msg.at, unread: 0 }
+            : m,
+        ),
+      );
+      // For an API-backed thread, post the real reply then reconcile from the server; an
+      // error leaves the optimistic message in place (graceful, like the other writes).
+      if (apiThreadIds.current.has(threadId) && apiConnected) {
+        void replyInspectorMessage(threadId, body)
+          .then(() => refresh())
+          .catch(() => undefined);
+      }
+    },
+    [apiConnected, refresh],
+  );
+
+  /**
+   * Upload inspection-level evidence photos for an API-backed inspection (base64 → R2 via
+   * the facade). No-ops (returns 0) for demo jobs or when offline. THROWS if any upload
+   * fails so the caller can block completion — evidence is never silently lost. The
+   * uploaded photos surface back through the findings detail read on the next refresh.
+   */
+  const uploadInspectionPhotos = useCallback(
+    async (inspectionId: string, files: File[]): Promise<number> => {
+      if (!apiInspectionIds.current.has(inspectionId) || !apiConnected) return 0;
+      let uploaded = 0;
+      for (const file of files) {
+        const contentBase64 = await fileToBase64(file);
+        await uploadInspectionPhoto(inspectionId, {
+          fileName: file.name,
+          mimeType: file.type,
+          sizeBytes: file.size,
+          contentBase64,
+        });
+        uploaded += 1;
+      }
+      return uploaded;
+    },
+    [apiConnected],
+  );
 
   const poolJobs = useMemo(
     () => jobs.filter((j) => j.status === 'available'),
@@ -529,6 +657,8 @@ export function InspectorDataProvider({
     updateJobStatus,
     updateJobWorkflow,
     completeJob,
+    loadInspectionFindings,
+    uploadInspectionPhotos,
     updateTribunalChecklist,
     recordTribunalOutcome,
     markNotificationRead,

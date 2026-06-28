@@ -18,9 +18,10 @@ const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor', 'Damaged'];
 
 export default function IngoingInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, completeJob } = useInspectorData();
+  const { getJob, completeJob, uploadInspectionPhotos } = useInspectorData();
   const job = getJob(id);
   const [areaIndex, setAreaIndex] = useState(0);
+  const [uploading, setUploading] = useState(false);
   const [entries, setEntries] = useState<
     Record<string, { condition: string; comments: string; photos: number }>
   >({});
@@ -36,6 +37,26 @@ export default function IngoingInspectionPage() {
   const area = INGOING_AREAS[areaIndex];
   const entry = entries[area] ?? { condition: '', comments: '', photos: 0 };
   const isLast = areaIndex === INGOING_AREAS.length - 1;
+
+  const addPhotos = async (files: File[]) => {
+    if (files.length === 0) return;
+    setUploading(true);
+    try {
+      // For an API-backed inspection this puts the bytes to R2 (base64 → facade); demo
+      // jobs no-op and just bump the local counter. A failure blocks the count so the
+      // inspector knows the evidence didn't save.
+      await uploadInspectionPhotos(id, files);
+    } catch {
+      toast.error('Photo upload failed — please retry');
+      setUploading(false);
+      return;
+    }
+    setEntries((e) => ({
+      ...e,
+      [area]: { ...entry, photos: (entry.photos || 0) + files.length },
+    }));
+    setUploading(false);
+  };
 
   const saveArea = () => {
     if (!entry.condition) {
@@ -97,16 +118,24 @@ export default function IngoingInspectionPage() {
                 <Camera className="size-3.5" />
               </Label>
               <Button
+                asChild
                 variant="outline"
-                className="w-full"
-                onClick={() =>
-                  setEntries((e) => ({
-                    ...e,
-                    [area]: { ...entry, photos: (entry.photos || 0) + 1 },
-                  }))
-                }
+                className={`w-full ${uploading ? 'pointer-events-none opacity-60' : ''}`}
               >
-                Add Photo ({entry.photos || 0})
+                <label className="cursor-pointer">
+                  {uploading ? 'Uploading…' : `Add Photo (${entry.photos || 0})`}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(ev) => {
+                      void addPhotos(Array.from(ev.target.files ?? []));
+                      ev.target.value = '';
+                    }}
+                  />
+                </label>
               </Button>
             </div>
 
