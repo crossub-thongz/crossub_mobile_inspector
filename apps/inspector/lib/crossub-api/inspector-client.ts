@@ -32,6 +32,25 @@ export async function fetchInspections(): Promise<InspectorInspection[]> {
   return data.items;
 }
 
+/** Unassigned pool inspections (`GET /api/v1/inspector/inspections/pool`). */
+export async function fetchPoolInspections(): Promise<InspectorInspection[]> {
+  const { data, error } = await crossub.GET('/inspector/inspections/pool');
+  if (error || !data) throw new Error('Failed to load job pool');
+  return data.items;
+}
+
+/** Claim a pool inspection (`POST /api/v1/inspector/inspections/{inspectionId}/claim`). */
+export async function claimInspection(
+  inspectionId: string,
+): Promise<InspectorInspection> {
+  const { data, error } = await crossub.POST(
+    '/inspector/inspections/{inspectionId}/claim',
+    { params: { path: { inspectionId } } },
+  );
+  if (error || !data) throw new Error('Failed to claim inspection');
+  return data;
+}
+
 /** Findings tree for one inspection (`GET /api/v1/inspector/inspections/{inspectionId}/detail`). */
 export async function fetchInspectionDetail(
   inspectionId: string,

@@ -138,6 +138,19 @@ export function mapInspections(dtos: InspectorInspection[]): InspectionJob[] {
   return dtos.map(toInspectionJob);
 }
 
+/** Map pool rows onto claimable jobs (`status: available`, `source: pool`). */
+export function toPoolInspectionJob(dto: InspectorInspection): InspectionJob {
+  return {
+    ...toInspectionJob(dto),
+    status: 'available',
+    source: 'pool',
+  };
+}
+
+export function mapPoolInspections(dtos: InspectorInspection[]): InspectionJob[] {
+  return dtos.map(toPoolInspectionJob);
+}
+
 /** Map one billable attendance (thin facade DTO) onto the app's EarningsRecord. */
 export function toEarningsRecord(dto: InspectorJob): EarningsRecord {
   const amount = asNumber(dto.totalAmount) ?? 0;

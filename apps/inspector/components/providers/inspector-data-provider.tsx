@@ -18,12 +18,14 @@ import { TRIBUNAL_INSPECTION_HOURS } from '@/constants/inspection-rates';
 import { api, ApiError } from '@/lib/api';
 import {
   acceptInspection as apiAcceptInspection,
+  claimInspection as apiClaimInspection,
   completeInspection as apiCompleteInspection,
   fetchInspectionDetail,
   fetchInspections,
   fetchInspectorMessages,
   fetchInspectorNotifications,
   fetchJobs as fetchInspectorJobs,
+  fetchPoolInspections,
   markInspectorNotificationRead,
   replyInspectorMessage,
   uploadInspectionPhoto,
@@ -34,6 +36,7 @@ import {
   mapInspectorEarnings,
   mapInspectorMessages,
   mapInspectorNotifications,
+  mapPoolInspections,
 } from '@/lib/crossub-api/inspector-mappers';
 import { buildDashboardSummary } from '@/lib/inspector-summary';
 import { calculateLaborFee } from '@/lib/inspector-pay';
@@ -190,6 +193,8 @@ export function InspectorDataProvider({
   // Ids of jobs sourced from the live `/inspector/inspections` facade — lets the write
   // actions route an API-backed assignment to the real facade and a demo job to local.
   const apiInspectionIds = useRef<Set<string>>(new Set());
+  // Pool rows from `GET /inspector/inspections/pool` — claim before accept.
+  const apiPoolIds = useRef<Set<string>>(new Set());
   // Same idea for the live message threads + notifications: a write to an API-backed row
   // hits the real facade; a demo row stays local-optimistic.
   const apiThreadIds = useRef<Set<string>>(new Set());
@@ -247,20 +252,48 @@ export function InspectorDataProvider({
     }
     // Overlay live facade data onto the demo seeds — each domain independently, so a
     // failure in one leaves just that slice on demo data (the board never blanks).
-    // `/inspector/inspections` -> assigned jobs; `/inspector/jobs` -> the billable
-    // earnings ledger; `/inspector/messages` -> threads; `/inspector/notifications`.
-    // The job pool and tribunals have no facade yet, so they stay on demo data.
-    const [inspections, ledger, threads, notifs] = await Promise.allSettled([
+    // `/inspector/inspections` -> assigned jobs; `/inspector/inspections/pool` -> pool;
+    // `/inspector/jobs` -> the billable earnings ledger; messages + notifications.
+    const [inspections, pool, ledger, threads, notifs] = await Promise.allSettled([
       fetchInspections(),
+      fetchPoolInspections(),
       fetchInspectorJobs(),
       fetchInspectorMessages(),
       fetchInspectorNotifications(),
     ]);
+
+    let assignedFromApi: InspectionJob[] = [];
+    let poolFromApi: InspectionJob[] = [];
+
     if (inspections.status === 'fulfilled') {
-      const mapped = mapInspections(inspections.value);
-      apiInspectionIds.current = new Set(mapped.map((j) => j.id));
-      setJobs((prev) => upsertById(prev, mapped));
+      assignedFromApi = mapInspections(inspections.value);
+      apiInspectionIds.current = new Set(assignedFromApi.map((j) => j.id));
       setApiConnected(true);
+    } else if (inspections.status === 'rejected') {
+      apiInspectionIds.current = new Set();
+    }
+    if (pool.status === 'fulfilled') {
+      poolFromApi = mapPoolInspections(pool.value);
+      apiPoolIds.current = new Set(poolFromApi.map((j) => j.id));
+      setApiConnected(true);
+    } else if (pool.status === 'rejected') {
+      apiPoolIds.current = new Set();
+    }
+    if (inspections.status === 'fulfilled' || pool.status === 'fulfilled') {
+      const apiIds = new Set([
+        ...assignedFromApi.map((j) => j.id),
+        ...poolFromApi.map((j) => j.id),
+      ]);
+      setJobs((prev) => {
+        const kept = prev.filter((j) => !apiIds.has(j.id));
+        const withoutDemoPool =
+          pool.status === 'fulfilled'
+            ? kept.filter(
+                (j) => !(j.source === 'pool' && j.status === 'available'),
+              )
+            : kept;
+        return [...assignedFromApi, ...poolFromApi, ...withoutDemoPool];
+      });
     }
     if (ledger.status === 'fulfilled') {
       setEarnings((prev) => upsertById(prev, mapInspectorEarnings(ledger.value)));
@@ -325,24 +358,25 @@ export function InspectorDataProvider({
 
   const acceptJob = useCallback(
     (id: string) => {
-      const isApiJob = apiInspectionIds.current.has(id);
+      const isAssignedApiJob = apiInspectionIds.current.has(id);
+      const isPoolApiJob = apiPoolIds.current.has(id);
       setJobs((prev) =>
         prev.map((j) =>
           j.id === id
             ? {
                 ...j,
                 status: 'accepted',
-                // A pool claim flips the job to a self-assigned source; an API-backed
-                // assignment keeps its source and reconciles from the server below.
-                source: isApiJob ? j.source : ('pool' as const),
+                source:
+                  isAssignedApiJob || isPoolApiJob ? 'assigned' : ('pool' as const),
               }
             : j,
         ),
       );
-      if (isApiJob && apiConnected) {
-        // Persist on the real facade (DRAFT → IN_PROGRESS), then reconcile; an API error
-        // just leaves the optimistic state in place (graceful — same as the offline path).
-        void apiAcceptInspection(id)
+      if ((isAssignedApiJob || isPoolApiJob) && apiConnected) {
+        const persist = isPoolApiJob
+          ? apiClaimInspection(id).then(() => apiAcceptInspection(id))
+          : apiAcceptInspection(id);
+        void persist
           .then(() => refresh())
           .catch(() => undefined);
       } else {
@@ -607,7 +641,12 @@ export function InspectorDataProvider({
   );
 
   const poolJobs = useMemo(
-    () => jobs.filter((j) => j.status === 'available'),
+    () =>
+      jobs.filter(
+        (j) =>
+          j.status === 'available' ||
+          (j.source === 'assigned' && j.status === 'assigned'),
+      ),
     [jobs],
   );
   const assignedJobs = useMemo(
