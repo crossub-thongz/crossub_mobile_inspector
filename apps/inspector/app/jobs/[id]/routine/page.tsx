@@ -12,11 +12,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ROUTINE_AREAS } from '@/constants/inspection';
 import { jobDetail, ROUTES } from '@/constants/routes';
+import { useKeyCollectGate, useInspectionWorkflowStart } from '@/hooks/use-key-collect-gate';
 
 export default function RoutineInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, completeJob } = useInspectorData();
+  const { getJob, completeJob, updateJobWorkflow } = useInspectorData();
   const job = getJob(id);
+  useKeyCollectGate(job, id);
+  useInspectionWorkflowStart(job, id, updateJobWorkflow);
   const [method, setMethod] = useState<'physical' | 'self'>('physical');
   const [notes, setNotes] = useState<Record<string, string>>({});
 

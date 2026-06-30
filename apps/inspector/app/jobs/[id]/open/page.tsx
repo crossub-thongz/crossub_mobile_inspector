@@ -15,7 +15,9 @@ import {
   OPEN_FINISH_CHECKS,
   OPEN_READINESS_PHOTOS,
 } from '@/constants/inspection';
-import { jobDetail, ROUTES } from '@/constants/routes';
+import { jobDetail, jobKeys, ROUTES } from '@/constants/routes';
+import { useKeyCollectGate, useInspectionWorkflowStart } from '@/hooks/use-key-collect-gate';
+import { isKeyReturnComplete } from '@/lib/key-access-workflow';
 
 const STEPS = [
   'Property Readiness',
@@ -29,6 +31,8 @@ export default function OpenInspectionPage() {
   const { id } = useParams<{ id: string }>();
   const { getJob, updateJobWorkflow, completeJob } = useInspectorData();
   const job = getJob(id);
+  useKeyCollectGate(job, id);
+  useInspectionWorkflowStart(job, id, updateJobWorkflow);
   const [step, setStep] = useState(job?.workflowStep ?? 1);
   const [comments, setComments] = useState('');
   const [readyToLease, setReadyToLease] = useState<boolean | null>(null);
@@ -62,6 +66,10 @@ export default function OpenInspectionPage() {
   const finish = () => {
     if (!allChecks) {
       toast.error('Complete all finish confirmations');
+      return;
+    }
+    if (job.keyAccess && !isKeyReturnComplete(job)) {
+      toast.error('Complete key return before finishing this task.');
       return;
     }
     completeJob(id);

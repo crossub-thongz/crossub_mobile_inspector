@@ -13,13 +13,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { INGOING_AREAS } from '@/constants/inspection';
 import { jobDetail, ROUTES } from '@/constants/routes';
+import { useKeyCollectGate, useInspectionWorkflowStart } from '@/hooks/use-key-collect-gate';
 
 const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor', 'Damaged'];
 
 export default function IngoingInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, completeJob, uploadInspectionPhotos } = useInspectorData();
+  const { getJob, completeJob, uploadInspectionPhotos, updateJobWorkflow } =
+    useInspectorData();
   const job = getJob(id);
+  useKeyCollectGate(job, id);
+  useInspectionWorkflowStart(job, id, updateJobWorkflow);
   const [areaIndex, setAreaIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [entries, setEntries] = useState<

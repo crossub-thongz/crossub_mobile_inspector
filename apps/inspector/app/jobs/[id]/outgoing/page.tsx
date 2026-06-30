@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { INGOING_AREAS } from '@/constants/inspection';
 import { jobDetail, ROUTES } from '@/constants/routes';
+import { useKeyCollectGate, useInspectionWorkflowStart } from '@/hooks/use-key-collect-gate';
 
 const RESPONSIBILITY = [
   'Tenant Responsible',
@@ -21,8 +22,10 @@ const RESPONSIBILITY = [
 
 export default function OutgoingInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, completeJob } = useInspectorData();
+  const { getJob, completeJob, updateJobWorkflow } = useInspectorData();
   const job = getJob(id);
+  useKeyCollectGate(job, id);
+  useInspectionWorkflowStart(job, id, updateJobWorkflow);
   const [areaIndex, setAreaIndex] = useState(0);
   const [issues, setIssues] = useState<
     Record<string, { note: string; responsibility: string }>

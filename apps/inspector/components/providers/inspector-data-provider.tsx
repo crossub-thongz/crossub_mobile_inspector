@@ -36,6 +36,11 @@ import {
 } from '@/lib/crossub-api/inspector-mappers';
 import { buildDashboardSummary } from '@/lib/inspector-summary';
 import { calculateLaborFee } from '@/lib/inspector-pay';
+import {
+  buildKeyWorkflowPatch,
+  isKeyReturnComplete,
+  type KeyPhaseRecord,
+} from '@/lib/key-access-workflow';
 import { fileToBase64 } from '@/lib/utils';
 import {
   isRegistrationComplete,
@@ -105,6 +110,11 @@ interface InspectorDataContextValue {
     data?: Record<string, unknown>,
   ) => void;
   completeJob: (id: string) => void;
+  saveKeyWorkflow: (
+    id: string,
+    phase: 'collect' | 'return',
+    record: KeyPhaseRecord,
+  ) => void;
   /**
    * Load the real seeded findings tree (areas → items → photos) for an API-backed
    * inspection, flattened to the read view-model. Returns [] for demo jobs or when the
@@ -377,10 +387,32 @@ export function InspectorDataProvider({
     [mutateWithOffline],
   );
 
+  const saveKeyWorkflow = useCallback(
+    (id: string, phase: 'collect' | 'return', record: KeyPhaseRecord) => {
+      setJobs((prev) =>
+        prev.map((j) => {
+          if (j.id !== id) return j;
+          const patch = buildKeyWorkflowPatch(j, phase, record);
+          return {
+            ...j,
+            workflowData: { ...j.workflowData, ...patch },
+          };
+        }),
+      );
+      mutateWithOffline(id, 'key_workflow', { phase, record });
+    },
+    [mutateWithOffline],
+  );
+
   const completeJob = useCallback(
     (id: string) => {
       const job = jobs.find((j) => j.id === id);
       if (!job) return;
+
+      if (job.keyAccess && !isKeyReturnComplete(job)) {
+        toast.error('Complete key return before finishing this task.');
+        return;
+      }
 
       const isApiJob = apiInspectionIds.current.has(id);
 
@@ -662,6 +694,7 @@ export function InspectorDataProvider({
     updateJobStatus,
     updateJobWorkflow,
     completeJob,
+    saveKeyWorkflow,
     loadInspectionFindings,
     uploadInspectionPhotos,
     updateTribunalChecklist,

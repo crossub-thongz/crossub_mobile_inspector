@@ -2,11 +2,10 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { MapPin, Phone, User } from 'lucide-react';
+import { KeyRound, MapPin, Phone, User } from 'lucide-react';
 
 import { AgentStrip } from '@/components/inspector/agent-strip';
 import { FindingsCard } from '@/components/inspector/findings-card';
-import { KeyAccessCard } from '@/components/inspector/key-access-card';
 import { MapLinks } from '@/components/inspector/map-links';
 import { PayBreakdown } from '@/components/inspector/pay-breakdown';
 import {
@@ -18,7 +17,11 @@ import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { jobWorkflow, ROUTES } from '@/constants/routes';
+import { jobKeys, jobWorkflow, ROUTES } from '@/constants/routes';
+import {
+  isKeyCollectComplete,
+  isKeyReturnComplete,
+} from '@/lib/key-access-workflow';
 import { formatDateTime } from '@/lib/utils';
 
 const STATUS_FLOW = [
@@ -44,6 +47,9 @@ export default function JobDetailPage() {
   const workflowHref = jobWorkflow(job.id, job.type);
   const canStartInspection =
     job.status === 'arrived' || job.status === 'in_progress';
+  const keyCollectDone = isKeyCollectComplete(job);
+  const keyReturnDone = isKeyReturnComplete(job);
+  const startBlocked = job.keyAccess && !keyCollectDone;
 
   return (
     <InspectorShell title="Job Details" backHref={ROUTES.INSPECTIONS}>
@@ -63,7 +69,21 @@ export default function JobDetailPage() {
           </section>
         )}
 
-        {job.keyAccess && <KeyAccessCard access={job.keyAccess} />}
+        {job.keyAccess && (
+          <Link href={jobKeys(job.id)}>
+            <Button variant="outline" className="w-full justify-between">
+              <span className="flex items-center gap-2">
+                <KeyRound className="size-4" />
+                Key details
+              </span>
+              <span className="text-muted-foreground text-[10px]">
+                Collect {keyCollectDone ? '✓' : 'pending'}
+                {' · '}
+                Return {keyReturnDone ? '✓' : 'pending'}
+              </span>
+            </Button>
+          </Link>
+        )}
 
         <FindingsCard jobId={job.id} />
 
@@ -131,15 +151,21 @@ export default function JobDetailPage() {
           </Card>
         )}
 
+        {startBlocked && (
+          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+            Complete key collection before starting the inspection.
+          </p>
+        )}
+
         {job.status === 'completed' ? (
           <Button className="w-full" variant="secondary" disabled>
             Report completed
           </Button>
         ) : (
-          <Link href={workflowHref}>
+          <Link href={startBlocked ? jobKeys(job.id, 'collect') : workflowHref}>
             <Button
               className="w-full"
-              disabled={!canStartInspection && job.status !== 'accepted'}
+              disabled={startBlocked || (!canStartInspection && job.status !== 'accepted')}
             >
               Start {job.type} inspection
             </Button>
