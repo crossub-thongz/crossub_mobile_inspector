@@ -114,6 +114,8 @@ Leave `COOKIE_DOMAIN` empty so auth cookies bind to the inspector app hostname.
 
 ### Troubleshooting builds
 
+**`Can't resolve '@crossub-thongz/api-contract'`** — The API contract is vendored under `packages/api-contract/` and built during `pnpm build:inspector`. Do not rely on a sibling `crossub_web` checkout on Render. After updating the backend OpenAPI spec, copy the refreshed `packages/api-contract` from `crossub_web` and commit.
+
 **`EROFS: read-only file system, unlink '/usr/bin/pnpm'`** — Do not run `corepack enable` on Render. The filesystem is read-only; use `corepack pnpm` directly (as in `render.yaml` and the build command above).
 
 ### Step 5 — Verify

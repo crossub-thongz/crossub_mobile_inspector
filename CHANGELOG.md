@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-01
+
+### Fixed
+- Render deploy: vendored `packages/api-contract` (was a git symlink to `crossub_web`, which does not exist on Render). `build:inspector` now builds the contract package before the Next.js app. Removed the `postinstall` symlink script.
+
 ## 2026-06-28
 
 ### Added

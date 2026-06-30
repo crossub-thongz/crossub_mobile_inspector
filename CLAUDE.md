@@ -20,9 +20,8 @@ Talk to the backend through the **published contract**, never hand-written types
 ## Where things live (sibling repos under `~/Desktop/crossub/`)
 
 - **Backend (NestJS):** `crossub_web/apps/api` — the inspector facade is `/api/v1/inspector/*`.
-- **Contract source:** `crossub_web/packages/api-contract` — wired into this session via
-  `.claude/settings.json` → `additionalDirectories`, so the live contract types are in
-  context without opening the whole backend or the other apps.
+- **Contract (vendored):** `packages/api-contract` — copied from `crossub_web/packages/api-contract`.
+  Re-sync after backend OpenAPI changes (`pnpm build:inspector` builds it before the app).
 
 ## Auth & data flow
 

@@ -1,0 +1,45 @@
+{
+  "name": "@crossub-thongz/api-contract",
+  "version": "0.10.0",
+  "private": false,
+  "description": "CROSSUB mobile API contract — OpenAPI types + a typed openapi-fetch client for the /api/v1 facades.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./openapi.json": "./openapi.json",
+    "./openapi.mobile.json": "./openapi.mobile.json"
+  },
+  "files": [
+    "dist",
+    "openapi.json",
+    "openapi.mobile.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "generate": "pnpm --filter @crossub/api contract",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.13.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "5.7.3"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crossub-thongz/crossub_web.git",
+    "directory": "packages/api-contract"
+  }
+}
