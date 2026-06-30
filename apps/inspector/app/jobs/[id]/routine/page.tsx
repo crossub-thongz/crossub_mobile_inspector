@@ -2,7 +2,6 @@
 
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -12,14 +11,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ROUTINE_AREAS } from '@/constants/inspection';
 import { jobDetail, ROUTES } from '@/constants/routes';
-import { useKeyCollectGate, useInspectionWorkflowStart } from '@/hooks/use-key-collect-gate';
+import { useFinishInspection } from '@/hooks/use-finish-inspection';
+import {
+  useInspectionFinishedGate,
+  useInspectionInProgress,
+  useKeyCollectGate,
+} from '@/hooks/use-key-collect-gate';
 
 export default function RoutineInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, completeJob, updateJobWorkflow } = useInspectorData();
+  const { getJob, updateJobStatus } = useInspectorData();
   const job = getJob(id);
+  const { finish: submitInspection, Celebration } = useFinishInspection(id);
   useKeyCollectGate(job, id);
-  useInspectionWorkflowStart(job, id, updateJobWorkflow);
+  useInspectionFinishedGate(job, id);
+  useInspectionInProgress(job, id, updateJobStatus);
   const [method, setMethod] = useState<'physical' | 'self'>('physical');
   const [notes, setNotes] = useState<Record<string, string>>({});
 
@@ -31,12 +37,12 @@ export default function RoutineInspectionPage() {
     );
   }
 
-  const finish = () => {
-    completeJob(id);
-    toast.success('Routine report sent to agent and landlord');
+  const handleFinish = () => {
+    submitInspection('Routine report sent to agent and landlord');
   };
 
   return (
+    <>
     <InspectorShell title="Routine Inspection" backHref={jobDetail(id)}>
       <div className="space-y-4">
         <div className="flex gap-2">
@@ -79,12 +85,14 @@ export default function RoutineInspectionPage() {
                 />
               </div>
             ))}
-            <Button className="w-full" onClick={finish}>
+            <Button className="w-full" onClick={handleFinish}>
               Complete Routine Report
             </Button>
           </CardContent>
         </Card>
       </div>
     </InspectorShell>
+    {Celebration}
+    </>
   );
 }

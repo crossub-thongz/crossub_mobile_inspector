@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ClipboardCheck, Search } from 'lucide-react';
@@ -13,6 +14,7 @@ import { JobCard } from '@/components/inspector/job-card';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Input } from '@/components/ui/input';
+import { ROUTES } from '@/constants/routes';
 import {
   CORE_INSPECTION_TYPES,
   type CoreInspectionType,
@@ -110,6 +112,15 @@ export default function InspectionsPageClient() {
             </button>
           ))}
         </div>
+
+        {statusTab === 'completed' && (
+          <p className="text-muted-foreground text-xs">
+            Tap a job to open its report with key proof and section photos.{' '}
+            <Link href={ROUTES.HISTORY} className="text-primary font-medium">
+              All history
+            </Link>
+          </p>
+        )}
 
         {filteredJobs.length === 0 ? (
           <EmptyState

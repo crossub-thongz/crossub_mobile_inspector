@@ -2,6 +2,7 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   JOB_POOL: '/job-pool',
   INSPECTIONS: '/inspections',
+  HISTORY: '/history',
   /** @deprecated Use INSPECTIONS — kept for deep links */
   JOBS: '/inspections',
   TRIBUNAL: '/tribunal',
@@ -29,6 +30,7 @@ export const isPublicRoute = (pathname: string): boolean =>
   PUBLIC_ROUTE_PATTERNS.some((rx) => rx.test(pathname));
 
 export const jobDetail = (id: string) => `/jobs/${id}`;
+export const jobHistory = (id: string) => `/jobs/${id}/history`;
 export const jobKeys = (id: string, tab?: 'collect' | 'return') =>
   tab ? `/jobs/${id}/keys?tab=${tab}` : `/jobs/${id}/keys`;
 export const jobWorkflow = (id: string, type: string) => `/jobs/${id}/${type}`;

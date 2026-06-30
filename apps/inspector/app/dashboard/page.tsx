@@ -12,7 +12,7 @@ import { ROUTES, inspectionsByType } from '@/constants/routes';
 import { isKeyCollectComplete, isKeyReturnComplete } from '@/lib/key-access-workflow';
 
 export default function DashboardPage() {
-  const { summary, todaysJobs, jobs } = useInspectorData();
+  const { summary, todaysJobs, poolJobs, jobs } = useInspectorData();
   const activeToday = todaysJobs.filter(
     (j) => j.status !== 'completed' && j.status !== 'declined',
   );
@@ -32,9 +32,9 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-1.5">
           <KpiTile
             label="Today"
-            value={summary.todaysJobs}
+            value={todaysJobs.length}
             href={ROUTES.INSPECTIONS}
-            highlight={summary.todaysJobs > 0}
+            highlight={todaysJobs.length > 0}
           />
           <KpiTile
             label="Upcoming"
@@ -43,9 +43,9 @@ export default function DashboardPage() {
           />
           <KpiTile
             label="Pool"
-            value={summary.availableInPool}
+            value={poolJobs.length}
             href={ROUTES.JOB_POOL}
-            highlight={summary.availableInPool > 0}
+            highlight={poolJobs.length > 0}
           />
           <KpiTile
             label="Done (wk)"

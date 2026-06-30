@@ -13,17 +13,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { INGOING_AREAS } from '@/constants/inspection';
 import { jobDetail, ROUTES } from '@/constants/routes';
-import { useKeyCollectGate, useInspectionWorkflowStart } from '@/hooks/use-key-collect-gate';
+import { useFinishInspection } from '@/hooks/use-finish-inspection';
+import {
+  useInspectionFinishedGate,
+  useInspectionInProgress,
+  useKeyCollectGate,
+} from '@/hooks/use-key-collect-gate';
 
 const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor', 'Damaged'];
 
 export default function IngoingInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, completeJob, uploadInspectionPhotos, updateJobWorkflow } =
+  const { getJob, uploadInspectionPhotos, updateJobStatus } =
     useInspectorData();
   const job = getJob(id);
+  const { finish: submitInspection, Celebration } = useFinishInspection(id);
   useKeyCollectGate(job, id);
-  useInspectionWorkflowStart(job, id, updateJobWorkflow);
+  useInspectionFinishedGate(job, id);
+  useInspectionInProgress(job, id, updateJobStatus);
   const [areaIndex, setAreaIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [entries, setEntries] = useState<
@@ -69,14 +76,14 @@ export default function IngoingInspectionPage() {
     }
     setEntries((e) => ({ ...e, [area]: { ...entry, photos: entry.photos || 1 } }));
     if (isLast) {
-      completeJob(id);
-      toast.success('Ingoing report sent to tenant, agent, and landlord');
+      submitInspection('Ingoing report sent to tenant, agent, and landlord');
       return;
     }
     setAreaIndex((i) => i + 1);
   };
 
   return (
+    <>
     <InspectorShell title="Ingoing Inspection" backHref={jobDetail(id)}>
       <div className="space-y-4">
         <div className="flex gap-1">
@@ -167,5 +174,7 @@ export default function IngoingInspectionPage() {
         </Card>
       </div>
     </InspectorShell>
+    {Celebration}
+    </>
   );
 }

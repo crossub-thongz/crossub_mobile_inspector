@@ -121,10 +121,6 @@ export default function RegisterPage() {
     <div className="mx-auto min-h-screen max-w-lg bg-background px-4 py-8 pb-16">
       <div className="mb-6 space-y-2">
         <h1 className="text-xl font-semibold">Inspector profile</h1>
-        <p className="text-muted-foreground text-sm">
-          One-time setup after you create your account. Your login password is the
-          one you chose at sign-up — it is not shown here (same as Facebook or Shopee).
-        </p>
         <p className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
           Pay: ${INSPECTOR_HOURLY_RATE_AUD}/hour on-site. Inspection duration set by
           property type.
@@ -152,7 +148,7 @@ export default function RegisterPage() {
             <Input
               id="email"
               type="email"
-              readOnly
+              // readOnly
               className="text-muted-foreground bg-secondary/40"
               {...register('email')}
             />

@@ -17,6 +17,8 @@ export type InspectorNotificationDto =
 export type InspectorPhoto = components['schemas']['InspectorPhotoDto'];
 export type UploadInspectorPhoto =
   components['schemas']['UploadInspectorPhotoDto'];
+export type InspectorKeyCollection =
+  components['schemas']['InspectorKeyCollectionResponseDto'];
 
 /** Billable inspection jobs ledger (`GET /api/v1/inspector/jobs`). */
 export async function fetchJobs(): Promise<InspectorJob[]> {
@@ -60,6 +62,19 @@ export async function fetchInspectionDetail(
     { params: { path: { inspectionId } } },
   );
   if (error || !data) throw new Error('Failed to load inspection detail');
+  return data;
+}
+
+/** Leasing key-collection arrangement (`GET /inspector/inspections/{inspectionId}/key-collection`). */
+export async function fetchKeyCollection(
+  inspectionId: string,
+): Promise<InspectorKeyCollection | null> {
+  const { data, error, response } = await crossub.GET(
+    '/inspector/inspections/{inspectionId}/key-collection',
+    { params: { path: { inspectionId } } },
+  );
+  if (response.status === 404) return null;
+  if (error || !data) throw new Error('Failed to load key collection');
   return data;
 }
 

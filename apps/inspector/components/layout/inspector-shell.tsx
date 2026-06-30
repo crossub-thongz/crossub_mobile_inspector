@@ -29,6 +29,7 @@ const PRIMARY_NAV = [
 ] as const;
 
 const MORE_NAV = [
+  { href: ROUTES.HISTORY, label: 'Job history' },
   { href: ROUTES.KEY_MANAGEMENT, label: 'Key management' },
   { href: ROUTES.EARNINGS, label: 'Earnings' },
   { href: ROUTES.REGISTER, label: 'Registration' },
@@ -57,7 +58,7 @@ export function InspectorShell({
   const [moreOpen, setMoreOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
-  const { notifications, messages, summary } = useInspectorData();
+  const { notifications, messages, poolJobs, todaysJobs } = useInspectorData();
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const unreadMessages = messages.reduce((s, m) => s + m.unread, 0);
 
@@ -186,10 +187,10 @@ export function InspectorShell({
           {PRIMARY_NAV.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             const badge =
-              href === ROUTES.JOB_POOL && summary.availableInPool > 0
-                ? summary.availableInPool
-                : href === ROUTES.INSPECTIONS && summary.todaysJobs > 0
-                  ? summary.todaysJobs
+              href === ROUTES.JOB_POOL
+                ? poolJobs.length
+                : href === ROUTES.INSPECTIONS
+                  ? todaysJobs.length
                   : 0;
             return (
               <Link

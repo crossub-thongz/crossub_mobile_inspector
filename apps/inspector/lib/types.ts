@@ -81,6 +81,44 @@ export interface KeyAccess {
   photoRequired: boolean;
 }
 
+export type LeasingKeyCustody = 'crossub' | 'agent';
+
+export type LeasingItemStatus =
+  | 'not_started'
+  | 'in_progress'
+  | 'waiting'
+  | 'blocked'
+  | 'done';
+
+export interface LeasingKeyCollectionTenantReport {
+  submittedAt: string | null;
+  tagNumber: string | null;
+  keysCount: number | null;
+  entryDoorCount: number | null;
+  windowSlidingCount: number | null;
+  fobsCount: number | null;
+  remoteControlCount: number | null;
+  mailboxCount: number | null;
+  othersCount: number | null;
+}
+
+export interface LeasingKeyCollectionState {
+  status: LeasingItemStatus;
+  time: string | null;
+  location: string | null;
+  photos: string[];
+  tenantReport: LeasingKeyCollectionTenantReport | null;
+}
+
+/** Leasing onboarding key-collection context from the API (matches crossub_web leasing). */
+export interface InspectorLeasingKeyContext {
+  cycleId: string;
+  propertyId: string;
+  propertyAddress: string;
+  keyCustody: LeasingKeyCustody;
+  keyCollection: LeasingKeyCollectionState;
+}
+
 export interface InspectorProfile {
   id: string;
   name: string;
@@ -113,6 +151,8 @@ export interface InspectionJob {
   agentEmail?: string;
   agentPhone?: string;
   keyAccess?: KeyAccess;
+  /** Live leasing key-collection arrangement (API-backed jobs). */
+  leasingKeyCollection?: InspectorLeasingKeyContext;
   notes?: string;
   serviceRegion: ServiceRegionKey;
   property: PropertyInspectionSpec;

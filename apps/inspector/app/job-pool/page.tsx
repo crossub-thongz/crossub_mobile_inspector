@@ -18,7 +18,7 @@ import {
 } from '@/constants/inspection';
 
 export default function JobPoolPage() {
-  const { poolJobs, acceptJob, declineJob } = useInspectorData();
+  const { poolJobs } = useInspectorData();
   const [filter, setFilter] = useState<JobPoolFilter>('all');
 
   const counts = useMemo(
@@ -79,13 +79,7 @@ export default function JobPoolPage() {
                   </div>
                   <div className="space-y-3">
                     {typeJobs.map((job) => (
-                      <JobCard
-                        key={job.id}
-                        job={job}
-                        showActions
-                        onAccept={acceptJob}
-                        onDecline={declineJob}
-                      />
+                      <JobCard key={job.id} job={job} showActions />
                     ))}
                   </div>
                 </section>
@@ -95,13 +89,7 @@ export default function JobPoolPage() {
         ) : (
           <div className="space-y-3">
             {filteredJobs.map((job) => (
-              <JobCard
-                key={job.id}
-                job={job}
-                showActions
-                onAccept={acceptJob}
-                onDecline={declineJob}
-              />
+              <JobCard key={job.id} job={job} showActions />
             ))}
           </div>
         )}

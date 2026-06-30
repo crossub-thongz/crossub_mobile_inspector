@@ -1,9 +1,11 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
-import { Camera, QrCode } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { QrCode } from 'lucide-react';
 import { toast } from 'sonner';
+
+import { InspectionAreaPhotoRow } from '@/components/inspector/inspection-area-photo';
 
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -15,9 +17,31 @@ import {
   OPEN_FINISH_CHECKS,
   OPEN_READINESS_PHOTOS,
 } from '@/constants/inspection';
-import { jobDetail, jobKeys, ROUTES } from '@/constants/routes';
-import { useKeyCollectGate, useInspectionWorkflowStart } from '@/hooks/use-key-collect-gate';
-import { isKeyReturnComplete } from '@/lib/key-access-workflow';
+import { jobDetail, ROUTES } from '@/constants/routes';
+import { useFinishInspection } from '@/hooks/use-finish-inspection';
+import {
+  useInspectionFinishedGate,
+  useInspectionInProgress,
+  useKeyCollectGate,
+} from '@/hooks/use-key-collect-gate';
+import { clampOpenWorkflowStep } from '@/lib/job-workflow-persist';
+
+/** Keep only saved data-URL images (ignore legacy boolean toggles). */
+function normalizePhotoRecord(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof value === 'string' && value.startsWith('data:image')) {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+function hasAreaPhoto(record: Record<string, string>, key: string): boolean {
+  const url = record[key];
+  return typeof url === 'string' && url.startsWith('data:image');
+}
 
 const STEPS = [
   'Property Readiness',
@@ -29,15 +53,69 @@ const STEPS = [
 
 export default function OpenInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, updateJobWorkflow, completeJob } = useInspectorData();
+  const { getJob, updateJobWorkflow, updateJobStatus } = useInspectorData();
   const job = getJob(id);
+  const { finish: submitInspection, Celebration } = useFinishInspection(id);
   useKeyCollectGate(job, id);
-  useInspectionWorkflowStart(job, id, updateJobWorkflow);
-  const [step, setStep] = useState(job?.workflowStep ?? 1);
+  useInspectionFinishedGate(job, id);
+  useInspectionInProgress(job, id, updateJobStatus);
+  const [step, setStep] = useState(() => clampOpenWorkflowStep(job?.workflowStep));
   const [comments, setComments] = useState('');
   const [readyToLease, setReadyToLease] = useState<boolean | null>(null);
-  const [photos, setPhotos] = useState<Record<string, boolean>>({});
-  const [finishChecks, setFinishChecks] = useState<Record<string, boolean>>({});
+  const [photos, setPhotos] = useState<Record<string, string>>({});
+  const [finishPhotos, setFinishPhotos] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!job) return;
+    setStep(clampOpenWorkflowStep(job.workflowStep));
+    if (!job.workflowData) return;
+    const saved = job.workflowData.readinessPhotos;
+    if (saved) {
+      setPhotos(normalizePhotoRecord(saved));
+    }
+    const savedFinish = job.workflowData.finishPhotos;
+    if (savedFinish) {
+      setFinishPhotos(normalizePhotoRecord(savedFinish));
+    }
+    if (typeof job.workflowData.comments === 'string') {
+      setComments(job.workflowData.comments);
+    }
+    if (typeof job.workflowData.readyToLease === 'boolean') {
+      setReadyToLease(job.workflowData.readyToLease);
+    } else if (job.workflowData.readyToLease === null) {
+      setReadyToLease(null);
+    }
+  }, [job]);
+
+  const saveDraft = useCallback(() => {
+    updateJobWorkflow(id, step, {
+      comments,
+      readyToLease,
+      readinessPhotos: photos,
+      finishPhotos,
+    });
+  }, [
+    id,
+    step,
+    comments,
+    readyToLease,
+    photos,
+    finishPhotos,
+    updateJobWorkflow,
+  ]);
+
+  useEffect(() => {
+    if (!job) return;
+    const hasDraft =
+      step > 1 ||
+      comments.length > 0 ||
+      readyToLease !== null ||
+      Object.keys(photos).length > 0 ||
+      Object.keys(finishPhotos).length > 0;
+    if (!hasDraft) return;
+    const timer = window.setTimeout(() => saveDraft(), 400);
+    return () => window.clearTimeout(timer);
+  }, [job, saveDraft, step, comments, readyToLease, photos, finishPhotos]);
 
   if (!job) {
     return (
@@ -47,37 +125,59 @@ export default function OpenInspectionPage() {
     );
   }
 
-  const togglePhoto = (name: string) => {
-    setPhotos((p) => ({ ...p, [name]: !p[name] }));
+  const allPhotos = OPEN_READINESS_PHOTOS.every((p) => hasAreaPhoto(photos, p));
+  const allFinishPhotos = OPEN_FINISH_CHECKS.every((c) => hasAreaPhoto(finishPhotos, c));
+
+  const setAreaPhoto = (area: string, dataUrl: string | undefined) => {
+    setPhotos((prev) => {
+      if (!dataUrl) {
+        const next = { ...prev };
+        delete next[area];
+        return next;
+      }
+      return { ...prev, [area]: dataUrl };
+    });
   };
 
-  const toggleCheck = (name: string) => {
-    setFinishChecks((c) => ({ ...c, [name]: !c[name] }));
+  const setFinishPhoto = (check: string, dataUrl: string | undefined) => {
+    setFinishPhotos((prev) => {
+      if (!dataUrl) {
+        const next = { ...prev };
+        delete next[check];
+        return next;
+      }
+      return { ...prev, [check]: dataUrl };
+    });
   };
-
-  const allPhotos = OPEN_READINESS_PHOTOS.every((p) => photos[p]);
-  const allChecks = OPEN_FINISH_CHECKS.every((c) => finishChecks[c]);
 
   const next = () => {
-    updateJobWorkflow(id, step + 1, { comments, readyToLease, photos });
-    setStep((s) => s + 1);
+    const nextStep = step + 1;
+    updateJobWorkflow(id, nextStep, {
+      comments,
+      readyToLease,
+      readinessPhotos: photos,
+      finishPhotos,
+    });
+    setStep(nextStep);
   };
 
   const finish = () => {
-    if (!allChecks) {
-      toast.error('Complete all finish confirmations');
+    if (!allFinishPhotos) {
+      toast.error('Add a photo for each finish confirmation');
       return;
     }
-    if (job.keyAccess && !isKeyReturnComplete(job)) {
-      toast.error('Complete key return before finishing this task.');
-      return;
-    }
-    completeJob(id);
-    toast.success('Open inspection report sent to agent and landlord');
+    updateJobWorkflow(id, 5, {
+      comments,
+      readyToLease,
+      readinessPhotos: photos,
+      finishPhotos,
+    });
+    submitInspection('Open inspection report sent to agent and landlord');
   };
 
   return (
-    <InspectorShell title="Open Inspection" backHref={jobDetail(id)}>
+    <>
+      <InspectorShell title="Open Inspection" backHref={jobDetail(id)}>
       <div className="space-y-4">
         <div className="flex gap-1">
           {STEPS.map((label, i) => (
@@ -99,17 +199,12 @@ export default function OpenInspectionPage() {
                 Required photos for each area
               </p>
               {OPEN_READINESS_PHOTOS.map((area) => (
-                <button
+                <InspectionAreaPhotoRow
                   key={area}
-                  type="button"
-                  onClick={() => togglePhoto(area)}
-                  className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm ${
-                    photos[area] ? 'border-primary bg-primary/10' : 'border-border'
-                  }`}
-                >
-                  <span>{area}</span>
-                  <Camera className="size-4" />
-                </button>
+                  area={area}
+                  photoUrl={photos[area]}
+                  onChange={(dataUrl) => setAreaPhoto(area, dataUrl)}
+                />
               ))}
               <div className="space-y-2">
                 <Label>Comments</Label>
@@ -205,22 +300,18 @@ export default function OpenInspectionPage() {
               <CardTitle>Step 5 — Finish Inspection</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              <p className="text-muted-foreground text-xs">
+                Snap or upload proof photos for each item before finishing
+              </p>
               {OPEN_FINISH_CHECKS.map((check) => (
-                <button
+                <InspectionAreaPhotoRow
                   key={check}
-                  type="button"
-                  onClick={() => toggleCheck(check)}
-                  className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
-                    finishChecks[check] ? 'border-primary bg-primary/10' : ''
-                  }`}
-                >
-                  <span
-                    className={`size-4 rounded border ${finishChecks[check] ? 'bg-primary' : ''}`}
-                  />
-                  {check}
-                </button>
+                  area={check}
+                  photoUrl={finishPhotos[check]}
+                  onChange={(dataUrl) => setFinishPhoto(check, dataUrl)}
+                />
               ))}
-              <Button className="w-full" disabled={!allChecks} onClick={finish}>
+              <Button className="w-full" disabled={!allFinishPhotos} onClick={finish}>
                 Finish Inspection & Generate Report
               </Button>
             </CardContent>
@@ -228,5 +319,7 @@ export default function OpenInspectionPage() {
         )}
       </div>
     </InspectorShell>
+    {Celebration}
+    </>
   );
 }

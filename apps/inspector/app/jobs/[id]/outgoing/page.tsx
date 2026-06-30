@@ -2,7 +2,6 @@
 
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -12,7 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { INGOING_AREAS } from '@/constants/inspection';
 import { jobDetail, ROUTES } from '@/constants/routes';
-import { useKeyCollectGate, useInspectionWorkflowStart } from '@/hooks/use-key-collect-gate';
+import { useFinishInspection } from '@/hooks/use-finish-inspection';
+import {
+  useInspectionFinishedGate,
+  useInspectionInProgress,
+  useKeyCollectGate,
+} from '@/hooks/use-key-collect-gate';
 
 const RESPONSIBILITY = [
   'Tenant Responsible',
@@ -22,10 +26,12 @@ const RESPONSIBILITY = [
 
 export default function OutgoingInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, completeJob, updateJobWorkflow } = useInspectorData();
+  const { getJob, updateJobStatus } = useInspectorData();
   const job = getJob(id);
+  const { finish: submitInspection, Celebration } = useFinishInspection(id);
   useKeyCollectGate(job, id);
-  useInspectionWorkflowStart(job, id, updateJobWorkflow);
+  useInspectionFinishedGate(job, id);
+  useInspectionInProgress(job, id, updateJobStatus);
   const [areaIndex, setAreaIndex] = useState(0);
   const [issues, setIssues] = useState<
     Record<string, { note: string; responsibility: string }>
@@ -45,14 +51,14 @@ export default function OutgoingInspectionPage() {
 
   const next = () => {
     if (isLast) {
-      completeJob(id);
-      toast.success('Outgoing report synced with bond claims and accounting');
+      submitInspection('Outgoing report synced with bond claims and accounting');
       return;
     }
     setAreaIndex((i) => i + 1);
   };
 
   return (
+    <>
     <InspectorShell title="Outgoing Inspection" backHref={jobDetail(id)}>
       <div className="space-y-4">
         <p className="text-muted-foreground text-xs">
@@ -117,5 +123,7 @@ export default function OutgoingInspectionPage() {
         </Card>
       </div>
     </InspectorShell>
+    {Celebration}
+    </>
   );
 }

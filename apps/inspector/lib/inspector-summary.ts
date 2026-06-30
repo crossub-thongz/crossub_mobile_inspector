@@ -8,7 +8,12 @@ import type {
   PropertyInspectionSpec,
   TribunalHearing,
 } from '@/lib/types';
-import { isThisWeek, isToday } from '@/lib/utils';
+import {
+  filterPoolJobs,
+  filterTodaysInspections,
+  filterUpcomingInspections,
+} from '@/lib/inspector-job-filters';
+import { isThisWeek } from '@/lib/utils';
 
 export function buildDashboardSummary(
   jobs: InspectionJob[],
@@ -16,20 +21,9 @@ export function buildDashboardSummary(
   earnings: EarningsRecord[],
   pendingSync: number,
 ): DashboardSummary {
-  const activeJobs = jobs.filter((j) => j.status !== 'declined');
-  const todaysJobs = activeJobs.filter(
-    (j) =>
-      isToday(j.scheduledDate) &&
-      j.status !== 'completed' &&
-      j.source !== 'pool',
-  ).length;
-  const upcomingJobs = activeJobs.filter(
-    (j) =>
-      !isToday(j.scheduledDate) &&
-      j.status !== 'completed' &&
-      j.source !== 'pool',
-  ).length;
-  const availableInPool = jobs.filter((j) => j.status === 'available').length;
+  const todaysJobs = filterTodaysInspections(jobs).length;
+  const upcomingJobs = filterUpcomingInspections(jobs).length;
+  const availableInPool = filterPoolJobs(jobs).length;
   const completedThisWeek = jobs.filter(
     (j) => j.status === 'completed' && isThisWeek(j.scheduledDate),
   ).length;

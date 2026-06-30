@@ -38,10 +38,29 @@ import {
   mapInspectorNotifications,
   mapPoolInspections,
 } from '@/lib/crossub-api/inspector-mappers';
+import { enrichJobsWithKeyCollection } from '@/lib/leasing-key-collection';
 import { buildDashboardSummary } from '@/lib/inspector-summary';
+import {
+  filterPoolJobs,
+  filterTodaysInspections,
+  filterUpcomingInspections,
+  isDemoJobId,
+} from '@/lib/inspector-job-filters';
+import {
+  loadPersistedJobProgress,
+  mergeJobWithLocalProgress,
+  persistJobProgress,
+} from '@/lib/job-workflow-persist';
+import {
+  mergeJobWithHistory,
+  saveCompletedJobHistory,
+} from '@/lib/job-history';
 import { calculateLaborFee } from '@/lib/inspector-pay';
 import {
+  buildInspectionFinishedPatch,
   buildKeyWorkflowPatch,
+  isInspectionWorkflowFinished,
+  isKeyCollectComplete,
   isKeyReturnComplete,
   type KeyPhaseRecord,
 } from '@/lib/key-access-workflow';
@@ -114,6 +133,8 @@ interface InspectorDataContextValue {
     data?: Record<string, unknown>,
   ) => void;
   completeJob: (id: string) => void;
+  /** Marks inspection done; returns whether key return is still required. */
+  finishInspectionWorkflow: (id: string) => 'needs_key_return' | 'completed';
   saveKeyWorkflow: (
     id: string,
     phase: 'collect' | 'return',
@@ -284,15 +305,40 @@ export function InspectorDataProvider({
         ...assignedFromApi.map((j) => j.id),
         ...poolFromApi.map((j) => j.id),
       ]);
+      let assignedWithKeys = assignedFromApi;
+      let poolWithKeys = poolFromApi;
+      if (apiConnected) {
+        [assignedWithKeys, poolWithKeys] = await Promise.all([
+          enrichJobsWithKeyCollection(assignedFromApi),
+          enrichJobsWithKeyCollection(poolFromApi),
+        ]);
+      }
       setJobs((prev) => {
-        const kept = prev.filter((j) => !apiIds.has(j.id));
-        const withoutDemoPool =
-          pool.status === 'fulfilled'
-            ? kept.filter(
-                (j) => !(j.source === 'pool' && j.status === 'available'),
-              )
-            : kept;
-        return [...assignedFromApi, ...poolFromApi, ...withoutDemoPool];
+        const prevById = new Map(prev.map((j) => [j.id, j]));
+        const mergeApiJob = (apiJob: InspectionJob) => {
+          const fromPrev = mergeJobWithLocalProgress(
+            apiJob,
+            prevById.get(apiJob.id),
+          );
+          return mergeJobWithLocalProgress(
+            fromPrev,
+            loadPersistedJobProgress(apiJob.id),
+          );
+        };
+        const mergeApiJobFinal = (apiJob: InspectionJob) => {
+          const merged = mergeApiJob(apiJob);
+          return merged.status === 'completed'
+            ? mergeJobWithHistory(merged)
+            : merged;
+        };
+        const localOnly = prev.filter(
+          (j) => !isDemoJobId(j.id) && !apiIds.has(j.id),
+        );
+        return [
+          ...assignedWithKeys.map(mergeApiJobFinal),
+          ...poolWithKeys.map(mergeApiJobFinal),
+          ...localOnly,
+        ];
       });
     }
     if (ledger.status === 'fulfilled') {
@@ -334,6 +380,15 @@ export function InspectorDataProvider({
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useLayoutEffect(() => {
+    if (status !== 'authed') return;
+    setJobs((prev) =>
+      prev.map((j) =>
+        mergeJobWithLocalProgress(j, loadPersistedJobProgress(j.id)),
+      ),
+    );
+  }, [status]);
 
   useEffect(() => {
     refreshPendingSync();
@@ -400,18 +455,30 @@ export function InspectorDataProvider({
 
   const updateJobStatus = useCallback(
     (id: string, newStatus: JobStatus) => {
-      setJobs((prev) =>
-        prev.map((j) => (j.id === id ? { ...j, status: newStatus } : j)),
-      );
+      const job = jobs.find((j) => j.id === id);
+      if (
+        job?.keyAccess &&
+        !isKeyCollectComplete(job) &&
+        newStatus === 'in_progress'
+      ) {
+        toast.error('Complete key collection before starting the inspection.');
+        return;
+      }
+      setJobs((prev) => {
+        const next = prev.map((j) => (j.id === id ? { ...j, status: newStatus } : j));
+        const updated = next.find((j) => j.id === id);
+        if (updated) persistJobProgress(updated);
+        return next;
+      });
       mutateWithOffline(id, 'status', { status: newStatus });
     },
-    [mutateWithOffline],
+    [jobs, mutateWithOffline],
   );
 
   const updateJobWorkflow = useCallback(
     (id: string, step: number, data?: Record<string, unknown>) => {
-      setJobs((prev) =>
-        prev.map((j) =>
+      setJobs((prev) => {
+        const next = prev.map((j) =>
           j.id === id
             ? {
                 ...j,
@@ -420,90 +487,135 @@ export function InspectorDataProvider({
                 workflowData: { ...j.workflowData, ...data },
               }
             : j,
-        ),
-      );
+        );
+        const updated = next.find((j) => j.id === id);
+        if (updated) persistJobProgress(updated);
+        return next;
+      });
       mutateWithOffline(id, 'workflow', { step, data });
-    },
-    [mutateWithOffline],
-  );
-
-  const saveKeyWorkflow = useCallback(
-    (id: string, phase: 'collect' | 'return', record: KeyPhaseRecord) => {
-      setJobs((prev) =>
-        prev.map((j) => {
-          if (j.id !== id) return j;
-          const patch = buildKeyWorkflowPatch(j, phase, record);
-          return {
-            ...j,
-            workflowData: { ...j.workflowData, ...patch },
-          };
-        }),
-      );
-      mutateWithOffline(id, 'key_workflow', { phase, record });
     },
     [mutateWithOffline],
   );
 
   const completeJob = useCallback(
     (id: string) => {
-      const job = jobs.find((j) => j.id === id);
-      if (!job) return;
+      setJobs((prev) => {
+        const job = prev.find((j) => j.id === id);
+        if (!job || job.status === 'completed') return prev;
 
-      if (job.keyAccess && !isKeyReturnComplete(job)) {
-        toast.error('Complete key return before finishing this task.');
-        return;
-      }
+        if (job.keyAccess) {
+          if (!isInspectionWorkflowFinished(job)) {
+            toast.error('Finish the inspection before completing this task.');
+            return prev;
+          }
+          if (!isKeyReturnComplete(job)) {
+            toast.error('Complete key return before finishing this task.');
+            return prev;
+          }
+        }
 
-      const isApiJob = apiInspectionIds.current.has(id);
+        const isApiJob = apiInspectionIds.current.has(id);
 
-      // Optimistic: flip the card to completed straight away on both paths.
-      setJobs((prev) =>
-        prev.map((j) =>
-          j.id === id ? { ...j, status: 'completed', workflowStep: 99 } : j,
-        ),
-      );
+        if (isApiJob && apiConnected) {
+          const endTime = new Date();
+          const startTime = new Date(
+            endTime.getTime() - job.estimatedHours * 60 * 60 * 1000,
+          );
+          void apiCompleteInspection(id, {
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+          })
+            .then(() => refresh())
+            .catch(() => undefined);
+        } else {
+          setEarnings((earnPrev) => [
+            {
+              id: `earn-${Date.now()}`,
+              jobId: id,
+              type: job.type,
+              propertyAddress: job.propertyAddress,
+              completedAt: new Date().toISOString(),
+              hoursWorked: job.estimatedHours,
+              hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
+              travelKmOneWay: job.travelKmOneWay,
+              fuelAllowance: job.fuelAllowance,
+              laborAmount: job.laborAmount,
+              amount: job.payAmount,
+              accountingSynced: false,
+            },
+            ...earnPrev,
+          ]);
+          mutateWithOffline(id, 'complete', {});
+        }
+        toast.success('Inspection completed — report generated');
 
-      if (isApiJob && apiConnected) {
-        // Real completion (IN_PROGRESS → COMPLETED): post the on-site attendance window
-        // so the server records a PENDING BillableAttendance — it computes the billable
-        // hours + the $45/hr amount itself; we never set the rate or the amount. The
-        // window is derived from the job's estimated hours (end = now). Then refresh so
-        // that genuine PENDING earnings row replaces the optimistic card, instead of
-        // synthesizing a fake local line.
-        const endTime = new Date();
-        const startTime = new Date(
-          endTime.getTime() - job.estimatedHours * 60 * 60 * 1000,
-        );
-        void apiCompleteInspection(id, {
-          startTime: startTime.toISOString(),
-          endTime: endTime.toISOString(),
-        })
-          .then(() => refresh())
-          .catch(() => undefined);
-      } else {
-        // Demo/offline row (no facade behind it): synthesize the local earnings line.
-        setEarnings((prev) => [
-          {
-            id: `earn-${Date.now()}`,
-            jobId: id,
-            type: job.type,
-            propertyAddress: job.propertyAddress,
-            completedAt: new Date().toISOString(),
-            hoursWorked: job.estimatedHours,
-            hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
-            travelKmOneWay: job.travelKmOneWay,
-            fuelAllowance: job.fuelAllowance,
-            laborAmount: job.laborAmount,
-            amount: job.payAmount,
-            accountingSynced: false,
-          },
-          ...prev,
-        ]);
-        mutateWithOffline(id, 'complete', {});
-      }
-      toast.success('Inspection completed — report generated');
+        return prev.map((j) => {
+          if (j.id !== id) return j;
+          const completed = { ...j, status: 'completed' as const, workflowStep: 99 };
+          persistJobProgress(completed);
+          saveCompletedJobHistory(completed);
+          return completed;
+        });
+      });
     },
-    [jobs, apiConnected, mutateWithOffline, refresh],
+    [apiConnected, mutateWithOffline, refresh],
+  );
+
+  const saveKeyWorkflow = useCallback(
+    (id: string, phase: 'collect' | 'return', record: KeyPhaseRecord) => {
+      setJobs((prev) => {
+        const next = prev.map((j) => {
+          if (j.id !== id) return j;
+          const patch = buildKeyWorkflowPatch(j, phase, record);
+          return {
+            ...j,
+            workflowData: { ...j.workflowData, ...patch },
+          };
+        });
+        const updated = next.find((j) => j.id === id);
+        if (updated) persistJobProgress(updated);
+        return next;
+      });
+      mutateWithOffline(id, 'key_workflow', { phase, record });
+    },
+    [mutateWithOffline],
+  );
+
+  const finishInspectionWorkflow = useCallback(
+    (id: string): 'needs_key_return' | 'completed' => {
+      const job = jobs.find((j) => j.id === id);
+      if (!job) return 'completed';
+
+      if (!job.keyAccess) {
+        completeJob(id);
+        return 'completed';
+      }
+
+      const patch = buildInspectionFinishedPatch();
+      const withFinished: InspectionJob = {
+        ...job,
+        workflowData: { ...job.workflowData, ...patch },
+        workflowStep: Math.max(job.workflowStep ?? 0, 99),
+      };
+
+      setJobs((prev) => {
+        const next = prev.map((j) => (j.id === id ? withFinished : j));
+        persistJobProgress(withFinished);
+        return next;
+      });
+      mutateWithOffline(id, 'workflow', {
+        step: withFinished.workflowStep ?? 99,
+        data: patch,
+      });
+
+      if (isKeyReturnComplete(withFinished)) {
+        setTimeout(() => completeJob(id), 0);
+        return 'completed';
+      }
+
+      return 'needs_key_return';
+    },
+    [jobs, completeJob, mutateWithOffline],
   );
 
   const loadInspectionFindings = useCallback(
@@ -640,15 +752,7 @@ export function InspectorDataProvider({
     [apiConnected],
   );
 
-  const poolJobs = useMemo(
-    () =>
-      jobs.filter(
-        (j) =>
-          j.status === 'available' ||
-          (j.source === 'assigned' && j.status === 'assigned'),
-      ),
-    [jobs],
-  );
+  const poolJobs = useMemo(() => filterPoolJobs(jobs), [jobs]);
   const assignedJobs = useMemo(
     () =>
       jobs.filter(
@@ -659,29 +763,8 @@ export function InspectorDataProvider({
       ),
     [jobs],
   );
-  const todaysJobs = useMemo(
-    () =>
-      jobs.filter(
-        (j) =>
-          new Date(j.scheduledDate).toDateString() ===
-            new Date().toDateString() &&
-          j.status !== 'completed' &&
-          j.status !== 'declined' &&
-          j.status !== 'available',
-      ),
-    [jobs],
-  );
-  const upcomingJobs = useMemo(
-    () =>
-      jobs.filter(
-        (j) =>
-          new Date(j.scheduledDate) > new Date() &&
-          j.status !== 'completed' &&
-          j.status !== 'declined' &&
-          j.status !== 'available',
-      ),
-    [jobs],
-  );
+  const todaysJobs = useMemo(() => filterTodaysInspections(jobs), [jobs]);
+  const upcomingJobs = useMemo(() => filterUpcomingInspections(jobs), [jobs]);
   const completedJobs = useMemo(
     () => jobs.filter((j) => j.status === 'completed'),
     [jobs],
@@ -731,7 +814,11 @@ export function InspectorDataProvider({
     earnings,
     messages,
     notifications,
-    getJob: (id) => jobs.find((j) => j.id === id),
+    getJob: (id) => {
+      const job = jobs.find((j) => j.id === id);
+      if (!job) return undefined;
+      return job.status === 'completed' ? mergeJobWithHistory(job) : job;
+    },
     getTribunal: (id) => tribunals.find((t) => t.id === id),
     getThreadMessages: (threadId) => threadMessages[threadId] ?? [],
     acceptJob,
@@ -739,6 +826,7 @@ export function InspectorDataProvider({
     updateJobStatus,
     updateJobWorkflow,
     completeJob,
+    finishInspectionWorkflow,
     saveKeyWorkflow,
     loadInspectionFindings,
     uploadInspectionPhotos,
