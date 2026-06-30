@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -194,14 +195,18 @@ export function InspectorDataProvider({
   const apiThreadIds = useRef<Set<string>>(new Set());
   const apiNotificationIds = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (status === 'loading') {
+      setRegistration(null);
+      setRegistrationHydrated(false);
+      return;
+    }
     if (status !== 'authed' || !user?.email) {
       setRegistration(null);
       setRegistrationHydrated(true);
       return;
     }
-    const saved = loadInspectorRegistration(user.email);
-    setRegistration(saved);
+    setRegistration(loadInspectorRegistration(user.email));
     setRegistrationHydrated(true);
   }, [status, user?.email]);
 
@@ -209,10 +214,11 @@ export function InspectorDataProvider({
 
   const saveRegistration = useCallback(
     (data: InspectorRegistration) => {
-      const email = user?.email ?? data.email;
+      const email = (user?.email ?? data.email).trim().toLowerCase();
       if (!email) return;
-      saveInspectorRegistration(email, data);
-      setRegistration(data);
+      const payload = { ...data, email };
+      saveInspectorRegistration(email, payload);
+      setRegistration(payload);
     },
     [user?.email],
   );

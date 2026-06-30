@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -63,6 +64,18 @@ export default function RegisterPage() {
   });
 
   const selectedRegions = watch('serviceRegions') ?? [];
+
+  useEffect(() => {
+    if (user?.email) {
+      setValue('email', user.email, { shouldValidate: false });
+    }
+    if (user?.firstName) {
+      setValue('firstName', user.firstName, { shouldValidate: false });
+    }
+    if (user?.lastName) {
+      setValue('lastName', user.lastName, { shouldValidate: false });
+    }
+  }, [user?.email, user?.firstName, user?.lastName, setValue]);
 
   const toggleRegion = (region: string) => {
     const next = selectedRegions.includes(region)

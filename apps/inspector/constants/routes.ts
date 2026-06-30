@@ -5,6 +5,7 @@ export const ROUTES = {
   /** @deprecated Use INSPECTIONS — kept for deep links */
   JOBS: '/inspections',
   TRIBUNAL: '/tribunal',
+  KEY_MANAGEMENT: '/key-management',
   EARNINGS: '/earnings',
   MESSAGES: '/messages',
   NOTIFICATIONS: '/notifications',

@@ -24,14 +24,44 @@ function migrateLegacyRegistration(email: string): InspectorRegistration | null 
   }
 }
 
+function findRegistrationByEmail(email: string): InspectorRegistration | null {
+  const normalized = email.trim().toLowerCase();
+  try {
+    const raw = localStorage.getItem(storageKey(normalized));
+    if (raw) return JSON.parse(raw) as InspectorRegistration;
+  } catch {
+    /* fall through */
+  }
+
+  // Recover profiles saved before the signed-in email was available on the form.
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key?.startsWith(STORAGE_PREFIX)) continue;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const data = JSON.parse(raw) as InspectorRegistration;
+      if (data.email?.trim().toLowerCase() === normalized) {
+        saveInspectorRegistration(normalized, data);
+        if (key !== storageKey(normalized)) {
+          localStorage.removeItem(key);
+        }
+        return data;
+      }
+    } catch {
+      /* ignore malformed entries */
+    }
+  }
+
+  return migrateLegacyRegistration(normalized);
+}
+
 export function loadInspectorRegistration(
   email: string | null | undefined,
 ): InspectorRegistration | null {
   if (!email || typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(storageKey(email));
-    if (raw) return JSON.parse(raw) as InspectorRegistration;
-    return migrateLegacyRegistration(email);
+    return findRegistrationByEmail(email);
   } catch {
     return null;
   }
@@ -42,7 +72,11 @@ export function saveInspectorRegistration(
   data: InspectorRegistration,
 ): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(storageKey(email), JSON.stringify(data));
+  const normalized = email.trim().toLowerCase();
+  localStorage.setItem(
+    storageKey(normalized),
+    JSON.stringify({ ...data, email: normalized }),
+  );
 }
 
 export function isRegistrationComplete(

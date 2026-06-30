@@ -11,8 +11,8 @@ importers:
   apps/inspector:
     dependencies:
       '@crossub-thongz/api-contract':
-        specifier: ^0.10.0
-        version: 0.10.0
+        specifier: workspace:*
+        version: link:../../packages/api-contract
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.78.0(react@19.2.7))
@@ -86,9 +86,6 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
-
-  '@crossub-thongz/api-contract@0.10.0':
-    resolution: {integrity: sha512-imsbEduevWVSt/CNiV+yAkytTIk7LDP8Dj+qLU9f9YK7nm4Y442uHqiyTot5rUbr1H9JpTDZUhm12g4l9iLY1Q==, tarball: https://npm.pkg.github.com/download/@crossub-thongz/api-contract/0.10.0/a3ea290f1019abe9248fb75f1557ed5fe39b3ed8}
 
   '@emnapi/runtime@1.11.0':
     resolution: {integrity: sha512-55coeOFKHv1ywEcUXJtWU5f+Jr/W5tZDvZig8DLKSwUN1JpROQ4rk/SNOQiFWmaR/VKF4zuFyW1B8JduOSv6Pg==}
@@ -588,12 +585,6 @@ packages:
       sass:
         optional: true
 
-  openapi-fetch@0.13.8:
-    resolution: {integrity: sha512-yJ4QKRyNxE44baQ9mY5+r/kAzZ8yXMemtNAOFwOzRXJscdjSxxzWSNlyBAr+o5JjkUw9Lc3W7OIoca0cY3PYnQ==}
-
-  openapi-typescript-helpers@0.0.15:
-    resolution: {integrity: sha512-opyTPaunsklCBpTK8JGef6mfPhLSnyy5a0IN9vKtx3+4aExf+KxEqYwIy3hqkedXIB97u357uLMJsOnm3GVjsw==}
-
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -703,10 +694,6 @@ packages:
 snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
-
-  '@crossub-thongz/api-contract@0.10.0':
-    dependencies:
-      openapi-fetch: 0.13.8
 
   '@emnapi/runtime@1.11.0':
     dependencies:
@@ -1082,12 +1069,6 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
-
-  openapi-fetch@0.13.8:
-    dependencies:
-      openapi-typescript-helpers: 0.0.15
-
-  openapi-typescript-helpers@0.0.15: {}
 
   picocolors@1.1.1: {}
 

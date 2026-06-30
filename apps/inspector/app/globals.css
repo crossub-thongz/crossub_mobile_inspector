@@ -79,12 +79,11 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 
   input.date-input::-webkit-calendar-picker-indicator {
-    filter: invert(1) brightness(1.75);
-    opacity: 1;
+    filter: invert(0.85);
     cursor: pointer;
   }
 }

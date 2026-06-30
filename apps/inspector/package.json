@@ -8,13 +8,13 @@
     "pnpm": ">=9"
   },
   "scripts": {
-    "dev": "next dev -p 3006",
-    "build": "next build",
+    "dev": "next dev -p 3006 --webpack",
+    "build": "next build --webpack",
     "start": "next start -H 0.0.0.0",
     "lint": "eslint ."
   },
   "dependencies": {
-    "@crossub-thongz/api-contract": "^0.10.0",
+    "@crossub-thongz/api-contract": "workspace:*",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-label": "2.1.8",
     "@radix-ui/react-slot": "1.2.4",

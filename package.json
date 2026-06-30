@@ -5,6 +5,7 @@
   "description": "CROSSUB inspector app — field operations platform for inspections and tribunal hearings (consumes crossub_web API).",
   "scripts": {
     "preinstall": "npx -y only-allow pnpm",
+    "postinstall": "bash scripts/link-api-contract.sh",
     "dev": "bash scripts/dev-clean.sh",
     "dev:raw": "pnpm -r --parallel run dev",
     "dev:inspector": "pnpm --filter @crossub/inspector dev",

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ClipboardCheck } from 'lucide-react';
+import { ClipboardCheck, Search } from 'lucide-react';
 
 import { EmptyState } from '@/components/inspector/empty-state';
 import {
@@ -12,6 +12,7 @@ import {
 import { JobCard } from '@/components/inspector/job-card';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
+import { Input } from '@/components/ui/input';
 import {
   CORE_INSPECTION_TYPES,
   type CoreInspectionType,
@@ -33,6 +34,7 @@ export default function InspectionsPageClient() {
   const initialType = parseType(searchParams.get('type'));
   const [type, setType] = useState<CoreInspectionType>(initialType);
   const [statusTab, setStatusTab] = useState<StatusTab>('today');
+  const [query, setQuery] = useState('');
   const { todaysJobs, upcomingJobs, completedJobs, jobs } = useInspectorData();
 
   const counts = useMemo(() => {
@@ -57,7 +59,17 @@ export default function InspectionsPageClient() {
     completed: completedJobs,
   };
 
-  const filteredJobs = statusBuckets[statusTab].filter((j) => j.type === type);
+  const filteredJobs = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return statusBuckets[statusTab]
+      .filter((j) => j.type === type)
+      .filter(
+        (j) =>
+          !q ||
+          j.propertyAddress.toLowerCase().includes(q) ||
+          j.suburb.toLowerCase().includes(q),
+      );
+  }, [statusBuckets, statusTab, type, query]);
 
   const statusTabs: { id: StatusTab; label: string }[] = [
     { id: 'today', label: 'Today' },
@@ -68,6 +80,16 @@ export default function InspectionsPageClient() {
   return (
     <InspectorShell title="Inspections">
       <div className="space-y-4">
+        <div className="relative">
+          <Input
+            placeholder="Search address or suburb"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-9 pr-9"
+          />
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+        </div>
+
         <InspectionTypeTabs active={type} onChange={setType} counts={counts} />
         <InspectionTypeIntro type={type} />
 

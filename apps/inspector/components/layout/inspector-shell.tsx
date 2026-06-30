@@ -29,6 +29,7 @@ const PRIMARY_NAV = [
 ] as const;
 
 const MORE_NAV = [
+  { href: ROUTES.KEY_MANAGEMENT, label: 'Key management' },
   { href: ROUTES.EARNINGS, label: 'Earnings' },
   { href: ROUTES.REGISTER, label: 'Registration' },
   { href: ROUTES.MESSAGES, label: 'Messages' },
