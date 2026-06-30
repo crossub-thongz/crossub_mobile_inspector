@@ -6,17 +6,24 @@ const ACCOUNTS_KEY = 'crossub_inspector_accounts';
 const SESSION_KEY = 'crossub_inspector_session';
 const LOCAL_ACCESS_VALUE = 'local-inspector';
 
-/** Demo inspector — works when crossub_web API is offline */
-export const DEMO_INSPECTOR_EMAIL = 'admin@crossub.local';
-export const DEMO_INSPECTOR_PASSWORD = 'ChangeMe!Now123';
+/** Seeded demo account when API is offline */
+export const DEMO_INSPECTOR_EMAIL = 'demo@crossub.local';
+export const DEMO_INSPECTOR_PASSWORD = 'DemoInspect123';
 
-interface LocalAccount {
+export interface LocalAccount {
   id: string;
   email: string;
   password: string;
   firstName: string;
   lastName: string;
   createdAt: string;
+}
+
+export interface RegisterInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
 }
 
 function readAccounts(): LocalAccount[] {
@@ -43,8 +50,8 @@ function ensureDemoAccount(): void {
       id: 'insp-demo-001',
       email: DEMO_INSPECTOR_EMAIL,
       password: DEMO_INSPECTOR_PASSWORD,
-      firstName: 'Alex',
-      lastName: 'Chen',
+      firstName: 'Demo',
+      lastName: 'Inspector',
       createdAt: new Date().toISOString(),
     },
   ]);
@@ -70,6 +77,11 @@ function setAccessCookie(): void {
   document.cookie = `${COOKIE_ACCESS}=${LOCAL_ACCESS_VALUE}; path=/; max-age=${maxAge}; SameSite=Lax`;
 }
 
+function startLocalSession(account: LocalAccount): void {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ userId: account.id }));
+  setAccessCookie();
+}
+
 export function getLocalSessionUser(): AuthUser | null {
   if (typeof window === 'undefined') return null;
   ensureDemoAccount();
@@ -92,6 +104,26 @@ export function hasLocalAccessCookie(): boolean {
   });
 }
 
+export function registerLocalAccount(input: RegisterInput): AuthUser {
+  ensureDemoAccount();
+  const email = input.email.trim().toLowerCase();
+  const accounts = readAccounts();
+  if (accounts.some((a) => a.email === email)) {
+    throw new Error('An account with this email already exists. Sign in instead.');
+  }
+  const account: LocalAccount = {
+    id: `insp-${Date.now()}`,
+    email,
+    password: input.password,
+    firstName: input.firstName.trim(),
+    lastName: input.lastName.trim(),
+    createdAt: new Date().toISOString(),
+  };
+  writeAccounts([...accounts, account]);
+  startLocalSession(account);
+  return accountToUser(account);
+}
+
 export function loginLocalAccount(email: string, password: string): AuthUser | null {
   ensureDemoAccount();
   const normalized = email.trim().toLowerCase();
@@ -99,8 +131,7 @@ export function loginLocalAccount(email: string, password: string): AuthUser | n
     (a) => a.email === normalized && a.password === password,
   );
   if (!account) return null;
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ userId: account.id }));
-  setAccessCookie();
+  startLocalSession(account);
   return accountToUser(account);
 }
 

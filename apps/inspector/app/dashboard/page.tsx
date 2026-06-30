@@ -20,7 +20,7 @@ export default function DashboardPage() {
       <div className="space-y-3">
         <JobReminders />
 
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-2 gap-1.5">
           <KpiTile
             label="Today"
             value={summary.todaysJobs}
@@ -42,19 +42,6 @@ export default function DashboardPage() {
             label="Done (wk)"
             value={summary.completedThisWeek}
             href={ROUTES.INSPECTIONS}
-          />
-          <KpiTile
-            label="Earnings"
-            value={summary.weeklyEarnings}
-            href={ROUTES.EARNINGS}
-            isCurrency
-          />
-          <KpiTile
-            label="Unpaid"
-            value={summary.unclaimedEarnings}
-            href={ROUTES.EARNINGS}
-            isCurrency
-            highlight={summary.unclaimedEarnings > 0}
           />
         </div>
 

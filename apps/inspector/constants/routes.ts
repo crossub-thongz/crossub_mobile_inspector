@@ -10,6 +10,7 @@ export const ROUTES = {
   NOTIFICATIONS: '/notifications',
   PROFILE: '/profile',
   REGISTER: '/register',
+  SIGNUP: '/signup',
   SETTINGS: '/settings',
   LOGIN: '/login',
   FORGOT_PASSWORD: '/forgot-password',
@@ -18,6 +19,7 @@ export const ROUTES = {
 
 export const PUBLIC_ROUTE_PATTERNS = [
   /^\/login\/?$/,
+  /^\/signup\/?$/,
   /^\/forgot-password\/?$/,
   /^\/reset-password(\/|$)/,
 ];

@@ -43,7 +43,6 @@ import {
   saveInspectorRegistration,
 } from '@/lib/inspector-registration';
 import {
-  DEMO_INSPECTOR_REGISTRATION,
   EARNINGS,
   JOBS,
   MESSAGE_THREADS,
@@ -81,6 +80,7 @@ interface InspectorDataContextValue {
   profile: InspectorProfile;
   registration: InspectorRegistration | null;
   registrationComplete: boolean;
+  registrationHydrated: boolean;
   saveRegistration: (data: InspectorRegistration) => void;
   summary: DashboardSummary;
   jobs: InspectionJob[];
@@ -160,7 +160,7 @@ export function InspectorDataProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [apiConnected, setApiConnected] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -175,6 +175,7 @@ export function InspectorDataProvider({
   const [registration, setRegistration] = useState<InspectorRegistration | null>(
     null,
   );
+  const [registrationHydrated, setRegistrationHydrated] = useState(false);
   // Ids of jobs sourced from the live `/inspector/inspections` facade — lets the write
   // actions route an API-backed assignment to the real facade and a demo job to local.
   const apiInspectionIds = useRef<Set<string>>(new Set());
@@ -184,24 +185,27 @@ export function InspectorDataProvider({
   const apiNotificationIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    const saved = loadInspectorRegistration();
-    if (saved) {
-      setRegistration(saved);
+    if (status !== 'authed' || !user?.email) {
+      setRegistration(null);
+      setRegistrationHydrated(true);
       return;
     }
-    // Demo: pre-approve sample registration for local development
-    if (process.env.NODE_ENV === 'development') {
-      saveInspectorRegistration(DEMO_INSPECTOR_REGISTRATION);
-      setRegistration(DEMO_INSPECTOR_REGISTRATION);
-    }
-  }, []);
+    const saved = loadInspectorRegistration(user.email);
+    setRegistration(saved);
+    setRegistrationHydrated(true);
+  }, [status, user?.email]);
 
   const registrationComplete = isRegistrationComplete(registration);
 
-  const saveRegistration = useCallback((data: InspectorRegistration) => {
-    saveInspectorRegistration(data);
-    setRegistration(data);
-  }, []);
+  const saveRegistration = useCallback(
+    (data: InspectorRegistration) => {
+      const email = user?.email ?? data.email;
+      if (!email) return;
+      saveInspectorRegistration(email, data);
+      setRegistration(data);
+    },
+    [user?.email],
+  );
 
   const refreshPendingSync = useCallback(() => {
     setPendingSync(loadOfflineQueue().length);
@@ -618,14 +622,14 @@ export function InspectorDataProvider({
     return {
       ...DEMO_PROFILE,
       name,
-      email: registration?.email ?? DEMO_PROFILE.email,
+      email: registration?.email ?? user?.email ?? DEMO_PROFILE.email,
       phone: registration?.mobile ?? DEMO_PROFILE.phone,
       tribunalQualified: registration?.tribunalQualified ?? false,
       weeklyEarnings: summary.weeklyEarnings,
       registration,
       registrationComplete,
     };
-  }, [registration, registrationComplete, summary.weeklyEarnings]);
+  }, [registration, registrationComplete, summary.weeklyEarnings, user?.email]);
 
   const value: InspectorDataContextValue = {
     loading,
@@ -637,6 +641,7 @@ export function InspectorDataProvider({
     profile,
     registration,
     registrationComplete,
+    registrationHydrated,
     saveRegistration,
     summary,
     jobs,

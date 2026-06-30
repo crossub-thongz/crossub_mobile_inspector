@@ -81,4 +81,10 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  input.date-input::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.75);
+    opacity: 1;
+    cursor: pointer;
+  }
 }

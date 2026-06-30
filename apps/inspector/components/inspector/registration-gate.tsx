@@ -11,12 +11,12 @@ const REGISTRATION_EXEMPT = [ROUTES.REGISTER, ROUTES.PROFILE];
 
 export function RegistrationGate({ children }: { children: React.ReactNode }) {
   const { status } = useAuth();
-  const { registrationComplete, loading } = useInspectorData();
+  const { registrationComplete, registrationHydrated, loading } = useInspectorData();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    if (status !== 'authed' || loading) return;
+    if (status !== 'authed' || loading || !registrationHydrated) return;
     if (isPublicRoute(pathname)) return;
     if (REGISTRATION_EXEMPT.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
       return;
@@ -24,7 +24,14 @@ export function RegistrationGate({ children }: { children: React.ReactNode }) {
     if (!registrationComplete) {
       router.replace(ROUTES.REGISTER);
     }
-  }, [status, loading, registrationComplete, pathname, router]);
+  }, [
+    status,
+    loading,
+    registrationHydrated,
+    registrationComplete,
+    pathname,
+    router,
+  ]);
 
   return <>{children}</>;
 }

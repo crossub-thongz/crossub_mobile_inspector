@@ -1,6 +1,6 @@
 /** Inspector Rates & Property Inspection Time Guidelines */
 
-export const INSPECTOR_HOURLY_RATE_AUD = 35;
+export const INSPECTOR_HOURLY_RATE_AUD = 45;
 
 /** Fuel reimbursed one-way from regional midpoint → property ($/km). */
 export const FUEL_RATE_PER_KM_AUD = 0.8;

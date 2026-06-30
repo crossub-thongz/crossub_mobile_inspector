@@ -55,6 +55,8 @@ export default function RegisterPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       email: user?.email ?? '',
+      firstName: user?.firstName ?? '',
+      lastName: user?.lastName ?? '',
       serviceRegions: [],
       tribunalQualified: false,
     },
@@ -76,16 +78,17 @@ export default function RegisterPage() {
       submittedAt: new Date().toISOString(),
     };
     saveRegistration(payload);
-    toast.success('Registration submitted — Inspection Department will review');
+    toast.success('Profile saved — you will not be asked again');
     router.replace(ROUTES.DASHBOARD);
   };
 
   if (registrationComplete) {
     return (
       <div className="mx-auto flex min-h-screen max-w-lg flex-col px-4 py-8">
-        <h1 className="text-xl font-semibold">Already registered</h1>
+        <h1 className="text-xl font-semibold">Profile already completed</h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Your inspector information is on file. Update details on your profile page.
+          Your inspector details are saved for this account. Update them on your profile
+          page any time.
         </p>
         <div className="mt-6 flex gap-2">
           <Link href={ROUTES.PROFILE} className="flex-1">
@@ -104,10 +107,10 @@ export default function RegisterPage() {
   return (
     <div className="mx-auto min-h-screen max-w-lg bg-background px-4 py-8 pb-16">
       <div className="mb-6 space-y-2">
-        <h1 className="text-xl font-semibold">Inspector registration</h1>
+        <h1 className="text-xl font-semibold">Inspector profile</h1>
         <p className="text-muted-foreground text-sm">
-          One-time setup after sign-in. Login is email and password only — complete
-          this form once before accepting jobs.
+          One-time setup after you create your account. Your login password is the
+          one you chose at sign-up — it is not shown here (same as Facebook or Shopee).
         </p>
         <p className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
           Pay: ${INSPECTOR_HOURLY_RATE_AUD}/hour on-site. Inspection duration set by
@@ -133,7 +136,16 @@ export default function RegisterPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...register('email')} />
+            <Input
+              id="email"
+              type="email"
+              readOnly
+              className="text-muted-foreground bg-secondary/40"
+              {...register('email')}
+            />
+            <p className="text-muted-foreground text-[10px]">
+              Linked to your account — change via sign-in email only
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -237,7 +249,7 @@ export default function RegisterPage() {
         </section>
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
-          Submit registration
+          Save profile & continue
         </Button>
       </form>
     </div>
