@@ -40,6 +40,26 @@ export function formatDateSlash(iso: string): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
+/** Google Calendar “create event” deep link for a scheduled inspection. */
+export function buildGoogleCalendarUrl(
+  title: string,
+  startIso: string,
+  durationHours: number,
+  location: string,
+): string {
+  const start = new Date(startIso);
+  const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+  const fmt = (d: Date) =>
+    `${d.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`;
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${fmt(start)}/${fmt(end)}`,
+    location,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-AU', {
     hour: 'numeric',

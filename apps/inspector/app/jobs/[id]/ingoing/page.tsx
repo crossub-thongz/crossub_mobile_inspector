@@ -6,6 +6,7 @@ import { Camera, Mic } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { InspectorShell } from '@/components/layout/inspector-shell';
+import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,6 +87,8 @@ export default function IngoingInspectionPage() {
     <>
     <InspectorShell title="Ingoing Inspection" backHref={jobDetail(id)}>
       <div className="space-y-4">
+        <JobWorkflowToolbar job={job} />
+
         <div className="flex gap-1">
           {INGOING_AREAS.map((a, i) => (
             <div

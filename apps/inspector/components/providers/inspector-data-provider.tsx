@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/auth-provider';
 import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
+import { ROUTES } from '@/constants/routes';
 import { TRIBUNAL_INSPECTION_HOURS } from '@/constants/inspection-rates';
 import { api, ApiError } from '@/lib/api';
 import {
@@ -64,7 +65,12 @@ import {
   isKeyReturnComplete,
   type KeyPhaseRecord,
 } from '@/lib/key-access-workflow';
-import { fileToBase64 } from '@/lib/utils';
+import type { CancelTaskMode } from '@/constants/job-cancellation';
+import {
+  emergencyCancelBonus,
+  formatJobRefId,
+  payoutWithEmergencyBonus,
+} from '@/lib/job-cancellation';
 import {
   isRegistrationComplete,
   loadInspectorRegistration,
@@ -126,6 +132,10 @@ interface InspectorDataContextValue {
   getThreadMessages: (threadId: string) => ThreadMessage[];
   acceptJob: (id: string) => void;
   declineJob: (id: string) => void;
+  cancelJob: (
+    id: string,
+    options: { reason: string; mode: CancelTaskMode },
+  ) => void;
   updateJobStatus: (id: string, status: JobStatus) => void;
   updateJobWorkflow: (
     id: string,
@@ -451,6 +461,74 @@ export function InspectorDataProvider({
       toast.success('Job declined');
     },
     [mutateWithOffline],
+  );
+
+  const cancelJob = useCallback(
+    (id: string, options: { reason: string; mode: CancelTaskMode }) => {
+      const job = jobs.find((j) => j.id === id);
+      if (!job) return;
+
+      const ref = formatJobRefId(id);
+      const bonus = emergencyCancelBonus(job);
+      const payoutPatch = bonus > 0 ? payoutWithEmergencyBonus(job, bonus) : {};
+      const cancelledAt = new Date().toISOString();
+      const cancellation = {
+        reason: options.reason,
+        mode: options.mode,
+        cancelledAt,
+        criticalRaised: true,
+        emergencyBonusAud: bonus,
+      };
+
+      setJobs((prev) =>
+        prev.map((j) => {
+          if (j.id !== id) return j;
+          if (options.mode === 'release_pool') {
+            return {
+              ...j,
+              ...payoutPatch,
+              status: 'available' as const,
+              source: 'pool' as const,
+              workflowStep: 0,
+              workflowData: { ...j.workflowData, cancellation },
+            };
+          }
+          return {
+            ...j,
+            ...payoutPatch,
+            status: 'declined' as const,
+            workflowStep: 0,
+            workflowData: { ...j.workflowData, cancellation },
+          };
+        }),
+      );
+
+      const adminAlert: InspectorNotification = {
+        id: `cancel-critical-${id}-${Date.now()}`,
+        type: 'critical',
+        title: `Critical — task cancelled (${ref})`,
+        body: `${options.reason} · ${options.mode === 'release_pool' ? 'Released to pool' : 'Flagged to admin'}${
+          bonus > 0 ? ` · +$${bonus} emergency payout` : ''
+        }`,
+        href: ROUTES.INSPECTIONS,
+        read: false,
+        createdAt: cancelledAt,
+      };
+      setNotifications((prev) => [adminAlert, ...prev]);
+
+      mutateWithOffline(id, 'cancel', {
+        reason: options.reason,
+        mode: options.mode,
+        emergencyBonusAud: bonus,
+      });
+
+      toast.success(
+        options.mode === 'release_pool'
+          ? 'Task released to job pool'
+          : 'Cancellation flagged to admin',
+      );
+    },
+    [jobs, mutateWithOffline],
   );
 
   const updateJobStatus = useCallback(
@@ -823,6 +901,7 @@ export function InspectorDataProvider({
     getThreadMessages: (threadId) => threadMessages[threadId] ?? [],
     acceptJob,
     declineJob,
+    cancelJob,
     updateJobStatus,
     updateJobWorkflow,
     completeJob,

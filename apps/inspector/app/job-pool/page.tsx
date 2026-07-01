@@ -42,7 +42,7 @@ export default function JobPoolPage() {
 
   return (
     <InspectorShell title="Job Pool">
-      <div className="space-y-4">
+      <div className="space-y-3">
         <JobPoolTypeTags active={filter} onChange={setFilter} counts={counts} />
 
         {totalAvailable === 0 ? (

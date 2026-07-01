@@ -7,6 +7,7 @@ import {
   Briefcase,
   ClipboardCheck,
   LayoutDashboard,
+  LogOut,
   Menu,
   MessageSquare,
   Scale,
@@ -19,6 +20,7 @@ import { useAuth } from '@/components/providers/auth-provider';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
+import { Role } from '@/constants/roles';
 import { cn, displayName } from '@/lib/utils';
 
 const PRIMARY_NAV = [
@@ -44,26 +46,53 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function roleLabel(role: string): string {
+  if (role === Role.SUPER_ADMIN) return 'Admin';
+  if (role === Role.HR) return 'HR';
+  return 'Staff';
+}
+
+function userInitials(user: {
+  firstName?: string | null;
+  lastName?: string | null;
+  email: string;
+}): string {
+  const first = user.firstName?.trim().charAt(0) ?? '';
+  const last = user.lastName?.trim().charAt(0) ?? '';
+  const initials = `${first}${last}`.toUpperCase();
+  return initials || user.email.charAt(0).toUpperCase();
+}
+
 export function InspectorShell({
   children,
   title,
   backHref,
+  variant = 'default',
+  bare = false,
 }: {
   children: React.ReactNode;
   title?: string;
   backHref?: string;
+  variant?: 'default' | 'home';
+  /** No app header — page supplies its own top bar (e.g. Crossub Inspection list). */
+  bare?: boolean;
 }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
   const { notifications, messages, poolJobs, todaysJobs } = useInspectorData();
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const unreadMessages = messages.reduce((s, m) => s + m.unread, 0);
 
   useEffect(() => {
-    const el = headerRef.current;
+    if (bare) {
+      setHeaderHeight(0);
+      return;
+    }
+    const el = toolbarRef.current;
     if (!el) return;
 
     const updateHeight = () => setHeaderHeight(el.offsetHeight);
@@ -72,15 +101,74 @@ export function InspectorShell({
     const observer = new ResizeObserver(updateHeight);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [title, moreOpen]);
+  }, [title, variant, bare]);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMoreOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [moreOpen]);
+
+  const isHome = variant === 'home';
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col bg-background">
+      {!bare && (
       <header
         ref={headerRef}
-        className="fixed top-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+        className={cn(
+          'fixed top-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80',
+          isHome && 'bg-background',
+        )}
       >
-        <div className="flex h-14 items-center justify-between gap-2 px-4">
+        <div ref={toolbarRef} className="relative">
+        {isHome ? (
+          <div className="flex items-center justify-between gap-2 px-4 py-3">
+            {user ? (
+              <Link href={ROUTES.PROFILE} className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="ring-primary bg-secondary flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2">
+                  <span className="text-foreground text-sm font-semibold">
+                    {userInitials(user)}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-foreground truncate text-base font-semibold">
+                    {displayName(user)}
+                  </p>
+                  <span className="bg-primary/15 text-primary mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium">
+                    {roleLabel(user.role)}
+                  </span>
+                </div>
+              </Link>
+            ) : (
+              <div className="h-12 flex-1" />
+            )}
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-9"
+                onClick={() => setMoreOpen((v) => !v)}
+                aria-label="Menu"
+              >
+                <Menu className="size-5" />
+              </Button>
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 px-1 text-sm font-medium"
+              >
+                Log Out
+                <LogOut className="size-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex h-14 items-center justify-between gap-2 px-4">
           {backHref ? (
             <Link
               href={backHref}
@@ -130,9 +218,10 @@ export function InspectorShell({
             </Button>
           </div>
         </div>
+        )}
 
-        {title && (
-          <div className="border-t border-border px-4 py-2">
+        {title && !isHome && (
+          <div className="border-t border-border px-4 py-1.5">
             <h1 className="truncate text-base font-semibold">{title}</h1>
             {user && (
               <p className="text-muted-foreground truncate text-xs">
@@ -143,39 +232,49 @@ export function InspectorShell({
         )}
 
         {moreOpen && (
-          <div className="border-t border-border bg-card px-4 py-3">
-            <p className="text-muted-foreground mb-2 text-xs font-medium uppercase">
-              More
-            </p>
-            <div className="flex flex-col gap-1">
-              {MORE_NAV.map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setMoreOpen(false)}
-                  className="rounded-lg px-3 py-2.5 text-sm hover:bg-secondary"
+          <>
+            <button
+              type="button"
+              aria-label="Close menu"
+              className="fixed inset-0 z-40 bg-black/50"
+              onClick={() => setMoreOpen(false)}
+            />
+            <div className="border-border bg-card absolute top-full right-0 left-0 z-50 max-h-[min(70vh,24rem)] overflow-y-auto border-t px-4 py-3 shadow-lg">
+              <p className="text-muted-foreground mb-2 text-xs font-medium uppercase">
+                More
+              </p>
+              <div className="flex flex-col gap-1">
+                {MORE_NAV.map(({ href, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMoreOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-sm hover:bg-secondary"
+                  >
+                    {label}
+                  </Link>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => void logout()}
+                  className="rounded-lg px-3 py-2.5 text-left text-sm text-destructive hover:bg-destructive/10"
                 >
-                  {label}
-                </Link>
-              ))}
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className="rounded-lg px-3 py-2.5 text-left text-sm text-destructive hover:bg-destructive/10"
-              >
-                Sign out
-              </button>
+                  Sign out
+                </button>
+              </div>
             </div>
-          </div>
+          </>
         )}
+        </div>
       </header>
+      )}
 
       <main
-        className="flex-1 px-4 py-4 pb-24"
-        style={{ paddingTop: headerHeight + 16 }}
+        className="flex-1 px-4 pb-24"
+        style={bare ? { paddingTop: 8 } : { paddingTop: headerHeight }}
       >
-        {user && (
-          <div className="mb-4">
+        {user && !bare && (
+          <div className="mb-2">
             <ConnectionBanner />
           </div>
         )}

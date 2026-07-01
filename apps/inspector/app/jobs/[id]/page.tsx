@@ -2,15 +2,15 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { KeyRound, MapPin, Phone, User } from 'lucide-react';
+import { KeyRound, Phone, User } from 'lucide-react';
 
 import { AgentStrip } from '@/components/inspector/agent-strip';
 import { FindingsCard } from '@/components/inspector/findings-card';
+import { JobSummaryCard } from '@/components/inspector/job-summary-card';
+import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { MapLinks } from '@/components/inspector/map-links';
-import { PayBreakdown } from '@/components/inspector/pay-breakdown';
 import {
   JobStatusBadge,
-  JobTypeBadge,
   PriorityBadge,
 } from '@/components/inspector/status-badge';
 import { InspectorShell } from '@/components/layout/inspector-shell';
@@ -24,7 +24,6 @@ import {
   isKeyCollectComplete,
   isKeyReturnComplete,
 } from '@/lib/key-access-workflow';
-import { formatDateTime } from '@/lib/utils';
 
 const STATUS_FLOW = [
   { status: 'accepted' as const, label: 'Accepted' },
@@ -61,180 +60,167 @@ export default function JobDetailPage() {
   const returnPending =
     job.keyAccess && inspectionFinished && !keyReturnDone && job.status !== 'completed';
 
+  const handleAccept = () => {
+    acceptJob(id);
+    router.push(workflowHref);
+  };
+
   return (
     <InspectorShell title={poolPreview ? 'Job preview' : 'Job Details'} backHref={backHref}>
       <div className="space-y-4">
-        {poolPreview && (
-          <p className="text-muted-foreground text-xs">
-            Review the job details below. Accept to add it to your inspections, or go
-            back to the pool.
-          </p>
-        )}
-
-        <div className="flex flex-wrap gap-2">
-          <JobTypeBadge type={job.type} />
-          <PriorityBadge priority={job.priority} />
-          <JobStatusBadge status={job.status} />
-        </div>
-
-        {(job.agentName || job.agentCompany) && (
-          <section className="space-y-1">
-            <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
-              Agent information
+        {poolPreview ? (
+          <>
+            <p className="text-muted-foreground text-xs">
+              Review scheduled date, address, payout, and job type. Accept to open
+              the {job.type} inspection workflow.
             </p>
-            <AgentStrip job={job} />
-          </section>
-        )}
-
-        {job.keyAccess && !poolPreview && (
-          <Link
-            href={jobKeys(job.id)}
-            className="group flex w-full flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/10"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <KeyRound className="text-primary size-4 shrink-0" />
-                Key details
-              </span>
-              <span className="text-right text-[10px] text-muted-foreground group-hover:text-foreground">
-                Collect {keyCollectDone ? '✓' : 'pending'}
-                <span className="text-muted-foreground/60 group-hover:text-foreground/70">
-                  {' · '}
-                </span>
-                Return {keyReturnDone ? '✓' : 'pending'}
-              </span>
+            <JobSummaryCard job={job} />
+            <div className="space-y-2">
+              <Button className="w-full" onClick={handleAccept}>
+                Accept job
+              </Button>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => {
+                  declineJob(id);
+                  router.push(ROUTES.JOB_POOL);
+                }}
+              >
+                Decline
+              </Button>
             </div>
-          </Link>
-        )}
+          </>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2">
+              <PriorityBadge priority={job.priority} />
+              <JobStatusBadge status={job.status} />
+            </div>
 
-        {!poolPreview && <FindingsCard jobId={job.id} />}
+            <JobSummaryCard job={job} />
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-start gap-2">
-              <MapPin className="text-primary mt-0.5 size-4 shrink-0" />
-              {job.propertyAddress}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-muted-foreground text-sm">{job.durationLabel}</p>
-            <p className="text-muted-foreground text-sm">
-              {formatDateTime(job.scheduledTime)} · {job.distanceKm} km to property
-            </p>
-            <PayBreakdown
-              hours={job.estimatedHours}
-              laborAmount={job.laborAmount}
-              durationLabel={job.durationLabel}
-            />
+            {(job.agentName || job.agentCompany) && (
+              <section className="space-y-1">
+                <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
+                  Agent information
+                </p>
+                <AgentStrip job={job} />
+              </section>
+            )}
+
+            {job.keyAccess && (
+              <Link
+                href={jobKeys(job.id)}
+                className="group flex w-full flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/10"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <KeyRound className="text-primary size-4 shrink-0" />
+                    Key details
+                  </span>
+                  <span className="text-right text-[10px] text-muted-foreground group-hover:text-foreground">
+                    Collect {keyCollectDone ? '✓' : 'pending'}
+                    <span className="text-muted-foreground/60 group-hover:text-foreground/70">
+                      {' · '}
+                    </span>
+                    Return {keyReturnDone ? '✓' : 'pending'}
+                  </span>
+                </div>
+              </Link>
+            )}
+
+            <FindingsCard jobId={job.id} />
+
             <MapLinks
               address={job.propertyAddress}
               lat={job.latitude}
               lng={job.longitude}
             />
-          </CardContent>
-        </Card>
 
-        {job.tenantName && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Tenant</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm">
-              <p className="flex items-center gap-2">
-                <User className="size-4 text-muted-foreground" />
-                {job.tenantName}
-                {job.tenantPhone && (
-                  <a href={`tel:${job.tenantPhone}`} className="text-primary ml-auto">
-                    <Phone className="size-4" />
-                  </a>
-                )}
+            {job.tenantName && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tenant</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm">
+                  <p className="flex items-center gap-2">
+                    <User className="size-4 text-muted-foreground" />
+                    {job.tenantName}
+                    {job.tenantPhone && (
+                      <a href={`tel:${job.tenantPhone}`} className="text-primary ml-auto">
+                        <Phone className="size-4" />
+                      </a>
+                    )}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {job.status !== 'completed' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Status</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                  {STATUS_FLOW.map(({ status, label }) => (
+                    <Button
+                      key={status}
+                      size="sm"
+                      variant={job.status === status ? 'default' : 'outline'}
+                      onClick={() => updateJobStatus(job.id, status)}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {startBlocked && (
+              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                Complete key collection before starting the inspection.
               </p>
-            </CardContent>
-          </Card>
-        )}
+            )}
 
-        {job.status !== 'completed' && !poolPreview && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Status</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {STATUS_FLOW.map(({ status, label }) => (
+            {returnPending && (
+              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                Inspection finished — return the keys to complete this task.
+              </p>
+            )}
+
+            {job.status === 'completed' ? (
+              <Link href={jobHistory(job.id)}>
+                <Button className="w-full">View inspection report</Button>
+              </Link>
+            ) : returnPending ? (
+              <Link href={jobKeys(job.id, 'return')}>
+                <Button className="w-full">Return keys</Button>
+              </Link>
+            ) : (
+              <Link href={startBlocked ? jobKeys(job.id, 'collect') : workflowHref}>
                 <Button
-                  key={status}
-                  size="sm"
-                  variant={job.status === status ? 'default' : 'outline'}
-                  onClick={() => updateJobStatus(job.id, status)}
+                  className="w-full"
+                  disabled={startBlocked || (!canStartInspection && job.status !== 'accepted')}
                 >
-                  {label}
+                  {workflowStarted ? 'Continue' : 'Start'} {job.type} inspection
                 </Button>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+              </Link>
+            )}
 
-        {startBlocked && (
-          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-            Complete key collection before starting the inspection.
-          </p>
-        )}
+            {workflowStarted && job.status !== 'completed' && (
+              <>
+                <p className="text-muted-foreground text-center text-[10px]">
+                  Progress saved — you can continue where you left off.
+                </p>
+                <JobWorkflowToolbar job={job} />
+              </>
+            )}
 
-        {returnPending && (
-          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-            Inspection finished — return the keys to complete this task.
-          </p>
-        )}
-
-        {poolPreview ? (
-          <div className="space-y-2">
-            <Button className="w-full" onClick={() => acceptJob(id)}>
-              Accept job
-            </Button>
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => {
-                declineJob(id);
-                router.push(ROUTES.JOB_POOL);
-              }}
-            >
-              Decline
-            </Button>
-            <Button
-              className="w-full"
-              variant="ghost"
-              onClick={() => router.push(ROUTES.JOB_POOL)}
-            >
-              Back to pool
-            </Button>
-          </div>
-        ) : job.status === 'completed' ? (
-          <Link href={jobHistory(job.id)}>
-            <Button className="w-full">View inspection report</Button>
-          </Link>
-        ) : returnPending ? (
-          <Link href={jobKeys(job.id, 'return')}>
-            <Button className="w-full">Return keys</Button>
-          </Link>
-        ) : (
-          <Link href={startBlocked ? jobKeys(job.id, 'collect') : workflowHref}>
-            <Button
-              className="w-full"
-              disabled={startBlocked || (!canStartInspection && job.status !== 'accepted')}
-            >
-              {workflowStarted ? 'Continue' : 'Start'} {job.type} inspection
-            </Button>
-          </Link>
-        )}
-
-        {!poolPreview && workflowStarted && job.status !== 'completed' && (
-          <p className="text-muted-foreground text-center text-[10px]">
-            Progress saved — you can continue where you left off.
-          </p>
-        )}
-
-        {job.notes && (
-          <p className="text-muted-foreground text-xs">{job.notes}</p>
+            {job.notes && (
+              <p className="text-muted-foreground text-xs">{job.notes}</p>
+            )}
+          </>
         )}
       </div>
     </InspectorShell>

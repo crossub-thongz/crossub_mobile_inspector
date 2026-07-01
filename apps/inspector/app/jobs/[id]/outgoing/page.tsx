@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { InspectorShell } from '@/components/layout/inspector-shell';
+import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,6 +62,8 @@ export default function OutgoingInspectionPage() {
     <>
     <InspectorShell title="Outgoing Inspection" backHref={jobDetail(id)}>
       <div className="space-y-4">
+        <JobWorkflowToolbar job={job} />
+
         <p className="text-muted-foreground text-xs">
           Compare ingoing vs outgoing. Focus: cleaning, damage, missing items.
         </p>

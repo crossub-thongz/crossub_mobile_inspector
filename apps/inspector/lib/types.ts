@@ -238,7 +238,9 @@ export interface InspectorNotification {
     | 'job_available'
     | 'tribunal'
     | 'message'
-    | 'sync_complete';
+    | 'sync_complete'
+    | 'critical'
+    | 'job_cancelled';
   title: string;
   body: string;
   href: string;

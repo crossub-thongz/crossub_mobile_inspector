@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { InspectorShell } from '@/components/layout/inspector-shell';
+import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,6 +46,8 @@ export default function RoutineInspectionPage() {
     <>
     <InspectorShell title="Routine Inspection" backHref={jobDetail(id)}>
       <div className="space-y-4">
+        <JobWorkflowToolbar job={job} />
+
         <div className="flex gap-2">
           <Button
             variant={method === 'physical' ? 'default' : 'outline'}

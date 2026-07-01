@@ -11,9 +11,10 @@ import {
   PriorityBadge,
 } from '@/components/inspector/status-badge';
 import { jobDetail, jobHistory } from '@/constants/routes';
+import { formatJobRefId } from '@/lib/job-cancellation';
 import { isPoolJob } from '@/lib/inspector-job-filters';
 import type { InspectionJob } from '@/lib/types';
-import { formatDateTime } from '@/lib/utils';
+import { formatCurrency, formatDateSlash, formatTime } from '@/lib/utils';
 
 export function JobCard({
   job,
@@ -36,6 +37,9 @@ export function JobCard({
         <JobTypeBadge type={job.type} />
         <PriorityBadge priority={job.priority} />
         <JobStatusBadge status={job.status} />
+        <span className="text-muted-foreground ml-auto font-mono text-[10px]">
+          {formatJobRefId(job.id)}
+        </span>
       </div>
 
       {(job.agentName || job.agentCompany) && (
@@ -52,7 +56,8 @@ export function JobCard({
       </p>
       <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
         <Clock className="size-3 shrink-0" />
-        {formatDateTime(job.scheduledTime)} · {job.estimatedHours}h allocated
+        {formatDateSlash(job.scheduledDate || job.scheduledTime)} ·{' '}
+        {formatTime(job.scheduledTime)}
       </p>
 
       <div className="mt-3 border-t border-border/60 pt-3">

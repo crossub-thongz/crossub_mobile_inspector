@@ -6,6 +6,7 @@ import { QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { InspectionAreaPhotoRow } from '@/components/inspector/inspection-area-photo';
+import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -179,6 +180,8 @@ export default function OpenInspectionPage() {
     <>
       <InspectorShell title="Open Inspection" backHref={jobDetail(id)}>
       <div className="space-y-4">
+        <JobWorkflowToolbar job={job} />
+
         <div className="flex gap-1">
           {STEPS.map((label, i) => (
             <div

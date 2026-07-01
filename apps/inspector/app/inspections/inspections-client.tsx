@@ -1,19 +1,19 @@
 'use client';
 
 import Link from 'next/link';
+import { ArrowLeft, ClipboardCheck, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ClipboardCheck, Search } from 'lucide-react';
 
 import { EmptyState } from '@/components/inspector/empty-state';
+import { InspectionListCard } from '@/components/inspector/inspection-list-card';
 import {
-  InspectionTypeIntro,
-  InspectionTypeTabs,
-} from '@/components/inspector/inspection-type-tabs';
-import { JobCard } from '@/components/inspector/job-card';
+  INSPECTION_LIST_TAB_ORDER,
+  InspectionTypeStrip,
+} from '@/components/inspector/inspection-type-strip';
 import { InspectorShell } from '@/components/layout/inspector-shell';
-import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Input } from '@/components/ui/input';
+import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { ROUTES } from '@/constants/routes';
 import {
   CORE_INSPECTION_TYPES,
@@ -22,48 +22,45 @@ import {
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-type StatusTab = 'today' | 'upcoming' | 'completed';
+type StatusFilter = 'pending' | 'completed';
 
 function parseType(value: string | null): CoreInspectionType {
-  if (value && CORE_INSPECTION_TYPES.includes(value as CoreInspectionType)) {
+  if (
+    value &&
+    INSPECTION_LIST_TAB_ORDER.includes(value as CoreInspectionType)
+  ) {
     return value as CoreInspectionType;
   }
-  return 'open';
+  return 'outgoing';
+}
+
+function isAssignedInspection(job: InspectionJob): boolean {
+  return (
+    job.status !== 'available' &&
+    job.status !== 'declined' &&
+    CORE_INSPECTION_TYPES.includes(job.type as CoreInspectionType)
+  );
 }
 
 export default function InspectionsPageClient() {
   const searchParams = useSearchParams();
   const initialType = parseType(searchParams.get('type'));
   const [type, setType] = useState<CoreInspectionType>(initialType);
-  const [statusTab, setStatusTab] = useState<StatusTab>('today');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
   const [query, setQuery] = useState('');
-  const { todaysJobs, upcomingJobs, completedJobs, jobs } = useInspectorData();
+  const { jobs, completedJobs } = useInspectorData();
 
-  const counts = useMemo(() => {
-    const active = jobs.filter(
-      (j) =>
-        j.status !== 'available' &&
-        j.status !== 'declined' &&
-        CORE_INSPECTION_TYPES.includes(j.type as CoreInspectionType),
-    );
-    return CORE_INSPECTION_TYPES.reduce(
-      (acc, t) => {
-        acc[t] = active.filter((j) => j.type === t).length;
-        return acc;
-      },
-      {} as Record<CoreInspectionType, number>,
-    );
-  }, [jobs]);
-
-  const statusBuckets: Record<StatusTab, InspectionJob[]> = {
-    today: todaysJobs,
-    upcoming: upcomingJobs,
-    completed: completedJobs,
-  };
+  const pendingJobs = useMemo(
+    () => jobs.filter((j) => isAssignedInspection(j) && j.status !== 'completed'),
+    [jobs],
+  );
 
   const filteredJobs = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return statusBuckets[statusTab]
+    const bucket =
+      statusFilter === 'completed' ? completedJobs : pendingJobs;
+
+    return bucket
       .filter((j) => j.type === type)
       .filter(
         (j) =>
@@ -71,70 +68,88 @@ export default function InspectionsPageClient() {
           j.propertyAddress.toLowerCase().includes(q) ||
           j.suburb.toLowerCase().includes(q),
       );
-  }, [statusBuckets, statusTab, type, query]);
-
-  const statusTabs: { id: StatusTab; label: string }[] = [
-    { id: 'today', label: 'Today' },
-    { id: 'upcoming', label: 'Upcoming' },
-    { id: 'completed', label: 'Completed' },
-  ];
+  }, [completedJobs, pendingJobs, query, statusFilter, type]);
 
   return (
-    <InspectorShell title="Inspections">
-      <div className="space-y-4">
-        <div className="relative">
-          <Input
-            placeholder="Search address or suburb"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-9 pr-9"
-          />
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+    <InspectorShell bare>
+      <div className="flex min-h-full flex-col">
+        <div className="bg-background sticky top-0 z-20 -mx-4 border-b border-border px-4 pb-3">
+          <div className="relative flex items-center py-2">
+            <Link
+              href={ROUTES.DASHBOARD}
+              className="text-foreground flex size-9 items-center justify-center"
+              aria-label="Back"
+            >
+              <ArrowLeft className="size-5" />
+            </Link>
+            <h1 className="text-foreground pointer-events-none absolute inset-x-0 text-center text-base font-semibold">
+              Crossub Inspection
+            </h1>
+          </div>
+
+          <div className="relative">
+            <Input
+              placeholder="Please enter keywords"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="border-border bg-card h-10 rounded-full pr-10"
+            />
+            <Search className="text-primary pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+          </div>
+
+          <div className="mt-3">
+            <InspectionTypeStrip active={type} onChange={setType} />
+          </div>
         </div>
 
-        <InspectionTypeTabs active={type} onChange={setType} counts={counts} />
-        <InspectionTypeIntro type={type} />
+        <div className="flex-1 space-y-3 pt-3 pb-28">
+          {filteredJobs.length === 0 ? (
+            <EmptyState
+              icon={ClipboardCheck}
+              title={
+                statusFilter === 'pending'
+                  ? 'No pending inspections'
+                  : 'No completed inspections'
+              }
+              description={
+                statusFilter === 'pending'
+                  ? `No pending ${type} jobs. Accept work from the pool or switch type.`
+                  : `No completed ${type} inspections yet.`
+              }
+            />
+          ) : (
+            filteredJobs.map((job) => (
+              <InspectionListCard
+                key={job.id}
+                job={job}
+                completed={statusFilter === 'completed'}
+              />
+            ))
+          )}
+        </div>
 
-        <div className="flex gap-1 overflow-x-auto rounded-lg border bg-secondary/30 p-1">
-          {statusTabs.map(({ id, label }) => (
+        <div className="border-border bg-background fixed bottom-16 left-1/2 z-40 flex w-full max-w-lg -translate-x-1/2 border-t">
+          {(
+            [
+              { id: 'pending' as const, label: 'Pending' },
+              { id: 'completed' as const, label: 'Completed' },
+            ] as const
+          ).map(({ id, label }) => (
             <button
               key={id}
               type="button"
-              onClick={() => setStatusTab(id)}
+              onClick={() => setStatusFilter(id)}
               className={cn(
-                'shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition',
-                statusTab === id
+                'flex-1 py-3.5 text-sm font-semibold transition',
+                statusFilter === id
                   ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground',
+                  : 'text-muted-foreground bg-card hover:text-foreground',
               )}
             >
               {label}
             </button>
           ))}
         </div>
-
-        {statusTab === 'completed' && (
-          <p className="text-muted-foreground text-xs">
-            Tap a job to open its report with key proof and section photos.{' '}
-            <Link href={ROUTES.HISTORY} className="text-primary font-medium">
-              All history
-            </Link>
-          </p>
-        )}
-
-        {filteredJobs.length === 0 ? (
-          <EmptyState
-            icon={ClipboardCheck}
-            title={`No ${type} inspections`}
-            description={`No ${statusTab} ${type} inspections. Check another type or accept jobs from the pool.`}
-          />
-        ) : (
-          <div className="space-y-3">
-            {filteredJobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
-        )}
       </div>
     </InspectorShell>
   );
