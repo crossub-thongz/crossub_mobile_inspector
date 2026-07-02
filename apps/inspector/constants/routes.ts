@@ -16,6 +16,7 @@ export const ROUTES = {
   SETTINGS: '/settings',
   LOGIN: '/login',
   FORGOT_PASSWORD: '/forgot-password',
+  SYSTEM_ACCESS_AGREEMENT: '/system-access-agreement',
   RESET_PASSWORD: '/reset-password',
 } as const;
 
