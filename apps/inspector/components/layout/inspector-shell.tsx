@@ -15,11 +15,12 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { AvailabilityBubble } from '@/components/inspector/availability-bubble';
 import { ConnectionBanner } from '@/components/inspector/connection-banner';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { ROUTES } from '@/constants/routes';
+import { ROUTES, isPublicRoute } from '@/constants/routes';
 import { Role } from '@/constants/roles';
 import { cn, displayName } from '@/lib/utils';
 
@@ -84,6 +85,7 @@ export function InspectorShell({
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
   const { notifications, messages, poolJobs, todaysJobs } = useInspectorData();
+  const showAvailabilityBubble = Boolean(user) && !isPublicRoute(pathname);
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const unreadMessages = messages.reduce((s, m) => s + m.unread, 0);
 
@@ -329,6 +331,8 @@ export function InspectorShell({
           </Link>
         </div>
       </nav>
+
+      {showAvailabilityBubble ? <AvailabilityBubble /> : null}
     </div>
   );
 }

@@ -18,7 +18,7 @@ import {
 } from '@/constants/inspection';
 
 export default function JobPoolPage() {
-  const { poolJobs } = useInspectorData();
+  const { poolJobs, receivingJobs } = useInspectorData();
   const [filter, setFilter] = useState<JobPoolFilter>('all');
 
   const counts = useMemo(
@@ -45,7 +45,13 @@ export default function JobPoolPage() {
       <div className="space-y-3">
         <JobPoolTypeTags active={filter} onChange={setFilter} counts={counts} />
 
-        {totalAvailable === 0 ? (
+        {!receivingJobs ? (
+          <EmptyState
+            icon={Briefcase}
+            title="You're on break"
+            description="Tap the red bubble above the footer to start receiving open inspection jobs from the pool."
+          />
+        ) : totalAvailable === 0 ? (
           <EmptyState
             icon={Briefcase}
             title="No jobs available"

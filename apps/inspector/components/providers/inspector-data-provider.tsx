@@ -92,6 +92,12 @@ import {
   saveInspectorRegistration,
 } from '@/lib/inspector-registration';
 import {
+  isReceivingJobs,
+  loadInspectorAvailability,
+  saveInspectorAvailability,
+  type InspectorAvailability,
+} from '@/lib/inspector-availability';
+import {
   EARNINGS,
   JOBS,
   MESSAGE_THREADS,
@@ -126,6 +132,10 @@ interface InspectorDataContextValue {
   apiConnected: boolean;
   apiError: string | null;
   pendingSync: number;
+  /** True when the inspector is open to new pool jobs (green bubble). */
+  receivingJobs: boolean;
+  availability: InspectorAvailability;
+  toggleReceivingJobs: () => void;
   refresh: () => Promise<void>;
   syncOfflineQueue: () => Promise<void>;
   profile: InspectorProfile;
@@ -258,6 +268,8 @@ export function InspectorDataProvider({
     null,
   );
   const [registrationHydrated, setRegistrationHydrated] = useState(false);
+  const [availability, setAvailability] = useState<InspectorAvailability>('receiving');
+  const receivingJobs = isReceivingJobs(availability);
   // The server's own-profile read (roster credentials + registration status) —
   // null until the facade answers; the profile memo overlays it on the local copy.
   const [serverProfile, setServerProfile] = useState<InspectorProfileDto | null>(
@@ -288,11 +300,16 @@ export function InspectorDataProvider({
     if (status !== 'authed' || !user?.email) {
       setRegistration(null);
       setRegistrationHydrated(true);
+      setAvailability('receiving');
       return;
     }
     setRegistration(loadInspectorRegistration(user.email));
     setRegistrationHydrated(true);
+    setAvailability(loadInspectorAvailability(user.email));
   }, [status, user?.email]);
+
+  const receivingJobsRef = useRef(receivingJobs);
+  receivingJobsRef.current = receivingJobs;
 
   const registrationComplete = isRegistrationComplete(registration);
 
@@ -363,7 +380,9 @@ export function InspectorDataProvider({
     const [inspections, pool, ledger, threads, notifs, tribs, profileRes] =
       await Promise.allSettled([
         fetchInspections(),
-        fetchPoolInspections(),
+        receivingJobsRef.current
+          ? fetchPoolInspections()
+          : Promise.resolve([]),
         fetchInspectorJobs(),
         fetchInspectorMessages(),
         fetchInspectorNotifications(),
@@ -472,6 +491,24 @@ export function InspectorDataProvider({
     refreshPendingSync();
   }, [status, user?.email, refreshPendingSync]);
 
+  const toggleReceivingJobs = useCallback(() => {
+    if (!user?.email) return;
+    const next: InspectorAvailability =
+      availability === 'receiving' ? 'on_break' : 'receiving';
+    setAvailability(next);
+    saveInspectorAvailability(user.email, next);
+    if (next === 'receiving') {
+      toast.success('Receiving jobs — refreshing the pool');
+      void refresh();
+    } else {
+      toast.info('On break — new pool jobs are hidden');
+      apiPoolIds.current = new Set();
+      setJobs((prev) =>
+        prev.filter((j) => j.status !== 'available' && j.source !== 'pool'),
+      );
+    }
+  }, [availability, refresh, user?.email]);
+
   const syncOfflineQueue = useCallback(async () => {
     const queue = loadOfflineQueue();
     if (queue.length === 0) {
@@ -556,8 +593,15 @@ export function InspectorDataProvider({
 
   const acceptJob = useCallback(
     (id: string) => {
-      const isAssignedApiJob = apiInspectionIds.current.has(id);
+      const job = jobs.find((j) => j.id === id);
       const isPoolApiJob = apiPoolIds.current.has(id);
+      const isPoolRow =
+        isPoolApiJob || job?.status === 'available' || job?.source === 'pool';
+      if (isPoolRow && !receivingJobsRef.current) {
+        toast.error('You are on break — switch to receiving jobs to accept new work.');
+        return;
+      }
+      const isAssignedApiJob = apiInspectionIds.current.has(id);
       setJobs((prev) =>
         prev.map((j) =>
           j.id === id
@@ -582,7 +626,7 @@ export function InspectorDataProvider({
       }
       toast.success('Job accepted');
     },
-    [apiConnected, mutateWithOffline, refresh],
+    [apiConnected, jobs, mutateWithOffline, refresh],
   );
 
   const declineJob = useCallback(
@@ -1065,7 +1109,10 @@ export function InspectorDataProvider({
     [apiConnected],
   );
 
-  const poolJobs = useMemo(() => filterPoolJobs(jobs), [jobs]);
+  const poolJobs = useMemo(
+    () => (receivingJobs ? filterPoolJobs(jobs) : []),
+    [jobs, receivingJobs],
+  );
   const assignedJobs = useMemo(
     () =>
       jobs.filter(
@@ -1121,11 +1168,22 @@ export function InspectorDataProvider({
     user?.email,
   ]);
 
+  useEffect(() => {
+    if (status !== 'authed' || !receivingJobs || !apiConnected) return;
+    const id = window.setInterval(() => {
+      void refresh();
+    }, 90_000);
+    return () => window.clearInterval(id);
+  }, [status, receivingJobs, apiConnected, refresh]);
+
   const value: InspectorDataContextValue = {
     loading,
     apiConnected,
     apiError,
     pendingSync,
+    receivingJobs,
+    availability,
+    toggleReceivingJobs,
     refresh,
     syncOfflineQueue,
     profile,
