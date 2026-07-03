@@ -83,7 +83,14 @@ export default function SignupPage() {
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
       });
-      await refresh();
+      const authed = await refresh();
+      if (!authed) {
+        toast.error(
+          'Account created but the session cookie was not saved. Sign in with the same password.',
+        );
+        router.replace(ROUTES.LOGIN);
+        return;
+      }
       toast.success('Account created — you are signed in.');
       router.replace(
         postAuthDestination(

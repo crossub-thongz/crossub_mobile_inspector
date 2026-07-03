@@ -63,14 +63,21 @@ export default function LoginPage() {
   const onSubmit = async (values: FormValues) => {
     const email = normalizeAuthEmail(values.email);
     try {
-      const result = await api.post<{ user: AuthUser }>('/auth/login', {
+      await api.post<{ user: AuthUser }>('/auth/login', {
         email,
         password: values.password,
       });
-      await refresh();
+      const authed = await refresh();
+      if (!authed) {
+        toast.error(
+          'Credentials were accepted but the session cookie was not saved. Restart the dev server and try again.',
+        );
+        return;
+      }
+      const me = await api.get<{ user: AuthUser }>('/auth/me');
       router.replace(
         postAuthDestination(
-          result.user,
+          me.user,
           ROUTES.DASHBOARD,
           ROUTES.SYSTEM_ACCESS_AGREEMENT,
         ),

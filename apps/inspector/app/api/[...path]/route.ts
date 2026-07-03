@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
+import { rewriteBffSetCookie } from '@/lib/bff-cookie';
+
 const apiBase = (): string =>
   process.env.API_INTERNAL_URL ?? 'http://localhost:3001';
 
@@ -14,12 +16,6 @@ const buildUpstreamUrl = (req: NextRequest, path: string[]): string => {
   const suffix = path.length > 0 ? path.join('/') : '';
   return `${apiBase()}/api/${suffix}${req.nextUrl.search}`;
 };
-
-const rewriteSetCookie = (cookie: string): string =>
-  cookie
-    .split(';')
-    .filter((part) => !part.trim().toLowerCase().startsWith('domain='))
-    .join(';');
 
 const proxy = async (
   req: NextRequest,
@@ -61,8 +57,9 @@ const proxy = async (
   });
 
   const cookies = upstream.headers.getSetCookie?.() ?? [];
+  const requestHost = req.headers.get('host') ?? '';
   for (const cookie of cookies) {
-    response.headers.append('set-cookie', rewriteSetCookie(cookie));
+    response.headers.append('set-cookie', rewriteBffSetCookie(cookie, requestHost));
   }
 
   return response;
