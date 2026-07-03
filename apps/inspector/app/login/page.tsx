@@ -39,7 +39,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
-  const { refresh, status, user } = useAuth();
+  const { status, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   useLayoutEffect(() => {
@@ -61,21 +61,14 @@ export default function LoginPage() {
   const onSubmit = async (values: FormValues) => {
     const email = normalizeAuthEmail(values.email);
     try {
-      await api.post<{ user: AuthUser }>('/auth/login', {
+      const result = await api.post<{ user: AuthUser }>('/auth/login', {
         email,
         password: values.password,
       });
-      const authedUser = await refresh();
-      if (!authedUser) {
-        toast.error(
-          'Credentials were accepted but the session cookie was not saved. Restart the dev server and try again.',
-        );
-        return;
-      }
       toast.success('Signed in.');
       window.location.assign(
         postAuthDestination(
-          authedUser,
+          result.user,
           ROUTES.DASHBOARD,
           ROUTES.SYSTEM_ACCESS_AGREEMENT,
         ),

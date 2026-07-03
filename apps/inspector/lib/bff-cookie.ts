@@ -1,9 +1,9 @@
 /**
  * Rewrite upstream auth Set-Cookie headers for the Next.js BFF proxy.
  *
- * Render/staging Nest runs with NODE_ENV=production and emits
- * `Secure; SameSite=None`. Browsers reject Secure cookies on http://localhost,
- * so sign-in appears to fail even when credentials are valid.
+ * Staging/production Nest emits `Secure; SameSite=None` (and sometimes a
+ * `Domain=` the browser host cannot use). Local dev runs on http://localhost
+ * where `Secure` cookies are dropped.
  */
 export function rewriteBffSetCookie(cookie: string, requestHost: string): string {
   const isLocalHost =
@@ -17,7 +17,7 @@ export function rewriteBffSetCookie(cookie: string, requestHost: string): string
     const lower = part.toLowerCase();
     if (lower.startsWith('domain=')) return false;
     if (lower.startsWith('samesite=')) return false;
-    if (isLocalHost && lower === 'secure') return false;
+    if (lower === 'secure') return false;
     return part.length > 0;
   });
 
@@ -27,4 +27,20 @@ export function rewriteBffSetCookie(cookie: string, requestHost: string): string
   }
 
   return [nameValue, ...attrs].join('; ');
+}
+
+/** Collect all Set-Cookie headers from an upstream fetch Response. */
+export function readUpstreamSetCookies(headers: Headers): string[] {
+  if (typeof headers.getSetCookie === 'function') {
+    const cookies = headers.getSetCookie();
+    if (cookies.length > 0) return cookies;
+  }
+
+  if (typeof headers.getAll === 'function') {
+    const all = headers.getAll('set-cookie');
+    if (all.length > 0) return all;
+  }
+
+  const single = headers.get('set-cookie');
+  return single ? [single] : [];
 }

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { rewriteBffSetCookie } from '@/lib/bff-cookie';
+import { readUpstreamSetCookies, rewriteBffSetCookie } from '@/lib/bff-cookie';
 
 const apiBase = (): string =>
   process.env.API_INTERNAL_URL ?? 'http://localhost:3001';
@@ -44,7 +44,12 @@ const proxy = async (
     );
   }
 
-  const response = new NextResponse(upstream.body, {
+  const responseBody =
+    upstream.status === 204 || req.method === 'HEAD'
+      ? null
+      : await upstream.arrayBuffer();
+
+  const response = new NextResponse(responseBody, {
     status: upstream.status,
     statusText: upstream.statusText,
   });
@@ -53,12 +58,13 @@ const proxy = async (
     const lower = key.toLowerCase();
     if (lower === 'set-cookie') return;
     if (lower === 'transfer-encoding') return;
+    if (lower === 'content-encoding') return;
+    if (lower === 'content-length') return;
     response.headers.set(key, value);
   });
 
-  const cookies = upstream.headers.getSetCookie?.() ?? [];
   const requestHost = req.headers.get('host') ?? '';
-  for (const cookie of cookies) {
+  for (const cookie of readUpstreamSetCookies(upstream.headers)) {
     response.headers.append('set-cookie', rewriteBffSetCookie(cookie, requestHost));
   }
 

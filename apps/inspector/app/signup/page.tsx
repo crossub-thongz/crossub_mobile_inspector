@@ -26,6 +26,7 @@ import { Label } from '@/components/ui/label';
 import { PASSWORD_MAX, PASSWORD_MIN } from '@/constants/auth';
 import { ROUTES } from '@/constants/routes';
 import { ApiError, api } from '@/lib/api';
+import type { AuthUser } from '@/lib/auth-types';
 import { normalizeAuthEmail } from '@/lib/auth-email';
 import { postAuthDestination } from '@/lib/system-access-agreement';
 
@@ -48,7 +49,7 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export default function SignupPage() {
-  const { refresh, status, user } = useAuth();
+  const { status, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const submitLock = useRef(false);
 
@@ -79,26 +80,17 @@ export default function SignupPage() {
     submitLock.current = true;
 
     try {
-      await api.post('/auth/register-inspector', {
+      const result = await api.post<{ user: AuthUser }>('/auth/register-inspector', {
         email: normalizeAuthEmail(values.email),
         password: values.password,
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
       });
 
-      const authedUser = await refresh();
-      if (!authedUser) {
-        toast.error(
-          'Account created but the session cookie was not saved. Sign in with the same password.',
-        );
-        window.location.assign(ROUTES.LOGIN);
-        return;
-      }
-
       toast.success('Account created — you are signed in.');
       window.location.assign(
         postAuthDestination(
-          authedUser,
+          result.user,
           ROUTES.REGISTER,
           ROUTES.SYSTEM_ACCESS_AGREEMENT,
         ),
