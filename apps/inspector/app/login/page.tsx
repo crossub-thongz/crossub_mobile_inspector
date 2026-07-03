@@ -25,7 +25,7 @@ import { PASSWORD_MAX, PASSWORD_MIN } from '@/constants/auth';
 import { ROUTES } from '@/constants/routes';
 import { ApiError, api } from '@/lib/api';
 import type { AuthUser } from '@/lib/auth-types';
-import { loginLocalAccount } from '@/lib/local-auth';
+import { normalizeAuthEmail } from '@/lib/auth-email';
 import { postAuthDestination } from '@/lib/system-access-agreement';
 
 const schema = z.object({
@@ -61,8 +61,12 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (values: FormValues) => {
+    const email = normalizeAuthEmail(values.email);
     try {
-      const result = await api.post<{ user: AuthUser }>('/auth/login', values);
+      const result = await api.post<{ user: AuthUser }>('/auth/login', {
+        email,
+        password: values.password,
+      });
       await refresh();
       router.replace(
         postAuthDestination(
@@ -71,25 +75,17 @@ export default function LoginPage() {
           ROUTES.SYSTEM_ACCESS_AGREEMENT,
         ),
       );
-      return;
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        /* fall through to local account */
-      } else if (err instanceof ApiError && err.status < 500 && err.status !== 401) {
-        toast.error(`Sign in failed (${err.status}).`);
+        toast.error('Invalid email or password.');
         return;
       }
-      /* API offline — try locally stored account */
+      if (err instanceof ApiError && err.status >= 500) {
+        toast.error('Could not reach the API. Is crossub-api running?');
+        return;
+      }
+      toast.error('Sign in failed. Try again.');
     }
-
-    const localUser = loginLocalAccount(values.email, values.password);
-    if (localUser) {
-      await refresh();
-      router.replace(ROUTES.DASHBOARD);
-      return;
-    }
-
-    toast.error('Invalid email or password.');
   };
 
   return (

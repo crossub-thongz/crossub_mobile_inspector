@@ -22,9 +22,6 @@ import { ROUTES } from '@/constants/routes';
 import type { InspectorRegistration } from '@/lib/types';
 
 const schema = z.object({
-  firstName: z.string().min(2, 'First name required'),
-  lastName: z.string().min(2, 'Last name required'),
-  email: z.string().email('Valid email required'),
   mobile: z.string().min(8, 'Mobile required'),
   dateOfBirth: z.string().min(1, 'Date of birth required'),
   residentialAddress: z.string().min(5, 'Address required'),
@@ -43,7 +40,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, status } = useAuth();
   const { saveRegistration, registrationComplete } = useInspectorData();
 
   const {
@@ -55,9 +52,6 @@ export default function RegisterPage() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      email: user?.email ?? '',
-      firstName: user?.firstName ?? '',
-      lastName: user?.lastName ?? '',
       serviceRegions: [],
       tribunalQualified: false,
     },
@@ -66,16 +60,17 @@ export default function RegisterPage() {
   const selectedRegions = watch('serviceRegions') ?? [];
 
   useEffect(() => {
-    if (user?.email) {
-      setValue('email', user.email, { shouldValidate: false });
+    if (status === 'guest') {
+      router.replace(ROUTES.LOGIN);
     }
-    if (user?.firstName) {
-      setValue('firstName', user.firstName, { shouldValidate: false });
-    }
-    if (user?.lastName) {
-      setValue('lastName', user.lastName, { shouldValidate: false });
-    }
-  }, [user?.email, user?.firstName, user?.lastName, setValue]);
+  }, [status, router]);
+
+  useEffect(() => {
+    if (!user?.firstName || !user?.lastName) return;
+    setValue('bankAccountName', `${user.firstName} ${user.lastName}`.trim(), {
+      shouldValidate: false,
+    });
+  }, [user?.firstName, user?.lastName, setValue]);
 
   const toggleRegion = (region: string) => {
     const next = selectedRegions.includes(region)
@@ -85,8 +80,17 @@ export default function RegisterPage() {
   };
 
   const onSubmit = async (values: FormValues) => {
+    if (!user?.email || !user.firstName || !user.lastName) {
+      toast.error('Account details missing — sign in again.');
+      router.replace(ROUTES.LOGIN);
+      return;
+    }
+
     const payload: InspectorRegistration = {
       ...values,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
       registrationStatus: 'pending_review',
       submittedAt: new Date().toISOString(),
     };
@@ -94,6 +98,10 @@ export default function RegisterPage() {
     toast.success('Profile saved — you will not be asked again');
     router.replace(ROUTES.DASHBOARD);
   };
+
+  if (status === 'loading' || !user) {
+    return null;
+  }
 
   if (registrationComplete) {
     return (
@@ -121,6 +129,15 @@ export default function RegisterPage() {
     <div className="mx-auto min-h-screen max-w-lg bg-background px-4 py-8 pb-16">
       <div className="mb-6 space-y-2">
         <h1 className="text-xl font-semibold">Inspector profile</h1>
+        <p className="text-sm text-muted-foreground">
+          Complete your professional details. Your sign-in info is already on file.
+        </p>
+        <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+          <p className="font-medium">
+            {user.firstName} {user.lastName}
+          </p>
+          <p className="text-muted-foreground">{user.email}</p>
+        </div>
         <p className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
           Pay: ${INSPECTOR_HOURLY_RATE_AUD}/hour on-site. Inspection duration set by
           property type.
@@ -129,46 +146,31 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold">Personal details</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First name</Label>
-              <Input id="firstName" {...register('firstName')} />
-              {errors.firstName && (
-                <p className="text-xs text-destructive">{errors.firstName.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last name</Label>
-              <Input id="lastName" {...register('lastName')} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              // readOnly
-              className="text-muted-foreground bg-secondary/40"
-              {...register('email')}
-            />
-            <p className="text-muted-foreground text-[10px]">
-              Linked to your account — change via sign-in email only
-            </p>
-          </div>
+          <h2 className="text-sm font-semibold">Contact details</h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="mobile">Mobile</Label>
-              <Input id="mobile" {...register('mobile')} />
+              <Input id="mobile" autoComplete="tel" {...register('mobile')} />
+              {errors.mobile && (
+                <p className="text-xs text-destructive">{errors.mobile.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="dateOfBirth">Date of birth</Label>
               <Input id="dateOfBirth" type="date" {...register('dateOfBirth')} />
+              {errors.dateOfBirth && (
+                <p className="text-xs text-destructive">{errors.dateOfBirth.message}</p>
+              )}
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="residentialAddress">Residential address</Label>
             <Input id="residentialAddress" {...register('residentialAddress')} />
+            {errors.residentialAddress && (
+              <p className="text-xs text-destructive">
+                {errors.residentialAddress.message}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="abn">ABN (optional)</Label>
@@ -192,6 +194,9 @@ export default function RegisterPage() {
                 </option>
               ))}
             </select>
+            {errors.licenceType && (
+              <p className="text-xs text-destructive">{errors.licenceType.message}</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -244,15 +249,26 @@ export default function RegisterPage() {
           <div className="space-y-2">
             <Label htmlFor="bankAccountName">Account name</Label>
             <Input id="bankAccountName" {...register('bankAccountName')} />
+            {errors.bankAccountName && (
+              <p className="text-xs text-destructive">{errors.bankAccountName.message}</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="bankBsb">BSB</Label>
               <Input id="bankBsb" placeholder="062-000" {...register('bankBsb')} />
+              {errors.bankBsb && (
+                <p className="text-xs text-destructive">{errors.bankBsb.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="bankAccountNumber">Account number</Label>
               <Input id="bankAccountNumber" {...register('bankAccountNumber')} />
+              {errors.bankAccountNumber && (
+                <p className="text-xs text-destructive">
+                  {errors.bankAccountNumber.message}
+                </p>
+              )}
             </div>
           </div>
         </section>

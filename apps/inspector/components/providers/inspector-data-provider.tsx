@@ -456,18 +456,21 @@ export function InspectorDataProvider({
     }
     if (profileRes.status === 'fulfilled') {
       setServerProfile(profileRes.value);
-      // The server's registration record is the status truth (pending/approved/
-      // rejected + review timestamps); the local copy keeps the never-echoed
-      // PII/bank fields for display.
       const serverReg = profileRes.value.registration;
       if (serverReg) {
-        setRegistration((prev) => mapInspectorRegistration(serverReg, prev));
+        setRegistration((prev) => {
+          const merged = mapInspectorRegistration(serverReg, prev);
+          if (user?.email) {
+            saveInspectorRegistration(user.email, merged);
+          }
+          return merged;
+        });
       }
       setApiConnected(true);
     }
     setLoading(false);
     refreshPendingSync();
-  }, [status, refreshPendingSync]);
+  }, [status, user?.email, refreshPendingSync]);
 
   const syncOfflineQueue = useCallback(async () => {
     const queue = loadOfflineQueue();

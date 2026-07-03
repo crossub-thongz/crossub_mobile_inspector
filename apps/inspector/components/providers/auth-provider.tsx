@@ -70,13 +70,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.post('/auth/logout');
     } catch {
-      /* API may be offline */
-    } finally {
-      setUser(null);
-      setStatus('guest');
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
+      /* API may be offline — still send the user to login */
+    }
+    setUser(null);
+    setStatus('guest');
+    if (typeof window !== 'undefined') {
+      window.location.replace('/login');
     }
   }, []);
 

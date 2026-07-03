@@ -27,6 +27,7 @@ import { PASSWORD_MAX, PASSWORD_MIN } from '@/constants/auth';
 import { ROUTES } from '@/constants/routes';
 import { ApiError, api } from '@/lib/api';
 import type { AuthUser } from '@/lib/auth-types';
+import { normalizeAuthEmail } from '@/lib/auth-email';
 import { postAuthDestination } from '@/lib/system-access-agreement';
 
 const schema = z
@@ -49,14 +50,15 @@ type FormValues = z.infer<typeof schema>;
 
 export default function SignupPage() {
   const router = useRouter();
-  const { refresh, status } = useAuth();
+  const { refresh, status, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (status === 'authed') {
-      router.replace(ROUTES.DASHBOARD);
-    }
-  }, [status, router]);
+    if (status !== 'authed' || !user) return;
+    router.replace(
+      postAuthDestination(user, ROUTES.REGISTER, ROUTES.SYSTEM_ACCESS_AGREEMENT),
+    );
+  }, [status, user, router]);
 
   const {
     register,
@@ -76,10 +78,10 @@ export default function SignupPage() {
   const onSubmit = async (values: FormValues) => {
     try {
       const result = await api.post<{ user: AuthUser }>('/auth/register-inspector', {
-        email: values.email,
+        email: normalizeAuthEmail(values.email),
         password: values.password,
-        firstName: values.firstName,
-        lastName: values.lastName,
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
       });
       await refresh();
       toast.success('Account created — you are signed in.');
@@ -108,6 +110,10 @@ export default function SignupPage() {
       toast.error('Could not create account.');
     }
   };
+
+  if (status === 'loading' || status === 'authed') {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
