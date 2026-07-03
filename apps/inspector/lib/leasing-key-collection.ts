@@ -5,11 +5,19 @@ import type {
   LeasingKeyCollectionState,
   LeasingKeyCustody,
 } from '@/lib/types';
+import {
+  getKeyWorkflow,
+  type KeyPhaseRecord,
+  type KeyWorkflowData,
+} from '@/lib/key-access-workflow';
 import { formatDateTime } from '@/lib/utils';
 
 import {
   fetchKeyCollection,
+  recordKeyCustody,
+  uploadKeyCustodyPhoto,
   type InspectorKeyCollection,
+  type InspectorKeyCustody,
 } from '@/lib/crossub-api/inspector-client';
 
 export const KEY_CUSTODY_LABEL: Record<LeasingKeyCustody, string> = {
@@ -74,9 +82,40 @@ export function mapKeyCollectionFromApi(dto: InspectorKeyCollection): {
       location,
       collectSteps: buildCollectSteps(keyCustody, location, keyCollection.time),
       returnSteps: buildReturnSteps(location, keyCustody),
-      photoRequired: true,
+      photoRequired: dto.photoRequired ?? true,
     },
   };
+}
+
+/**
+ * Build the local key-workflow overlay from the server-recorded custody, so
+ * recorded collect/return (and their R2 proof photos) survive a new device or
+ * cleared browser storage.
+ */
+export function keyWorkflowFromCustody(
+  custody: InspectorKeyCustody | null | undefined,
+): KeyWorkflowData | undefined {
+  if (!custody) return undefined;
+  const workflow: KeyWorkflowData = {};
+  if (custody.collectComplete && custody.collectedAt) {
+    workflow.collect = {
+      completedAt: custody.collectedAt,
+      stepsConfirmed: true,
+      photoConfirmed: custody.collectPhotos.length > 0 || undefined,
+      photoUrls: custody.collectPhotos.length ? custody.collectPhotos : undefined,
+      notes: custody.collectNotes ?? undefined,
+    };
+  }
+  if (custody.returnComplete && custody.returnedAt) {
+    workflow.return = {
+      completedAt: custody.returnedAt,
+      stepsConfirmed: true,
+      photoConfirmed: custody.returnPhotos.length > 0 || undefined,
+      photoUrls: custody.returnPhotos.length ? custody.returnPhotos : undefined,
+      notes: custody.returnNotes ?? undefined,
+    };
+  }
+  return workflow.collect || workflow.return ? workflow : undefined;
 }
 
 export function hasTenantKeyReport(keyCollection: LeasingKeyCollectionState): boolean {
@@ -95,7 +134,16 @@ export async function enrichJobWithKeyCollection(
     const dto = await fetchKeyCollection(job.id);
     if (!dto) return job;
     const { keyAccess, leasingKeyCollection } = mapKeyCollectionFromApi(dto);
-    return { ...job, keyAccess, leasingKeyCollection };
+    // Server custody fills cross-device gaps; local records win while a
+    // submission is mid-flight on this device (richer data-URL photos).
+    const serverWorkflow = keyWorkflowFromCustody(dto.custody);
+    const workflowData = serverWorkflow
+      ? {
+          ...job.workflowData,
+          keyWorkflow: { ...serverWorkflow, ...(getKeyWorkflow(job) ?? {}) },
+        }
+      : job.workflowData;
+    return { ...job, keyAccess, leasingKeyCollection, workflowData };
   } catch {
     return job;
   }
@@ -105,4 +153,47 @@ export async function enrichJobsWithKeyCollection(
   jobs: InspectionJob[],
 ): Promise<InspectionJob[]> {
   return Promise.all(jobs.map((job) => enrichJobWithKeyCollection(job)));
+}
+
+function dataUrlToUploadParts(
+  dataUrl: string,
+): { mimeType: string; contentBase64: string; sizeBytes: number } | null {
+  const match = /^data:([^;,]+);base64,(.+)$/.exec(dataUrl);
+  if (!match) return null;
+  const [, mimeType, contentBase64] = match;
+  return {
+    mimeType,
+    contentBase64,
+    sizeBytes: Math.floor((contentBase64.length * 3) / 4),
+  };
+}
+
+/**
+ * Push a locally-recorded key phase to the server: proof photos first
+ * (base64 → R2, appended to the phase's proof array), then the record call.
+ * Photos that are already https URLs (server-hydrated) are skipped. Note the
+ * server rejects a `return` record until the inspection is completed — the
+ * caller sequences that.
+ */
+export async function syncKeyCustodyToServer(
+  inspectionId: string,
+  phase: 'collect' | 'return',
+  record: KeyPhaseRecord,
+): Promise<void> {
+  const photos = record.photoUrls ?? [];
+  for (const [index, photo] of photos.entries()) {
+    const parts = dataUrlToUploadParts(photo);
+    if (!parts) continue;
+    const extension = parts.mimeType.split('/')[1] ?? 'jpg';
+    await uploadKeyCustodyPhoto(inspectionId, {
+      phase,
+      fileName: `key-${phase}-${index + 1}.${extension}`,
+      ...parts,
+    });
+  }
+  await recordKeyCustody(
+    inspectionId,
+    phase,
+    record.notes ? { notes: record.notes } : {},
+  );
 }

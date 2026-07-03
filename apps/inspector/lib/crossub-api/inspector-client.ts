@@ -19,6 +19,11 @@ export type UploadInspectorPhoto =
   components['schemas']['UploadInspectorPhotoDto'];
 export type InspectorKeyCollection =
   components['schemas']['InspectorKeyCollectionResponseDto'];
+export type InspectorKeyCustody =
+  components['schemas']['InspectorKeyCustodyDto'];
+export type RecordKeyCustody = components['schemas']['RecordKeyCustodyDto'];
+export type UploadKeyCustodyPhoto =
+  components['schemas']['UploadKeyCustodyPhotoDto'];
 
 /** Billable inspection jobs ledger (`GET /api/v1/inspector/jobs`). */
 export async function fetchJobs(): Promise<InspectorJob[]> {
@@ -75,6 +80,49 @@ export async function fetchKeyCollection(
   );
   if (response.status === 404) return null;
   if (error || !data) throw new Error('Failed to load key collection');
+  return data;
+}
+
+/**
+ * Record physical key collection or return on the server
+ * (`POST /inspector/inspections/{inspectionId}/key-custody/{collect|return}`).
+ * The server enforces the key rules — return requires the inspection to be
+ * completed first, and (when required) a proof photo already uploaded.
+ */
+export async function recordKeyCustody(
+  inspectionId: string,
+  phase: 'collect' | 'return',
+  body: RecordKeyCustody = {},
+): Promise<InspectorKeyCustody> {
+  if (phase === 'collect') {
+    const { data, error } = await crossub.POST(
+      '/inspector/inspections/{inspectionId}/key-custody/collect',
+      { params: { path: { inspectionId } }, body },
+    );
+    if (error || !data) throw new Error('Failed to record key collection');
+    return data;
+  }
+  const { data, error } = await crossub.POST(
+    '/inspector/inspections/{inspectionId}/key-custody/return',
+    { params: { path: { inspectionId } }, body },
+  );
+  if (error || !data) throw new Error('Failed to record key return');
+  return data;
+}
+
+/**
+ * Upload a key-custody proof photo, base64 → R2, appended to the collect or
+ * return proof array (`POST /inspector/inspections/{inspectionId}/key-custody/photos/upload`).
+ */
+export async function uploadKeyCustodyPhoto(
+  inspectionId: string,
+  body: UploadKeyCustodyPhoto,
+): Promise<InspectorKeyCustody> {
+  const { data, error } = await crossub.POST(
+    '/inspector/inspections/{inspectionId}/key-custody/photos/upload',
+    { params: { path: { inspectionId } }, body },
+  );
+  if (error || !data) throw new Error('Failed to upload key proof photo');
   return data;
 }
 

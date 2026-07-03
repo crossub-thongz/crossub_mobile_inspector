@@ -1,6 +1,18 @@
 # Changelog
 
-## 2026-07-01
+## 2026-07-03
+
+### Added
+- `recordKeyCustody` / `uploadKeyCustodyPhoto` typed fetchers (`lib/crossub-api/inspector-client.ts`) for the key-custody facade (`POST /inspector/inspections/{id}/key-custody/{collect|return}` + `…/photos/upload`).
+- `syncKeyCustodyToServer` + `keyWorkflowFromCustody` (`lib/leasing-key-collection.ts`) — push a locally-recorded key phase to the server (proof photos base64 → R2 first, then the record call), and rebuild the local key-workflow overlay from server custody so recorded collect/return survive a new device or cleared browser storage.
+
+### Changed
+- `saveKeyWorkflow` (data provider) now syncs **key collection** to the server for API-backed jobs (photos then record; best-effort, local record stays the immediate UX). **Key return** is stashed and flushed by `completeJob` after the completion lands — the facade rejects a return recorded before the inspection is completed. Demo jobs keep the offline-queue path.
+- `enrichJobWithKeyCollection` merges server custody into the job's key-workflow overlay (local mid-flight records win) and `keyAccess.photoRequired` now honours the server flag instead of hardcoding `true`.
+- Refreshed the vendored `packages/api-contract` `src/types.ts` from the crossub_web contract source (adds the key-custody paths + `InspectorKeyCustodyDto`/`RecordKeyCustodyDto`/`UploadKeyCustodyPhotoDto` + `custody`/`photoRequired` on the key-collection response) and built its `dist` so the workspace link resolves.
+
+### Fixed
+- Missing `fileToBase64` import in `inspector-data-provider.tsx` (pre-existing compile error); app `tsc --noEmit` is now fully clean.
 
 ### Fixed
 - Render deploy: vendored `packages/api-contract` (was a git symlink to `crossub_web`, which does not exist on Render). `build:inspector` now builds the contract package before the Next.js app. Removed the `postinstall` symlink script.

@@ -284,6 +284,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tenant/vacating-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List vacating / end-of-lease cases on the tenant’s leased property.
+         * @description Live-ops termination cases scoped to the tenant’s property. Returns active and withdrawn (cancelled) cases so the app can show a deleted tag when either side withdraws the vacating process.
+         */
+        get: operations["TenantAccountController_listVacatingCases"];
+        put?: never;
+        /** Open a vacating / end-of-lease case. */
+        post: operations["TenantAccountController_createVacatingCase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tenant/vacating-cases/{caseId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Withdraw a vacating / end-of-lease case. */
+        patch: operations["TenantAccountController_cancelVacatingCase"];
+        trace?: never;
+    };
+    "/tenant/vacating-cases/{caseId}/vacate-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the vacate date on an end-of-lease case. */
+        patch: operations["TenantAccountController_updateVacatingDate"];
+        trace?: never;
+    };
     "/tenant/messages": {
         parameters: {
             query?: never;
@@ -1282,6 +1337,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inspector/inspections/{inspectionId}/key-custody/photos/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a key-custody proof photo (base64 → R2) for a collect/return phase.
+         * @description Decodes the base64 body, puts it to object storage (R2), and appends the URL to the collect or return proof array (per `phase`) on the inspection’s key-custody record. Distinct from findings photos — this proof never enters the findings tree.
+         */
+        post: operations["InspectorInspectionsController_uploadKeyCustodyPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspector/inspections/{inspectionId}/key-custody/collect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record that the inspector collected the keys (keys-before-finish).
+         * @description Stamps the collection time (+ optional note). When the inspection has a leasing key arrangement a proof photo must already be attached (400 otherwise). Recording collection is a precondition for completing the inspection.
+         */
+        post: operations["InspectorInspectionsController_recordKeyCollect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspector/inspections/{inspectionId}/key-custody/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record that the inspector returned the keys (return-after-finish).
+         * @description Allowed only once the inspection is COMPLETED and collection was recorded (409 otherwise). When the inspection has a key arrangement a return proof photo must be attached (400 otherwise). Stamps the return time (+ optional note).
+         */
+        post: operations["InspectorInspectionsController_recordKeyReturn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inspector/messages": {
         parameters: {
             query?: never;
@@ -1436,6 +1551,64 @@ export interface paths {
         get: operations["AgentPortalController_getProperty"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/properties/{propertyId}/key-collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the key-collection state for a managed property’s active leasing cycle.
+         * @description The appointment (time/location), custody, proof photos, and submitted report. Returns a not_started shell when onboarding has not begun.
+         */
+        get: operations["AgentPortalController_getKeyCollection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set the key-collection time and place for a managed property. */
+        patch: operations["AgentPortalController_setKeyCollection"];
+        trace?: never;
+    };
+    "/agent/properties/{propertyId}/key-collection/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit the full key-collection report (handover checklist + proof photos). */
+        post: operations["AgentPortalController_submitKeyCollectionReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/properties/{propertyId}/key-collection/photos/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a key-collection proof photo (base64-through-API → object storage).
+         * @description Decodes the base64 body, puts it to object storage (R2), and returns its public URL for inclusion in the report’s photos.
+         */
+        post: operations["AgentPortalController_uploadKeyCollectionPhoto"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1616,7 +1789,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the tenant logins within the agent’s book.
+         * @description Tenant accounts whose linked applicant is on an application for a property in one of the agent’s assigned agencies — the read side of POST /agent/tenants. Newest first.
+         */
+        get: operations["AgentPortalController_listTenants"];
         put?: never;
         /** Provision a tenant login — creates a real TENANT User (Argon2 password) the tenant signs in with on the tenant app, replacing any per-app account store. */
         post: operations["AgentPortalController_provisionTenant"];
@@ -2123,6 +2300,77 @@ export interface components {
              */
             createdAt: string;
         };
+        CreateTenantVacatingCaseDto: Record<string, never>;
+        TenantVacatingCaseResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            propertyId: string | null;
+            /** @example 1 Mobile Way, Sydney */
+            propertyAddress: string | null;
+            /**
+             * @description Whether the vacating case is active or has been withdrawn.
+             * @enum {string}
+             */
+            status: "open" | "cancelled";
+            /**
+             * @description Current end-leasing phase (mirrors staff dashboard tabs).
+             * @enum {string}
+             */
+            currentStage: "key_return" | "outgoing_inspection" | "maintenance" | "bond";
+            /**
+             * Format: date-time
+             * @description Expected or confirmed vacate date.
+             */
+            vacatingDate: string | null;
+            /**
+             * Format: date-time
+             * @description Original vacate date when the case was opened (for change detection).
+             */
+            initialVacatingDate: string | null;
+            /** @description True when the vacate date differs from the original. */
+            vacateDateChanged: boolean;
+            /** @description Whether keys have been returned to the agent. */
+            keysReturned: boolean;
+            /**
+             * Format: date-time
+             * @description Scheduled outgoing inspection date.
+             */
+            inspectionDate: string | null;
+            /**
+             * Format: uuid
+             * @description Linked outgoing inspection id, when scheduled.
+             */
+            outgoingInspectionId: string | null;
+            /** @description Outgoing inspection report is available for review. */
+            inspectionReportAvailable: boolean;
+            /**
+             * @description Tenant response to proposed bond deductions.
+             * @enum {string}
+             */
+            tenantSettlementStatus: "pending" | "accepted" | "declined";
+            /**
+             * Format: date-time
+             * @description Deadline for tenant to accept or decline settlement.
+             */
+            tenantConfirmationDueAt: string | null;
+            /** @description Proposed bond refund amount. */
+            refundAmount: number | null;
+            /** @description Outstanding debt after bond applied. */
+            debtAmount: number | null;
+            /** @description Bond refund has been processed. */
+            bondRefundPaid: boolean;
+            /** @description Plain-language reason the lease is ending, when present. */
+            terminationReason: string | null;
+            /** @description Why the case was withdrawn, when cancelled. */
+            cancellationReason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CancelTenantVacatingCaseDto: Record<string, never>;
+        UpdateTenantVacateDateDto: Record<string, never>;
         TenantThreadMessageResponseDto: {
             /** Format: uuid */
             id: string;
@@ -3359,6 +3607,22 @@ export interface components {
             hasMore: boolean;
             items: components["schemas"]["InspectorInspectionResponseDto"][];
         };
+        InspectorKeyCustodyDto: {
+            /** Format: date-time */
+            collectedAt: string | null;
+            /** @description R2 proof-photo URLs (keys in hand). */
+            collectPhotos: string[];
+            collectNotes: string | null;
+            /** Format: date-time */
+            returnedAt: string | null;
+            /** @description R2 proof-photo URLs (keys returned). */
+            returnPhotos: string[];
+            returnNotes: string | null;
+            /** @description Whether key collection has been recorded. */
+            collectComplete: boolean;
+            /** @description Whether key return has been recorded. */
+            returnComplete: boolean;
+        };
         InspectorKeyCollectionResponseDto: {
             /** Format: uuid */
             cycleId: string;
@@ -3372,6 +3636,9 @@ export interface components {
              */
             keyCustody: string;
             keyCollection: components["schemas"]["TenantKeyCollectionDto"];
+            /** @description Whether the inspector must attach a proof photo to record collect/return. */
+            photoRequired: boolean;
+            custody: components["schemas"]["InspectorKeyCustodyDto"];
         };
         CompleteInspectorInspectionDto: {
             /**
@@ -3460,6 +3727,32 @@ export interface components {
             sizeBytes: number;
             /** @description The file contents, base64-encoded (no data: URI prefix). */
             contentBase64: string;
+        };
+        UploadKeyCustodyPhotoDto: {
+            /**
+             * @description Which custody phase this proof photo belongs to.
+             * @example collect
+             * @enum {string}
+             */
+            phase: "collect" | "return";
+            /** @example keys-in-hand.jpg */
+            fileName: string;
+            /**
+             * @description An image/* or video/* MIME type (custody proof is a photo or clip).
+             * @example image/jpeg
+             */
+            mimeType: string;
+            /**
+             * @description Decoded byte size (≤ 25 MB).
+             * @example 184321
+             */
+            sizeBytes: number;
+            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            contentBase64: string;
+        };
+        RecordKeyCustodyDto: {
+            /** @description Optional free-text note for this custody phase. */
+            notes?: string;
         };
         InspectorThreadMessageResponseDto: {
             /** Format: uuid */
@@ -3695,6 +3988,98 @@ export interface components {
             hasMore: boolean;
             items: components["schemas"]["AgentPropertyResponseDto"][];
         };
+        AgentKeyCollectionReportDto: {
+            /** Format: date-time */
+            submittedAt: string | null;
+            tagNumber: string | null;
+            keysCount: number | null;
+            entryDoorCount: number | null;
+            windowSlidingCount: number | null;
+            fobsCount: number | null;
+            remoteControlCount: number | null;
+            mailboxCount: number | null;
+            othersCount: number | null;
+        };
+        AgentKeyCollectionResponseDto: {
+            /** Format: uuid */
+            cycleId: string | null;
+            /** Format: uuid */
+            propertyId: string;
+            /** @example 142 Elizabeth St, Melbourne */
+            propertyAddress: string;
+            /**
+             * @description Leasing lifecycle step (FE slug), or null when no cycle exists.
+             * @example onboarding
+             */
+            lifecycleStep: string | null;
+            /**
+             * @description Key custody: crossub | agent.
+             * @example agent
+             */
+            keyCustody: string;
+            /**
+             * @description Key-collection item status (not_started | in_progress | waiting | blocked | done).
+             * @example not_started
+             */
+            status: string;
+            /** Format: date-time */
+            time: string | null;
+            /** @example CROSSUB office, 120 Collins St */
+            location: string | null;
+            /** @description Key-collection proof photos. */
+            photos: string[];
+            report: components["schemas"]["AgentKeyCollectionReportDto"] | null;
+        };
+        AgentSetKeyCollectionDto: {
+            /**
+             * Format: date-time
+             * @description When the tenant collects the keys.
+             * @example 2026-08-01T10:00:00.000Z
+             */
+            time: string;
+            /** @example CROSSUB office, 120 Collins St, Melbourne */
+            location: string;
+        };
+        AgentSubmitKeyCollectionReportDto: {
+            /** @description Key-collection proof photo URLs (from the photo-upload endpoint). */
+            photos?: string[];
+            /** @example TAG-0192 */
+            tagNumber?: string;
+            /** @example 3 */
+            keysCount?: number;
+            /** @example 1 */
+            entryDoorCount?: number;
+            /** @example 2 */
+            windowSlidingCount?: number;
+            /** @example 1 */
+            fobsCount?: number;
+            /** @example 1 */
+            remoteControlCount?: number;
+            /** @example 1 */
+            mailboxCount?: number;
+            /** @example 0 */
+            othersCount?: number;
+        };
+        AgentUploadKeyPhotoDto: {
+            /** @example keys-handover.jpg */
+            fileName: string;
+            /**
+             * @description An image/* or video/* MIME type.
+             * @example image/jpeg
+             */
+            mimeType: string;
+            /**
+             * @description Decoded byte size (≤ 25 MB).
+             * @example 184321
+             */
+            sizeBytes: number;
+            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            contentBase64: string;
+        };
+        AgentKeyPhotoUploadResponseDto: {
+            /** @description Public URL of the stored photo. */
+            url: string;
+        };
         AgentInspectionDto: {
             /** Format: uuid */
             id: string;
@@ -3788,7 +4173,7 @@ export interface components {
             /** @example 12/45 Campbell Parade */
             propertyAddress: string;
             /** @enum {string} */
-            status: "OPEN" | "COMPLETED";
+            status: "OPEN" | "COMPLETED" | "CANCELLED";
             /** Format: date-time */
             vacateDate: string | null;
             /** @example tenant */
@@ -4067,6 +4452,70 @@ export interface components {
         DeclineMaintenanceQuoteDto: {
             /** @example Quote above budget — please re-quote with cheaper parts. */
             reason: string;
+        };
+        AgentTenantResponseDto: {
+            /**
+             * Format: uuid
+             * @description The tenant User id.
+             */
+            id: string;
+            /** Format: email */
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
+            phone: string | null;
+            /**
+             * @description Role key — always TENANT.
+             * @example TENANT
+             */
+            role: string;
+            /**
+             * @example ACTIVE
+             * @enum {string}
+             */
+            status: "PENDING_INVITE" | "ACTIVE" | "DISABLED";
+            /**
+             * Format: date-time
+             * @description When the login was created.
+             */
+            createdAt: string;
+            /**
+             * Format: uuid
+             * @description The property this tenant is linked to (via their application), if any.
+             */
+            propertyId: string | null;
+            /** @example 142 Elizabeth St, Melbourne */
+            propertyAddress: string | null;
+            /**
+             * Format: uuid
+             * @description The application that anchored this tenant login.
+             */
+            applicationId: string | null;
+            /** @enum {string|null} */
+            applicationStatus: "DRAFT" | "SUBMITTED" | "APPROVED" | "DECLINED" | "LEASED" | "WITHDRAWN" | null;
+        };
+        PaginatedAgentTenantsDto: {
+            /**
+             * @description Total records matching the query.
+             * @example 42
+             */
+            total: number;
+            /**
+             * @description 1-based page returned.
+             * @example 1
+             */
+            page: number;
+            /**
+             * @description Items per page applied.
+             * @example 20
+             */
+            pageSize: number;
+            /**
+             * @description Whether a further page exists after this one.
+             * @example true
+             */
+            hasMore: boolean;
+            items: components["schemas"]["AgentTenantResponseDto"][];
         };
         ProvisionTenantDto: {
             /**
@@ -4777,6 +5226,210 @@ export interface operations {
             };
             /** @description Caller is not a TENANT, or has no tenant profile anchor. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TenantAccountController_listVacatingCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantVacatingCaseResponseDto"][];
+                };
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not a TENANT, or has no tenant profile anchor. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TenantAccountController_createVacatingCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTenantVacatingCaseDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantVacatingCaseResponseDto"];
+                };
+            };
+            /** @description Invalid body or vacate date. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not a TENANT, or has no tenant profile anchor. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description An active vacating case already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TenantAccountController_cancelVacatingCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelTenantVacatingCaseDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantVacatingCaseResponseDto"];
+                };
+            };
+            /** @description caseId is not a valid UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not a TENANT, or has no tenant profile anchor. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description caseId does not exist or is not on the tenant’s leased property. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The case is already withdrawn or completed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TenantAccountController_updateVacatingDate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTenantVacateDateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantVacatingCaseResponseDto"];
+                };
+            };
+            /** @description caseId is not a valid UUID or date is invalid. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not a TENANT, or has no tenant profile anchor. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description caseId does not exist or is not on the tenant’s leased property. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The case is no longer open for updates. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7400,6 +8053,172 @@ export interface operations {
             };
         };
     };
+    InspectorInspectionsController_uploadKeyCustodyPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadKeyCustodyPhotoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorKeyCustodyDto"];
+                };
+            };
+            /** @description inspectionId is not a valid UUID, or the body is invalid (bad phase / non-image mime / oversized). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an INSPECTOR, or has no inspector roster record. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description inspectionId does not exist or is not assigned to this inspector. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InspectorInspectionsController_recordKeyCollect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordKeyCustodyDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorKeyCustodyDto"];
+                };
+            };
+            /** @description inspectionId is not a valid UUID, or a required proof photo is missing. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an INSPECTOR, or has no inspector roster record. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description inspectionId does not exist or is not assigned to this inspector. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InspectorInspectionsController_recordKeyReturn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordKeyCustodyDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorKeyCustodyDto"];
+                };
+            };
+            /** @description inspectionId is not a valid UUID, or a required proof photo is missing. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an INSPECTOR, or has no inspector roster record. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description inspectionId does not exist or is not assigned to this inspector. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The inspection is not yet completed, or key collection was never recorded. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     InspectorAccountController_listMessageThreads: {
         parameters: {
             query?: never;
@@ -7818,6 +8637,228 @@ export interface operations {
                 content?: never;
             };
             /** @description propertyId does not exist or is not within an assigned agency. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_getKeyCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentKeyCollectionResponseDto"];
+                };
+            };
+            /** @description propertyId is not a valid UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Property not in the agent’s book, or no active leasing cycle. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_setKeyCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentSetKeyCollectionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentKeyCollectionResponseDto"];
+                };
+            };
+            /** @description Invalid body, or propertyId is not a valid UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Property not in the agent’s book, or no active leasing cycle. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The leasing cycle is closed, or onboarding has not started. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_submitKeyCollectionReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentSubmitKeyCollectionReportDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentKeyCollectionResponseDto"];
+                };
+            };
+            /** @description Invalid body, or propertyId is not a valid UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Property not in the agent’s book, no active leasing cycle, or handover not ready. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The leasing cycle is closed, or onboarding has not started. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_uploadKeyCollectionPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentUploadKeyPhotoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentKeyPhotoUploadResponseDto"];
+                };
+            };
+            /** @description Invalid body (bad base64, oversized, non-image/video mime), or propertyId is not a valid UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Property not in the agent’s book. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8304,6 +9345,44 @@ export interface operations {
             };
             /** @description The request is not in a state a quote can be declined from. */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_listTenants: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. */
+                page?: number;
+                /** @description Items per page (max 100). */
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAgentTenantsDto"];
+                };
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -39,7 +39,11 @@ import {
   mapInspectorNotifications,
   mapPoolInspections,
 } from '@/lib/crossub-api/inspector-mappers';
-import { enrichJobsWithKeyCollection } from '@/lib/leasing-key-collection';
+import {
+  enrichJobsWithKeyCollection,
+  syncKeyCustodyToServer,
+} from '@/lib/leasing-key-collection';
+import { fileToBase64 } from '@/lib/utils';
 import { buildDashboardSummary } from '@/lib/inspector-summary';
 import {
   filterPoolJobs,
@@ -224,6 +228,9 @@ export function InspectorDataProvider({
   // Ids of jobs sourced from the live `/inspector/inspections` facade — lets the write
   // actions route an API-backed assignment to the real facade and a demo job to local.
   const apiInspectionIds = useRef<Set<string>>(new Set());
+  // Key-return records awaiting server sync — the facade rejects a return
+  // recorded before the inspection is completed, so completeJob chains it.
+  const pendingReturnCustody = useRef<Map<string, KeyPhaseRecord>>(new Map());
   // Pool rows from `GET /inspector/inspections/pool` — claim before accept.
   const apiPoolIds = useRef<Set<string>>(new Set());
   // Same idea for the live message threads + notifications: a write to an API-backed row
@@ -603,8 +610,22 @@ export function InspectorDataProvider({
             startTime: startTime.toISOString(),
             endTime: endTime.toISOString(),
           })
-            .then(() => refresh())
-            .catch(() => undefined);
+            .then(async () => {
+              // Key return can only be recorded server-side once the
+              // inspection is completed — flush the pending record now.
+              const pendingReturn = pendingReturnCustody.current.get(id);
+              if (pendingReturn) {
+                try {
+                  await syncKeyCustodyToServer(id, 'return', pendingReturn);
+                  pendingReturnCustody.current.delete(id);
+                } catch {
+                  // Return stays recorded locally; the server keeps the
+                  // completed inspection.
+                }
+              }
+            })
+            .catch(() => undefined)
+            .then(() => refresh());
         } else {
           setEarnings((earnPrev) => [
             {
@@ -654,9 +675,26 @@ export function InspectorDataProvider({
         if (updated) persistJobProgress(updated);
         return next;
       });
+
+      const isApiJob = apiInspectionIds.current.has(id);
+      if (isApiJob && apiConnected) {
+        if (phase === 'collect') {
+          // Proof photos → R2, then record collection on the server (the
+          // facade enforces collect-before-start when a key arrangement
+          // exists). Best-effort — the local record is the immediate UX.
+          void syncKeyCustodyToServer(id, 'collect', record).catch(() => undefined);
+        } else {
+          // The facade rejects a return recorded before the inspection is
+          // completed — completeJob (always called right after a return
+          // submit) syncs this once the completion lands.
+          pendingReturnCustody.current.set(id, record);
+        }
+        return;
+      }
+
       mutateWithOffline(id, 'key_workflow', { phase, record });
     },
-    [mutateWithOffline],
+    [apiConnected, mutateWithOffline],
   );
 
   const finishInspectionWorkflow = useCallback(
