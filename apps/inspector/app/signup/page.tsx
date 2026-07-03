@@ -25,7 +25,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PASSWORD_MAX, PASSWORD_MIN } from '@/constants/auth';
 import { ROUTES } from '@/constants/routes';
-import { registerLocalAccount } from '@/lib/local-auth';
+import { ApiError, api } from '@/lib/api';
+import type { AuthUser } from '@/lib/auth-types';
+import { postAuthDestination } from '@/lib/system-access-agreement';
 
 const schema = z
   .object({
@@ -73,19 +75,37 @@ export default function SignupPage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      registerLocalAccount({
+      const result = await api.post<{ user: AuthUser }>('/auth/register-inspector', {
         email: values.email,
         password: values.password,
         firstName: values.firstName,
         lastName: values.lastName,
       });
       await refresh();
-      toast.success('Account created — remember your password for next sign-in.');
-      router.replace(ROUTES.DASHBOARD);
+      toast.success('Account created — you are signed in.');
+      router.replace(
+        postAuthDestination(
+          result.user,
+          ROUTES.REGISTER,
+          ROUTES.SYSTEM_ACCESS_AGREEMENT,
+        ),
+      );
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Could not create account.';
-      toast.error(message);
+      if (err instanceof ApiError) {
+        if (err.status === 409) {
+          toast.error('An account with this email already exists. Sign in instead.');
+          return;
+        }
+        if (err.status === 400) {
+          toast.error('Check your details — password must be at least 10 characters.');
+          return;
+        }
+        if (err.status >= 500 || err.status === 0) {
+          toast.error('Could not reach the API. Is crossub-api running on staging?');
+          return;
+        }
+      }
+      toast.error('Could not create account.');
     }
   };
 
