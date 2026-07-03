@@ -755,6 +755,214 @@
         ]
       }
     },
+    "/tenant/vacating-cases": {
+      "post": {
+        "operationId": "TenantAccountController_createVacatingCase",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTenantVacatingCaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantVacatingCaseResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or vacate date."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not a TENANT, or has no tenant profile anchor."
+          },
+          "409": {
+            "description": "An active vacating case already exists."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Open a vacating / end-of-lease case.",
+        "tags": [
+          "tenant"
+        ]
+      },
+      "get": {
+        "description": "Live-ops termination cases scoped to the tenant’s property. Returns active and withdrawn (cancelled) cases so the app can show a deleted tag when either side withdraws the vacating process.",
+        "operationId": "TenantAccountController_listVacatingCases",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TenantVacatingCaseResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not a TENANT, or has no tenant profile anchor."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List vacating / end-of-lease cases on the tenant’s leased property.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/vacating-cases/{caseId}/cancel": {
+      "patch": {
+        "operationId": "TenantAccountController_cancelVacatingCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelTenantVacatingCaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantVacatingCaseResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "caseId is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not a TENANT, or has no tenant profile anchor."
+          },
+          "404": {
+            "description": "caseId does not exist or is not on the tenant’s leased property."
+          },
+          "409": {
+            "description": "The case is already withdrawn or completed."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Withdraw a vacating / end-of-lease case.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/vacating-cases/{caseId}/vacate-date": {
+      "patch": {
+        "operationId": "TenantAccountController_updateVacatingDate",
+        "parameters": [
+          {
+            "name": "caseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTenantVacateDateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantVacatingCaseResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "caseId is not a valid UUID or date is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not a TENANT, or has no tenant profile anchor."
+          },
+          "404": {
+            "description": "caseId does not exist or is not on the tenant’s leased property."
+          },
+          "409": {
+            "description": "The case is no longer open for updates."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update the vacate date on an end-of-lease case.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
     "/tenant/messages": {
       "get": {
         "description": "Property-scoped conversations, each with its message history nested. Newest activity first.",
@@ -3386,6 +3594,185 @@
         ]
       }
     },
+    "/inspector/inspections/{inspectionId}/decline": {
+      "post": {
+        "description": "An unclaimed pool row is recorded as declined by this inspector (hidden from THEIR pool, still available to everyone else); a DRAFT row assigned to them is unassigned back to the pool first. Accepted work must be released instead.",
+        "operationId": "InspectorInspectionsController_decline",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorInspectionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "inspectionId is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR, or has no inspector roster record."
+          },
+          "404": {
+            "description": "inspectionId does not exist in the job pool (or belongs to another inspector)."
+          },
+          "409": {
+            "description": "The inspection was already accepted (release it instead) or changed state concurrently."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Decline a pool job (or an assignment not yet accepted).",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
+    "/inspector/inspections/{inspectionId}/release": {
+      "post": {
+        "description": "Reverts the inspection to DRAFT, clears the assignment, and records the reason on the workflow audit trail. mode 'flag_admin' additionally marks the job for staff attention and hides it from this inspector's own pool. No money moves.",
+        "operationId": "InspectorInspectionsController_release",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseInspectorInspectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorInspectionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "inspectionId is not a valid UUID, or the body is invalid (reason too short)."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR, or has no inspector roster record."
+          },
+          "404": {
+            "description": "inspectionId does not exist or is not assigned to this inspector."
+          },
+          "409": {
+            "description": "The inspection is not in a releasable state (DRAFT / IN_PROGRESS)."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Release a claimed/accepted job back to the pool.",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
+    "/inspector/inspections/{inspectionId}/findings": {
+      "post": {
+        "description": "Upserts areas by name within the app's own authorship (legacy-imported areas are never touched); items are replaced per area; photos already attached to an area survive a resubmission. Editable while DRAFT / IN_PROGRESS. Returns the updated findings tree.",
+        "operationId": "InspectorInspectionsController_saveFindings",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveInspectorFindingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorInspectionDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "inspectionId is not a valid UUID, or the body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR, or has no inspector roster record."
+          },
+          "404": {
+            "description": "inspectionId does not exist or is not assigned to this inspector."
+          },
+          "409": {
+            "description": "The inspection is in a state where findings can no longer be edited."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save the findings tree gathered on site (areas + items).",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
     "/inspector/inspections/{inspectionId}/complete": {
       "post": {
         "description": "Records the attendance window; the server computes the billable hours + amount and posts a PENDING BillableAttendance through the shared billing intake (staff still gate the invoice/payment).",
@@ -3616,6 +4003,189 @@
           }
         ],
         "summary": "Upload an inspection-level evidence photo (base64-through-API → R2).",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
+    "/inspector/inspections/{inspectionId}/key-custody/photos/upload": {
+      "post": {
+        "description": "Decodes the base64 body, puts it to object storage (R2), and appends the URL to the collect or return proof array (per `phase`) on the inspection’s key-custody record. Distinct from findings photos — this proof never enters the findings tree.",
+        "operationId": "InspectorInspectionsController_uploadKeyCustodyPhoto",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadKeyCustodyPhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorKeyCustodyDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "inspectionId is not a valid UUID, or the body is invalid (bad phase / non-image mime / oversized)."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR, or has no inspector roster record."
+          },
+          "404": {
+            "description": "inspectionId does not exist or is not assigned to this inspector."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a key-custody proof photo (base64 → R2) for a collect/return phase.",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
+    "/inspector/inspections/{inspectionId}/key-custody/collect": {
+      "post": {
+        "description": "Stamps the collection time (+ optional note). When the inspection has a leasing key arrangement a proof photo must already be attached (400 otherwise). Recording collection is a precondition for completing the inspection.",
+        "operationId": "InspectorInspectionsController_recordKeyCollect",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordKeyCustodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorKeyCustodyDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "inspectionId is not a valid UUID, or a required proof photo is missing."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR, or has no inspector roster record."
+          },
+          "404": {
+            "description": "inspectionId does not exist or is not assigned to this inspector."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record that the inspector collected the keys (keys-before-finish).",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
+    "/inspector/inspections/{inspectionId}/key-custody/return": {
+      "post": {
+        "description": "Allowed only once the inspection is COMPLETED and collection was recorded (409 otherwise). When the inspection has a key arrangement a return proof photo must be attached (400 otherwise). Stamps the return time (+ optional note).",
+        "operationId": "InspectorInspectionsController_recordKeyReturn",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordKeyCustodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorKeyCustodyDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "inspectionId is not a valid UUID, or a required proof photo is missing."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR, or has no inspector roster record."
+          },
+          "404": {
+            "description": "inspectionId does not exist or is not assigned to this inspector."
+          },
+          "409": {
+            "description": "The inspection is not yet completed, or key collection was never recorded."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record that the inspector returned the keys (return-after-finish).",
         "tags": [
           "inspector"
         ]
@@ -3883,6 +4453,173 @@
         ]
       }
     },
+    "/inspector/tribunal-cases": {
+      "get": {
+        "description": "The inspector’s hearing briefs — logistics, claim figures, evidence checklist, and the staff-recorded outcome once the hearing is done. Read-only.",
+        "operationId": "InspectorAccountController_listTribunalCases",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InspectorTribunalCaseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR, or has no inspector roster record."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the tribunal cases the signed-in inspector is assigned to attend.",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
+    "/inspector/tribunal-cases/{caseId}": {
+      "get": {
+        "operationId": "InspectorAccountController_getTribunalCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorTribunalCaseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "caseId is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR, or has no inspector roster record."
+          },
+          "404": {
+            "description": "caseId does not exist or is not assigned to this inspector."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get one of the signed-in inspector’s assigned tribunal cases by id.",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
+    "/inspector/profile": {
+      "get": {
+        "description": "Login identity + roster credentials (null until staff approve a registration) + the latest registration application (null when never submitted). Does not require a roster link — a fresh registrant sees their pending application here. Bank details and PII are never echoed (only the account number’s last 4 digits).",
+        "operationId": "InspectorAccountController_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorProfileResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the signed-in inspector’s own profile.",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
+    "/inspector/registration": {
+      "post": {
+        "description": "Lands PENDING_REVIEW in the same staff review queue as the web registry intake (approve there mints/updates the roster record). The email is the signed-in user’s — never the body’s. While the latest application is still pending a resubmission updates it in place; after a verdict a new application is filed.",
+        "operationId": "InspectorAccountController_submitRegistration",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitInspectorRegistrationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorRegistrationStatusDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit (or resubmit) the inspector’s own registration application.",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
     "/agent/agencies": {
       "get": {
         "operationId": "AgentPortalController_listAgencies",
@@ -4090,6 +4827,238 @@
           }
         ],
         "summary": "Get one property within the agent’s assigned agencies.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/key-collection": {
+      "get": {
+        "description": "The appointment (time/location), custody, proof photos, and submitted report. Returns a not_started shell when onboarding has not begun.",
+        "operationId": "AgentPortalController_getKeyCollection",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentKeyCollectionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "propertyId is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "Property not in the agent’s book, or no active leasing cycle."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the key-collection state for a managed property’s active leasing cycle.",
+        "tags": [
+          "agent"
+        ]
+      },
+      "patch": {
+        "operationId": "AgentPortalController_setKeyCollection",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSetKeyCollectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentKeyCollectionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or propertyId is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "Property not in the agent’s book, or no active leasing cycle."
+          },
+          "409": {
+            "description": "The leasing cycle is closed, or onboarding has not started."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the key-collection time and place for a managed property.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/key-collection/report": {
+      "post": {
+        "operationId": "AgentPortalController_submitKeyCollectionReport",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSubmitKeyCollectionReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentKeyCollectionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or propertyId is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "Property not in the agent’s book, no active leasing cycle, or handover not ready."
+          },
+          "409": {
+            "description": "The leasing cycle is closed, or onboarding has not started."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit the full key-collection report (handover checklist + proof photos).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/key-collection/photos/upload": {
+      "post": {
+        "description": "Decodes the base64 body, puts it to object storage (R2), and returns its public URL for inclusion in the report’s photos.",
+        "operationId": "AgentPortalController_uploadKeyCollectionPhoto",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentUploadKeyPhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentKeyPhotoUploadResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body (bad base64, oversized, non-image/video mime), or propertyId is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "Property not in the agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a key-collection proof photo (base64-through-API → object storage).",
         "tags": [
           "agent"
         ]
@@ -4590,6 +5559,62 @@
       }
     },
     "/agent/tenants": {
+      "get": {
+        "description": "Tenant accounts whose linked applicant is on an application for a property in one of the agent’s assigned agencies — the read side of POST /agent/tenants. Newest first.",
+        "operationId": "AgentPortalController_listTenants",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "1-based page number.",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "Items per page (max 100).",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedAgentTenantsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the tenant logins within the agent’s book.",
+        "tags": [
+          "agent"
+        ]
+      },
       "post": {
         "operationId": "AgentPortalController_provisionTenant",
         "parameters": [],
@@ -5728,6 +6753,161 @@
           "tenantCounterWeekly",
           "createdAt"
         ]
+      },
+      "CreateTenantVacatingCaseDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "TenantVacatingCaseResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "propertyId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "propertyAddress": {
+            "type": "string",
+            "nullable": true,
+            "example": "1 Mobile Way, Sydney"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "cancelled"
+            ],
+            "description": "Whether the vacating case is active or has been withdrawn."
+          },
+          "currentStage": {
+            "type": "string",
+            "enum": [
+              "key_return",
+              "outgoing_inspection",
+              "maintenance",
+              "bond"
+            ],
+            "description": "Current end-leasing phase (mirrors staff dashboard tabs)."
+          },
+          "vacatingDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Expected or confirmed vacate date."
+          },
+          "initialVacatingDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Original vacate date when the case was opened (for change detection)."
+          },
+          "vacateDateChanged": {
+            "type": "boolean",
+            "description": "True when the vacate date differs from the original."
+          },
+          "keysReturned": {
+            "type": "boolean",
+            "description": "Whether keys have been returned to the agent."
+          },
+          "inspectionDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Scheduled outgoing inspection date."
+          },
+          "outgoingInspectionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Linked outgoing inspection id, when scheduled."
+          },
+          "inspectionReportAvailable": {
+            "type": "boolean",
+            "description": "Outgoing inspection report is available for review."
+          },
+          "tenantSettlementStatus": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "declined"
+            ],
+            "description": "Tenant response to proposed bond deductions."
+          },
+          "tenantConfirmationDueAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Deadline for tenant to accept or decline settlement."
+          },
+          "refundAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Proposed bond refund amount."
+          },
+          "debtAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Outstanding debt after bond applied."
+          },
+          "bondRefundPaid": {
+            "type": "boolean",
+            "description": "Bond refund has been processed."
+          },
+          "terminationReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Plain-language reason the lease is ending, when present."
+          },
+          "cancellationReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why the case was withdrawn, when cancelled."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "propertyId",
+          "propertyAddress",
+          "status",
+          "currentStage",
+          "vacatingDate",
+          "initialVacatingDate",
+          "vacateDateChanged",
+          "keysReturned",
+          "inspectionDate",
+          "outgoingInspectionId",
+          "inspectionReportAvailable",
+          "tenantSettlementStatus",
+          "tenantConfirmationDueAt",
+          "refundAmount",
+          "debtAmount",
+          "bondRefundPaid",
+          "terminationReason",
+          "cancellationReason",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CancelTenantVacatingCaseDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateTenantVacateDateDto": {
+        "type": "object",
+        "properties": {}
       },
       "TenantThreadMessageResponseDto": {
         "type": "object",
@@ -8399,6 +9579,61 @@
           "items"
         ]
       },
+      "InspectorKeyCustodyDto": {
+        "type": "object",
+        "properties": {
+          "collectedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "collectPhotos": {
+            "description": "R2 proof-photo URLs (keys in hand).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "collectNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "returnedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "returnPhotos": {
+            "description": "R2 proof-photo URLs (keys returned).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "returnNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectComplete": {
+            "type": "boolean",
+            "description": "Whether key collection has been recorded."
+          },
+          "returnComplete": {
+            "type": "boolean",
+            "description": "Whether key return has been recorded."
+          }
+        },
+        "required": [
+          "collectedAt",
+          "collectPhotos",
+          "collectNotes",
+          "returnedAt",
+          "returnPhotos",
+          "returnNotes",
+          "collectComplete",
+          "returnComplete"
+        ]
+      },
       "InspectorKeyCollectionResponseDto": {
         "type": "object",
         "properties": {
@@ -8421,6 +9656,13 @@
           },
           "keyCollection": {
             "$ref": "#/components/schemas/TenantKeyCollectionDto"
+          },
+          "photoRequired": {
+            "type": "boolean",
+            "description": "Whether the inspector must attach a proof photo to record collect/return."
+          },
+          "custody": {
+            "$ref": "#/components/schemas/InspectorKeyCustodyDto"
           }
         },
         "required": [
@@ -8428,31 +9670,115 @@
           "propertyId",
           "propertyAddress",
           "keyCustody",
-          "keyCollection"
+          "keyCollection",
+          "photoRequired",
+          "custody"
         ]
       },
-      "CompleteInspectorInspectionDto": {
+      "ReleaseInspectorInspectionDto": {
         "type": "object",
         "properties": {
-          "startTime": {
+          "reason": {
             "type": "string",
-            "format": "date-time",
-            "description": "When the inspector started on site (ISO 8601)."
+            "minLength": 10,
+            "maxLength": 1000,
+            "example": "Vehicle broke down — cannot reach the property today."
           },
-          "endTime": {
+          "mode": {
             "type": "string",
-            "format": "date-time",
-            "description": "When the inspector finished on site (ISO 8601)."
-          },
-          "reportUrl": {
-            "type": "string",
-            "maxLength": 2000,
-            "description": "Optional URL of the generated inspection report."
+            "enum": [
+              "release_pool",
+              "flag_admin"
+            ],
+            "default": "release_pool",
+            "description": "'release_pool' returns the job for anyone to claim; 'flag_admin' also marks it for staff attention and hides it from this inspector’s own pool."
           }
         },
         "required": [
-          "startTime",
-          "endTime"
+          "reason"
+        ]
+      },
+      "InspectorFindingItemInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Issue"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 4000,
+            "example": "Scuff marks on the wall."
+          },
+          "flagged": {
+            "type": "boolean",
+            "example": true,
+            "description": "Flag the item for attention."
+          },
+          "conditionTags": {
+            "example": [
+              "Tenant Responsible"
+            ],
+            "description": "Free-form condition/responsibility tags.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reading": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Meter reading, where applicable."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "InspectorFindingAreaInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Kitchen"
+          },
+          "rating": {
+            "type": "string",
+            "enum": [
+              "Excellent",
+              "Good",
+              "Fair",
+              "Poor",
+              "Damaged"
+            ],
+            "example": "Good",
+            "description": "The app's condition label — stored raw (ratingRaw) and mapped best-effort onto the ConditionRating enum."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InspectorFindingItemInput"
+            }
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "SaveInspectorFindingsDto": {
+        "type": "object",
+        "properties": {
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InspectorFindingAreaInput"
+            }
+          }
+        },
+        "required": [
+          "areas"
         ]
       },
       "InspectorPhotoDto": {
@@ -8552,6 +9878,12 @@
             ],
             "example": "GOOD"
           },
+          "ratingRaw": {
+            "type": "string",
+            "nullable": true,
+            "example": "Excellent",
+            "description": "The raw condition label as submitted (the app's own vocabulary) — prefer this over the mapped enum when displaying an app-authored area."
+          },
           "sortOrder": {
             "type": "number",
             "nullable": true
@@ -8574,6 +9906,7 @@
           "id",
           "name",
           "rating",
+          "ratingRaw",
           "sortOrder",
           "items",
           "photos"
@@ -8604,6 +9937,30 @@
           "inspectionId",
           "areas",
           "photos"
+        ]
+      },
+      "CompleteInspectorInspectionDto": {
+        "type": "object",
+        "properties": {
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the inspector started on site (ISO 8601)."
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the inspector finished on site (ISO 8601)."
+          },
+          "reportUrl": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Optional URL of the generated inspection report."
+          }
+        },
+        "required": [
+          "startTime",
+          "endTime"
         ]
       },
       "FileInspectorReportDto": {
@@ -8651,6 +10008,12 @@
           "contentBase64": {
             "type": "string",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
+          },
+          "areaName": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Kitchen",
+            "description": "Attach the photo to this area (find-or-create among the app-authored areas) instead of the inspection level."
           }
         },
         "required": [
@@ -8659,6 +10022,57 @@
           "sizeBytes",
           "contentBase64"
         ]
+      },
+      "UploadKeyCustodyPhotoDto": {
+        "type": "object",
+        "properties": {
+          "phase": {
+            "type": "string",
+            "enum": [
+              "collect",
+              "return"
+            ],
+            "example": "collect",
+            "description": "Which custody phase this proof photo belongs to."
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "keys-in-hand.jpg"
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 150,
+            "example": "image/jpeg",
+            "description": "An image/* or video/* MIME type (custody proof is a photo or clip)."
+          },
+          "sizeBytes": {
+            "type": "number",
+            "example": 184321,
+            "description": "Decoded byte size (≤ 25 MB)."
+          },
+          "contentBase64": {
+            "type": "string",
+            "description": "The file contents, base64-encoded (no data: URI prefix)."
+          }
+        },
+        "required": [
+          "phase",
+          "fileName",
+          "mimeType",
+          "sizeBytes",
+          "contentBase64"
+        ]
+      },
+      "RecordKeyCustodyDto": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Optional free-text note for this custody phase."
+          }
+        }
       },
       "InspectorThreadMessageResponseDto": {
         "type": "object",
@@ -8897,6 +10311,510 @@
         },
         "required": [
           "updated"
+        ]
+      },
+      "InspectorTribunalEvidenceDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Rent ledger extract"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "LEASING",
+              "FINANCIAL",
+              "COMMUNICATION",
+              "INSPECTION",
+              "MAINTENANCE",
+              "MEDIA"
+            ]
+          },
+          "present": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "title",
+          "category",
+          "present"
+        ]
+      },
+      "InspectorTribunalCaseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "caseNumber": {
+            "type": "string",
+            "example": "TRB-2026-9010"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "SUBMITTED",
+              "AWAITING_HEARING",
+              "HEARING_SCHEDULED",
+              "COMPLETED",
+              "CLOSED"
+            ]
+          },
+          "tribunalType": {
+            "type": "string",
+            "enum": [
+              "RENTAL_ARREARS",
+              "BOND_CLAIM",
+              "PROPERTY_DAMAGE",
+              "LEASE_TERMINATION",
+              "LEASE_BREACH",
+              "MAINTENANCE_DISPUTE"
+            ]
+          },
+          "caseSummary": {
+            "type": "string",
+            "example": "Rental arrears — 5 weeks outstanding",
+            "description": "The case trigger label (the staff module’s case summary line)."
+          },
+          "propertyAddress": {
+            "type": "string",
+            "example": "12 Harbour St"
+          },
+          "suburb": {
+            "type": "string",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "hearingDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Hearing date (ISO date string) — null until staff schedule it."
+          },
+          "hearingTime": {
+            "type": "string",
+            "nullable": true,
+            "example": "10:30"
+          },
+          "hearingFormat": {
+            "type": "string",
+            "nullable": true,
+            "description": "FE literal: 'in_person' | 'online'."
+          },
+          "hearingLocation": {
+            "type": "string",
+            "nullable": true
+          },
+          "tribunalBody": {
+            "type": "string",
+            "nullable": true,
+            "example": "NCAT Sydney"
+          },
+          "amountClaimed": {
+            "type": "number",
+            "nullable": true
+          },
+          "bondAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "outstandingRent": {
+            "type": "number",
+            "nullable": true
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InspectorTribunalEvidenceDto"
+            }
+          },
+          "evidenceComplete": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether the staff pre-hearing review found the evidence complete."
+          },
+          "outcomeResult": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff-recorded outcome (FE literal, e.g. 'claim_successful') — null until recorded."
+          },
+          "attendanceRecorded": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether the inspector’s hearing attendance has been billed by staff."
+          },
+          "closed": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether the case is in a closed status (COMPLETED / CLOSED)."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "closedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "caseNumber",
+          "status",
+          "tribunalType",
+          "caseSummary",
+          "propertyAddress",
+          "suburb",
+          "state",
+          "hearingDate",
+          "hearingTime",
+          "hearingFormat",
+          "hearingLocation",
+          "tribunalBody",
+          "amountClaimed",
+          "bondAmount",
+          "outstandingRent",
+          "evidence",
+          "evidenceComplete",
+          "outcomeResult",
+          "attendanceRecorded",
+          "closed",
+          "createdAt",
+          "closedAt"
+        ]
+      },
+      "InspectorRosterDto": {
+        "type": "object",
+        "properties": {
+          "inspectorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SUSPENDED"
+            ]
+          },
+          "licenceNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenceType": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenceExpiry": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "insuranceProvider": {
+            "type": "string",
+            "nullable": true
+          },
+          "insurancePolicyNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "insuranceExpiry": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "serviceRegions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tribunalQualified": {
+            "type": "boolean"
+          },
+          "approvedStates": {
+            "description": "Tribunal-eligibility states.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "inspectorId",
+          "status",
+          "licenceNumber",
+          "licenceType",
+          "licenceExpiry",
+          "insuranceProvider",
+          "insurancePolicyNumber",
+          "insuranceExpiry",
+          "serviceRegions",
+          "tribunalQualified",
+          "approvedStates"
+        ]
+      },
+      "InspectorRegistrationStatusDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "registrationStatus": {
+            "type": "string",
+            "example": "pending_review",
+            "description": "Lowercase FE literal: 'not_started' | 'pending_review' | 'approved' | 'rejected'."
+          },
+          "submittedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reviewedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "reviewNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string",
+            "nullable": true
+          },
+          "abn": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenceNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenceType": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenceExpiry": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "insuranceProvider": {
+            "type": "string",
+            "nullable": true
+          },
+          "insurancePolicyNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "insuranceExpiry": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "serviceRegions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tribunalQualified": {
+            "type": "boolean"
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankAccountLast4": {
+            "type": "string",
+            "nullable": true,
+            "description": "Last 4 digits of the bank account number (full number never echoed)."
+          }
+        },
+        "required": [
+          "id",
+          "registrationStatus",
+          "submittedAt",
+          "reviewedAt",
+          "reviewNotes",
+          "firstName",
+          "lastName",
+          "email",
+          "mobile",
+          "abn",
+          "licenceNumber",
+          "licenceType",
+          "licenceExpiry",
+          "insuranceProvider",
+          "insurancePolicyNumber",
+          "insuranceExpiry",
+          "serviceRegions",
+          "tribunalQualified",
+          "emergencyContactName",
+          "emergencyContactPhone",
+          "bankAccountLast4"
+        ]
+      },
+      "InspectorProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "roster": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InspectorRosterDto"
+              }
+            ]
+          },
+          "registration": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InspectorRegistrationStatusDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "userId",
+          "email",
+          "firstName",
+          "lastName",
+          "phone",
+          "roster",
+          "registration"
+        ]
+      },
+      "SubmitInspectorRegistrationDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "mobile": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "PII — stored, never echoed."
+          },
+          "residentialAddress": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "PII — stored, never echoed."
+          },
+          "abn": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "licenceNumber": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "licenceType": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "licenceExpiry": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "insuranceProvider": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "insurancePolicyNumber": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "insuranceExpiry": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "serviceRegions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tribunalQualified": {
+            "type": "boolean",
+            "description": "Self-declared; staff verify on review."
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "bankAccountName": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Confidential — stored, never echoed."
+          },
+          "bankBsb": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Confidential — stored, never echoed."
+          },
+          "bankAccountNumber": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Confidential — stored; only the last 4 digits are ever echoed."
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName"
         ]
       },
       "AgentAgencyResponseDto": {
@@ -9171,6 +11089,245 @@
           "pageSize",
           "hasMore",
           "items"
+        ]
+      },
+      "AgentKeyCollectionReportDto": {
+        "type": "object",
+        "properties": {
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "tagNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "keysCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "entryDoorCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "windowSlidingCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "fobsCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "remoteControlCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "mailboxCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "othersCount": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "submittedAt",
+          "tagNumber",
+          "keysCount",
+          "entryDoorCount",
+          "windowSlidingCount",
+          "fobsCount",
+          "remoteControlCount",
+          "mailboxCount",
+          "othersCount"
+        ]
+      },
+      "AgentKeyCollectionResponseDto": {
+        "type": "object",
+        "properties": {
+          "cycleId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "propertyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "propertyAddress": {
+            "type": "string",
+            "example": "142 Elizabeth St, Melbourne"
+          },
+          "lifecycleStep": {
+            "type": "string",
+            "nullable": true,
+            "example": "onboarding",
+            "description": "Leasing lifecycle step (FE slug), or null when no cycle exists."
+          },
+          "keyCustody": {
+            "type": "string",
+            "example": "agent",
+            "description": "Key custody: crossub | agent."
+          },
+          "status": {
+            "type": "string",
+            "example": "not_started",
+            "description": "Key-collection item status (not_started | in_progress | waiting | blocked | done)."
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true,
+            "example": "CROSSUB office, 120 Collins St"
+          },
+          "photos": {
+            "description": "Key-collection proof photos.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "report": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentKeyCollectionReportDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "cycleId",
+          "propertyId",
+          "propertyAddress",
+          "lifecycleStep",
+          "keyCustody",
+          "status",
+          "time",
+          "location",
+          "photos",
+          "report"
+        ]
+      },
+      "AgentSetKeyCollectionDto": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-01T10:00:00.000Z",
+            "description": "When the tenant collects the keys."
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 240,
+            "example": "CROSSUB office, 120 Collins St, Melbourne"
+          }
+        },
+        "required": [
+          "time",
+          "location"
+        ]
+      },
+      "AgentSubmitKeyCollectionReportDto": {
+        "type": "object",
+        "properties": {
+          "photos": {
+            "description": "Key-collection proof photo URLs (from the photo-upload endpoint).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tagNumber": {
+            "type": "string",
+            "maxLength": 80,
+            "example": "TAG-0192"
+          },
+          "keysCount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 3
+          },
+          "entryDoorCount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1
+          },
+          "windowSlidingCount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 2
+          },
+          "fobsCount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1
+          },
+          "remoteControlCount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1
+          },
+          "mailboxCount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1
+          },
+          "othersCount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 0
+          }
+        }
+      },
+      "AgentUploadKeyPhotoDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "keys-handover.jpg"
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 150,
+            "example": "image/jpeg",
+            "description": "An image/* or video/* MIME type."
+          },
+          "sizeBytes": {
+            "type": "number",
+            "example": 184321,
+            "description": "Decoded byte size (≤ 25 MB)."
+          },
+          "contentBase64": {
+            "type": "string",
+            "description": "The file contents, base64-encoded (no data: URI prefix)."
+          }
+        },
+        "required": [
+          "fileName",
+          "mimeType",
+          "sizeBytes",
+          "contentBase64"
+        ]
+      },
+      "AgentKeyPhotoUploadResponseDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Public URL of the stored photo."
+          }
+        },
+        "required": [
+          "url"
         ]
       },
       "AgentInspectionDto": {
@@ -9463,7 +11620,8 @@
             "type": "string",
             "enum": [
               "OPEN",
-              "COMPLETED"
+              "COMPLETED",
+              "CANCELLED"
             ]
           },
           "vacateDate": {
@@ -10198,6 +12356,132 @@
         },
         "required": [
           "reason"
+        ]
+      },
+      "AgentTenantResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The tenant User id."
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "example": "TENANT",
+            "description": "Role key — always TENANT."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_INVITE",
+              "ACTIVE",
+              "DISABLED"
+            ],
+            "example": "ACTIVE"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the login was created."
+          },
+          "propertyId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The property this tenant is linked to (via their application), if any."
+          },
+          "propertyAddress": {
+            "type": "string",
+            "nullable": true,
+            "example": "142 Elizabeth St, Melbourne"
+          },
+          "applicationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The application that anchored this tenant login."
+          },
+          "applicationStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "SUBMITTED",
+              "APPROVED",
+              "DECLINED",
+              "LEASED",
+              "WITHDRAWN"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "firstName",
+          "lastName",
+          "phone",
+          "role",
+          "status",
+          "createdAt",
+          "propertyId",
+          "propertyAddress",
+          "applicationId",
+          "applicationStatus"
+        ]
+      },
+      "PaginatedAgentTenantsDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 42,
+            "description": "Total records matching the query."
+          },
+          "page": {
+            "type": "number",
+            "example": 1,
+            "description": "1-based page returned."
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 20,
+            "description": "Items per page applied."
+          },
+          "hasMore": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether a further page exists after this one."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentTenantResponseDto"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "pageSize",
+          "hasMore",
+          "items"
         ]
       },
       "ProvisionTenantDto": {
