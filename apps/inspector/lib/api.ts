@@ -1,4 +1,4 @@
-import { ROUTES, isPublicRoute } from '@/constants/routes';
+import { ROUTES, isOnboardingRoute, isPublicRoute } from '@/constants/routes';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
@@ -15,7 +15,8 @@ const isAuthPath = (path: string): boolean => path.startsWith('/auth/');
 
 const onPublicPage = (): boolean => {
   if (typeof window === 'undefined') return false;
-  return isPublicRoute(window.location.pathname);
+  const path = window.location.pathname;
+  return isPublicRoute(path) || isOnboardingRoute(path);
 };
 
 const buildHeaders = (init?: RequestInit): HeadersInit => ({

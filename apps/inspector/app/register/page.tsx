@@ -2,12 +2,12 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,6 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { user, status } = useAuth();
   const { saveRegistration, registrationComplete } = useInspectorData();
 
@@ -61,9 +60,9 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (status === 'guest') {
-      router.replace(ROUTES.LOGIN);
+      window.location.replace(ROUTES.LOGIN);
     }
-  }, [status, router]);
+  }, [status]);
 
   useEffect(() => {
     if (!user?.firstName || !user?.lastName) return;
@@ -80,27 +79,34 @@ export default function RegisterPage() {
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (!user?.email || !user.firstName || !user.lastName) {
+    if (!user?.email) {
       toast.error('Account details missing — sign in again.');
-      router.replace(ROUTES.LOGIN);
+      window.location.replace(ROUTES.LOGIN);
       return;
     }
 
+    const firstName = user.firstName?.trim() || 'Inspector';
+    const lastName = user.lastName?.trim() || 'User';
+
     const payload: InspectorRegistration = {
       ...values,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      firstName,
+      lastName,
       email: user.email,
       registrationStatus: 'pending_review',
       submittedAt: new Date().toISOString(),
     };
     saveRegistration(payload);
     toast.success('Profile saved — you will not be asked again');
-    router.replace(ROUTES.DASHBOARD);
+    window.location.assign(ROUTES.DASHBOARD);
   };
 
-  if (status === 'loading' || !user) {
-    return null;
+  if (status === 'loading' || status === 'guest') {
+    return <AuthLoadingScreen message={status === 'guest' ? 'Redirecting to sign in…' : undefined} />;
+  }
+
+  if (!user) {
+    return <AuthLoadingScreen message="Loading your account…" />;
   }
 
   if (registrationComplete) {
@@ -134,7 +140,7 @@ export default function RegisterPage() {
         </p>
         <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
           <p className="font-medium">
-            {user.firstName} {user.lastName}
+            {[user.firstName, user.lastName].filter(Boolean).join(' ') || 'Your account'}
           </p>
           <p className="text-muted-foreground">{user.email}</p>
         </div>

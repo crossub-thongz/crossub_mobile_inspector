@@ -13,12 +13,12 @@ import {
   UserPlus,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +26,6 @@ import { Label } from '@/components/ui/label';
 import { PASSWORD_MAX, PASSWORD_MIN } from '@/constants/auth';
 import { ROUTES } from '@/constants/routes';
 import { ApiError, api } from '@/lib/api';
-import type { AuthUser } from '@/lib/auth-types';
 import { normalizeAuthEmail } from '@/lib/auth-email';
 import { postAuthDestination } from '@/lib/system-access-agreement';
 
@@ -49,16 +48,16 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export default function SignupPage() {
-  const router = useRouter();
   const { refresh, status, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const submitLock = useRef(false);
 
-  useEffect(() => {
-    if (status !== 'authed' || !user) return;
-    router.replace(
+  useLayoutEffect(() => {
+    if (status !== 'authed' || !user || submitLock.current) return;
+    window.location.replace(
       postAuthDestination(user, ROUTES.REGISTER, ROUTES.SYSTEM_ACCESS_AGREEMENT),
     );
-  }, [status, user, router]);
+  }, [status, user]);
 
   const {
     register,
@@ -76,30 +75,36 @@ export default function SignupPage() {
   });
 
   const onSubmit = async (values: FormValues) => {
+    if (submitLock.current) return;
+    submitLock.current = true;
+
     try {
-      const result = await api.post<{ user: AuthUser }>('/auth/register-inspector', {
+      await api.post('/auth/register-inspector', {
         email: normalizeAuthEmail(values.email),
         password: values.password,
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
       });
-      const authed = await refresh();
-      if (!authed) {
+
+      const authedUser = await refresh();
+      if (!authedUser) {
         toast.error(
           'Account created but the session cookie was not saved. Sign in with the same password.',
         );
-        router.replace(ROUTES.LOGIN);
+        window.location.assign(ROUTES.LOGIN);
         return;
       }
+
       toast.success('Account created — you are signed in.');
-      router.replace(
+      window.location.assign(
         postAuthDestination(
-          result.user,
+          authedUser,
           ROUTES.REGISTER,
           ROUTES.SYSTEM_ACCESS_AGREEMENT,
         ),
       );
     } catch (err) {
+      submitLock.current = false;
       if (err instanceof ApiError) {
         if (err.status === 409) {
           toast.error('An account with this email already exists. Sign in instead.');
@@ -118,8 +123,8 @@ export default function SignupPage() {
     }
   };
 
-  if (status === 'loading' || status === 'authed') {
-    return null;
+  if (status === 'loading') {
+    return <AuthLoadingScreen />;
   }
 
   return (

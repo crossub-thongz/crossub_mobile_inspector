@@ -22,8 +22,8 @@ type AuthStatus = 'loading' | 'authed' | 'guest';
 interface AuthContextValue {
   user: AuthUser | null;
   status: AuthStatus;
-  /** Returns true when a live API session (or valid local demo) is established. */
-  refresh: () => Promise<boolean>;
+  /** Resolves with the signed-in user, or null when there is no session. */
+  refresh: () => Promise<AuthUser | null>;
   logout: () => Promise<void>;
 }
 
@@ -33,25 +33,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
 
-  const refresh = useCallback(async (): Promise<boolean> => {
+  const refresh = useCallback(async (): Promise<AuthUser | null> => {
     clearOrphanLocalAccessCookie();
 
     try {
       const data = await api.get<{ user: AuthUser }>('/auth/me');
       setUser(data.user);
       setStatus('authed');
-      return true;
+      return data.user;
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         const localUser = getLocalSessionUser();
         if (localUser && hasLocalAccessCookie()) {
           setUser(localUser);
           setStatus('authed');
-          return true;
+          return localUser;
         }
         setUser(null);
         setStatus('guest');
-        return false;
+        return null;
       }
     }
 
@@ -59,12 +59,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (localUser && hasLocalAccessCookie()) {
       setUser(localUser);
       setStatus('authed');
-      return true;
+      return localUser;
     }
 
     setUser(null);
     setStatus('guest');
-    return false;
+    return null;
   }, []);
 
   const logout = useCallback(async () => {

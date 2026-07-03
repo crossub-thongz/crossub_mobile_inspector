@@ -1,10 +1,10 @@
 'use client';
 
 import { FileText, Loader2, ShieldCheck } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,7 +18,6 @@ import {
 } from '@/lib/system-access-agreement';
 
 export default function SystemAccessAgreementPage() {
-  const router = useRouter();
   const { user, status, refresh } = useAuth();
   const [agreement, setAgreement] = useState<SystemAccessAgreementView | null>(null);
   const [signerName, setSignerName] = useState('');
@@ -28,13 +27,13 @@ export default function SystemAccessAgreementPage() {
 
   useEffect(() => {
     if (status === 'guest') {
-      router.replace(ROUTES.LOGIN);
+      window.location.replace(ROUTES.LOGIN);
       return;
     }
     if (status !== 'authed' || !user) return;
 
     if (!needsSystemAccessAgreement(user)) {
-      router.replace(ROUTES.DASHBOARD);
+      window.location.replace(ROUTES.REGISTER);
       return;
     }
 
@@ -51,7 +50,7 @@ export default function SystemAccessAgreementPage() {
         setLoading(false);
       }
     })();
-  }, [status, user, router]);
+  }, [status, user]);
 
   const onAccept = async () => {
     if (!signerName.trim()) {
@@ -72,7 +71,7 @@ export default function SystemAccessAgreementPage() {
       await api.post('/auth/refresh');
       await refresh();
       toast.success('Agreement accepted. Welcome to CROSSUB Inspector.');
-      router.replace(ROUTES.DASHBOARD);
+      window.location.assign(ROUTES.REGISTER);
     } catch (err) {
       if (err instanceof ApiError) {
         toast.error(err.message || 'Unable to record your agreement.');
@@ -85,11 +84,11 @@ export default function SystemAccessAgreementPage() {
   };
 
   if (status === 'loading' || loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="size-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AuthLoadingScreen />;
+  }
+
+  if (status === 'guest') {
+    return <AuthLoadingScreen message="Redirecting to sign in…" />;
   }
 
   return (

@@ -11,12 +11,12 @@ import {
   Mail,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,17 +39,15 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
-  const router = useRouter();
   const { refresh, status, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    if (status === 'authed' && user) {
-      router.replace(
-        postAuthDestination(user, ROUTES.DASHBOARD, ROUTES.SYSTEM_ACCESS_AGREEMENT),
-      );
-    }
-  }, [status, user, router]);
+  useLayoutEffect(() => {
+    if (status !== 'authed' || !user) return;
+    window.location.replace(
+      postAuthDestination(user, ROUTES.DASHBOARD, ROUTES.SYSTEM_ACCESS_AGREEMENT),
+    );
+  }, [status, user]);
 
   const {
     register,
@@ -67,17 +65,17 @@ export default function LoginPage() {
         email,
         password: values.password,
       });
-      const authed = await refresh();
-      if (!authed) {
+      const authedUser = await refresh();
+      if (!authedUser) {
         toast.error(
           'Credentials were accepted but the session cookie was not saved. Restart the dev server and try again.',
         );
         return;
       }
-      const me = await api.get<{ user: AuthUser }>('/auth/me');
-      router.replace(
+      toast.success('Signed in.');
+      window.location.assign(
         postAuthDestination(
-          me.user,
+          authedUser,
           ROUTES.DASHBOARD,
           ROUTES.SYSTEM_ACCESS_AGREEMENT,
         ),
@@ -94,6 +92,10 @@ export default function LoginPage() {
       toast.error('Sign in failed. Try again.');
     }
   };
+
+  if (status === 'loading') {
+    return <AuthLoadingScreen />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">

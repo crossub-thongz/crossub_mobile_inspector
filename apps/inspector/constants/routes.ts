@@ -27,8 +27,17 @@ export const PUBLIC_ROUTE_PATTERNS = [
   /^\/reset-password(\/|$)/,
 ];
 
+/** Onboarding routes — require a session but are reachable before profile/agreement gates complete. */
+export const ONBOARDING_ROUTE_PATTERNS = [
+  /^\/register\/?$/,
+  /^\/system-access-agreement\/?$/,
+];
+
 export const isPublicRoute = (pathname: string): boolean =>
   PUBLIC_ROUTE_PATTERNS.some((rx) => rx.test(pathname));
+
+export const isOnboardingRoute = (pathname: string): boolean =>
+  ONBOARDING_ROUTE_PATTERNS.some((rx) => rx.test(pathname));
 
 export const jobDetail = (id: string) => `/jobs/${id}`;
 export const jobHistory = (id: string) => `/jobs/${id}/history`;
