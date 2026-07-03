@@ -41,6 +41,7 @@ import {
 } from '@/lib/crossub-api/inspector-client';
 import {
   mapInspectionDetail,
+  mapInspectionDetailPhotos,
   mapInspections,
   mapInspectorEarnings,
   mapInspectorMessages,
@@ -99,9 +100,9 @@ import {
   TRIBUNALS,
 } from '@/lib/mock-data';
 import {
-  clearOfflineQueue,
   enqueueOfflineAction,
   loadOfflineQueue,
+  saveOfflineQueue,
 } from '@/lib/offline-queue';
 import type {
   DashboardSummary,
@@ -112,11 +113,13 @@ import type {
   InspectorRegistration,
   JobStatus,
   MessageThread,
+  OfflineQueueItem,
   RoomInspectionEntry,
   ThreadMessage,
   TribunalHearing,
   TribunalOutcome,
 } from '@/lib/types';
+import type { LabeledPhoto } from '@/lib/job-history';
 
 interface InspectorDataContextValue {
   loading: boolean;
@@ -170,6 +173,11 @@ interface InspectorDataContextValue {
    * facade is unreachable (the caller renders nothing rather than erroring).
    */
   loadInspectionFindings: (id: string) => Promise<RoomInspectionEntry[]>;
+  /**
+   * Load server-persisted findings photos for a completed API-backed inspection
+   * (`GET /inspector/inspections/:id/detail`). Returns [] for demo jobs / offline.
+   */
+  loadInspectionReportPhotos: (id: string) => Promise<LabeledPhoto[]>;
   /**
    * Upload inspection-level evidence photos for an API-backed inspection (base64 → R2).
    * Returns the count uploaded (0 for demo jobs / offline); rejects if any upload fails so
@@ -408,7 +416,7 @@ export function InspectorDataProvider({
         const mergeApiJobFinal = (apiJob: InspectionJob) => {
           const merged = mergeApiJob(apiJob);
           return merged.status === 'completed'
-            ? mergeJobWithHistory(merged)
+            ? mergeJobWithHistory(merged, { serverBacked: true })
             : merged;
         };
         const localOnly = prev.filter(
@@ -467,12 +475,47 @@ export function InspectorDataProvider({
       setPendingSync(0);
       return;
     }
-    if (apiConnected) {
-      clearOfflineQueue();
-      setPendingSync(0);
-      toast.success(`Synced ${queue.length} offline change(s)`);
+    if (!apiConnected) return;
+
+    const remaining: OfflineQueueItem[] = [];
+    let synced = 0;
+
+    for (const item of queue) {
+      if (
+        item.action === 'key_workflow' &&
+        apiInspectionIds.current.has(item.jobId)
+      ) {
+        const phase = item.payload.phase;
+        const record = item.payload.record;
+        if (
+          (phase === 'collect' || phase === 'return') &&
+          record &&
+          typeof record === 'object'
+        ) {
+          try {
+            await syncKeyCustodyToServer(
+              item.jobId,
+              phase,
+              record as KeyPhaseRecord,
+            );
+            synced += 1;
+            continue;
+          } catch {
+            remaining.push(item);
+            continue;
+          }
+        }
+      }
+      remaining.push(item);
     }
-  }, [apiConnected]);
+
+    if (synced > 0) {
+      saveOfflineQueue(remaining);
+      setPendingSync(remaining.length);
+      toast.success(`Synced ${synced} offline change(s)`);
+      await refresh();
+    }
+  }, [apiConnected, refresh]);
 
   useEffect(() => {
     void refresh();
@@ -852,6 +895,19 @@ export function InspectorDataProvider({
     [apiConnected],
   );
 
+  const loadInspectionReportPhotos = useCallback(
+    async (id: string): Promise<LabeledPhoto[]> => {
+      if (!apiInspectionIds.current.has(id) || !apiConnected) return [];
+      try {
+        const detail = await fetchInspectionDetail(id);
+        return mapInspectionDetailPhotos(detail);
+      } catch {
+        return [];
+      }
+    },
+    [apiConnected],
+  );
+
   const updateTribunalChecklist = useCallback(
     (
       id: string,
@@ -1101,6 +1157,7 @@ export function InspectorDataProvider({
     finishInspectionWorkflow,
     saveKeyWorkflow,
     loadInspectionFindings,
+    loadInspectionReportPhotos,
     uploadInspectionPhotos,
     saveInspectionFindings: saveInspectionFindingsAction,
     updateTribunalChecklist,

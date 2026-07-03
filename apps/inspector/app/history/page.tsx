@@ -18,6 +18,7 @@ import {
   mergeJobWithHistory,
   sortJobsByHistoryDate,
 } from '@/lib/job-history';
+import { isDemoJobId } from '@/lib/inspector-job-filters';
 import { formatDateTime } from '@/lib/utils';
 
 export default function HistoryPage() {
@@ -25,7 +26,9 @@ export default function HistoryPage() {
   const [query, setQuery] = useState('');
 
   const jobs = useMemo(() => {
-    const withHistory = completedJobs.map(mergeJobWithHistory);
+    const withHistory = completedJobs.map((job) =>
+      mergeJobWithHistory(job, { serverBacked: !isDemoJobId(job.id) }),
+    );
     return sortJobsByHistoryDate(withHistory);
   }, [completedJobs]);
 

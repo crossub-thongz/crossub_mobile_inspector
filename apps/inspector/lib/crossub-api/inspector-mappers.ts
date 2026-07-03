@@ -26,6 +26,7 @@ import {
   INSPECTOR_HOURLY_RATE_AUD,
   TRIBUNAL_OUTCOMES,
 } from '@/constants/inspection';
+import type { LabeledPhoto } from '@/lib/job-history';
 import type {
   EarningsRecord,
   InspectionJob,
@@ -231,6 +232,32 @@ export function mapInspectionDetail(
   }
 
   return rooms;
+}
+
+/** Flatten the findings tree into labeled proof photos for the history report. */
+export function mapInspectionDetailPhotos(
+  dto: InspectorInspectionDetail,
+): LabeledPhoto[] {
+  const photos: LabeledPhoto[] = [];
+  for (const area of dto.areas) {
+    const areaName = asString(area.name) ?? 'Unnamed area';
+    for (const [index, photo] of area.photos.entries()) {
+      photos.push({ label: `${areaName} · ${index + 1}`, url: photo.url });
+    }
+    for (const item of area.items) {
+      const itemName = asString(item.name) ?? 'Item';
+      for (const [index, photo] of item.photos.entries()) {
+        photos.push({
+          label: `${areaName} · ${itemName} · ${index + 1}`,
+          url: photo.url,
+        });
+      }
+    }
+  }
+  for (const [index, photo] of dto.photos.entries()) {
+    photos.push({ label: `Inspection · ${index + 1}`, url: photo.url });
+  }
+  return photos;
 }
 
 // -------------------------------- Tribunal -------------------------------

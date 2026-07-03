@@ -1,15 +1,16 @@
 'use client';
 
-import { KeyRound } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Camera, ClipboardList, KeyRound } from 'lucide-react';
 
 import { ProofPhotoGallery } from '@/components/inspector/proof-photo-gallery';
+import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  OPEN_FINISH_CHECKS,
-} from '@/constants/inspection';
+import { OPEN_FINISH_CHECKS } from '@/constants/inspection';
 import type { KeyPhaseRecord } from '@/lib/key-access-workflow';
 import { buildJobHistoryReport } from '@/lib/job-history';
-import type { InspectionJob } from '@/lib/types';
+import { isDemoJobId } from '@/lib/inspector-job-filters';
+import type { InspectionJob, RoomInspectionEntry } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
 
 function KeyPhaseSection({
@@ -59,8 +60,76 @@ function KeyPhaseSection({
   );
 }
 
+function FindingsSection({ rooms }: { rooms: RoomInspectionEntry[] }) {
+  if (rooms.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <ClipboardList className="text-primary size-4" />
+          Inspection findings
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {rooms.map((room) => (
+          <div
+            key={room.area}
+            className="space-y-1 border-b border-border/60 pb-3 last:border-0 last:pb-0"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">{room.area}</p>
+              {room.condition && (
+                <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {room.condition}
+                </span>
+              )}
+            </div>
+            {room.comments && (
+              <p className="text-muted-foreground text-xs">{room.comments}</p>
+            )}
+            {room.photoCount > 0 && (
+              <p className="text-muted-foreground flex items-center gap-1 text-xs tabular-nums">
+                <Camera className="size-3" />
+                {room.photoCount} photo{room.photoCount === 1 ? '' : 's'} on file
+              </p>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function JobHistoryReport({ job }: { job: InspectionJob }) {
+  const { loadInspectionFindings, loadInspectionReportPhotos } = useInspectorData();
   const report = buildJobHistoryReport(job);
+  const serverBacked = !isDemoJobId(job.id);
+  const [findings, setFindings] = useState<RoomInspectionEntry[]>([]);
+  const [findingPhotos, setFindingPhotos] = useState<
+    { label: string; url: string }[]
+  >([]);
+
+  useEffect(() => {
+    if (!serverBacked) return;
+    let active = true;
+    void Promise.all([
+      loadInspectionFindings(job.id),
+      loadInspectionReportPhotos(job.id),
+    ]).then(([rooms, photos]) => {
+      if (!active) return;
+      setFindings(rooms);
+      setFindingPhotos(photos);
+    });
+    return () => {
+      active = false;
+    };
+  }, [job.id, loadInspectionFindings, loadInspectionReportPhotos, serverBacked]);
+
+  const sectionPhotos =
+    job.type === 'open'
+      ? [...report.readinessPhotos, ...report.finishPhotos]
+      : findingPhotos;
 
   return (
     <div className="space-y-4">
@@ -84,6 +153,8 @@ export function JobHistoryReport({ job }: { job: InspectionJob }) {
           />
         </>
       )}
+
+      {serverBacked && <FindingsSection rooms={findings} />}
 
       {job.type === 'open' && (
         <>
@@ -124,17 +195,24 @@ export function JobHistoryReport({ job }: { job: InspectionJob }) {
         </>
       )}
 
-      {job.type !== 'open' && !job.keyAccess && !report.hasReport && (
+      {job.type !== 'open' && sectionPhotos.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Section photos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProofPhotoGallery
+              photos={sectionPhotos}
+              emptyLabel="No section photos on file"
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {job.type !== 'open' && !job.keyAccess && !report.hasReport && findings.length === 0 && (
         <p className="text-muted-foreground rounded-lg border border-dashed px-3 py-6 text-center text-sm">
           This job was completed before detailed proof capture was enabled, or no
           photos were saved for this inspection type.
-        </p>
-      )}
-
-      {job.type !== 'open' && report.hasReport && job.keyAccess && (
-        <p className="text-muted-foreground text-xs">
-          Section photos for {job.type} inspections are stored when captured during
-          the workflow.
         </p>
       )}
     </div>

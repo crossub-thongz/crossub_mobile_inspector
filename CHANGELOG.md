@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-07-03 (history)
+
+### Changed
+- **History & reports** now source server data for API-backed jobs: the report detail loads findings + section photos from `GET /inspector/inspections/:id/detail`; key collect/return prefers server-synced R2 proof over device `sessionStorage` (`mergeJobWithHistory({ serverBacked: true })`). Demo jobs keep the local-only path.
+- **Offline sync** replays queued `key_workflow` actions via `syncKeyCustodyToServer` when back online (previously the queue was cleared without syncing).
+
+### Added
+- `mapInspectionDetailPhotos` mapper + `loadInspectionReportPhotos` provider action; `JobHistoryReport` renders server findings and section photo galleries.
+
 ## 2026-07-03
 
 ### Added

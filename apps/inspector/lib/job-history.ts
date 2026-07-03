@@ -1,4 +1,8 @@
-import { getKeyWorkflow, type KeyPhaseRecord } from '@/lib/key-access-workflow';
+import {
+  getKeyWorkflow,
+  type KeyPhaseRecord,
+  type KeyWorkflowData,
+} from '@/lib/key-access-workflow';
 import type { InspectionJob } from '@/lib/types';
 
 const HISTORY_STORAGE_KEY = 'crossub-inspector-completed-history';
@@ -64,10 +68,59 @@ export function loadCompletedJobHistory(
   return loadHistoryStore()[jobId] ?? null;
 }
 
-/** Restore saved proof photos and workflow data onto a completed job row. */
-export function mergeJobWithHistory(job: InspectionJob): InspectionJob {
+function hasServerProofPhotos(record?: KeyPhaseRecord): boolean {
+  return Boolean(record?.photoUrls?.some((url) => url.startsWith('https://')));
+}
+
+/** Prefer server-synced key phases (R2 URLs) over device-local history. */
+function preferKeyWorkflow(
+  server?: KeyWorkflowData,
+  local?: KeyWorkflowData,
+): KeyWorkflowData | undefined {
+  if (!server && !local) return undefined;
+  if (!server) return local;
+  if (!local) return server;
+  return {
+    collect: hasServerProofPhotos(server.collect)
+      ? server.collect
+      : (server.collect ?? local.collect),
+    return: hasServerProofPhotos(server.return)
+      ? server.return
+      : (server.return ?? local.return),
+  };
+}
+
+/**
+ * Restore saved proof photos and workflow data onto a completed job row.
+ * For API-backed jobs (`serverBacked`), the server-enriched row wins and
+ * local session history only fills gaps — so key custody + findings survive
+ * a new device or cleared browser storage.
+ */
+export function mergeJobWithHistory(
+  job: InspectionJob,
+  options?: { serverBacked?: boolean },
+): InspectionJob {
   const history = loadCompletedJobHistory(job.id);
   if (!history?.workflowData) return job;
+
+  if (options?.serverBacked) {
+    const localKey = getKeyWorkflow({
+      ...job,
+      workflowData: history.workflowData,
+    });
+    const serverKey = getKeyWorkflow(job);
+    const keyWorkflow = preferKeyWorkflow(serverKey, localKey);
+    return {
+      ...job,
+      workflowStep: history.workflowStep ?? job.workflowStep,
+      workflowData: {
+        ...history.workflowData,
+        ...job.workflowData,
+        ...(keyWorkflow ? { keyWorkflow } : {}),
+      },
+    };
+  }
+
   return {
     ...job,
     workflowStep: history.workflowStep ?? job.workflowStep,

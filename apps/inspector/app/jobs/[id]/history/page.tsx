@@ -12,12 +12,15 @@ import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { ROUTES } from '@/constants/routes';
 import { mergeJobWithHistory } from '@/lib/job-history';
+import { isDemoJobId } from '@/lib/inspector-job-filters';
 
 export default function JobHistoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { getJob } = useInspectorData();
   const raw = getJob(id);
-  const job = raw ? mergeJobWithHistory(raw) : undefined;
+  const job = raw
+    ? mergeJobWithHistory(raw, { serverBacked: !isDemoJobId(raw.id) })
+    : undefined;
 
   if (!job) {
     return (
