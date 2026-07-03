@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { INGOING_AREAS } from '@/constants/inspection';
 import { jobDetail, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
+import type { InspectorFindingAreaPayload } from '@/lib/crossub-api/inspector-client';
 import {
   useInspectionFinishedGate,
   useInspectionInProgress,
@@ -25,7 +26,7 @@ const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor', 'Damaged'];
 
 export default function IngoingInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, uploadInspectionPhotos, updateJobStatus } =
+  const { getJob, uploadInspectionPhotos, saveInspectionFindings, updateJobStatus } =
     useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
@@ -54,10 +55,11 @@ export default function IngoingInspectionPage() {
     if (files.length === 0) return;
     setUploading(true);
     try {
-      // For an API-backed inspection this puts the bytes to R2 (base64 → facade); demo
-      // jobs no-op and just bump the local counter. A failure blocks the count so the
-      // inspector knows the evidence didn't save.
-      await uploadInspectionPhotos(id, files);
+      // For an API-backed inspection this puts the bytes to R2 (base64 → facade),
+      // attached to the CURRENT area of the findings tree; demo jobs no-op and just
+      // bump the local counter. A failure blocks the count so the inspector knows
+      // the evidence didn't save.
+      await uploadInspectionPhotos(id, files, area);
     } catch {
       toast.error('Photo upload failed — please retry');
       setUploading(false);
@@ -70,13 +72,30 @@ export default function IngoingInspectionPage() {
     setUploading(false);
   };
 
-  const saveArea = () => {
+  const saveArea = async () => {
     if (!entry.condition) {
       toast.error('Select a condition rating');
       return;
     }
-    setEntries((e) => ({ ...e, [area]: { ...entry, photos: entry.photos || 1 } }));
+    const finalEntries = {
+      ...entries,
+      [area]: { ...entry, photos: entry.photos || 1 },
+    };
+    setEntries(finalEntries);
     if (isLast) {
+      // Persist the per-area conditions + notes BEFORE completing — the findings
+      // write locks once the inspection lands COMPLETED server-side.
+      await saveInspectionFindings(
+        id,
+        INGOING_AREAS.filter((a) => finalEntries[a]).map((a) => ({
+          name: a,
+          rating: finalEntries[a]
+            .condition as InspectorFindingAreaPayload['rating'],
+          items: finalEntries[a].comments
+            ? [{ name: 'Notes', comment: finalEntries[a].comments }]
+            : [],
+        })),
+      );
       submitInspection('Ingoing report sent to tenant, agent, and landlord');
       return;
     }
@@ -170,7 +189,7 @@ export default function IngoingInspectionPage() {
               />
             </div>
 
-            <Button className="w-full" onClick={saveArea}>
+            <Button className="w-full" onClick={() => void saveArea()}>
               {isLast ? 'Complete & Send Report' : 'Next Area'}
             </Button>
           </CardContent>

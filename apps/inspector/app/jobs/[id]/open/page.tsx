@@ -54,7 +54,8 @@ const STEPS = [
 
 export default function OpenInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, updateJobWorkflow, updateJobStatus } = useInspectorData();
+  const { getJob, saveInspectionFindings, updateJobWorkflow, updateJobStatus } =
+    useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
   useKeyCollectGate(job, id);
@@ -162,7 +163,7 @@ export default function OpenInspectionPage() {
     setStep(nextStep);
   };
 
-  const finish = () => {
+  const finish = async () => {
     if (!allFinishPhotos) {
       toast.error('Add a photo for each finish confirmation');
       return;
@@ -173,6 +174,25 @@ export default function OpenInspectionPage() {
       readinessPhotos: photos,
       finishPhotos,
     });
+    // Persist the readiness verdict + comments BEFORE completing — findings lock
+    // once the inspection lands COMPLETED server-side. (The step photos are
+    // session-local data-URLs and stay on the device, as before.)
+    await saveInspectionFindings(id, [
+      {
+        name: 'Open home readiness',
+        items: [
+          ...(comments.trim()
+            ? [{ name: 'Comments', comment: comments.trim() }]
+            : []),
+          {
+            name: 'Ready to lease',
+            comment:
+              readyToLease === null ? 'Not assessed' : readyToLease ? 'Yes' : 'No',
+            flagged: readyToLease === false,
+          },
+        ],
+      },
+    ]);
     submitInspection('Open inspection report sent to agent and landlord');
   };
 
@@ -314,7 +334,11 @@ export default function OpenInspectionPage() {
                   onChange={(dataUrl) => setFinishPhoto(check, dataUrl)}
                 />
               ))}
-              <Button className="w-full" disabled={!allFinishPhotos} onClick={finish}>
+              <Button
+                className="w-full"
+                disabled={!allFinishPhotos}
+                onClick={() => void finish()}
+              >
                 Finish Inspection & Generate Report
               </Button>
             </CardContent>

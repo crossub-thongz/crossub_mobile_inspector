@@ -21,7 +21,7 @@ import {
 
 export default function RoutineInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, updateJobStatus } = useInspectorData();
+  const { getJob, saveInspectionFindings, updateJobStatus } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
   useKeyCollectGate(job, id);
@@ -38,7 +38,29 @@ export default function RoutineInspectionPage() {
     );
   }
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    // Persist the per-area notes (+ the inspection method) BEFORE completing —
+    // findings lock once the inspection lands COMPLETED server-side.
+    await saveInspectionFindings(id, [
+      {
+        name: 'General',
+        items: [
+          {
+            name: 'Method',
+            comment:
+              method === 'physical'
+                ? 'Physical inspection'
+                : 'Tenant self-assessment review',
+          },
+        ],
+      },
+      ...ROUTINE_AREAS.filter((area) => (notes[area] ?? '').trim()).map(
+        (area) => ({
+          name: area,
+          items: [{ name: 'Notes', comment: notes[area].trim() }],
+        }),
+      ),
+    ]);
     submitInspection('Routine report sent to agent and landlord');
   };
 
@@ -88,7 +110,7 @@ export default function RoutineInspectionPage() {
                 />
               </div>
             ))}
-            <Button className="w-full" onClick={handleFinish}>
+            <Button className="w-full" onClick={() => void handleFinish()}>
               Complete Routine Report
             </Button>
           </CardContent>

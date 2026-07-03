@@ -21,15 +21,23 @@ import {
   acceptInspection as apiAcceptInspection,
   claimInspection as apiClaimInspection,
   completeInspection as apiCompleteInspection,
+  declineInspection as apiDeclineInspection,
   fetchInspectionDetail,
   fetchInspections,
   fetchInspectorMessages,
   fetchInspectorNotifications,
+  fetchInspectorProfile,
+  fetchInspectorTribunalCases,
   fetchJobs as fetchInspectorJobs,
   fetchPoolInspections,
   markInspectorNotificationRead,
+  releaseInspection as apiReleaseInspection,
   replyInspectorMessage,
+  saveInspectionFindings as apiSaveInspectionFindings,
+  submitInspectorRegistration,
   uploadInspectionPhoto,
+  type InspectorFindingAreaPayload,
+  type InspectorProfileDto,
 } from '@/lib/crossub-api/inspector-client';
 import {
   mapInspectionDetail,
@@ -37,7 +45,9 @@ import {
   mapInspectorEarnings,
   mapInspectorMessages,
   mapInspectorNotifications,
+  mapInspectorRegistration,
   mapPoolInspections,
+  mapTribunalCases,
 } from '@/lib/crossub-api/inspector-mappers';
 import {
   enrichJobsWithKeyCollection,
@@ -164,8 +174,23 @@ interface InspectorDataContextValue {
    * Upload inspection-level evidence photos for an API-backed inspection (base64 → R2).
    * Returns the count uploaded (0 for demo jobs / offline); rejects if any upload fails so
    * the caller can block completion. Uploaded photos surface via the findings read.
+   * With an areaName the photos attach to that area of the findings tree.
    */
-  uploadInspectionPhotos: (id: string, files: File[]) => Promise<number>;
+  uploadInspectionPhotos: (
+    id: string,
+    files: File[],
+    areaName?: string,
+  ) => Promise<number>;
+  /**
+   * Persist the findings tree an execution screen gathered (per-area condition +
+   * notes/issues) on the real facade. Best-effort: no-ops for demo jobs, toasts on
+   * failure, never throws — but MUST be awaited before completing the job (findings
+   * lock once the inspection is COMPLETED).
+   */
+  saveInspectionFindings: (
+    id: string,
+    areas: InspectorFindingAreaPayload[],
+  ) => Promise<boolean>;
   updateTribunalChecklist: (
     id: string,
     key: keyof TribunalHearing['checklist'],
@@ -225,6 +250,11 @@ export function InspectorDataProvider({
     null,
   );
   const [registrationHydrated, setRegistrationHydrated] = useState(false);
+  // The server's own-profile read (roster credentials + registration status) —
+  // null until the facade answers; the profile memo overlays it on the local copy.
+  const [serverProfile, setServerProfile] = useState<InspectorProfileDto | null>(
+    null,
+  );
   // Ids of jobs sourced from the live `/inspector/inspections` facade — lets the write
   // actions route an API-backed assignment to the real facade and a demo job to local.
   const apiInspectionIds = useRef<Set<string>>(new Set());
@@ -237,6 +267,9 @@ export function InspectorDataProvider({
   // hits the real facade; a demo row stays local-optimistic.
   const apiThreadIds = useRef<Set<string>>(new Set());
   const apiNotificationIds = useRef<Set<string>>(new Set());
+  // Tribunal cases from `GET /inspector/tribunal-cases` — read-only overlay; the
+  // checklist toggles and outcome recorder stay local for these rows.
+  const apiTribunalIds = useRef<Set<string>>(new Set());
 
   useLayoutEffect(() => {
     if (status === 'loading') {
@@ -260,8 +293,35 @@ export function InspectorDataProvider({
       const email = (user?.email ?? data.email).trim().toLowerCase();
       if (!email) return;
       const payload = { ...data, email };
+      // Local copy first — it keeps the never-echoed PII/bank fields for display
+      // and is the offline fallback.
       saveInspectorRegistration(email, payload);
       setRegistration(payload);
+      // Then submit to the real registry intake: the application lands
+      // PENDING_REVIEW in the staff review queue (approve there mints the roster
+      // record), and the response's status truth overlays the local copy.
+      void submitInspectorRegistration({
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        mobile: payload.mobile || undefined,
+        dateOfBirth: payload.dateOfBirth || undefined,
+        residentialAddress: payload.residentialAddress || undefined,
+        abn: payload.abn || undefined,
+        licenceNumber: payload.licenceNumber || undefined,
+        licenceType: payload.licenceType || undefined,
+        licenceExpiry: payload.licenceExpiry || undefined,
+        serviceRegions: payload.serviceRegions,
+        tribunalQualified: payload.tribunalQualified ?? false,
+        bankAccountName: payload.bankAccountName || undefined,
+        bankBsb: payload.bankBsb || undefined,
+        bankAccountNumber: payload.bankAccountNumber || undefined,
+      })
+        .then((serverReg) => {
+          const merged = mapInspectorRegistration(serverReg, payload);
+          saveInspectorRegistration(email, merged);
+          setRegistration(merged);
+        })
+        .catch(() => undefined);
     },
     [user?.email],
   );
@@ -292,13 +352,16 @@ export function InspectorDataProvider({
     // failure in one leaves just that slice on demo data (the board never blanks).
     // `/inspector/inspections` -> assigned jobs; `/inspector/inspections/pool` -> pool;
     // `/inspector/jobs` -> the billable earnings ledger; messages + notifications.
-    const [inspections, pool, ledger, threads, notifs] = await Promise.allSettled([
-      fetchInspections(),
-      fetchPoolInspections(),
-      fetchInspectorJobs(),
-      fetchInspectorMessages(),
-      fetchInspectorNotifications(),
-    ]);
+    const [inspections, pool, ledger, threads, notifs, tribs, profileRes] =
+      await Promise.allSettled([
+        fetchInspections(),
+        fetchPoolInspections(),
+        fetchInspectorJobs(),
+        fetchInspectorMessages(),
+        fetchInspectorNotifications(),
+        fetchInspectorTribunalCases(),
+        fetchInspectorProfile(),
+      ]);
 
     let assignedFromApi: InspectionJob[] = [];
     let poolFromApi: InspectionJob[] = [];
@@ -375,6 +438,23 @@ export function InspectorDataProvider({
       const mapped = mapInspectorNotifications(notifs.value);
       apiNotificationIds.current = new Set(mapped.map((n) => n.id));
       setNotifications((prev) => upsertById(prev, mapped));
+      setApiConnected(true);
+    }
+    if (tribs.status === 'fulfilled') {
+      const mapped = mapTribunalCases(tribs.value);
+      apiTribunalIds.current = new Set(mapped.map((t) => t.id));
+      setTribunals((prev) => upsertById(prev, mapped));
+      setApiConnected(true);
+    }
+    if (profileRes.status === 'fulfilled') {
+      setServerProfile(profileRes.value);
+      // The server's registration record is the status truth (pending/approved/
+      // rejected + review timestamps); the local copy keeps the never-echoed
+      // PII/bank fields for display.
+      const serverReg = profileRes.value.registration;
+      if (serverReg) {
+        setRegistration((prev) => mapInspectorRegistration(serverReg, prev));
+      }
       setApiConnected(true);
     }
     setLoading(false);
@@ -464,10 +544,21 @@ export function InspectorDataProvider({
       setJobs((prev) =>
         prev.map((j) => (j.id === id ? { ...j, status: 'declined' } : j)),
       );
-      mutateWithOffline(id, 'decline', {});
+      // API-backed pool rows (and not-yet-accepted assignments) decline on the real
+      // facade — the server hides the job from THIS inspector's pool while leaving
+      // it available to everyone else. Demo rows stay local-optimistic.
+      const isApiJob =
+        apiPoolIds.current.has(id) || apiInspectionIds.current.has(id);
+      if (isApiJob && apiConnected) {
+        void apiDeclineInspection(id)
+          .then(() => refresh())
+          .catch(() => undefined);
+      } else {
+        mutateWithOffline(id, 'decline', {});
+      }
       toast.success('Job declined');
     },
-    [mutateWithOffline],
+    [apiConnected, mutateWithOffline, refresh],
   );
 
   const cancelJob = useCallback(
@@ -523,11 +614,24 @@ export function InspectorDataProvider({
       };
       setNotifications((prev) => [adminAlert, ...prev]);
 
-      mutateWithOffline(id, 'cancel', {
-        reason: options.reason,
-        mode: options.mode,
-        emergencyBonusAud: bonus,
-      });
+      // An API-backed claimed/accepted job releases on the real facade: status back
+      // to DRAFT, unassigned, the reason on the workflow audit trail (flag_admin also
+      // marks it for staff). The emergency bonus stays a local display — the server
+      // deliberately moves no money on a release.
+      if (apiInspectionIds.current.has(id) && apiConnected) {
+        void apiReleaseInspection(id, {
+          reason: options.reason,
+          mode: options.mode,
+        })
+          .then(() => refresh())
+          .catch(() => undefined);
+      } else {
+        mutateWithOffline(id, 'cancel', {
+          reason: options.reason,
+          mode: options.mode,
+          emergencyBonusAud: bonus,
+        });
+      }
 
       toast.success(
         options.mode === 'release_pool'
@@ -535,7 +639,7 @@ export function InspectorDataProvider({
           : 'Cancellation flagged to admin',
       );
     },
-    [jobs, mutateWithOffline],
+    [apiConnected, jobs, mutateWithOffline, refresh],
   );
 
   const updateJobStatus = useCallback(
@@ -850,7 +954,11 @@ export function InspectorDataProvider({
    * uploaded photos surface back through the findings detail read on the next refresh.
    */
   const uploadInspectionPhotos = useCallback(
-    async (inspectionId: string, files: File[]): Promise<number> => {
+    async (
+      inspectionId: string,
+      files: File[],
+      areaName?: string,
+    ): Promise<number> => {
       if (!apiInspectionIds.current.has(inspectionId) || !apiConnected) return 0;
       let uploaded = 0;
       for (const file of files) {
@@ -860,10 +968,40 @@ export function InspectorDataProvider({
           mimeType: file.type,
           sizeBytes: file.size,
           contentBase64,
+          ...(areaName ? { areaName } : {}),
         });
         uploaded += 1;
       }
       return uploaded;
+    },
+    [apiConnected],
+  );
+
+  /**
+   * Persist the findings tree an execution screen gathered on the real facade.
+   * Best-effort by design (demo jobs and offline no-op, a failure toasts) — but
+   * awaited by the screens BEFORE completion, since findings lock once the
+   * inspection is COMPLETED server-side.
+   */
+  const saveInspectionFindingsAction = useCallback(
+    async (
+      inspectionId: string,
+      areas: InspectorFindingAreaPayload[],
+    ): Promise<boolean> => {
+      if (
+        !apiInspectionIds.current.has(inspectionId) ||
+        !apiConnected ||
+        areas.length === 0
+      ) {
+        return false;
+      }
+      try {
+        await apiSaveInspectionFindings(inspectionId, { areas });
+        return true;
+      } catch {
+        toast.error('Findings could not be saved to the server');
+        return false;
+      }
     },
     [apiConnected],
   );
@@ -892,20 +1030,37 @@ export function InspectorDataProvider({
   );
 
   const profile: InspectorProfile = useMemo(() => {
-    const name = registration
+    // Server truth first: the roster row (staff-approved credentials) names the
+    // inspector and carries the REAL tribunal qualification; the local
+    // registration remains the fallback for a fresh/offline registrant.
+    const serverName = serverProfile
+      ? `${serverProfile.firstName ?? ''} ${serverProfile.lastName ?? ''}`.trim()
+      : '';
+    const localName = registration
       ? `${registration.firstName} ${registration.lastName}`.trim()
-      : DEMO_PROFILE.name;
+      : '';
     return {
       ...DEMO_PROFILE,
-      name,
-      email: registration?.email ?? user?.email ?? DEMO_PROFILE.email,
-      phone: registration?.mobile ?? DEMO_PROFILE.phone,
-      tribunalQualified: registration?.tribunalQualified ?? false,
+      id: serverProfile?.roster?.inspectorId ?? DEMO_PROFILE.id,
+      name: serverName || localName || DEMO_PROFILE.name,
+      email:
+        serverProfile?.email ?? registration?.email ?? user?.email ?? DEMO_PROFILE.email,
+      phone: serverProfile?.phone ?? registration?.mobile ?? DEMO_PROFILE.phone,
+      tribunalQualified:
+        serverProfile?.roster?.tribunalQualified ??
+        registration?.tribunalQualified ??
+        false,
       weeklyEarnings: summary.weeklyEarnings,
       registration,
       registrationComplete,
     };
-  }, [registration, registrationComplete, summary.weeklyEarnings, user?.email]);
+  }, [
+    registration,
+    registrationComplete,
+    serverProfile,
+    summary.weeklyEarnings,
+    user?.email,
+  ]);
 
   const value: InspectorDataContextValue = {
     loading,
@@ -947,6 +1102,7 @@ export function InspectorDataProvider({
     saveKeyWorkflow,
     loadInspectionFindings,
     uploadInspectionPhotos,
+    saveInspectionFindings: saveInspectionFindingsAction,
     updateTribunalChecklist,
     recordTribunalOutcome,
     markNotificationRead,

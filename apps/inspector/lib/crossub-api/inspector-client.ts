@@ -24,6 +24,21 @@ export type InspectorKeyCustody =
 export type RecordKeyCustody = components['schemas']['RecordKeyCustodyDto'];
 export type UploadKeyCustodyPhoto =
   components['schemas']['UploadKeyCustodyPhotoDto'];
+export type SaveInspectorFindings =
+  components['schemas']['SaveInspectorFindingsDto'];
+export type ReleaseInspectorInspection =
+  components['schemas']['ReleaseInspectorInspectionDto'];
+export type InspectorTribunalCaseDto =
+  components['schemas']['InspectorTribunalCaseDto'];
+export type InspectorProfileDto =
+  components['schemas']['InspectorProfileResponseDto'];
+export type InspectorRegistrationStatusDto =
+  components['schemas']['InspectorRegistrationStatusDto'];
+export type SubmitInspectorRegistration =
+  components['schemas']['SubmitInspectorRegistrationDto'];
+/** One area of a findings submission (the screens build these from their entries). */
+export type InspectorFindingAreaPayload =
+  SaveInspectorFindings['areas'][number];
 
 /** Billable inspection jobs ledger (`GET /api/v1/inspector/jobs`). */
 export async function fetchJobs(): Promise<InspectorJob[]> {
@@ -174,6 +189,81 @@ export async function uploadInspectionPhoto(
     { params: { path: { inspectionId } }, body },
   );
   if (error || !data) throw new Error('Failed to upload photo');
+  return data;
+}
+
+/**
+ * Persist the findings tree gathered on site
+ * (`POST /inspector/inspections/{inspectionId}/findings`). Areas upsert by name
+ * within the app's own authorship; items are replaced per area.
+ */
+export async function saveInspectionFindings(
+  inspectionId: string,
+  body: SaveInspectorFindings,
+): Promise<InspectorInspectionDetail> {
+  const { data, error } = await crossub.POST(
+    '/inspector/inspections/{inspectionId}/findings',
+    { params: { path: { inspectionId } }, body },
+  );
+  if (error || !data) throw new Error('Failed to save findings');
+  return data;
+}
+
+/** Decline a pool job (`POST /inspector/inspections/{inspectionId}/decline`). */
+export async function declineInspection(
+  inspectionId: string,
+): Promise<InspectorInspection> {
+  const { data, error } = await crossub.POST(
+    '/inspector/inspections/{inspectionId}/decline',
+    { params: { path: { inspectionId } } },
+  );
+  if (error || !data) throw new Error('Failed to decline inspection');
+  return data;
+}
+
+/**
+ * Release a claimed/accepted job back to the pool
+ * (`POST /inspector/inspections/{inspectionId}/release`).
+ */
+export async function releaseInspection(
+  inspectionId: string,
+  body: ReleaseInspectorInspection,
+): Promise<InspectorInspection> {
+  const { data, error } = await crossub.POST(
+    '/inspector/inspections/{inspectionId}/release',
+    { params: { path: { inspectionId } }, body },
+  );
+  if (error || !data) throw new Error('Failed to release inspection');
+  return data;
+}
+
+/** Tribunal cases assigned to the inspector (`GET /api/v1/inspector/tribunal-cases`). */
+export async function fetchInspectorTribunalCases(): Promise<
+  InspectorTribunalCaseDto[]
+> {
+  const { data, error } = await crossub.GET('/inspector/tribunal-cases');
+  if (error || !data) throw new Error('Failed to load tribunal cases');
+  return data;
+}
+
+/** The inspector's own profile + registration status (`GET /api/v1/inspector/profile`). */
+export async function fetchInspectorProfile(): Promise<InspectorProfileDto> {
+  const { data, error } = await crossub.GET('/inspector/profile');
+  if (error || !data) throw new Error('Failed to load profile');
+  return data;
+}
+
+/**
+ * Submit (or resubmit) the inspector's own registration application
+ * (`POST /api/v1/inspector/registration`) — lands in the staff review queue.
+ */
+export async function submitInspectorRegistration(
+  body: SubmitInspectorRegistration,
+): Promise<InspectorRegistrationStatusDto> {
+  const { data, error } = await crossub.POST('/inspector/registration', {
+    body,
+  });
+  if (error || !data) throw new Error('Failed to submit registration');
   return data;
 }
 

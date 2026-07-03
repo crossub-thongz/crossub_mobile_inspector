@@ -85,3 +85,23 @@ export const CONDITION_RATING_LABEL: Record<
   POOR: 'Poor',
   UNRATED: 'Unrated',
 };
+
+/** TribunalType — what kind of tribunal case (API vocabulary). */
+export const TRIBUNAL_TYPE = {
+  RENTAL_ARREARS: 'RENTAL_ARREARS',
+  BOND_CLAIM: 'BOND_CLAIM',
+  PROPERTY_DAMAGE: 'PROPERTY_DAMAGE',
+  LEASE_TERMINATION: 'LEASE_TERMINATION',
+  LEASE_BREACH: 'LEASE_BREACH',
+  MAINTENANCE_DISPUTE: 'MAINTENANCE_DISPUTE',
+} as const;
+
+/** Human-readable labels for each TribunalType (the tribunal screens render these). */
+export const TRIBUNAL_TYPE_LABEL: Record<keyof typeof TRIBUNAL_TYPE, string> = {
+  RENTAL_ARREARS: 'Rental Arrears',
+  BOND_CLAIM: 'Bond Claim',
+  PROPERTY_DAMAGE: 'Property Damage',
+  LEASE_TERMINATION: 'Lease Termination',
+  LEASE_BREACH: 'Lease Breach',
+  MAINTENANCE_DISPUTE: 'Maintenance Dispute',
+};

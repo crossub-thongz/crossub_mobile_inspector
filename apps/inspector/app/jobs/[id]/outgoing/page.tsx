@@ -27,7 +27,7 @@ const RESPONSIBILITY = [
 
 export default function OutgoingInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, updateJobStatus } = useInspectorData();
+  const { getJob, saveInspectionFindings, updateJobStatus } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
   useKeyCollectGate(job, id);
@@ -50,8 +50,29 @@ export default function OutgoingInspectionPage() {
   const issue = issues[area] ?? { note: '', responsibility: '' };
   const isLast = areaIndex === INGOING_AREAS.length - 1;
 
-  const next = () => {
+  const next = async () => {
     if (isLast) {
+      // Persist the per-area issues + responsibility calls BEFORE completing —
+      // findings lock once the inspection lands COMPLETED server-side.
+      await saveInspectionFindings(
+        id,
+        INGOING_AREAS.filter((a) => {
+          const rec = issues[a];
+          return rec && (rec.note.trim() || rec.responsibility);
+        }).map((a) => ({
+          name: a,
+          items: [
+            {
+              name: 'Issue',
+              comment: issues[a].note.trim() || undefined,
+              flagged: true,
+              conditionTags: issues[a].responsibility
+                ? [issues[a].responsibility]
+                : [],
+            },
+          ],
+        })),
+      );
       submitInspection('Outgoing report synced with bond claims and accounting');
       return;
     }
@@ -119,7 +140,7 @@ export default function OutgoingInspectionPage() {
               </div>
             </div>
 
-            <Button className="w-full" onClick={next}>
+            <Button className="w-full" onClick={() => void next()}>
               {isLast ? 'Complete Outgoing Report' : 'Next Area'}
             </Button>
           </CardContent>

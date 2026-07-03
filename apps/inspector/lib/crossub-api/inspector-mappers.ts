@@ -19,22 +19,27 @@ import {
   INSPECTION_TYPE,
   INSPECTOR_NOTIFICATION_TYPE,
   INVOICE_STATUS,
+  TRIBUNAL_TYPE_LABEL,
 } from '@/constants/api-enums';
 import {
   ESTIMATED_HOURS_BY_TYPE,
   INSPECTOR_HOURLY_RATE_AUD,
+  TRIBUNAL_OUTCOMES,
 } from '@/constants/inspection';
 import type {
   EarningsRecord,
   InspectionJob,
   InspectionType,
   InspectorNotification,
+  InspectorRegistration,
   JobStatus,
   MessageThread,
   PropertyInspectionSpec,
   RoomInspectionEntry,
   ServiceRegionKey,
   ThreadMessage,
+  TribunalHearing,
+  TribunalOutcome,
 } from '@/lib/types';
 
 import type {
@@ -43,6 +48,8 @@ import type {
   InspectorJob,
   InspectorMessageThread,
   InspectorNotificationDto,
+  InspectorRegistrationStatusDto,
+  InspectorTribunalCaseDto,
 } from './inspector-client';
 
 /**
@@ -206,7 +213,9 @@ export function mapInspectionDetail(
       .join(' · ');
     return {
       area: asString(area.name) ?? 'Unnamed area',
-      condition: conditionLabel(area.rating),
+      // An app-authored area carries the inspector's own vocabulary in ratingRaw
+      // ('Excellent', 'Damaged', …) — prefer it over the mapped enum's label.
+      condition: asString(area.ratingRaw) ?? conditionLabel(area.rating),
       comments,
       photoCount: area.photos.length + itemPhotoCount,
     };
@@ -222,6 +231,94 @@ export function mapInspectionDetail(
   }
 
   return rooms;
+}
+
+// -------------------------------- Tribunal -------------------------------
+
+/**
+ * Map one assigned tribunal case (the inspector's hearing brief) onto the FE
+ * TribunalHearing view-model. The server derives what it faithfully can — evidence
+ * completeness (staff pre-hearing review), hearing scheduled, attendance billed —
+ * and the FE-only checklist keys (documentsDownloaded) start unchecked. Package
+ * documents render from the present evidence titles (no file URLs exist server-side
+ * yet, matching the seed's placeholder links).
+ */
+export function toTribunalHearing(dto: InspectorTribunalCaseDto): TribunalHearing {
+  const outcomeResult = asString(dto.outcomeResult);
+  const outcome = (TRIBUNAL_OUTCOMES as readonly string[]).includes(
+    outcomeResult ?? '',
+  )
+    ? (outcomeResult as TribunalOutcome)
+    : undefined;
+  return {
+    id: dto.id,
+    hearingDate: asString(dto.hearingDate)?.slice(0, 10) ?? '',
+    hearingTime: asString(dto.hearingTime) ?? '',
+    tribunalType: TRIBUNAL_TYPE_LABEL[dto.tribunalType] ?? dto.tribunalType,
+    location:
+      asString(dto.hearingLocation) ??
+      asString(dto.tribunalBody) ??
+      'To be advised',
+    propertyAddress: dto.propertyAddress,
+    caseSummary: dto.caseSummary,
+    rentalArrears: asNumber(dto.outstandingRent) ?? undefined,
+    bondClaimAmount: asNumber(dto.bondAmount) ?? undefined,
+    checklist: {
+      evidenceComplete: dto.evidenceComplete,
+      hearingConfirmed: asString(dto.hearingDate) !== null,
+      documentsDownloaded: false,
+      attendanceConfirmed: dto.attendanceRecorded,
+    },
+    packageDocuments: dto.evidence
+      .filter((e) => e.present)
+      .map((e) => ({ name: e.title, url: '#' })),
+    outcome,
+    status: dto.closed ? 'completed' : 'upcoming',
+  };
+}
+
+export function mapTribunalCases(
+  dtos: InspectorTribunalCaseDto[],
+): TribunalHearing[] {
+  return dtos.map(toTribunalHearing);
+}
+
+// ------------------------- Profile & registration ------------------------
+
+/**
+ * Merge the server's registration record (status truth: pending/approved/rejected,
+ * review timestamps) over the locally saved form. The server NEVER echoes PII or
+ * full bank details, so those fields keep the local copy — with the account
+ * number's last 4 digits as the display fallback when no local value exists.
+ */
+export function mapInspectorRegistration(
+  dto: InspectorRegistrationStatusDto,
+  local: InspectorRegistration | null,
+): InspectorRegistration {
+  const toDateInput = (value: unknown): string =>
+    asString(value)?.slice(0, 10) ?? '';
+  return {
+    firstName: dto.firstName,
+    lastName: dto.lastName,
+    email: dto.email,
+    mobile: asString(dto.mobile) ?? local?.mobile ?? '',
+    dateOfBirth: local?.dateOfBirth ?? '',
+    residentialAddress: local?.residentialAddress ?? '',
+    abn: asString(dto.abn) ?? local?.abn,
+    licenceNumber: asString(dto.licenceNumber) ?? local?.licenceNumber,
+    licenceType: asString(dto.licenceType) ?? local?.licenceType ?? '',
+    licenceExpiry: toDateInput(dto.licenceExpiry) || local?.licenceExpiry,
+    serviceRegions: dto.serviceRegions,
+    tribunalQualified: dto.tribunalQualified,
+    bankAccountName: local?.bankAccountName ?? '',
+    bankBsb: local?.bankBsb ?? '',
+    bankAccountNumber:
+      local?.bankAccountNumber ?? asString(dto.bankAccountLast4) ?? '',
+    registrationStatus:
+      dto.registrationStatus as InspectorRegistration['registrationStatus'],
+    submittedAt: asString(dto.submittedAt) ?? undefined,
+    reviewedAt: asString(dto.reviewedAt) ?? undefined,
+  };
 }
 
 // ------------------------------- Messages --------------------------------

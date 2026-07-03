@@ -3,6 +3,17 @@
 ## 2026-07-03
 
 ### Added
+- Findings now persist to the server: all four execution screens (ingoing / routine / outgoing / open) submit their gathered per-area conditions, notes, issues + responsibility calls, and readiness verdict through the new `saveInspectionFindings` provider action (`POST /inspector/inspections/{id}/findings`) BEFORE completing — previously everything typed on site died in component state. Ingoing photo uploads now attach to the current area of the findings tree (`areaName` on the photo upload).
+- Tribunal tab now live for assigned cases: `refresh()` overlays `GET /inspector/tribunal-cases` onto the demo seed (hearing logistics, claim amounts, evidence checklist, staff-recorded outcome; checklist's server-derivable keys come derived, toggles + outcome recorder stay local-only for now).
+- Profile + registration wired: `GET /inspector/profile` hydrates the roster credentials (real `tribunalQualified`) and registration status; the register form now ALSO submits to `POST /inspector/registration` — the application lands in the real staff review queue, so approved/rejected/reviewedAt can actually happen. Local copy keeps the never-echoed PII/bank fields.
+- New typed fetchers: `saveInspectionFindings`, `declineInspection`, `releaseInspection`, `fetchInspectorTribunalCases`, `fetchInspectorProfile`, `submitInspectorRegistration`; new mappers `mapTribunalCases` / `mapInspectorRegistration`; `TRIBUNAL_TYPE(_LABEL)` constants.
+
+### Changed
+- Decline and release are no longer local-only: declining an API-backed pool job hits the real facade (server hides it from THIS inspector's pool, keeps it for everyone else); the cancel dialog's release-to-pool / flag-admin now reverts the real job to the pool with the reason on the server audit trail. The $10 emergency bonus stays a local display — the server deliberately moves no money on a release.
+- Findings read view prefers the app's own condition vocabulary (`ratingRaw`, e.g. 'Damaged') over the mapped enum label for app-authored areas.
+- Refreshed the vendored `packages/api-contract` types + dist (7 new inspector paths + 5 DTOs).
+
+### Added
 - `recordKeyCustody` / `uploadKeyCustodyPhoto` typed fetchers (`lib/crossub-api/inspector-client.ts`) for the key-custody facade (`POST /inspector/inspections/{id}/key-custody/{collect|return}` + `…/photos/upload`).
 - `syncKeyCustodyToServer` + `keyWorkflowFromCustody` (`lib/leasing-key-collection.ts`) — push a locally-recorded key phase to the server (proof photos base64 → R2 first, then the record call), and rebuild the local key-workflow overlay from server custody so recorded collect/return survive a new device or cleared browser storage.
 

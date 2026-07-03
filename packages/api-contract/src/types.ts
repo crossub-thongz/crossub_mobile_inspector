@@ -1260,6 +1260,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inspector/inspections/{inspectionId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline a pool job (or an assignment not yet accepted).
+         * @description An unclaimed pool row is recorded as declined by this inspector (hidden from THEIR pool, still available to everyone else); a DRAFT row assigned to them is unassigned back to the pool first. Accepted work must be released instead.
+         */
+        post: operations["InspectorInspectionsController_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspector/inspections/{inspectionId}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release a claimed/accepted job back to the pool.
+         * @description Reverts the inspection to DRAFT, clears the assignment, and records the reason on the workflow audit trail. mode 'flag_admin' additionally marks the job for staff attention and hides it from this inspector's own pool. No money moves.
+         */
+        post: operations["InspectorInspectionsController_release"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspector/inspections/{inspectionId}/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save the findings tree gathered on site (areas + items).
+         * @description Upserts areas by name within the app's own authorship (legacy-imported areas are never touched); items are replaced per area; photos already attached to an area survive a resubmission. Editable while DRAFT / IN_PROGRESS. Returns the updated findings tree.
+         */
+        post: operations["InspectorInspectionsController_saveFindings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inspector/inspections/{inspectionId}/complete": {
         parameters: {
             query?: never;
@@ -1483,6 +1543,83 @@ export interface paths {
         put?: never;
         /** Mark all of the inspector’s unread notifications read. */
         post: operations["InspectorAccountController_markAllNotificationsRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspector/tribunal-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tribunal cases the signed-in inspector is assigned to attend.
+         * @description The inspector’s hearing briefs — logistics, claim figures, evidence checklist, and the staff-recorded outcome once the hearing is done. Read-only.
+         */
+        get: operations["InspectorAccountController_listTribunalCases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspector/tribunal-cases/{caseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one of the signed-in inspector’s assigned tribunal cases by id. */
+        get: operations["InspectorAccountController_getTribunalCase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspector/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the signed-in inspector’s own profile.
+         * @description Login identity + roster credentials (null until staff approve a registration) + the latest registration application (null when never submitted). Does not require a roster link — a fresh registrant sees their pending application here. Bank details and PII are never echoed (only the account number’s last 4 digits).
+         */
+        get: operations["InspectorAccountController_getProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inspector/registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit (or resubmit) the inspector’s own registration application.
+         * @description Lands PENDING_REVIEW in the same staff review queue as the web registry intake (approve there mints/updates the roster record). The email is the signed-in user’s — never the body’s. While the latest application is still pending a resubmission updates it in place; after a verdict a new application is filed.
+         */
+        post: operations["InspectorAccountController_submitRegistration"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3640,19 +3777,49 @@ export interface components {
             photoRequired: boolean;
             custody: components["schemas"]["InspectorKeyCustodyDto"];
         };
-        CompleteInspectorInspectionDto: {
+        ReleaseInspectorInspectionDto: {
+            /** @example Vehicle broke down — cannot reach the property today. */
+            reason: string;
             /**
-             * Format: date-time
-             * @description When the inspector started on site (ISO 8601).
+             * @description 'release_pool' returns the job for anyone to claim; 'flag_admin' also marks it for staff attention and hides it from this inspector’s own pool.
+             * @default release_pool
+             * @enum {string}
              */
-            startTime: string;
+            mode: "release_pool" | "flag_admin";
+        };
+        InspectorFindingItemInput: {
+            /** @example Issue */
+            name: string;
+            /** @example Scuff marks on the wall. */
+            comment?: string;
             /**
-             * Format: date-time
-             * @description When the inspector finished on site (ISO 8601).
+             * @description Flag the item for attention.
+             * @example true
              */
-            endTime: string;
-            /** @description Optional URL of the generated inspection report. */
-            reportUrl?: string;
+            flagged?: boolean;
+            /**
+             * @description Free-form condition/responsibility tags.
+             * @example [
+             *       "Tenant Responsible"
+             *     ]
+             */
+            conditionTags?: string[];
+            /** @description Meter reading, where applicable. */
+            reading?: string;
+        };
+        InspectorFindingAreaInput: {
+            /** @example Kitchen */
+            name: string;
+            /**
+             * @description The app's condition label — stored raw (ratingRaw) and mapped best-effort onto the ConditionRating enum.
+             * @example Good
+             * @enum {string}
+             */
+            rating?: "Excellent" | "Good" | "Fair" | "Poor" | "Damaged";
+            items?: components["schemas"]["InspectorFindingItemInput"][];
+        };
+        SaveInspectorFindingsDto: {
+            areas: components["schemas"]["InspectorFindingAreaInput"][];
         };
         InspectorPhotoDto: {
             /** Format: uuid */
@@ -3692,6 +3859,11 @@ export interface components {
              * @enum {string}
              */
             rating: "CLEAN_TIDY" | "GOOD" | "ABOVE_SATISFACTORY" | "SATISFACTORY" | "FAIR" | "AS_INDICATED" | "MESSY" | "POOR" | "UNRATED";
+            /**
+             * @description The raw condition label as submitted (the app's own vocabulary) — prefer this over the mapped enum when displaying an app-authored area.
+             * @example Excellent
+             */
+            ratingRaw: string | null;
             sortOrder: number | null;
             items: components["schemas"]["InspectorItemDto"][];
             /** @description Area-level photos (item-level photos appear under their item). */
@@ -3703,6 +3875,20 @@ export interface components {
             areas: components["schemas"]["InspectorAreaDto"][];
             /** @description Photos attached to the inspection itself (not to any area or item). */
             photos: components["schemas"]["InspectorPhotoDto"][];
+        };
+        CompleteInspectorInspectionDto: {
+            /**
+             * Format: date-time
+             * @description When the inspector started on site (ISO 8601).
+             */
+            startTime: string;
+            /**
+             * Format: date-time
+             * @description When the inspector finished on site (ISO 8601).
+             */
+            endTime: string;
+            /** @description Optional URL of the generated inspection report. */
+            reportUrl?: string;
         };
         FileInspectorReportDto: {
             /** @description URL of the generated inspection report (PDF). */
@@ -3727,6 +3913,11 @@ export interface components {
             sizeBytes: number;
             /** @description The file contents, base64-encoded (no data: URI prefix). */
             contentBase64: string;
+            /**
+             * @description Attach the photo to this area (find-or-create among the app-authored areas) instead of the inspection level.
+             * @example Kitchen
+             */
+            areaName?: string;
         };
         UploadKeyCustodyPhotoDto: {
             /**
@@ -3865,6 +4056,157 @@ export interface components {
              * @example 3
              */
             updated: number;
+        };
+        InspectorTribunalEvidenceDto: {
+            /** @example Rent ledger extract */
+            title: string;
+            /** @enum {string} */
+            category: "LEASING" | "FINANCIAL" | "COMMUNICATION" | "INSPECTION" | "MAINTENANCE" | "MEDIA";
+            /** @example true */
+            present: boolean;
+        };
+        InspectorTribunalCaseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example TRB-2026-9010 */
+            caseNumber: string;
+            /** @enum {string} */
+            status: "DRAFT" | "SUBMITTED" | "AWAITING_HEARING" | "HEARING_SCHEDULED" | "COMPLETED" | "CLOSED";
+            /** @enum {string} */
+            tribunalType: "RENTAL_ARREARS" | "BOND_CLAIM" | "PROPERTY_DAMAGE" | "LEASE_TERMINATION" | "LEASE_BREACH" | "MAINTENANCE_DISPUTE";
+            /**
+             * @description The case trigger label (the staff module’s case summary line).
+             * @example Rental arrears — 5 weeks outstanding
+             */
+            caseSummary: string;
+            /** @example 12 Harbour St */
+            propertyAddress: string;
+            suburb: string | null;
+            state: string | null;
+            /** @description Hearing date (ISO date string) — null until staff schedule it. */
+            hearingDate: string | null;
+            /** @example 10:30 */
+            hearingTime: string | null;
+            /** @description FE literal: 'in_person' | 'online'. */
+            hearingFormat: string | null;
+            hearingLocation: string | null;
+            /** @example NCAT Sydney */
+            tribunalBody: string | null;
+            amountClaimed: number | null;
+            bondAmount: number | null;
+            outstandingRent: number | null;
+            evidence: components["schemas"]["InspectorTribunalEvidenceDto"][];
+            /**
+             * @description Whether the staff pre-hearing review found the evidence complete.
+             * @example false
+             */
+            evidenceComplete: boolean;
+            /** @description Staff-recorded outcome (FE literal, e.g. 'claim_successful') — null until recorded. */
+            outcomeResult: string | null;
+            /**
+             * @description Whether the inspector’s hearing attendance has been billed by staff.
+             * @example false
+             */
+            attendanceRecorded: boolean;
+            /**
+             * @description Whether the case is in a closed status (COMPLETED / CLOSED).
+             * @example false
+             */
+            closed: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            closedAt: string | null;
+        };
+        InspectorRosterDto: {
+            /** Format: uuid */
+            inspectorId: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "SUSPENDED";
+            licenceNumber: string | null;
+            licenceType: string | null;
+            /** Format: date-time */
+            licenceExpiry: string | null;
+            insuranceProvider: string | null;
+            insurancePolicyNumber: string | null;
+            /** Format: date-time */
+            insuranceExpiry: string | null;
+            serviceRegions: string[];
+            tribunalQualified: boolean;
+            /** @description Tribunal-eligibility states. */
+            approvedStates: string[];
+        };
+        InspectorRegistrationStatusDto: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description Lowercase FE literal: 'not_started' | 'pending_review' | 'approved' | 'rejected'.
+             * @example pending_review
+             */
+            registrationStatus: string;
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            reviewNotes: string | null;
+            firstName: string;
+            lastName: string;
+            email: string;
+            mobile: string | null;
+            abn: string | null;
+            licenceNumber: string | null;
+            licenceType: string | null;
+            /** Format: date-time */
+            licenceExpiry: string | null;
+            insuranceProvider: string | null;
+            insurancePolicyNumber: string | null;
+            /** Format: date-time */
+            insuranceExpiry: string | null;
+            serviceRegions: string[];
+            tribunalQualified: boolean;
+            emergencyContactName: string | null;
+            emergencyContactPhone: string | null;
+            /** @description Last 4 digits of the bank account number (full number never echoed). */
+            bankAccountLast4: string | null;
+        };
+        InspectorProfileResponseDto: {
+            /** Format: uuid */
+            userId: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
+            phone: string | null;
+            roster: components["schemas"]["InspectorRosterDto"] | null;
+            registration: components["schemas"]["InspectorRegistrationStatusDto"] | null;
+        };
+        SubmitInspectorRegistrationDto: {
+            firstName: string;
+            lastName: string;
+            mobile?: string;
+            /** @description PII — stored, never echoed. */
+            dateOfBirth?: string;
+            /** @description PII — stored, never echoed. */
+            residentialAddress?: string;
+            abn?: string;
+            licenceNumber?: string;
+            licenceType?: string;
+            /** Format: date-time */
+            licenceExpiry?: string;
+            insuranceProvider?: string;
+            insurancePolicyNumber?: string;
+            /** Format: date-time */
+            insuranceExpiry?: string;
+            serviceRegions?: string[];
+            /** @description Self-declared; staff verify on review. */
+            tribunalQualified?: boolean;
+            emergencyContactName?: string;
+            emergencyContactPhone?: string;
+            /** @description Confidential — stored, never echoed. */
+            bankAccountName?: string;
+            /** @description Confidential — stored, never echoed. */
+            bankBsb?: string;
+            /** @description Confidential — stored; only the last 4 digits are ever echoed. */
+            bankAccountNumber?: string;
         };
         AgentAgencyResponseDto: {
             /** Format: uuid */
@@ -7831,6 +8173,182 @@ export interface operations {
             };
         };
     };
+    InspectorInspectionsController_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorInspectionResponseDto"];
+                };
+            };
+            /** @description inspectionId is not a valid UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an INSPECTOR, or has no inspector roster record. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description inspectionId does not exist in the job pool (or belongs to another inspector). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The inspection was already accepted (release it instead) or changed state concurrently. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InspectorInspectionsController_release: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReleaseInspectorInspectionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorInspectionResponseDto"];
+                };
+            };
+            /** @description inspectionId is not a valid UUID, or the body is invalid (reason too short). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an INSPECTOR, or has no inspector roster record. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description inspectionId does not exist or is not assigned to this inspector. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The inspection is not in a releasable state (DRAFT / IN_PROGRESS). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InspectorInspectionsController_saveFindings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveInspectorFindingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorInspectionDetailDto"];
+                };
+            };
+            /** @description inspectionId is not a valid UUID, or the body is invalid. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an INSPECTOR, or has no inspector roster record. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description inspectionId does not exist or is not assigned to this inspector. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The inspection is in a state where findings can no longer be edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     InspectorInspectionsController_complete: {
         parameters: {
             query?: never;
@@ -8463,6 +8981,165 @@ export interface operations {
                 content?: never;
             };
             /** @description Caller is not an INSPECTOR, or has no inspector roster record. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InspectorAccountController_listTribunalCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorTribunalCaseDto"][];
+                };
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an INSPECTOR, or has no inspector roster record. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InspectorAccountController_getTribunalCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorTribunalCaseDto"];
+                };
+            };
+            /** @description caseId is not a valid UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an INSPECTOR, or has no inspector roster record. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description caseId does not exist or is not assigned to this inspector. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InspectorAccountController_getProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorProfileResponseDto"];
+                };
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an INSPECTOR. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InspectorAccountController_submitRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitInspectorRegistrationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorRegistrationStatusDto"];
+                };
+            };
+            /** @description The body is invalid. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an INSPECTOR. */
             403: {
                 headers: {
                     [name: string]: unknown;
