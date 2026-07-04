@@ -268,6 +268,7 @@ export interface RoomInspectionEntry {
   condition: string;
   comments: string;
   photoCount: number;
+  photoUrls: string[];
 }
 
 export interface OfflineQueueItem {

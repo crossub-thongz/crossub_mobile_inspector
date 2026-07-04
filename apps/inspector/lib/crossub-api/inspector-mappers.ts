@@ -209,10 +209,10 @@ export function mapInspectionDetail(
   dto: InspectorInspectionDetail,
 ): RoomInspectionEntry[] {
   const rooms: RoomInspectionEntry[] = dto.areas.map((area) => {
-    const itemPhotoCount = area.items.reduce(
-      (sum, item) => sum + item.photos.length,
-      0,
-    );
+    const photoUrls = [
+      ...area.photos.map((photo) => photo.url),
+      ...area.items.flatMap((item) => item.photos.map((photo) => photo.url)),
+    ];
     const comments = area.items
       .map((item) => asString(item.comment))
       .filter((c): c is string => c !== null)
@@ -223,18 +223,10 @@ export function mapInspectionDetail(
       // ('Excellent', 'Damaged', …) — prefer it over the mapped enum's label.
       condition: asString(area.ratingRaw) ?? conditionLabel(area.rating),
       comments,
-      photoCount: area.photos.length + itemPhotoCount,
+      photoCount: photoUrls.length,
+      photoUrls,
     };
   });
-
-  if (dto.photos.length > 0) {
-    rooms.push({
-      area: 'Inspection photos',
-      condition: '',
-      comments: '',
-      photoCount: dto.photos.length,
-    });
-  }
 
   return rooms;
 }

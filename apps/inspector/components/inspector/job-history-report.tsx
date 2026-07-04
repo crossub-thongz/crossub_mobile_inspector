@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Camera, ClipboardList, KeyRound } from 'lucide-react';
+import { ClipboardList, KeyRound } from 'lucide-react';
 
 import { ProofPhotoGallery } from '@/components/inspector/proof-photo-gallery';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -88,12 +88,15 @@ function FindingsSection({ rooms }: { rooms: RoomInspectionEntry[] }) {
             {room.comments && (
               <p className="text-muted-foreground text-xs">{room.comments}</p>
             )}
-            {room.photoCount > 0 && (
-              <p className="text-muted-foreground flex items-center gap-1 text-xs tabular-nums">
-                <Camera className="size-3" />
-                {room.photoCount} photo{room.photoCount === 1 ? '' : 's'} on file
-              </p>
-            )}
+            {room.photoUrls.length > 0 ? (
+              <ProofPhotoGallery
+                photos={room.photoUrls.map((url, index) => ({
+                  label: `${room.area} · ${index + 1}`,
+                  url,
+                }))}
+                emptyLabel="No photos for this area"
+              />
+            ) : null}
           </div>
         ))}
       </CardContent>
@@ -102,34 +105,22 @@ function FindingsSection({ rooms }: { rooms: RoomInspectionEntry[] }) {
 }
 
 export function JobHistoryReport({ job }: { job: InspectionJob }) {
-  const { loadInspectionFindings, loadInspectionReportPhotos } = useInspectorData();
+  const { loadInspectionFindings } = useInspectorData();
   const report = buildJobHistoryReport(job);
   const serverBacked = !isDemoJobId(job.id);
   const [findings, setFindings] = useState<RoomInspectionEntry[]>([]);
-  const [findingPhotos, setFindingPhotos] = useState<
-    { label: string; url: string }[]
-  >([]);
 
   useEffect(() => {
     if (!serverBacked) return;
     let active = true;
-    void Promise.all([
-      loadInspectionFindings(job.id),
-      loadInspectionReportPhotos(job.id),
-    ]).then(([rooms, photos]) => {
+    void loadInspectionFindings(job.id).then((rooms) => {
       if (!active) return;
       setFindings(rooms);
-      setFindingPhotos(photos);
     });
     return () => {
       active = false;
     };
-  }, [job.id, loadInspectionFindings, loadInspectionReportPhotos, serverBacked]);
-
-  const sectionPhotos =
-    job.type === 'open'
-      ? [...report.readinessPhotos, ...report.finishPhotos]
-      : findingPhotos;
+  }, [job.id, loadInspectionFindings, serverBacked]);
 
   return (
     <div className="space-y-4">
@@ -193,20 +184,6 @@ export function JobHistoryReport({ job }: { job: InspectionJob }) {
             </CardContent>
           </Card>
         </>
-      )}
-
-      {job.type !== 'open' && sectionPhotos.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Section photos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ProofPhotoGallery
-              photos={sectionPhotos}
-              emptyLabel="No section photos on file"
-            />
-          </CardContent>
-        </Card>
       )}
 
       {job.type !== 'open' && !job.keyAccess && !report.hasReport && findings.length === 0 && (

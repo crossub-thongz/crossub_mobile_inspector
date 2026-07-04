@@ -4,6 +4,19 @@
  */
 const MAX_BASE64_CHARS = 80_000;
 
+export function dataUrlToUploadParts(
+  dataUrl: string,
+): { mimeType: string; contentBase64: string; sizeBytes: number } | null {
+  const match = /^data:([^;,]+);base64,(.+)$/.exec(dataUrl);
+  if (!match) return null;
+  const [, mimeType, contentBase64] = match;
+  return {
+    mimeType,
+    contentBase64,
+    sizeBytes: Math.floor((contentBase64.length * 3) / 4),
+  };
+}
+
 /** Base64 payload length inside a data URL (excludes the `data:...;base64,` prefix). */
 export function dataUrlBase64Length(dataUrl: string): number {
   const comma = dataUrl.indexOf(',');

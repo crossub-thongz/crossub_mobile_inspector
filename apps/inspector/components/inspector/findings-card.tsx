@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Camera, ClipboardList } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 
+import { ProofPhotoGallery } from '@/components/inspector/proof-photo-gallery';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { RoomInspectionEntry } from '@/lib/types';
@@ -55,12 +56,15 @@ export function FindingsCard({ jobId }: { jobId: string }) {
             {room.comments && (
               <p className="text-muted-foreground text-xs">{room.comments}</p>
             )}
-            {room.photoCount > 0 && (
-              <p className="text-muted-foreground flex items-center gap-1 text-xs tabular-nums">
-                <Camera className="size-3" />
-                {room.photoCount} photo{room.photoCount === 1 ? '' : 's'}
-              </p>
-            )}
+            {room.photoUrls.length > 0 ? (
+              <ProofPhotoGallery
+                photos={room.photoUrls.map((url, index) => ({
+                  label: `${room.area} · ${index + 1}`,
+                  url,
+                }))}
+                emptyLabel="No photos for this area"
+              />
+            ) : null}
           </div>
         ))}
       </CardContent>

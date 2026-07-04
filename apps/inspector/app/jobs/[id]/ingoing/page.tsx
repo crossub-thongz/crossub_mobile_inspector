@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Camera, Mic } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { PhotoPreviewGrid } from '@/components/inspector/photo-preview-grid';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -36,7 +37,7 @@ export default function IngoingInspectionPage() {
   const [areaIndex, setAreaIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [entries, setEntries] = useState<
-    Record<string, { condition: string; comments: string; photos: number }>
+    Record<string, { condition: string; comments: string; photoUrls: string[] }>
   >({});
 
   if (!job) {
@@ -48,28 +49,26 @@ export default function IngoingInspectionPage() {
   }
 
   const area = INGOING_AREAS[areaIndex];
-  const entry = entries[area] ?? { condition: '', comments: '', photos: 0 };
+  const entry = entries[area] ?? { condition: '', comments: '', photoUrls: [] };
   const isLast = areaIndex === INGOING_AREAS.length - 1;
 
   const addPhotos = async (files: File[]) => {
     if (files.length === 0) return;
     setUploading(true);
     try {
-      // For an API-backed inspection this puts the bytes to R2 (base64 → facade),
-      // attached to the CURRENT area of the findings tree; demo jobs no-op and just
-      // bump the local counter. A failure blocks the count so the inspector knows
-      // the evidence didn't save.
-      await uploadInspectionPhotos(id, files, area);
+      const previewUrls = await uploadInspectionPhotos(id, files, area);
+      setEntries((e) => ({
+        ...e,
+        [area]: {
+          ...entry,
+          photoUrls: [...(entry.photoUrls ?? []), ...previewUrls],
+        },
+      }));
     } catch {
       toast.error('Photo upload failed — please retry');
+    } finally {
       setUploading(false);
-      return;
     }
-    setEntries((e) => ({
-      ...e,
-      [area]: { ...entry, photos: (entry.photos || 0) + files.length },
-    }));
-    setUploading(false);
   };
 
   const saveArea = async () => {
@@ -77,9 +76,13 @@ export default function IngoingInspectionPage() {
       toast.error('Select a condition rating');
       return;
     }
+    if (!entry.photoUrls?.length) {
+      toast.error('Add at least one photo');
+      return;
+    }
     const finalEntries = {
       ...entries,
-      [area]: { ...entry, photos: entry.photos || 1 },
+      [area]: entry,
     };
     setEntries(finalEntries);
     if (isLast) {
@@ -156,7 +159,9 @@ export default function IngoingInspectionPage() {
                 className={`w-full ${uploading ? 'pointer-events-none opacity-60' : ''}`}
               >
                 <label className="cursor-pointer">
-                  {uploading ? 'Uploading…' : `Add Photo (${entry.photos || 0})`}
+                  {uploading
+                    ? 'Uploading…'
+                    : `Add Photo (${entry.photoUrls.length})`}
                   <input
                     type="file"
                     accept="image/*"
@@ -170,6 +175,10 @@ export default function IngoingInspectionPage() {
                   />
                 </label>
               </Button>
+              <PhotoPreviewGrid
+                urls={entry.photoUrls}
+                emptyLabel="Add at least one photo for this area."
+              />
             </div>
 
             <div className="space-y-2">

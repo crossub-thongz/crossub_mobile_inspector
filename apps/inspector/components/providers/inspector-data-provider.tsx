@@ -57,7 +57,7 @@ import {
   keyWorkflowFromCustody,
   syncKeyCustodyToServer,
 } from '@/lib/leasing-key-collection';
-import { fileToBase64 } from '@/lib/utils';
+import { compressImageForUpload, dataUrlToUploadParts } from '@/lib/compress-image';
 import { buildDashboardSummary } from '@/lib/inspector-summary';
 import {
   filterPoolJobs,
@@ -200,15 +200,15 @@ interface InspectorDataContextValue {
   loadInspectionReportPhotos: (id: string) => Promise<LabeledPhoto[]>;
   /**
    * Upload inspection-level evidence photos for an API-backed inspection (base64 → R2).
-   * Returns the count uploaded (0 for demo jobs / offline); rejects if any upload fails so
-   * the caller can block completion. Uploaded photos surface via the findings read.
-   * With an areaName the photos attach to that area of the findings tree.
+   * Returns preview URLs (server URL when uploaded, local data URL for demo/offline).
+   * Rejects if any upload fails so the caller can block completion. Uploaded photos
+   * surface via the findings read. With an areaName the photos attach to that area.
    */
   uploadInspectionPhotos: (
     id: string,
     files: File[],
     areaName?: string,
-  ) => Promise<number>;
+  ) => Promise<string[]>;
   /**
    * Persist the findings tree an execution screen gathered (per-area condition +
    * notes/issues) on the real facade. Best-effort: no-ops for demo jobs, toasts on
@@ -1047,6 +1047,53 @@ export function InspectorDataProvider({
         return;
       }
 
+      if (isApiJob && phase === 'return') {
+        try {
+          const job = jobs.find((j) => j.id === id);
+          if (job?.status !== 'completed') {
+            const endTime = new Date();
+            const startTime = new Date(
+              endTime.getTime() -
+                (job?.estimatedHours ?? 2) * 60 * 60 * 1000,
+            );
+            await apiCompleteInspection(id, {
+              startTime: startTime.toISOString(),
+              endTime: endTime.toISOString(),
+            });
+          }
+          const custody = await syncKeyCustodyToServer(id, 'return', record);
+          pendingReturnCustody.current.delete(id);
+          apiInspectionIds.current.add(id);
+          const serverWorkflow = keyWorkflowFromCustody(custody);
+          setJobs((prev) => {
+            const next = prev.map((j) => {
+              if (j.id !== id) return j;
+              return {
+                ...j,
+                status: 'completed' as const,
+                workflowData: {
+                  ...j.workflowData,
+                  ...(serverWorkflow ? { keyWorkflow: serverWorkflow } : {}),
+                },
+              };
+            });
+            const updated = next.find((j) => j.id === id);
+            if (updated) persistJobProgress(updated);
+            return next;
+          });
+          await refresh();
+        } catch (err) {
+          pendingReturnCustody.current.set(id, record);
+          const message =
+            err instanceof Error
+              ? err.message
+              : 'Could not sync key return to the server';
+          toast.error(message);
+          throw err;
+        }
+        return;
+      }
+
       setJobs((prev) => {
         const next = prev.map((j) => {
           if (j.id !== id) return j;
@@ -1068,7 +1115,7 @@ export function InspectorDataProvider({
 
       mutateWithOffline(id, 'key_workflow', { phase, record });
     },
-    [apiConnected, mutateWithOffline, refresh],
+    [apiConnected, jobs, mutateWithOffline, refresh],
   );
 
   const finishInspectionWorkflow = useCallback(
@@ -1232,30 +1279,42 @@ export function InspectorDataProvider({
 
   /**
    * Upload inspection-level evidence photos for an API-backed inspection (base64 → R2 via
-   * the facade). No-ops (returns 0) for demo jobs or when offline. THROWS if any upload
-   * fails so the caller can block completion — evidence is never silently lost. The
-   * uploaded photos surface back through the findings detail read on the next refresh.
+   * the facade). Returns preview URLs for the UI. Demo/offline jobs get local data URLs
+   * only. THROWS if any upload fails so the caller can block completion — evidence is
+   * never silently lost. The uploaded photos surface back through the findings detail
+   * read on the next refresh.
    */
   const uploadInspectionPhotos = useCallback(
     async (
       inspectionId: string,
       files: File[],
       areaName?: string,
-    ): Promise<number> => {
-      if (!apiInspectionIds.current.has(inspectionId) || !apiConnected) return 0;
-      let uploaded = 0;
+    ): Promise<string[]> => {
+      const previewUrls: string[] = [];
+      const isApiJob =
+        apiInspectionIds.current.has(inspectionId) && apiConnected;
+
       for (const file of files) {
-        const contentBase64 = await fileToBase64(file);
-        await uploadInspectionPhoto(inspectionId, {
-          fileName: file.name,
-          mimeType: file.type,
-          sizeBytes: file.size,
-          contentBase64,
+        const dataUrl = await compressImageForUpload(file);
+        if (!isApiJob) {
+          previewUrls.push(dataUrl);
+          continue;
+        }
+
+        const parts = dataUrlToUploadParts(dataUrl);
+        if (!parts) throw new Error('Invalid image');
+
+        const result = await uploadInspectionPhoto(inspectionId, {
+          fileName: file.name.replace(/\.[^.]+$/, '') + '.jpg',
+          mimeType: parts.mimeType,
+          sizeBytes: parts.sizeBytes,
+          contentBase64: parts.contentBase64,
           ...(areaName ? { areaName } : {}),
         });
-        uploaded += 1;
+        previewUrls.push(result.url || dataUrl);
       }
-      return uploaded;
+
+      return previewUrls;
     },
     [apiConnected],
   );

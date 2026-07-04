@@ -161,18 +161,7 @@ export async function enrichJobsWithKeyCollection(
   return Promise.all(jobs.map((job) => enrichJobWithKeyCollection(job)));
 }
 
-function dataUrlToUploadParts(
-  dataUrl: string,
-): { mimeType: string; contentBase64: string; sizeBytes: number } | null {
-  const match = /^data:([^;,]+);base64,(.+)$/.exec(dataUrl);
-  if (!match) return null;
-  const [, mimeType, contentBase64] = match;
-  return {
-    mimeType,
-    contentBase64,
-    sizeBytes: Math.floor((contentBase64.length * 3) / 4),
-  };
-}
+import { dataUrlToUploadParts } from '@/lib/compress-image';
 
 /**
  * Push a locally-recorded key phase to the server: proof photos first
