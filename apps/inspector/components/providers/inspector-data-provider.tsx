@@ -38,6 +38,7 @@ import {
   setInspectorLocation,
   submitInspectorRegistration,
   uploadInspectionPhoto,
+  clearInspectionAreaPhotos,
   type InspectorFindingAreaPayload,
   type InspectorProfileDto,
 } from '@/lib/crossub-api/inspector-client';
@@ -57,7 +58,15 @@ import {
   keyWorkflowFromCustody,
   syncKeyCustodyToServer,
 } from '@/lib/leasing-key-collection';
-import { compressImageForUpload, dataUrlToUploadParts } from '@/lib/compress-image';
+import {
+  compressImageForUpload,
+  dataUrlToUploadParts,
+  shrinkDataUrlForUpload,
+} from '@/lib/compress-image';
+import {
+  isPersistedPhotoUrl,
+  pendingPhotoSources,
+} from '@/lib/inspection-area-photos';
 import { buildDashboardSummary } from '@/lib/inspector-summary';
 import {
   filterPoolJobs,
@@ -206,8 +215,14 @@ interface InspectorDataContextValue {
    */
   uploadInspectionPhotos: (
     id: string,
-    files: File[],
+    sources: Array<File | string>,
     areaName?: string,
+  ) => Promise<string[]>;
+  /** Clear + upload the final kept photos when advancing to the next area. */
+  commitInspectionAreaPhotos: (
+    id: string,
+    areaName: string,
+    photoUrls: string[],
   ) => Promise<string[]>;
   /**
    * Persist the findings tree an execution screen gathered (per-area condition +
@@ -1287,15 +1302,19 @@ export function InspectorDataProvider({
   const uploadInspectionPhotos = useCallback(
     async (
       inspectionId: string,
-      files: File[],
+      sources: Array<File | string>,
       areaName?: string,
     ): Promise<string[]> => {
       const previewUrls: string[] = [];
       const isApiJob =
         apiInspectionIds.current.has(inspectionId) && apiConnected;
 
-      for (const file of files) {
-        const dataUrl = await compressImageForUpload(file);
+      for (let index = 0; index < sources.length; index += 1) {
+        const source = sources[index];
+        const dataUrl =
+          source instanceof File
+            ? await compressImageForUpload(source)
+            : await shrinkDataUrlForUpload(source);
         if (!isApiJob) {
           previewUrls.push(dataUrl);
           continue;
@@ -1304,8 +1323,14 @@ export function InspectorDataProvider({
         const parts = dataUrlToUploadParts(dataUrl);
         if (!parts) throw new Error('Invalid image');
 
+        const slug = areaName?.replace(/\s+/g, '-').toLowerCase() ?? 'area';
+        const fileName =
+          source instanceof File
+            ? source.name.replace(/\.[^.]+$/, '') + '.jpg'
+            : `${slug}-${index + 1}.jpg`;
+
         const result = await uploadInspectionPhoto(inspectionId, {
-          fileName: file.name.replace(/\.[^.]+$/, '') + '.jpg',
+          fileName,
           mimeType: parts.mimeType,
           sizeBytes: parts.sizeBytes,
           contentBase64: parts.contentBase64,
@@ -1317,6 +1342,28 @@ export function InspectorDataProvider({
       return previewUrls;
     },
     [apiConnected],
+  );
+
+  const commitInspectionAreaPhotos = useCallback(
+    async (
+      inspectionId: string,
+      areaName: string,
+      photoUrls: string[],
+    ): Promise<string[]> => {
+      const pending = pendingPhotoSources(photoUrls);
+      const persisted = photoUrls.filter(isPersistedPhotoUrl);
+      const isApiJob =
+        apiInspectionIds.current.has(inspectionId) && apiConnected;
+
+      if (!isApiJob) {
+        return pending.length > 0 ? pending : persisted;
+      }
+
+      await clearInspectionAreaPhotos(inspectionId, areaName);
+      if (pending.length === 0) return [];
+      return uploadInspectionPhotos(inspectionId, pending, areaName);
+    },
+    [apiConnected, uploadInspectionPhotos],
   );
 
   /**
@@ -1491,6 +1538,7 @@ export function InspectorDataProvider({
     loadInspectionFindings,
     loadInspectionReportPhotos,
     uploadInspectionPhotos,
+    commitInspectionAreaPhotos,
     saveInspectionFindings: saveInspectionFindingsAction,
     updateTribunalChecklist,
     recordTribunalOutcome,

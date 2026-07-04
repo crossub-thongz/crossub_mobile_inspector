@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ClipboardList, KeyRound } from 'lucide-react';
 
-import { ProofPhotoGallery } from '@/components/inspector/proof-photo-gallery';
+import { FindingsRoomRow } from '@/components/inspector/findings-room-row';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OPEN_FINISH_CHECKS } from '@/constants/inspection';
@@ -73,31 +73,7 @@ function FindingsSection({ rooms }: { rooms: RoomInspectionEntry[] }) {
       </CardHeader>
       <CardContent className="space-y-3">
         {rooms.map((room) => (
-          <div
-            key={room.area}
-            className="space-y-1 border-b border-border/60 pb-3 last:border-0 last:pb-0"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">{room.area}</p>
-              {room.condition && (
-                <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {room.condition}
-                </span>
-              )}
-            </div>
-            {room.comments && (
-              <p className="text-muted-foreground text-xs">{room.comments}</p>
-            )}
-            {room.photoUrls.length > 0 ? (
-              <ProofPhotoGallery
-                photos={room.photoUrls.map((url, index) => ({
-                  label: `${room.area} · ${index + 1}`,
-                  url,
-                }))}
-                emptyLabel="No photos for this area"
-              />
-            ) : null}
-          </div>
+          <FindingsRoomRow key={room.area} room={room} />
         ))}
       </CardContent>
     </Card>

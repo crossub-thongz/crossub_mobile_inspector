@@ -269,6 +269,9 @@ export interface RoomInspectionEntry {
   comments: string;
   photoCount: number;
   photoUrls: string[];
+  /** Outgoing before/after rows — ingoing left, outgoing right. */
+  ingoingPhotoUrls?: string[];
+  outgoingPhotoUrls?: string[];
 }
 
 export interface OfflineQueueItem {

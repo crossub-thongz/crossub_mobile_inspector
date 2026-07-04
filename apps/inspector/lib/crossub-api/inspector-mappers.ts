@@ -198,37 +198,131 @@ function conditionLabel(rating: string): string {
   );
 }
 
+const INGOING_AREA_SUFFIX = / \(Ingoing\)$/;
+const OUTGOING_AREA_SUFFIX = / \(Outgoing\)$/;
+
+function isPersistedPhotoUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url.trim());
+}
+
+function areaComments(area: InspectorInspectionDetail['areas'][number]): string {
+  return area.items
+    .map((item) => asString(item.comment))
+    .filter((c): c is string => c !== null)
+    .join(' · ');
+}
+
+function areaPhotoUrls(area: InspectorInspectionDetail['areas'][number]): string[] {
+  return [
+    ...area.photos.map((photo) => photo.url),
+    ...area.items.flatMap((item) => item.photos.map((photo) => photo.url)),
+  ].filter(isPersistedPhotoUrl);
+}
+
+function mapSingleArea(
+  area: InspectorInspectionDetail['areas'][number],
+): RoomInspectionEntry {
+  const photoUrls = areaPhotoUrls(area);
+  return {
+    area: asString(area.name) ?? 'Unnamed area',
+    condition: asString(area.ratingRaw) ?? conditionLabel(area.rating),
+    comments: areaComments(area),
+    photoCount: photoUrls.length,
+    photoUrls,
+  };
+}
+
+function mapOutgoingInspectionDetail(
+  dto: InspectorInspectionDetail,
+): RoomInspectionEntry[] {
+  type Bucket = {
+    ingoingPhotoUrls: string[];
+    outgoingPhotoUrls: string[];
+    comments: string;
+  };
+
+  const grouped = new Map<string, Bucket>();
+
+  const bucketFor = (room: string): Bucket =>
+    grouped.get(room) ?? {
+      ingoingPhotoUrls: [],
+      outgoingPhotoUrls: [],
+      comments: '',
+    };
+
+  for (const area of dto.areas) {
+    const name = asString(area.name) ?? '';
+    const photos = areaPhotoUrls(area);
+    const comments = areaComments(area);
+
+    if (INGOING_AREA_SUFFIX.test(name)) {
+      const room = name.replace(INGOING_AREA_SUFFIX, '');
+      const bucket = bucketFor(room);
+      bucket.ingoingPhotoUrls.push(...photos);
+      grouped.set(room, bucket);
+      continue;
+    }
+
+    if (OUTGOING_AREA_SUFFIX.test(name)) {
+      const room = name.replace(OUTGOING_AREA_SUFFIX, '');
+      const bucket = bucketFor(room);
+      bucket.outgoingPhotoUrls.push(...photos);
+      if (comments) bucket.comments = comments;
+      grouped.set(room, bucket);
+      continue;
+    }
+
+    const bucket = bucketFor(name);
+    if (comments) bucket.comments = comments;
+    if (photos.length > 0) {
+      bucket.outgoingPhotoUrls.push(...photos);
+    }
+    grouped.set(name, bucket);
+  }
+
+  return [...grouped.entries()]
+    .map(([area, bucket]) => ({
+      area,
+      condition: '',
+      comments: bucket.comments,
+      photoCount: bucket.ingoingPhotoUrls.length + bucket.outgoingPhotoUrls.length,
+      photoUrls: [...bucket.ingoingPhotoUrls, ...bucket.outgoingPhotoUrls],
+      ingoingPhotoUrls: bucket.ingoingPhotoUrls,
+      outgoingPhotoUrls: bucket.outgoingPhotoUrls,
+    }))
+    .filter(
+      (row) =>
+        row.ingoingPhotoUrls.length > 0 ||
+        row.outgoingPhotoUrls.length > 0 ||
+        Boolean(row.comments),
+    );
+}
+
 /**
  * Flatten the findings tree (areas → items → photos, plus inspection-level photos) onto
- * the flat per-room rows the read view renders. One row per area: its condition grade, a
- * joined digest of the item comments, and the total photo count (area-level + each item's
- * own). Inspection-level photos (areaId/itemId both null — the inspector's own evidence
- * uploads) collapse into a synthetic "Inspection photos" row so they surface too.
+ * the flat per-room rows the read view renders. Outgoing jobs merge `Entry (Ingoing)` /
+ * `Entry (Outgoing)` into one side-by-side row and drop empty duplicate bare area names.
  */
 export function mapInspectionDetail(
   dto: InspectorInspectionDetail,
 ): RoomInspectionEntry[] {
-  const rooms: RoomInspectionEntry[] = dto.areas.map((area) => {
-    const photoUrls = [
-      ...area.photos.map((photo) => photo.url),
-      ...area.items.flatMap((item) => item.photos.map((photo) => photo.url)),
-    ];
-    const comments = area.items
-      .map((item) => asString(item.comment))
-      .filter((c): c is string => c !== null)
-      .join(' · ');
-    return {
-      area: asString(area.name) ?? 'Unnamed area',
-      // An app-authored area carries the inspector's own vocabulary in ratingRaw
-      // ('Excellent', 'Damaged', …) — prefer it over the mapped enum's label.
-      condition: asString(area.ratingRaw) ?? conditionLabel(area.rating),
-      comments,
-      photoCount: photoUrls.length,
-      photoUrls,
-    };
+  const hasOutgoingStyle = dto.areas.some((area) => {
+    const name = asString(area.name) ?? '';
+    return INGOING_AREA_SUFFIX.test(name) || OUTGOING_AREA_SUFFIX.test(name);
   });
 
-  return rooms;
+  if (hasOutgoingStyle) {
+    return mapOutgoingInspectionDetail(dto);
+  }
+
+  return dto.areas
+    .map(mapSingleArea)
+    .filter(
+      (row) =>
+        row.photoUrls.length > 0 ||
+        Boolean(row.comments) ||
+        (row.condition && row.condition !== 'Unrated'),
+    );
 }
 
 /** Flatten the findings tree into labeled proof photos for the history report. */

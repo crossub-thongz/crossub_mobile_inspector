@@ -1,5 +1,7 @@
 import type { components } from '@crossub-thongz/api-contract';
 
+import { INSPECTION_TYPE } from '@/constants/api-enums';
+
 import { crossub } from './client';
 
 export type InspectorJob = components['schemas']['InspectorJobResponseDto'];
@@ -69,12 +71,20 @@ export async function fetchInspections(): Promise<InspectorInspection[]> {
   return data.items;
 }
 
-/** Unassigned pool inspections — all types (`GET /api/v1/inspector/inspections/pool`). */
-export async function fetchPoolInspections(): Promise<InspectorInspection[]> {
+/** Field inspections claimable from the mobile job pool (excludes ROUTINE/CONDITION). */
+const POOL_INSPECTION_TYPES = [
+  INSPECTION_TYPE.INGOING,
+  INSPECTION_TYPE.OUTGOING,
+] as const;
+
+async function fetchPoolInspectionsByType(
+  type: (typeof POOL_INSPECTION_TYPES)[number],
+): Promise<InspectorInspection[]> {
   const base = process.env.NEXT_PUBLIC_API_URL ?? '/api';
   const params = new URLSearchParams({
     page: '1',
     pageSize: '100',
+    type,
   });
   const res = await fetch(`${base}/v1/inspector/inspections/pool?${params}`, {
     credentials: 'include',
@@ -102,6 +112,31 @@ export async function fetchPoolInspections(): Promise<InspectorInspection[]> {
   }
   const data = (await res.json()) as { items: InspectorInspection[] };
   return data.items;
+}
+
+function mergePoolInspections(
+  batches: InspectorInspection[][],
+): InspectorInspection[] {
+  const byId = new Map<string, InspectorInspection>();
+  for (const items of batches) {
+    for (const item of items) {
+      byId.set(item.id, item);
+    }
+  }
+  return [...byId.values()].sort((a, b) => {
+    if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
+    const dateA = a.scheduledDate ?? a.inspectionDate ?? a.createdAt ?? '';
+    const dateB = b.scheduledDate ?? b.inspectionDate ?? b.createdAt ?? '';
+    return String(dateA).localeCompare(String(dateB));
+  });
+}
+
+/** Unassigned pool inspections (`GET /api/v1/inspector/inspections/pool`). */
+export async function fetchPoolInspections(): Promise<InspectorInspection[]> {
+  const batches = await Promise.all(
+    POOL_INSPECTION_TYPES.map((type) => fetchPoolInspectionsByType(type)),
+  );
+  return mergePoolInspections(batches);
 }
 
 /** Sync the receiving/on-break toggle with the ops dispatch list (`PATCH /api/v1/inspector/availability`). */
@@ -300,6 +335,26 @@ export async function uploadInspectionPhoto(
   );
   if (error || !data) throw new Error('Failed to upload photo');
   return data;
+}
+
+/** Clear area-level proof photos before the inspector resyncs a room. */
+export async function clearInspectionAreaPhotos(
+  inspectionId: string,
+  areaName: string,
+): Promise<void> {
+  const base = `${process.env.NEXT_PUBLIC_API_URL ?? '/api'}/v1`;
+  const res = await fetch(
+    `${base}/inspector/inspections/${inspectionId}/photos/clear-area`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ areaName }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error('Failed to clear area photos');
+  }
 }
 
 /**
