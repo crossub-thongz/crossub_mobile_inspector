@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { ChevronRight, Clock, MapPin } from 'lucide-react';
 
 import { AgentStrip } from '@/components/inspector/agent-strip';
+import { JobTravelInfo } from '@/components/inspector/job-travel-info';
 import { PayBreakdown } from '@/components/inspector/pay-breakdown';
 import {
   JobStatusBadge,
   JobTypeBadge,
   PriorityBadge,
 } from '@/components/inspector/status-badge';
+import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { jobDetail, jobHistory } from '@/constants/routes';
 import { formatJobRefId } from '@/lib/job-cancellation';
 import { isPoolJob } from '@/lib/inspector-job-filters';
@@ -24,6 +26,7 @@ export function JobCard({
   /** Pool list — tap through to preview before accepting. */
   showActions?: boolean;
 }) {
+  const { deviceLocation } = useInspectorData();
   const poolPreview = showActions && isPoolJob(job);
   const detailHref =
     job.status === 'completed' ? jobHistory(job.id) : jobDetail(job.id);
@@ -59,6 +62,14 @@ export function JobCard({
         {formatDateSlash(job.scheduledDate || job.scheduledTime)} ·{' '}
         {formatTime(job.scheduledTime)}
       </p>
+
+      <JobTravelInfo
+        job={job}
+        deviceLocation={deviceLocation}
+        compact
+        nestedInLink
+        className="mt-2"
+      />
 
       <div className="mt-3 border-t border-border/60 pt-3">
         <PayBreakdown

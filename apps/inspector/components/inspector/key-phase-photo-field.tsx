@@ -7,22 +7,10 @@ import { toast } from 'sonner';
 import { KeyCameraCapture } from '@/components/inspector/key-camera-capture';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { compressImageForUpload } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 const MAX_PHOTOS = 5;
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result);
-      else reject(new Error('Failed to read photo'));
-    };
-    reader.onerror = () =>
-      reject(reader.error ?? new Error('Failed to read photo'));
-    reader.readAsDataURL(file);
-  });
-}
 
 export function KeyPhasePhotoField({
   label = 'Proof photos',
@@ -58,7 +46,7 @@ export function KeyPhasePhotoField({
     }
     const picked = Array.from(files).slice(0, remaining);
     try {
-      const urls = await Promise.all(picked.map(readFileAsDataUrl));
+      const urls = await Promise.all(picked.map((file) => compressImageForUpload(file)));
       onChange([...photos, ...urls]);
     } catch {
       toast.error('Could not read one of the photos');

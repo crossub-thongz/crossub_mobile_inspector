@@ -38,6 +38,7 @@ export default function JobKeysPage() {
   const [stepsConfirmed, setStepsConfirmed] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const workflow = job ? getKeyWorkflow(job) : undefined;
   const collectDone = job ? isKeyCollectComplete(job) : false;
@@ -48,14 +49,19 @@ export default function JobKeysPage() {
 
   const phaseDone = tab === 'collect' ? collectDone : returnDone;
   const phaseRecord = tab === 'collect' ? workflow?.collect : workflow?.return;
+  const jobAvailable = job != null;
 
+  // Hydrate the form when opening a job/tab — not on every background refresh
+  // (the provider polls every 5s and replaces the job object, which was wiping
+  // in-progress checkbox/photo edits before submit).
   useEffect(() => {
     if (!job) return;
-    const record = tab === 'collect' ? workflow?.collect : workflow?.return;
+    const record =
+      tab === 'collect' ? getKeyWorkflow(job)?.collect : getKeyWorkflow(job)?.return;
     setStepsConfirmed(record?.stepsConfirmed ?? false);
     setPhotos(record?.photoUrls ?? []);
     setNotes(record?.notes ?? '');
-  }, [tab, job, workflow?.collect, workflow?.return]);
+  }, [id, tab, jobAvailable]);
 
   if (!job) {
     return (
@@ -88,7 +94,7 @@ export default function JobKeysPage() {
     setTab(next);
   };
 
-  const submit = (phase: Tab) => {
+  const submit = async (phase: Tab) => {
     if (phaseDone) return;
 
     if (!stepsConfirmed) {
@@ -100,13 +106,21 @@ export default function JobKeysPage() {
       return;
     }
 
-    saveKeyWorkflow(id, phase, {
-      completedAt: new Date().toISOString(),
-      stepsConfirmed: true,
-      photoConfirmed: access.photoRequired ? true : undefined,
-      photoUrls: access.photoRequired ? photos : undefined,
-      notes: notes.trim() || undefined,
-    });
+    try {
+      setSubmitting(true);
+      await saveKeyWorkflow(id, phase, {
+        completedAt: new Date().toISOString(),
+        stepsConfirmed: true,
+        photoConfirmed: access.photoRequired ? true : undefined,
+        photoUrls: access.photoRequired ? photos : undefined,
+        notes: notes.trim() || undefined,
+      });
+    } catch {
+      return;
+    } finally {
+      setSubmitting(false);
+    }
+
     toast.success(
       phase === 'collect' ? 'Key collection recorded' : 'Key return recorded',
     );
@@ -252,9 +266,12 @@ export default function JobKeysPage() {
               <Button
                 type="button"
                 className="w-full"
+                disabled={submitting}
                 onClick={() => submit(tab)}
               >
-                Confirm {tab === 'collect' ? 'collection' : 'return'}
+                {submitting
+                  ? 'Uploading proof…'
+                  : `Confirm ${tab === 'collect' ? 'collection' : 'return'}`}
               </Button>
             </div>
           </>

@@ -40,6 +40,21 @@ export type SubmitInspectorRegistration =
 export type InspectorFindingAreaPayload =
   SaveInspectorFindings['areas'][number];
 
+function crossubErrorMessage(error: unknown, fallback: string): string {
+  if (!error || typeof error !== 'object') return fallback;
+  const record = error as { message?: unknown };
+  const msg = record.message;
+  if (typeof msg === 'string' && msg.trim()) return msg;
+  if (Array.isArray(msg) && msg.length > 0) {
+    return msg.filter((part) => typeof part === 'string').join(', ') || fallback;
+  }
+  if (msg && typeof msg === 'object') {
+    const nested = (msg as { message?: unknown }).message;
+    if (typeof nested === 'string' && nested.trim()) return nested;
+  }
+  return fallback;
+}
+
 /** Billable inspection jobs ledger (`GET /api/v1/inspector/jobs`). */
 export async function fetchJobs(): Promise<InspectorJob[]> {
   const { data, error } = await crossub.GET('/inspector/jobs');
@@ -191,14 +206,18 @@ export async function recordKeyCustody(
       '/inspector/inspections/{inspectionId}/key-custody/collect',
       { params: { path: { inspectionId } }, body },
     );
-    if (error || !data) throw new Error('Failed to record key collection');
+    if (error || !data) {
+      throw new Error(crossubErrorMessage(error, 'Failed to record key collection'));
+    }
     return data;
   }
   const { data, error } = await crossub.POST(
     '/inspector/inspections/{inspectionId}/key-custody/return',
     { params: { path: { inspectionId } }, body },
   );
-  if (error || !data) throw new Error('Failed to record key return');
+  if (error || !data) {
+    throw new Error(crossubErrorMessage(error, 'Failed to record key return'));
+  }
   return data;
 }
 
@@ -210,24 +229,39 @@ export async function uploadKeyCustodyPhoto(
   inspectionId: string,
   body: UploadKeyCustodyPhoto,
 ): Promise<InspectorKeyCustody> {
-  const { data, error } = await crossub.POST(
+  const { data, error, response } = await crossub.POST(
     '/inspector/inspections/{inspectionId}/key-custody/photos/upload',
     { params: { path: { inspectionId } }, body },
   );
-  if (error || !data) throw new Error('Failed to upload key proof photo');
-  return data;
+  if (data) return data;
+  if (response.status === 404) {
+    throw new Error(
+      'Job not assigned to you yet — go back, claim the job, then retry key collection.',
+    );
+  }
+  if (response.status === 413) {
+    throw new Error('Photo is too large — try snapping again.');
+  }
+  throw new Error(crossubErrorMessage(error, 'Failed to upload key proof photo'));
 }
 
 /** Accept an inspection (`POST /api/v1/inspector/inspections/{inspectionId}/accept`). */
 export async function acceptInspection(
   inspectionId: string,
 ): Promise<InspectorInspection> {
-  const { data, error } = await crossub.POST(
+  const { data, error, response } = await crossub.POST(
     '/inspector/inspections/{inspectionId}/accept',
     { params: { path: { inspectionId } } },
   );
-  if (error || !data) throw new Error('Failed to accept inspection');
-  return data;
+  if (data) return data;
+  // Already IN_PROGRESS — treat as success so key-custody sync can continue.
+  if (response.status === 409) {
+    const current = await crossub.GET('/inspector/inspections/{inspectionId}', {
+      params: { path: { inspectionId } },
+    });
+    if (current.data) return current.data;
+  }
+  throw new Error(crossubErrorMessage(error, 'Failed to accept inspection'));
 }
 
 /** Complete an inspection (`POST /api/v1/inspector/inspections/{inspectionId}/complete`). */

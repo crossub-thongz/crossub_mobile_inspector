@@ -139,8 +139,8 @@ export interface InspectionJob {
   type: InspectionType;
   propertyAddress: string;
   suburb: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   scheduledDate: string;
   scheduledTime: string;
   priority: JobPriority;

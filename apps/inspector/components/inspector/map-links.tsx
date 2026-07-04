@@ -9,10 +9,12 @@ export function MapLinks({
   address,
   lat,
   lng,
+  origin,
 }: {
   address: string;
   lat?: number;
   lng?: number;
+  origin?: { latitude: number; longitude: number };
 }) {
   return (
     <div className="space-y-2">
@@ -28,7 +30,7 @@ export function MapLinks({
             asChild
           >
             <a
-              href={buildMapUrl(app, address, lat, lng)}
+              href={buildMapUrl(app, address, lat, lng, origin)}
               target="_blank"
               rel="noopener noreferrer"
             >

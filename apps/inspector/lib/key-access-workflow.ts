@@ -23,12 +23,22 @@ export function getKeyWorkflow(job: InspectionJob): KeyWorkflowData | undefined 
   return raw as KeyWorkflowData;
 }
 
+function hasServerKeyProof(record?: KeyPhaseRecord): boolean {
+  return Boolean(
+    record?.photoUrls?.some(
+      (url) => url.startsWith('http://') || url.startsWith('https://'),
+    ),
+  );
+}
+
 export function isKeyCollectComplete(job: InspectionJob): boolean {
   if (!job.keyAccess) return true;
   const collect = getKeyWorkflow(job)?.collect;
   if (!collect?.stepsConfirmed) return false;
   if (job.keyAccess.photoRequired) {
     if (!collect.photoUrls?.length) return false;
+    // Assigned API jobs must have server-hosted proof — not browser-only state.
+    if (job.source === 'assigned' && !hasServerKeyProof(collect)) return false;
   }
   return true;
 }
@@ -39,6 +49,7 @@ export function isKeyReturnComplete(job: InspectionJob): boolean {
   if (!ret?.stepsConfirmed) return false;
   if (job.keyAccess.photoRequired) {
     if (!ret.photoUrls?.length) return false;
+    if (job.source === 'assigned' && !hasServerKeyProof(ret)) return false;
   }
   return true;
 }

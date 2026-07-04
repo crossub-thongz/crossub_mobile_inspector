@@ -35,7 +35,8 @@ const STATUS_FLOW = [
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { getJob, updateJobStatus, acceptJob, declineJob } = useInspectorData();
+  const { getJob, updateJobStatus, acceptJob, declineJob, deviceLocation } =
+    useInspectorData();
   const job = getJob(id);
 
   if (!job) {
@@ -136,6 +137,7 @@ export default function JobDetailPage() {
               address={job.propertyAddress}
               lat={job.latitude}
               lng={job.longitude}
+              origin={deviceLocation ?? undefined}
             />
 
             {job.tenantName && (

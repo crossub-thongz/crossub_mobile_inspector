@@ -6,7 +6,7 @@ const LOCATION_SYNC_MS = 45_000;
 
 /**
  * Periodically read the device GPS and push fixes to the inspector location API
- * while the inspector is receiving pool jobs.
+ * while the inspector is signed in with an approved roster row.
  */
 export function useInspectorLocationSync(
   enabled: boolean,

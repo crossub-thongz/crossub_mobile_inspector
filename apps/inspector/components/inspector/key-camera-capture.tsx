@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Camera, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { compressCanvasToDataUrl } from '@/lib/compress-image';
 
 export function KeyCameraCapture({
   open,
@@ -81,12 +82,15 @@ export function KeyCameraCapture({
     if (!video || video.videoWidth === 0) return;
 
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const maxEdge = 1280;
+    const longest = Math.max(video.videoWidth, video.videoHeight);
+    const scale = longest > maxEdge ? maxEdge / longest : 1;
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    onCapture(canvas.toDataURL('image/jpeg', 0.9));
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    onCapture(compressCanvasToDataUrl(canvas));
     onClose();
   };
 

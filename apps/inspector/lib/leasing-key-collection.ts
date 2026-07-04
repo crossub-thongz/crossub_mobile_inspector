@@ -10,9 +10,12 @@ import {
   type KeyPhaseRecord,
   type KeyWorkflowData,
 } from '@/lib/key-access-workflow';
+import { shrinkDataUrlForUpload } from '@/lib/compress-image';
 import { formatDateTime } from '@/lib/utils';
 
 import {
+  acceptInspection,
+  claimInspection,
   fetchKeyCollection,
   recordKeyCustody,
   uploadKeyCustodyPhoto,
@@ -136,13 +139,16 @@ export async function enrichJobWithKeyCollection(
     const { keyAccess, leasingKeyCollection } = mapKeyCollectionFromApi(dto);
     // Server custody fills cross-device gaps; local records win while a
     // submission is mid-flight on this device (richer data-URL photos).
-    const serverWorkflow = keyWorkflowFromCustody(dto.custody);
-    const workflowData = serverWorkflow
-      ? {
-          ...job.workflowData,
-          keyWorkflow: { ...serverWorkflow, ...(getKeyWorkflow(job) ?? {}) },
-        }
-      : job.workflowData;
+    const localWorkflow = getKeyWorkflow(job) ?? {};
+    const serverWorkflow = keyWorkflowFromCustody(dto.custody) ?? {};
+    // Server custody wins once recorded; keep local drafts only while sync is pending.
+    const keyWorkflow = serverWorkflow.collect?.completedAt
+      ? { ...localWorkflow, ...serverWorkflow }
+      : { ...serverWorkflow, ...localWorkflow };
+    const workflowData = {
+      ...job.workflowData,
+      keyWorkflow,
+    };
     return { ...job, keyAccess, leasingKeyCollection, workflowData };
   } catch {
     return job;
@@ -175,23 +181,55 @@ function dataUrlToUploadParts(
  * server rejects a `return` record until the inspection is completed — the
  * caller sequences that.
  */
+/** Claim + accept on the server so key-custody writes pass assignment scope checks. */
+export async function ensureInspectionReadyForKeySync(
+  inspectionId: string,
+  fromPool: boolean,
+): Promise<void> {
+  if (fromPool) {
+    try {
+      await claimInspection(inspectionId);
+    } catch {
+      // Already claimed by this inspector — continue.
+    }
+  }
+  try {
+    await acceptInspection(inspectionId);
+  } catch {
+    // Already IN_PROGRESS — continue.
+  }
+}
+
 export async function syncKeyCustodyToServer(
   inspectionId: string,
   phase: 'collect' | 'return',
   record: KeyPhaseRecord,
-): Promise<void> {
+  options?: { fromPool?: boolean },
+): Promise<InspectorKeyCustody> {
+  await ensureInspectionReadyForKeySync(inspectionId, options?.fromPool ?? false);
+
   const photos = record.photoUrls ?? [];
+  let uploaded = 0;
   for (const [index, photo] of photos.entries()) {
-    const parts = dataUrlToUploadParts(photo);
+    if (photo.startsWith('http://') || photo.startsWith('https://')) {
+      uploaded += 1;
+      continue;
+    }
+    const uploadable = await shrinkDataUrlForUpload(photo);
+    const parts = dataUrlToUploadParts(uploadable);
     if (!parts) continue;
-    const extension = parts.mimeType.split('/')[1] ?? 'jpg';
+    const extension = parts.mimeType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
     await uploadKeyCustodyPhoto(inspectionId, {
       phase,
       fileName: `key-${phase}-${index + 1}.${extension}`,
       ...parts,
     });
+    uploaded += 1;
   }
-  await recordKeyCustody(
+  if (photos.length > 0 && uploaded === 0) {
+    throw new Error('Could not read proof photo — try snapping again.');
+  }
+  return await recordKeyCustody(
     inspectionId,
     phase,
     record.notes ? { notes: record.notes } : {},

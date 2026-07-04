@@ -2,8 +2,10 @@
 
 import { Calendar, Hash, MapPin } from 'lucide-react';
 
+import { JobTravelInfo } from '@/components/inspector/job-travel-info';
 import { PayBreakdown } from '@/components/inspector/pay-breakdown';
 import { JobTypeBadge } from '@/components/inspector/status-badge';
+import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { formatJobRefId } from '@/lib/job-cancellation';
 import type { InspectionJob } from '@/lib/types';
 import { formatDateSlash, formatTime } from '@/lib/utils';
@@ -15,6 +17,8 @@ export function JobSummaryCard({
   job: InspectionJob;
   showPayout?: boolean;
 }) {
+  const { deviceLocation } = useInspectorData();
+
   return (
     <div className="border-border bg-card space-y-3 rounded-2xl border p-4">
       <div className="flex items-start justify-between gap-2">
@@ -47,6 +51,8 @@ export function JobSummaryCard({
           {job.propertyAddress}
         </p>
       </div>
+
+      <JobTravelInfo job={job} deviceLocation={deviceLocation} />
 
       {showPayout && (
         <div className="border-border border-t pt-3">

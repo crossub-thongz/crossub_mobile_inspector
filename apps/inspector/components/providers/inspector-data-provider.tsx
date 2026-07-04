@@ -54,6 +54,7 @@ import {
 } from '@/lib/crossub-api/inspector-mappers';
 import {
   enrichJobsWithKeyCollection,
+  keyWorkflowFromCustody,
   syncKeyCustodyToServer,
 } from '@/lib/leasing-key-collection';
 import { fileToBase64 } from '@/lib/utils';
@@ -100,6 +101,8 @@ import {
   type InspectorAvailability,
 } from '@/lib/inspector-availability';
 import { useInspectorLocationSync } from '@/lib/use-inspector-location-sync';
+import { useDevicePosition } from '@/lib/use-device-position';
+import type { GeoPoint } from '@/lib/travel';
 import {
   demoSeedSnapshot,
   shouldShowDemoSeeds,
@@ -137,6 +140,8 @@ interface InspectorDataContextValue {
   pendingSync: number;
   /** True when the inspector is open to new pool jobs (green bubble). */
   receivingJobs: boolean;
+  /** Latest device GPS fix for on-screen distance/ETA. */
+  deviceLocation: GeoPoint | null;
   availability: InspectorAvailability;
   toggleReceivingJobs: () => void;
   refresh: () => Promise<void>;
@@ -181,7 +186,7 @@ interface InspectorDataContextValue {
     id: string,
     phase: 'collect' | 'return',
     record: KeyPhaseRecord,
-  ) => void;
+  ) => Promise<void>;
   /**
    * Load the real seeded findings tree (areas → items → photos) for an API-backed
    * inspection, flattened to the read view-model. Returns [] for demo jobs or when the
@@ -485,11 +490,10 @@ export function InspectorDataProvider({
 
     if (inspections.status === 'fulfilled') {
       assignedFromApi = mapInspections(inspections.value);
-      apiInspectionIds.current = new Set(assignedFromApi.map((j) => j.id));
       connected = true;
       setApiConnected(true);
     } else if (inspections.status === 'rejected') {
-      apiInspectionIds.current = new Set();
+      assignedFromApi = [];
     }
     if (pool.status === 'fulfilled') {
       poolFromApi = mapPoolInspections(pool.value);
@@ -506,6 +510,11 @@ export function InspectorDataProvider({
           : 'Could not load the job pool.',
       );
     }
+    // Pool + assigned rows both hit the real facade — key proof must sync for either.
+    apiInspectionIds.current = new Set([
+      ...assignedFromApi.map((j) => j.id),
+      ...poolFromApi.map((j) => j.id),
+    ]);
     if (inspections.status === 'fulfilled' || pool.status === 'fulfilled') {
       const apiIds = new Set([
         ...assignedFromApi.map((j) => j.id),
@@ -522,14 +531,25 @@ export function InspectorDataProvider({
       setJobs((prev) => {
         const prevById = new Map(prev.map((j) => [j.id, j]));
         const mergeApiJob = (apiJob: InspectionJob) => {
+          const persisted = loadPersistedJobProgress(apiJob.id);
+          const sanitizedPersisted =
+            persisted && isKeyCollectComplete(apiJob)
+              ? {
+                  ...persisted,
+                  workflowData: persisted.workflowData
+                    ? Object.fromEntries(
+                        Object.entries(persisted.workflowData).filter(
+                          ([key]) => key !== 'keyWorkflow',
+                        ),
+                      )
+                    : undefined,
+                }
+              : persisted;
           const fromPrev = mergeJobWithLocalProgress(
             apiJob,
             prevById.get(apiJob.id),
           );
-          return mergeJobWithLocalProgress(
-            fromPrev,
-            loadPersistedJobProgress(apiJob.id),
-          );
+          return mergeJobWithLocalProgress(fromPrev, sanitizedPersisted);
         };
         const mergeApiJobFinal = (apiJob: InspectionJob) => {
           const merged = mergeApiJob(apiJob);
@@ -747,6 +767,7 @@ export function InspectorDataProvider({
         ),
       );
       if ((isAssignedApiJob || isPoolApiJob) && apiConnected) {
+        apiInspectionIds.current.add(id);
         const persist = isPoolApiJob
           ? apiClaimInspection(id).then(() => apiAcceptInspection(id))
           : apiAcceptInspection(id);
@@ -987,7 +1008,45 @@ export function InspectorDataProvider({
   );
 
   const saveKeyWorkflow = useCallback(
-    (id: string, phase: 'collect' | 'return', record: KeyPhaseRecord) => {
+    async (id: string, phase: 'collect' | 'return', record: KeyPhaseRecord) => {
+      const isApiJob =
+        apiConnected &&
+        (apiInspectionIds.current.has(id) || apiPoolIds.current.has(id));
+
+      if (isApiJob && phase === 'collect') {
+        try {
+          const custody = await syncKeyCustodyToServer(id, 'collect', record, {
+            fromPool: apiPoolIds.current.has(id),
+          });
+          apiInspectionIds.current.add(id);
+          const serverWorkflow = keyWorkflowFromCustody(custody);
+          setJobs((prev) => {
+            const next = prev.map((j) => {
+              if (j.id !== id) return j;
+              return {
+                ...j,
+                workflowData: {
+                  ...j.workflowData,
+                  ...(serverWorkflow ? { keyWorkflow: serverWorkflow } : {}),
+                },
+              };
+            });
+            const updated = next.find((j) => j.id === id);
+            if (updated) persistJobProgress(updated);
+            return next;
+          });
+          await refresh();
+        } catch (err) {
+          const message =
+            err instanceof Error
+              ? err.message
+              : 'Could not sync key collection to the server';
+          toast.error(message);
+          throw err;
+        }
+        return;
+      }
+
       setJobs((prev) => {
         const next = prev.map((j) => {
           if (j.id !== id) return j;
@@ -1002,25 +1061,14 @@ export function InspectorDataProvider({
         return next;
       });
 
-      const isApiJob = apiInspectionIds.current.has(id);
-      if (isApiJob && apiConnected) {
-        if (phase === 'collect') {
-          // Proof photos → R2, then record collection on the server (the
-          // facade enforces collect-before-start when a key arrangement
-          // exists). Best-effort — the local record is the immediate UX.
-          void syncKeyCustodyToServer(id, 'collect', record).catch(() => undefined);
-        } else {
-          // The facade rejects a return recorded before the inspection is
-          // completed — completeJob (always called right after a return
-          // submit) syncs this once the completion lands.
-          pendingReturnCustody.current.set(id, record);
-        }
+      if (isApiJob) {
+        pendingReturnCustody.current.set(id, record);
         return;
       }
 
       mutateWithOffline(id, 'key_workflow', { phase, record });
     },
-    [apiConnected, mutateWithOffline],
+    [apiConnected, mutateWithOffline, refresh],
   );
 
   const finishInspectionWorkflow = useCallback(
@@ -1330,10 +1378,11 @@ export function InspectorDataProvider({
   useInspectorLocationSync(
     status === 'authed' &&
       apiConnected &&
-      receivingJobs &&
       Boolean(serverProfile?.roster),
     pushInspectorLocation,
   );
+
+  const deviceLocation = useDevicePosition(status === 'authed');
 
   const value: InspectorDataContextValue = {
     loading,
@@ -1343,6 +1392,7 @@ export function InspectorDataProvider({
     rosterLinked,
     pendingSync,
     receivingJobs,
+    deviceLocation,
     availability,
     toggleReceivingJobs,
     refresh,

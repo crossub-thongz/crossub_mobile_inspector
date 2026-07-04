@@ -97,10 +97,6 @@ const BILLING_SOURCE_VIEW: Record<InspectorJob['source'], InspectionType> = {
   [BILLING_SOURCE.TRIBUNAL]: 'tribunal',
 };
 
-// The facade carries no geo, so default real assignments to Sydney CBD — the detail map
-// then pins near the service area instead of at (0,0). Real coordinates are a backend
-// follow-up.
-const SYDNEY_CBD = { latitude: -33.8688, longitude: 151.2093 };
 const DEFAULT_REGION: ServiceRegionKey = 'cbd_inner';
 const DEFAULT_PROPERTY: PropertyInspectionSpec = {
   propertyKind: 'apartment',
@@ -118,13 +114,22 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     '';
   const estimatedHours = ESTIMATED_HOURS_BY_TYPE[type];
   const laborAmount = Math.round(estimatedHours * INSPECTOR_HOURLY_RATE_AUD);
+  const propertyLatitude = asNumber(
+    (dto as { propertyLatitude?: unknown }).propertyLatitude,
+  );
+  const propertyLongitude = asNumber(
+    (dto as { propertyLongitude?: unknown }).propertyLongitude,
+  );
+  const hasPropertyGeo =
+    propertyLatitude != null && propertyLongitude != null;
   return {
     id: dto.id,
     type,
     propertyAddress: asString(dto.propertyAddress) ?? 'Assigned property',
     suburb: asString(dto.propertySuburb) ?? '',
-    latitude: SYDNEY_CBD.latitude,
-    longitude: SYDNEY_CBD.longitude,
+    ...(hasPropertyGeo
+      ? { latitude: propertyLatitude, longitude: propertyLongitude }
+      : {}),
     scheduledDate: scheduled,
     scheduledTime: scheduled,
     priority: dto.urgent ? 'urgent' : 'normal',
