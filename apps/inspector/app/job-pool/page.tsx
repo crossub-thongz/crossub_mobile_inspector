@@ -18,7 +18,8 @@ import {
 } from '@/constants/inspection';
 
 export default function JobPoolPage() {
-  const { poolJobs, receivingJobs } = useInspectorData();
+  const { poolJobs, receivingJobs, loading, rosterLinked, poolError } =
+    useInspectorData();
   const [filter, setFilter] = useState<JobPoolFilter>('all');
 
   const counts = useMemo(
@@ -50,6 +51,18 @@ export default function JobPoolPage() {
             icon={Briefcase}
             title="You're on break"
             description="Tap the red bubble above the footer to start receiving open inspection jobs from the pool."
+          />
+        ) : !loading && !rosterLinked ? (
+          <EmptyState
+            icon={Briefcase}
+            title="Roster not approved yet"
+            description="Complete your registration in Profile and ask ops to approve your inspector roster. Pool jobs appear here once you're on the live roster."
+          />
+        ) : poolError ? (
+          <EmptyState
+            icon={Briefcase}
+            title="Could not load the pool"
+            description={poolError}
           />
         ) : totalAvailable === 0 ? (
           <EmptyState

@@ -1,14 +1,52 @@
+import type { ReactNode } from 'react';
 import { Mail, Phone, User } from 'lucide-react';
 
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
+function ContactLink({
+  href,
+  className,
+  nestedInLink,
+  children,
+}: {
+  href: string;
+  className: string;
+  nestedInLink?: boolean;
+  children: ReactNode;
+}) {
+  if (nestedInLink) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          window.location.href = href;
+        }}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  return (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  );
+}
+
 export function AgentStrip({
   job,
   compact,
+  nestedInLink,
 }: {
   job: InspectionJob;
   compact?: boolean;
+  /** When true, mail/tel use buttons so the strip can sit inside a card link. */
+  nestedInLink?: boolean;
 }) {
   if (!job.agentName && !job.agentCompany) return null;
 
@@ -38,22 +76,24 @@ export function AgentStrip({
             )}
           >
             {job.agentEmail && (
-              <a
+              <ContactLink
                 href={`mailto:${job.agentEmail}`}
+                nestedInLink={nestedInLink}
                 className="text-primary inline-flex items-center gap-1 hover:underline"
               >
                 <Mail className="size-2.5 shrink-0" />
                 <span className="truncate">{job.agentEmail}</span>
-              </a>
+              </ContactLink>
             )}
             {job.agentPhone && (
-              <a
+              <ContactLink
                 href={`tel:${job.agentPhone}`}
+                nestedInLink={nestedInLink}
                 className="text-primary inline-flex items-center gap-1 hover:underline"
               >
                 <Phone className="size-2.5 shrink-0" />
                 <span>{job.agentPhone}</span>
-              </a>
+              </ContactLink>
             )}
           </div>
         </div>

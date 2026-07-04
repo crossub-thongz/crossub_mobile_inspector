@@ -44,7 +44,7 @@ export function JobCard({
 
       {(job.agentName || job.agentCompany) && (
         <div className="mb-2">
-          <AgentStrip job={job} compact />
+          <AgentStrip job={job} compact nestedInLink />
         </div>
       )}
 

@@ -7,8 +7,15 @@ import { useInspectorData } from '@/components/providers/inspector-data-provider
 import { Button } from '@/components/ui/button';
 
 export function ConnectionBanner() {
-  const { apiConnected, apiError, loading, refresh, pendingSync, syncOfflineQueue } =
-    useInspectorData();
+  const {
+    apiConnected,
+    apiError,
+    poolError,
+    loading,
+    refresh,
+    pendingSync,
+    syncOfflineQueue,
+  } = useInspectorData();
 
   const handleRefresh = async () => {
     try {
@@ -26,7 +33,12 @@ export function ConnectionBanner() {
     <div className="space-y-2">
       {apiError && (
         <p className="text-destructive rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs">
-          {apiError} — showing demo data where needed.
+          {apiError}
+        </p>
+      )}
+      {poolError && apiConnected && (
+        <p className="text-destructive rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs">
+          {poolError}
         </p>
       )}
     </div>

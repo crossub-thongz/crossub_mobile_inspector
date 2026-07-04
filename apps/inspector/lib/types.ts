@@ -126,6 +126,10 @@ export interface InspectorProfile {
   phone: string;
   tribunalQualified: boolean;
   weeklyEarnings: number;
+  /** Average performance rating (1–5). Null for brand-new inspectors. */
+  rating: number | null;
+  totalCompleted: number;
+  lateArrivals: number;
   registration?: InspectorRegistration | null;
   registrationComplete: boolean;
 }

@@ -109,6 +109,9 @@ export const INSPECTOR_PROFILE: InspectorProfile = {
   phone: '0412 345 678',
   tribunalQualified: true,
   weeklyEarnings: 0,
+  rating: 4.9,
+  totalCompleted: 42,
+  lateArrivals: 1,
   registration: null,
   registrationComplete: false,
 };

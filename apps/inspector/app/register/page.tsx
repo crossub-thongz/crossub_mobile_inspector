@@ -40,7 +40,8 @@ type FormValues = z.infer<typeof schema>;
 
 export default function RegisterPage() {
   const { user, status } = useAuth();
-  const { saveRegistration, registrationComplete } = useInspectorData();
+  const { saveRegistration, registrationComplete, registrationResolved } =
+    useInspectorData();
 
   const {
     register,
@@ -96,9 +97,13 @@ export default function RegisterPage() {
       registrationStatus: 'pending_review',
       submittedAt: new Date().toISOString(),
     };
-    saveRegistration(payload);
-    toast.success('Profile saved — you will not be asked again');
-    window.location.assign(ROUTES.DASHBOARD);
+    try {
+      await saveRegistration(payload);
+      toast.success('Profile saved — you will not be asked again');
+      window.location.assign(ROUTES.DASHBOARD);
+    } catch {
+      // saveRegistration already toasts on server failure.
+    }
   };
 
   if (status === 'loading' || status === 'guest') {
@@ -107,6 +112,10 @@ export default function RegisterPage() {
 
   if (!user) {
     return <AuthLoadingScreen message="Loading your account…" />;
+  }
+
+  if (!registrationResolved) {
+    return <AuthLoadingScreen message="Checking your profile…" />;
   }
 
   if (registrationComplete) {

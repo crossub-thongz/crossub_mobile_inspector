@@ -56,9 +56,86 @@ export async function fetchInspections(): Promise<InspectorInspection[]> {
 
 /** Unassigned pool inspections (`GET /api/v1/inspector/inspections/pool`). */
 export async function fetchPoolInspections(): Promise<InspectorInspection[]> {
-  const { data, error } = await crossub.GET('/inspector/inspections/pool');
-  if (error || !data) throw new Error('Failed to load job pool');
+  const base = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+  const params = new URLSearchParams({
+    page: '1',
+    pageSize: '100',
+    type: 'INGOING',
+  });
+  const res = await fetch(`${base}/v1/inspector/inspections/pool?${params}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    let detail = 'Failed to load job pool';
+    try {
+      const body = (await res.json()) as { message?: string | string[] };
+      const msg = body.message;
+      if (typeof msg === 'string' && msg.trim()) detail = msg;
+      else if (Array.isArray(msg) && msg.length > 0) detail = msg.join(', ');
+    } catch {
+      // Non-JSON error body — keep generic message.
+    }
+    if (res.status === 403) {
+      detail =
+        'Your account is not linked to an approved inspector roster yet. Complete registration and ask ops to approve it.';
+    } else if (res.status === 401) {
+      detail =
+        'Session expired or invalid — sign out and sign in again with your inspector account.';
+    } else if (res.status === 503) {
+      detail = 'API unavailable — start the backend on port 3001 and try again.';
+    }
+    throw new Error(detail);
+  }
+  const data = (await res.json()) as { items: InspectorInspection[] };
   return data.items;
+}
+
+/** Sync the receiving/on-break toggle with the ops dispatch list (`PATCH /api/v1/inspector/availability`). */
+export async function setInspectorPoolAvailability(
+  receivingPoolJobs: boolean,
+): Promise<void> {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+  const res = await fetch(`${base}/v1/inspector/availability`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ receivingPoolJobs }),
+  });
+  if (!res.ok) {
+    let detail = 'Could not sync availability — try again.';
+    try {
+      const body = (await res.json()) as { message?: string | string[] };
+      const msg = body.message;
+      if (typeof msg === 'string' && msg.trim()) detail = msg;
+      else if (Array.isArray(msg) && msg.length > 0) detail = msg.join(', ');
+    } catch {
+      // Non-JSON error body — keep generic message.
+    }
+    if (res.status === 403) {
+      detail =
+        'Your account is not linked to an approved inspector roster yet. Ask ops to approve your registration.';
+    } else if (res.status === 503) {
+      detail = 'API unavailable — start the backend on port 3001 and try again.';
+    }
+    throw new Error(detail);
+  }
+}
+
+/** Push live GPS to the ops dispatch list (`PATCH /api/v1/inspector/location`). */
+export async function setInspectorLocation(
+  latitude: number,
+  longitude: number,
+): Promise<void> {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+  const res = await fetch(`${base}/v1/inspector/location`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ latitude, longitude }),
+  });
+  if (!res.ok) {
+    throw new Error('Could not sync location');
+  }
 }
 
 /** Claim a pool inspection (`POST /api/v1/inspector/inspections/{inspectionId}/claim`). */

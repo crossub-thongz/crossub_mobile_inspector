@@ -89,6 +89,22 @@ export function isRegistrationComplete(
   );
 }
 
+/** Whether onboarding is done — server roster or a submitted registration application. */
+export function isInspectorOnboardingComplete(options: {
+  registration: InspectorRegistration | null;
+  hasRoster: boolean;
+  serverRegistrationStatus?: string | null;
+}): boolean {
+  if (options.hasRoster) return true;
+  if (
+    options.serverRegistrationStatus === 'approved' ||
+    options.serverRegistrationStatus === 'pending_review'
+  ) {
+    return true;
+  }
+  return isRegistrationComplete(options.registration);
+}
+
 export function clearInspectorRegistration(email: string): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(storageKey(email));

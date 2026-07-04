@@ -34,6 +34,8 @@ import {
   releaseInspection as apiReleaseInspection,
   replyInspectorMessage,
   saveInspectionFindings as apiSaveInspectionFindings,
+  setInspectorPoolAvailability,
+  setInspectorLocation,
   submitInspectorRegistration,
   uploadInspectionPhoto,
   type InspectorFindingAreaPayload,
@@ -87,7 +89,7 @@ import {
   payoutWithEmergencyBonus,
 } from '@/lib/job-cancellation';
 import {
-  isRegistrationComplete,
+  isInspectorOnboardingComplete,
   loadInspectorRegistration,
   saveInspectorRegistration,
 } from '@/lib/inspector-registration';
@@ -97,14 +99,11 @@ import {
   saveInspectorAvailability,
   type InspectorAvailability,
 } from '@/lib/inspector-availability';
+import { useInspectorLocationSync } from '@/lib/use-inspector-location-sync';
 import {
-  EARNINGS,
-  JOBS,
-  MESSAGE_THREADS,
-  NOTIFICATIONS,
-  THREAD_MESSAGES,
-  TRIBUNALS,
-} from '@/lib/mock-data';
+  demoSeedSnapshot,
+  shouldShowDemoSeeds,
+} from '@/lib/demo-seeds';
 import {
   enqueueOfflineAction,
   loadOfflineQueue,
@@ -131,6 +130,10 @@ interface InspectorDataContextValue {
   loading: boolean;
   apiConnected: boolean;
   apiError: string | null;
+  /** Set when the job pool API fails (e.g. roster not approved). */
+  poolError: string | null;
+  /** True when GET /inspector/profile returned an approved roster row. */
+  rosterLinked: boolean;
   pendingSync: number;
   /** True when the inspector is open to new pool jobs (green bubble). */
   receivingJobs: boolean;
@@ -142,7 +145,9 @@ interface InspectorDataContextValue {
   registration: InspectorRegistration | null;
   registrationComplete: boolean;
   registrationHydrated: boolean;
-  saveRegistration: (data: InspectorRegistration) => void;
+  /** True once GET /inspector/profile has settled for the signed-in user (gate waits on this). */
+  registrationResolved: boolean;
+  saveRegistration: (data: InspectorRegistration) => Promise<void>;
   summary: DashboardSummary;
   jobs: InspectionJob[];
   poolJobs: InspectionJob[];
@@ -230,6 +235,9 @@ const DEMO_PROFILE: InspectorProfile = {
   phone: '',
   tribunalQualified: false,
   weeklyEarnings: 0,
+  rating: null,
+  totalCompleted: 0,
+  lateArrivals: 0,
   registration: null,
   registrationComplete: false,
 };
@@ -256,18 +264,21 @@ export function InspectorDataProvider({
   const [loading, setLoading] = useState(true);
   const [apiConnected, setApiConnected] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [poolError, setPoolError] = useState<string | null>(null);
+  const [rosterLinked, setRosterLinked] = useState(false);
   const [pendingSync, setPendingSync] = useState(0);
 
-  const [jobs, setJobs] = useState(JOBS);
-  const [tribunals, setTribunals] = useState(TRIBUNALS);
-  const [earnings, setEarnings] = useState(EARNINGS);
-  const [notifications, setNotifications] = useState(NOTIFICATIONS);
-  const [messages, setMessages] = useState(MESSAGE_THREADS);
-  const [threadMessages, setThreadMessages] = useState(THREAD_MESSAGES);
+  const [jobs, setJobs] = useState<InspectionJob[]>([]);
+  const [tribunals, setTribunals] = useState<TribunalHearing[]>([]);
+  const [earnings, setEarnings] = useState<EarningsRecord[]>([]);
+  const [notifications, setNotifications] = useState<InspectorNotification[]>([]);
+  const [messages, setMessages] = useState<MessageThread[]>([]);
+  const [threadMessages, setThreadMessages] = useState<Record<string, ThreadMessage[]>>({});
   const [registration, setRegistration] = useState<InspectorRegistration | null>(
     null,
   );
   const [registrationHydrated, setRegistrationHydrated] = useState(false);
+  const [registrationResolved, setRegistrationResolved] = useState(false);
   const [availability, setAvailability] = useState<InspectorAvailability>('receiving');
   const receivingJobs = isReceivingJobs(availability);
   // The server's own-profile read (roster credentials + registration status) —
@@ -295,12 +306,23 @@ export function InspectorDataProvider({
     if (status === 'loading') {
       setRegistration(null);
       setRegistrationHydrated(false);
+      setRegistrationResolved(false);
       return;
     }
     if (status !== 'authed' || !user?.email) {
       setRegistration(null);
       setRegistrationHydrated(true);
+      setRegistrationResolved(true);
+      setServerProfile(null);
       setAvailability('receiving');
+      setRosterLinked(false);
+      setPoolError(null);
+      setJobs([]);
+      setTribunals([]);
+      setEarnings([]);
+      setNotifications([]);
+      setMessages([]);
+      setThreadMessages({});
       return;
     }
     setRegistration(loadInspectorRegistration(user.email));
@@ -308,15 +330,77 @@ export function InspectorDataProvider({
     setAvailability(loadInspectorAvailability(user.email));
   }, [status, user?.email]);
 
+  const syncServerProfile = useCallback(async (): Promise<void> => {
+    if (status !== 'authed' || !user?.email) return;
+
+    const profile = await fetchInspectorProfile();
+    setServerProfile(profile);
+
+    if (user?.email && profile.roster) {
+      const rosterReceiving = (
+        profile.roster as { receivingPoolJobs?: boolean }
+      ).receivingPoolJobs;
+      const receiving = rosterReceiving !== false;
+      const nextAvailability: InspectorAvailability = receiving
+        ? 'receiving'
+        : 'on_break';
+      setAvailability(nextAvailability);
+      saveInspectorAvailability(user.email, nextAvailability);
+    }
+
+    const serverReg = profile.registration;
+    if (!serverReg) return;
+
+    setRegistration((prev) => {
+      const merged = mapInspectorRegistration(
+        serverReg,
+        prev ?? loadInspectorRegistration(user.email),
+      );
+      saveInspectorRegistration(user.email, merged);
+      return merged;
+    });
+  }, [status, user?.email]);
+
+  useEffect(() => {
+    if (status === 'loading') {
+      setRegistrationResolved(false);
+      return;
+    }
+    if (status !== 'authed' || !user?.email) {
+      return;
+    }
+
+    let cancelled = false;
+    setRegistrationResolved(false);
+
+    void syncServerProfile()
+      .catch(() => {
+        // Offline or transient — localStorage from the layout effect is the fallback.
+      })
+      .finally(() => {
+        if (!cancelled) setRegistrationResolved(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status, user?.email, syncServerProfile]);
+
   const receivingJobsRef = useRef(receivingJobs);
   receivingJobsRef.current = receivingJobs;
 
-  const registrationComplete = isRegistrationComplete(registration);
+  const registrationComplete = isInspectorOnboardingComplete({
+    registration,
+    hasRoster: Boolean(serverProfile?.roster),
+    serverRegistrationStatus: serverProfile?.registration?.registrationStatus,
+  });
 
   const saveRegistration = useCallback(
-    (data: InspectorRegistration) => {
+    async (data: InspectorRegistration): Promise<void> => {
       const email = (user?.email ?? data.email).trim().toLowerCase();
-      if (!email) return;
+      if (!email) {
+        throw new Error('Missing account email');
+      }
       const payload = { ...data, email };
       // Local copy first — it keeps the never-echoed PII/bank fields for display
       // and is the offline fallback.
@@ -325,28 +409,32 @@ export function InspectorDataProvider({
       // Then submit to the real registry intake: the application lands
       // PENDING_REVIEW in the staff review queue (approve there mints the roster
       // record), and the response's status truth overlays the local copy.
-      void submitInspectorRegistration({
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        mobile: payload.mobile || undefined,
-        dateOfBirth: payload.dateOfBirth || undefined,
-        residentialAddress: payload.residentialAddress || undefined,
-        abn: payload.abn || undefined,
-        licenceNumber: payload.licenceNumber || undefined,
-        licenceType: payload.licenceType || undefined,
-        licenceExpiry: payload.licenceExpiry || undefined,
-        serviceRegions: payload.serviceRegions,
-        tribunalQualified: payload.tribunalQualified ?? false,
-        bankAccountName: payload.bankAccountName || undefined,
-        bankBsb: payload.bankBsb || undefined,
-        bankAccountNumber: payload.bankAccountNumber || undefined,
-      })
-        .then((serverReg) => {
-          const merged = mapInspectorRegistration(serverReg, payload);
-          saveInspectorRegistration(email, merged);
-          setRegistration(merged);
-        })
-        .catch(() => undefined);
+      try {
+        const serverReg = await submitInspectorRegistration({
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          mobile: payload.mobile || undefined,
+          dateOfBirth: payload.dateOfBirth || undefined,
+          residentialAddress: payload.residentialAddress || undefined,
+          abn: payload.abn || undefined,
+          licenceNumber: payload.licenceNumber || undefined,
+          licenceType: payload.licenceType || undefined,
+          licenceExpiry: payload.licenceExpiry || undefined,
+          serviceRegions: payload.serviceRegions,
+          tribunalQualified: payload.tribunalQualified ?? false,
+          bankAccountName: payload.bankAccountName || undefined,
+          bankBsb: payload.bankBsb || undefined,
+          bankAccountNumber: payload.bankAccountNumber || undefined,
+        });
+        const merged = mapInspectorRegistration(serverReg, payload);
+        saveInspectorRegistration(email, merged);
+        setRegistration(merged);
+      } catch {
+        toast.error(
+          'Could not save your profile to the server. Check your connection and try again.',
+        );
+        throw new Error('Registration submit failed');
+      }
     },
     [user?.email],
   );
@@ -362,8 +450,10 @@ export function InspectorDataProvider({
     }
     setLoading(true);
     setApiError(null);
+    let connected = false;
     try {
       await api.get('/health');
+      connected = true;
       setApiConnected(true);
     } catch (err) {
       setApiConnected(false);
@@ -396,6 +486,7 @@ export function InspectorDataProvider({
     if (inspections.status === 'fulfilled') {
       assignedFromApi = mapInspections(inspections.value);
       apiInspectionIds.current = new Set(assignedFromApi.map((j) => j.id));
+      connected = true;
       setApiConnected(true);
     } else if (inspections.status === 'rejected') {
       apiInspectionIds.current = new Set();
@@ -403,9 +494,17 @@ export function InspectorDataProvider({
     if (pool.status === 'fulfilled') {
       poolFromApi = mapPoolInspections(pool.value);
       apiPoolIds.current = new Set(poolFromApi.map((j) => j.id));
+      setPoolError(null);
+      connected = true;
       setApiConnected(true);
     } else if (pool.status === 'rejected') {
       apiPoolIds.current = new Set();
+      const reason = pool.reason;
+      setPoolError(
+        reason instanceof Error
+          ? reason.message
+          : 'Could not load the job pool.',
+      );
     }
     if (inspections.status === 'fulfilled' || pool.status === 'fulfilled') {
       const apiIds = new Set([
@@ -414,7 +513,7 @@ export function InspectorDataProvider({
       ]);
       let assignedWithKeys = assignedFromApi;
       let poolWithKeys = poolFromApi;
-      if (apiConnected) {
+      if (connected) {
         [assignedWithKeys, poolWithKeys] = await Promise.all([
           enrichJobsWithKeyCollection(assignedFromApi),
           enrichJobsWithKeyCollection(poolFromApi),
@@ -441,15 +540,17 @@ export function InspectorDataProvider({
         const localOnly = prev.filter(
           (j) => !isDemoJobId(j.id) && !apiIds.has(j.id),
         );
-        return [
+        const merged = [
           ...assignedWithKeys.map(mergeApiJobFinal),
           ...poolWithKeys.map(mergeApiJobFinal),
           ...localOnly,
         ];
+        return merged.filter((j) => !isDemoJobId(j.id));
       });
     }
     if (ledger.status === 'fulfilled') {
-      setEarnings((prev) => upsertById(prev, mapInspectorEarnings(ledger.value)));
+      setEarnings(mapInspectorEarnings(ledger.value));
+      connected = true;
       setApiConnected(true);
     }
     if (threads.status === 'fulfilled') {
@@ -457,56 +558,87 @@ export function InspectorDataProvider({
         threads.value,
       );
       apiThreadIds.current = new Set(mappedThreads.map((t) => t.id));
-      setMessages((prev) => upsertById(prev, mappedThreads));
-      setThreadMessages((prev) => ({ ...prev, ...messagesByThread }));
+      setMessages(mappedThreads);
+      setThreadMessages(messagesByThread);
+      connected = true;
       setApiConnected(true);
     }
     if (notifs.status === 'fulfilled') {
       const mapped = mapInspectorNotifications(notifs.value);
       apiNotificationIds.current = new Set(mapped.map((n) => n.id));
-      setNotifications((prev) => upsertById(prev, mapped));
+      setNotifications(mapped);
+      connected = true;
       setApiConnected(true);
     }
     if (tribs.status === 'fulfilled') {
       const mapped = mapTribunalCases(tribs.value);
       apiTribunalIds.current = new Set(mapped.map((t) => t.id));
-      setTribunals((prev) => upsertById(prev, mapped));
+      setTribunals(mapped);
+      connected = true;
       setApiConnected(true);
     }
     if (profileRes.status === 'fulfilled') {
       setServerProfile(profileRes.value);
+      setRosterLinked(Boolean(profileRes.value.roster));
       const serverReg = profileRes.value.registration;
-      if (serverReg) {
+      if (serverReg && user?.email) {
         setRegistration((prev) => {
-          const merged = mapInspectorRegistration(serverReg, prev);
-          if (user?.email) {
-            saveInspectorRegistration(user.email, merged);
-          }
+          const merged = mapInspectorRegistration(
+            serverReg,
+            prev ?? loadInspectorRegistration(user.email),
+          );
+          saveInspectorRegistration(user.email, merged);
           return merged;
         });
       }
+      connected = true;
       setApiConnected(true);
     }
+
+    if (shouldShowDemoSeeds(connected, user?.email)) {
+      const demo = demoSeedSnapshot();
+      setJobs(demo.jobs);
+      setEarnings(demo.earnings);
+      setTribunals(demo.tribunals);
+      setMessages(demo.messages);
+      setNotifications(demo.notifications);
+      setThreadMessages(demo.threadMessages);
+    }
+
+    setApiConnected(connected);
     setLoading(false);
     refreshPendingSync();
   }, [status, user?.email, refreshPendingSync]);
 
   const toggleReceivingJobs = useCallback(() => {
     if (!user?.email) return;
+    const previous = availability;
     const next: InspectorAvailability =
-      availability === 'receiving' ? 'on_break' : 'receiving';
-    setAvailability(next);
-    saveInspectorAvailability(user.email, next);
-    if (next === 'receiving') {
-      toast.success('Receiving jobs — refreshing the pool');
-      void refresh();
-    } else {
-      toast.info('On break — new pool jobs are hidden');
-      apiPoolIds.current = new Set();
-      setJobs((prev) =>
-        prev.filter((j) => j.status !== 'available' && j.source !== 'pool'),
-      );
-    }
+      previous === 'receiving' ? 'on_break' : 'receiving';
+
+    void (async () => {
+      try {
+        await setInspectorPoolAvailability(next === 'receiving');
+        setAvailability(next);
+        saveInspectorAvailability(user.email, next);
+        if (next === 'receiving') {
+          toast.success('Receiving jobs — refreshing the pool');
+          await refresh();
+        } else {
+          toast.info('On break — removed from dispatch pool');
+          apiPoolIds.current = new Set();
+          setJobs((prev) =>
+            prev.filter((j) => j.status !== 'available' && j.source !== 'pool'),
+          );
+        }
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Could not sync availability — try again.';
+        toast.error(message);
+      }
+    })();
   }, [availability, refresh, user?.email]);
 
   const syncOfflineQueue = useCallback(async () => {
@@ -1145,6 +1277,14 @@ export function InspectorDataProvider({
     const localName = registration
       ? `${registration.firstName} ${registration.lastName}`.trim()
       : '';
+    const roster = serverProfile?.roster as
+      | {
+          averageRating?: number | null;
+          totalCompleted?: number;
+          lateArrivals?: number;
+        }
+      | null
+      | undefined;
     return {
       ...DEMO_PROFILE,
       id: serverProfile?.roster?.inspectorId ?? DEMO_PROFILE.id,
@@ -1157,6 +1297,9 @@ export function InspectorDataProvider({
         registration?.tribunalQualified ??
         false,
       weeklyEarnings: summary.weeklyEarnings,
+      rating: roster?.averageRating ?? null,
+      totalCompleted: roster?.totalCompleted ?? 0,
+      lateArrivals: roster?.lateArrivals ?? 0,
       registration,
       registrationComplete,
     };
@@ -1172,14 +1315,32 @@ export function InspectorDataProvider({
     if (status !== 'authed' || !receivingJobs || !apiConnected) return;
     const id = window.setInterval(() => {
       void refresh();
-    }, 90_000);
+    }, 5_000);
     return () => window.clearInterval(id);
   }, [status, receivingJobs, apiConnected, refresh]);
+
+  const pushInspectorLocation = useCallback(
+    (latitude: number, longitude: number) =>
+      setInspectorLocation(latitude, longitude).catch(() => {
+        // Silent — location is best-effort for dispatch ETA.
+      }),
+    [],
+  );
+
+  useInspectorLocationSync(
+    status === 'authed' &&
+      apiConnected &&
+      receivingJobs &&
+      Boolean(serverProfile?.roster),
+    pushInspectorLocation,
+  );
 
   const value: InspectorDataContextValue = {
     loading,
     apiConnected,
     apiError,
+    poolError,
+    rosterLinked,
     pendingSync,
     receivingJobs,
     availability,
@@ -1190,6 +1351,7 @@ export function InspectorDataProvider({
     registration,
     registrationComplete,
     registrationHydrated,
+    registrationResolved,
     saveRegistration,
     summary,
     jobs,

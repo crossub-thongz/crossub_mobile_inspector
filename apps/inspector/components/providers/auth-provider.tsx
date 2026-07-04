@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const data = await api.get<{ user: AuthUser }>('/auth/me');
+      clearLocalSession();
       setUser(data.user);
       setStatus('authed');
       return data.user;

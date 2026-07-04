@@ -28,6 +28,7 @@ import { ROUTES } from '@/constants/routes';
 import { ApiError, api } from '@/lib/api';
 import type { AuthUser } from '@/lib/auth-types';
 import { normalizeAuthEmail } from '@/lib/auth-email';
+import { clearLocalSession } from '@/lib/local-auth';
 import { postAuthDestination } from '@/lib/system-access-agreement';
 
 const schema = z
@@ -87,6 +88,7 @@ export default function SignupPage() {
         lastName: values.lastName.trim(),
       });
 
+      clearLocalSession();
       toast.success('Account created — you are signed in.');
       window.location.assign(
         postAuthDestination(

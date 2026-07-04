@@ -7,6 +7,7 @@ import {
   FileText,
   MapPin,
   Shield,
+  Star,
   User,
 } from 'lucide-react';
 
@@ -107,6 +108,39 @@ export default function ProfilePage() {
                     Tribunal qualified
                   </p>
                 )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="size-4 fill-warning text-warning" />
+                  Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {profile.rating != null ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold tabular-nums">
+                      {profile.rating.toFixed(1)}
+                    </span>
+                    <span className="text-muted-foreground text-sm">/ 5.0 average rating</span>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    {profile.totalCompleted > 0
+                      ? 'Rating building — complete more inspections for a score.'
+                      : 'New inspector — no rating yet.'}
+                  </p>
+                )}
+                <InfoRow
+                  label="Completed inspections"
+                  value={String(profile.totalCompleted)}
+                />
+                <InfoRow
+                  label="Late arrivals"
+                  value={String(profile.lateArrivals)}
+                />
               </CardContent>
             </Card>
 

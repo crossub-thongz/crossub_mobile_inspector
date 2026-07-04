@@ -26,6 +26,7 @@ import { ROUTES } from '@/constants/routes';
 import { ApiError, api } from '@/lib/api';
 import type { AuthUser } from '@/lib/auth-types';
 import { normalizeAuthEmail } from '@/lib/auth-email';
+import { clearLocalSession } from '@/lib/local-auth';
 import { postAuthDestination } from '@/lib/system-access-agreement';
 
 const schema = z.object({
@@ -65,6 +66,7 @@ export default function LoginPage() {
         email,
         password: values.password,
       });
+      clearLocalSession();
       toast.success('Signed in.');
       window.location.assign(
         postAuthDestination(
