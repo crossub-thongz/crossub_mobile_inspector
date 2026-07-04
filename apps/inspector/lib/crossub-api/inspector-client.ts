@@ -69,13 +69,12 @@ export async function fetchInspections(): Promise<InspectorInspection[]> {
   return data.items;
 }
 
-/** Unassigned pool inspections (`GET /api/v1/inspector/inspections/pool`). */
+/** Unassigned pool inspections — all types (`GET /api/v1/inspector/inspections/pool`). */
 export async function fetchPoolInspections(): Promise<InspectorInspection[]> {
   const base = process.env.NEXT_PUBLIC_API_URL ?? '/api';
   const params = new URLSearchParams({
     page: '1',
     pageSize: '100',
-    type: 'INGOING',
   });
   const res = await fetch(`${base}/v1/inspector/inspections/pool?${params}`, {
     credentials: 'include',
