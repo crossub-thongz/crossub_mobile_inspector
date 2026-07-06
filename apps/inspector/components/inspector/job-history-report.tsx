@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ClipboardList, KeyRound } from 'lucide-react';
 
 import { FindingsRoomRow } from '@/components/inspector/findings-room-row';
+import { ProofPhotoGallery } from '@/components/inspector/proof-photo-gallery';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OPEN_FINISH_CHECKS } from '@/constants/inspection';
