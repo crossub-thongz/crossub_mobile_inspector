@@ -1,29 +1,19 @@
-import { DEMO_INSPECTOR_EMAIL } from '@/lib/local-auth';
-import {
-  EARNINGS,
-  JOBS,
-  MESSAGE_THREADS,
-  NOTIFICATIONS,
-  THREAD_MESSAGES,
-  TRIBUNALS,
-} from '@/lib/mock-data';
-
-/** Demo seeds only for the offline demo login — never for real registered accounts. */
+/** Demo seeds are disabled — all inspector data comes from the API. */
 export function shouldShowDemoSeeds(
-  apiConnected: boolean,
-  email?: string | null,
+  _apiConnected: boolean,
+  _email?: string | null,
 ): boolean {
-  return !apiConnected && email === DEMO_INSPECTOR_EMAIL;
+  return false;
 }
 
 export function demoSeedSnapshot() {
   return {
-    jobs: JOBS,
-    earnings: EARNINGS,
-    tribunals: TRIBUNALS,
-    messages: MESSAGE_THREADS,
-    notifications: NOTIFICATIONS,
-    threadMessages: THREAD_MESSAGES,
+    jobs: [],
+    earnings: [],
+    tribunals: [],
+    messages: [],
+    notifications: [],
+    threadMessages: {} as Record<string, never[]>,
   };
 }
 
