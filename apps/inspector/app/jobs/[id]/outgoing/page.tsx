@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { BeforeAfterPhotoColumn } from '@/components/inspector/before-after-photo-column';
@@ -21,6 +21,11 @@ import {
   useInspectionInProgress,
   useKeyCollectGate,
 } from '@/hooks/use-key-collect-gate';
+import { fetchInspectionDetail } from '@/lib/crossub-api/inspector-client';
+import {
+  matchReferenceIngoingPhotos,
+  outgoingSavedIngoingPhotos,
+} from '@/lib/outgoing-reference-photos';
 
 const RESPONSIBILITY = [
   'Tenant Responsible',
@@ -49,6 +54,7 @@ export default function OutgoingInspectionPage() {
     commitInspectionAreaPhotos,
     saveInspectionFindings,
     updateJobStatus,
+    apiConnected,
   } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
@@ -57,7 +63,64 @@ export default function OutgoingInspectionPage() {
   useInspectionInProgress(job, id, updateJobStatus);
   const [areaIndex, setAreaIndex] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [loadingReference, setLoadingReference] = useState(apiConnected);
   const [issues, setIssues] = useState<Record<string, AreaIssue>>({});
+  const [ingoingFromReference, setIngoingFromReference] = useState(false);
+
+  useEffect(() => {
+    if (!apiConnected || !id) {
+      setLoadingReference(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingReference(true);
+    void (async () => {
+      try {
+        const detail = await fetchInspectionDetail(id);
+        if (cancelled) return;
+
+        // Server already resolves + property-id cross-checks the latest INGOING.
+        const reference = detail.referenceIngoing;
+
+        const nextIssues: Record<string, AreaIssue> = {};
+        let seededFromReference = false;
+
+        for (const area of INGOING_AREAS) {
+          const savedIngoing = outgoingSavedIngoingPhotos(detail, area);
+          const referenceUrls = reference
+            ? matchReferenceIngoingPhotos(area, reference.areas)
+            : [];
+          const ingoingPhotoUrls =
+            savedIngoing.length > 0 ? savedIngoing : referenceUrls;
+          if (savedIngoing.length === 0 && referenceUrls.length > 0) {
+            seededFromReference = true;
+          }
+          nextIssues[area] = {
+            ...emptyAreaIssue(),
+            ingoingPhotoUrls,
+          };
+        }
+
+        setIssues(nextIssues);
+        setIngoingFromReference(seededFromReference || Boolean(reference));
+        if (reference && seededFromReference) {
+          toast.success('Ingoing photos loaded from the latest ingoing report');
+        } else if (!reference) {
+          toast.message('No completed ingoing report found for this property');
+        }
+      } catch {
+        if (!cancelled) {
+          toast.error('Could not load ingoing reference photos');
+        }
+      } finally {
+        if (!cancelled) setLoadingReference(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiConnected, id]);
 
   if (!job) {
     return (
@@ -70,12 +133,14 @@ export default function OutgoingInspectionPage() {
   const area = INGOING_AREAS[areaIndex];
   const issue = issues[area] ?? emptyAreaIssue();
   const isLast = areaIndex === INGOING_AREAS.length - 1;
+  const ingoingReadOnly = ingoingFromReference && issue.ingoingPhotoUrls.length > 0;
 
   const addLocalPhotos = async (
     side: 'ingoing' | 'outgoing',
     sources: Array<File | string>,
   ) => {
     if (sources.length === 0) return;
+    if (side === 'ingoing' && ingoingReadOnly) return;
     setBusy(true);
     try {
       const previewUrls = await compressPhotoSources(sources);
@@ -98,6 +163,7 @@ export default function OutgoingInspectionPage() {
   };
 
   const removePhoto = (side: 'ingoing' | 'outgoing', index: number) => {
+    if (side === 'ingoing' && ingoingReadOnly) return;
     setIssues((prev) => {
       const current = prev[area] ?? emptyAreaIssue();
       const key = side === 'ingoing' ? 'ingoingPhotoUrls' : 'outgoingPhotoUrls';
@@ -112,12 +178,12 @@ export default function OutgoingInspectionPage() {
   };
 
   const next = async () => {
-    if (!issue.ingoingPhotoUrls.length) {
-      toast.error('Add at least one ingoing photo for this area');
-      return;
-    }
     if (!issue.outgoingPhotoUrls.length) {
       toast.error('Add at least one outgoing photo for this area');
+      return;
+    }
+    if (!issue.ingoingPhotoUrls.length && !ingoingFromReference) {
+      toast.error('Add at least one ingoing photo for this area');
       return;
     }
 
@@ -126,13 +192,15 @@ export default function OutgoingInspectionPage() {
       const ingoingAreaName = `${area} (Ingoing)`;
       const outgoingAreaName = `${area} (Outgoing)`;
       const [ingoingUrls, outgoingUrls] = await Promise.all([
-        commitInspectionAreaPhotos(id, ingoingAreaName, issue.ingoingPhotoUrls),
+        issue.ingoingPhotoUrls.length > 0
+          ? commitInspectionAreaPhotos(id, ingoingAreaName, issue.ingoingPhotoUrls)
+          : Promise.resolve([] as string[]),
         commitInspectionAreaPhotos(id, outgoingAreaName, issue.outgoingPhotoUrls),
       ]);
 
       const committedIssue = {
         ...issue,
-        ingoingPhotoUrls: ingoingUrls,
+        ingoingPhotoUrls: ingoingUrls.length > 0 ? ingoingUrls : issue.ingoingPhotoUrls,
         outgoingPhotoUrls: outgoingUrls,
       };
       const nextIssues = { ...issues, [area]: committedIssue };
@@ -182,8 +250,13 @@ export default function OutgoingInspectionPage() {
           <JobWorkflowToolbar job={job} />
 
           <p className="text-muted-foreground text-xs">
-            Compare ingoing vs outgoing. Focus: cleaning, damage, missing items.
+            Compare ingoing vs outgoing. Ingoing photos come from the latest completed
+            ingoing report for this property.
           </p>
+
+          {loadingReference ? (
+            <p className="text-muted-foreground text-xs">Loading ingoing reference photos…</p>
+          ) : null}
 
           <div className="flex gap-1">
             {INGOING_AREAS.map((a, i) => (
@@ -206,21 +279,30 @@ export default function OutgoingInspectionPage() {
                   title="Ingoing photo"
                   photoUrls={issue.ingoingPhotoUrls}
                   uploading={busy}
-                  disabled={busy}
+                  disabled={busy || loadingReference || ingoingReadOnly}
                   onAddFiles={(files) => addLocalPhotos('ingoing', files)}
                   onAddDataUrl={(dataUrl) => addLocalPhotos('ingoing', [dataUrl])}
-                  onRemove={(index) => removePhoto('ingoing', index)}
+                  onRemove={
+                    ingoingReadOnly ? undefined : (index) => removePhoto('ingoing', index)
+                  }
                 />
                 <BeforeAfterPhotoColumn
                   title="Outgoing photo"
                   photoUrls={issue.outgoingPhotoUrls}
                   uploading={busy}
-                  disabled={busy}
+                  disabled={busy || loadingReference}
                   onAddFiles={(files) => addLocalPhotos('outgoing', files)}
                   onAddDataUrl={(dataUrl) => addLocalPhotos('outgoing', [dataUrl])}
                   onRemove={(index) => removePhoto('outgoing', index)}
                 />
               </div>
+
+              {ingoingReadOnly ? (
+                <p className="text-muted-foreground text-[11px]">
+                  Ingoing photos are from the property&apos;s latest ingoing report and
+                  can&apos;t be replaced here.
+                </p>
+              ) : null}
 
               <div className="space-y-2">
                 <Label>Issue notes</Label>
@@ -260,7 +342,11 @@ export default function OutgoingInspectionPage() {
                 </div>
               </div>
 
-              <Button className="w-full" disabled={busy} onClick={() => void next()}>
+              <Button
+                className="w-full"
+                disabled={busy || loadingReference}
+                onClick={() => void next()}
+              >
                 {busy
                   ? 'Uploading photos…'
                   : isLast

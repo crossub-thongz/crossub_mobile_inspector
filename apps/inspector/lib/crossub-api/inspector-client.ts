@@ -357,6 +357,29 @@ export async function clearInspectionAreaPhotos(
   }
 }
 
+/** Attach existing hosted photo URLs to an area (no re-upload). */
+export async function linkInspectionAreaPhotos(
+  inspectionId: string,
+  areaName: string,
+  urls: string[],
+): Promise<InspectorPhoto[]> {
+  if (urls.length === 0) return [];
+  const base = `${process.env.NEXT_PUBLIC_API_URL ?? '/api'}/v1`;
+  const res = await fetch(
+    `${base}/inspector/inspections/${inspectionId}/photos/link-area`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ areaName, urls }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error('Failed to link area photos');
+  }
+  return (await res.json()) as InspectorPhoto[];
+}
+
 /**
  * Persist the findings tree gathered on site
  * (`POST /inspector/inspections/{inspectionId}/findings`). Areas upsert by name

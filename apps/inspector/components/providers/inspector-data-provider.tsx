@@ -39,6 +39,7 @@ import {
   submitInspectorRegistration,
   uploadInspectionPhoto,
   clearInspectionAreaPhotos,
+  linkInspectionAreaPhotos,
   type InspectorFindingAreaPayload,
   type InspectorProfileDto,
 } from '@/lib/crossub-api/inspector-client';
@@ -1360,8 +1361,17 @@ export function InspectorDataProvider({
       }
 
       await clearInspectionAreaPhotos(inspectionId, areaName);
-      if (pending.length === 0) return [];
-      return uploadInspectionPhotos(inspectionId, pending, areaName);
+      const linked =
+        persisted.length > 0
+          ? (await linkInspectionAreaPhotos(inspectionId, areaName, persisted)).map(
+              (photo) => photo.url,
+            )
+          : [];
+      const uploaded =
+        pending.length > 0
+          ? await uploadInspectionPhotos(inspectionId, pending, areaName)
+          : [];
+      return [...linked, ...uploaded];
     },
     [apiConnected, uploadInspectionPhotos],
   );
