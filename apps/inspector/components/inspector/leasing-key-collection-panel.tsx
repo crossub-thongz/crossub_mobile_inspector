@@ -67,11 +67,18 @@ export function LeasingKeyCollectionPanel({
   const [photosExpanded, setPhotosExpanded] = useState(false);
   const [reportExpanded, setReportExpanded] = useState(false);
 
+  const hasTenantEvidence = photoReady || checklistReady || reportReady;
+
   return (
     <div className="space-y-3 rounded-lg border border-border/80 bg-secondary/10 p-3">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Leasing arrangement
-      </p>
+      <div className="space-y-0.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Pickup arrangement
+        </p>
+        <p className="text-[10px] text-muted-foreground">
+          From this job&apos;s leasing case only — not your collect/return proof photos.
+        </p>
+      </div>
       <div className="grid grid-cols-2 gap-3 text-xs">
         <div>
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -86,7 +93,7 @@ export function LeasingKeyCollectionPanel({
             Location
           </p>
           <p className="mt-0.5 font-medium">
-            {keyCollection.location ?? 'TBD'}
+            {keyCollection.location?.trim() || propertyAddress || 'TBD'}
           </p>
         </div>
       </div>
@@ -95,18 +102,23 @@ export function LeasingKeyCollectionPanel({
       </p>
 
       <div className="space-y-2 border-t border-border/50 pt-3">
+        {!hasTenantEvidence ? (
+          <p className="text-[11px] text-muted-foreground">
+            No tenant key handover evidence on this case yet.
+          </p>
+        ) : null}
         <div className="rounded-lg border border-border/60 bg-card/50 px-3 py-2.5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-2.5">
               <AvailabilityMark available={photoReady} />
               <div className="min-w-0">
-                <p className="text-xs font-medium">Photo proof</p>
+                <p className="text-xs font-medium">Tenant photo proof</p>
                 <p className="text-[11px] text-muted-foreground">
                   {photoReady
                     ? photos.length === 1
-                      ? '1 photo from tenant'
-                      : `${photos.length} photos from tenant`
-                    : 'No tenant photo yet'}
+                      ? '1 photo from tenant (this leasing case)'
+                      : `${photos.length} photos from tenant (this leasing case)`
+                    : 'No tenant photo on this case'}
                 </p>
               </div>
             </div>
@@ -151,13 +163,13 @@ export function LeasingKeyCollectionPanel({
             <div className="flex min-w-0 items-start gap-2.5">
               <AvailabilityMark available={reportReady} />
               <div className="min-w-0">
-                <p className="text-xs font-medium">Key collection report</p>
+                <p className="text-xs font-medium">Tenant key collection report</p>
                 <p className="text-[11px] text-muted-foreground">
                   {reportReady
                     ? checklistReady && report?.submittedAt
                       ? `Checklist ${formatDateTime(report.submittedAt)}`
-                      : 'Tenant report on file'
-                    : 'Awaiting tenant report'}
+                      : 'Tenant report on this leasing case'
+                    : 'No tenant report on this case'}
                 </p>
               </div>
             </div>

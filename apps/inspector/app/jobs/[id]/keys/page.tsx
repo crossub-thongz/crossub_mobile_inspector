@@ -31,7 +31,7 @@ export default function JobKeysPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'return' ? 'return' : 'collect';
-  const { getJob, saveKeyWorkflow, completeJob } = useInspectorData();
+  const { getJob, saveKeyWorkflow, completeJob, refresh } = useInspectorData();
   const job = getJob(id);
 
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -50,6 +50,12 @@ export default function JobKeysPage() {
   const phaseDone = tab === 'collect' ? collectDone : returnDone;
   const phaseRecord = tab === 'collect' ? workflow?.collect : workflow?.return;
   const jobAvailable = job != null;
+
+  // Pull the latest leasing key arrangement for this inspectionId (avoids
+  // showing another case's tenant photos until the next background poll).
+  useEffect(() => {
+    void refresh();
+  }, [id, refresh]);
 
   // Hydrate the form when opening a job/tab — not on every background refresh
   // (the provider polls every 5s and replaces the job object, which was wiping
