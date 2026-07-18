@@ -135,7 +135,12 @@ export async function enrichJobWithKeyCollection(
 ): Promise<InspectionJob> {
   try {
     const dto = await fetchKeyCollection(job.id);
-    if (!dto) return job;
+    if (!dto) {
+      // Clear any stale arrangement from a previous poll / wrong cycle match.
+      if (!job.keyAccess && !job.leasingKeyCollection) return job;
+      const { keyAccess: _ka, leasingKeyCollection: _lkc, ...rest } = job;
+      return rest;
+    }
     const { keyAccess, leasingKeyCollection } = mapKeyCollectionFromApi(dto);
     // Server custody fills cross-device gaps; local records win while a
     // submission is mid-flight on this device (richer data-URL photos).
