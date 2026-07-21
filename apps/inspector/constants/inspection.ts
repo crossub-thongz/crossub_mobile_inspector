@@ -53,16 +53,14 @@ export const INSPECTION_TYPE_DESCRIPTION: Record<CoreInspectionType, string> = {
   routine: 'Physical or tenant self-inspection during tenancy',
 };
 
-export const INGOING_AREAS = [
-  'Entry',
-  'Living Room',
-  'Kitchen',
-  'Laundry',
-  'Bedroom',
-  'Bathroom',
-  'Balcony',
-  'Garage',
-] as const;
+/** @deprecated Prefer INSPECTION_AREAS from inspection-areas — kept for call sites. */
+export {
+  INSPECTION_AREAS as INGOING_AREAS,
+  INSPECTION_AREA_CATALOG,
+  COMMON_DEFAULT_SECTIONS,
+  getInspectionAreaDefinition,
+  sectionAreaName,
+} from '@/constants/inspection-areas';
 
 export const OPEN_READINESS_PHOTOS = [
   'Front Entrance',
