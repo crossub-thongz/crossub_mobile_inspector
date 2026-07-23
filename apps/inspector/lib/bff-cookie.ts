@@ -3,12 +3,13 @@
  *
  * Staging/production Nest emits `Secure; SameSite=None` (and sometimes a
  * `Domain=` the browser host cannot use). Local dev runs on http://localhost
- * or http://192.168.x.x (LAN phone testing) where `Secure` cookies are dropped.
+ * where `Secure` cookies are dropped.
  */
-import { isDevBffHost } from '@/lib/dev-host';
-
 export function rewriteBffSetCookie(cookie: string, requestHost: string): string {
-  const devHost = isDevBffHost(requestHost);
+  const isLocalHost =
+    requestHost.includes('localhost') ||
+    requestHost.startsWith('127.0.0.1') ||
+    requestHost.endsWith('.local');
 
   const parts = cookie.split(';').map((p) => p.trim());
   const nameValue = parts[0] ?? '';
@@ -21,7 +22,7 @@ export function rewriteBffSetCookie(cookie: string, requestHost: string): string
   });
 
   attrs.push('SameSite=Lax');
-  if (!devHost) {
+  if (!isLocalHost) {
     attrs.push('Secure');
   }
 
