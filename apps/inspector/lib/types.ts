@@ -169,6 +169,8 @@ export interface InspectionJob {
   payAmount: number;
   workflowStep?: number;
   workflowData?: Record<string, unknown>;
+  /** Pool jobs — inspectors available on the scheduled day (from timetables). */
+  availableInspectorCount?: number | null;
 }
 
 export interface TribunalHearing {

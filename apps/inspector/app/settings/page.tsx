@@ -2,6 +2,7 @@
 
 import { WifiOff } from 'lucide-react';
 
+import { InspectorWeeklyTimetableCard } from '@/components/inspector/weekly-timetable-card';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,8 @@ export default function SettingsPage() {
   return (
     <InspectorShell title="Settings">
       <div className="space-y-4">
+        <InspectorWeeklyTimetableCard />
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

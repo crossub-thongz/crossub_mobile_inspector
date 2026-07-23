@@ -1,6 +1,7 @@
 import type { components } from '@crossub-thongz/api-contract';
 
 import { INSPECTION_TYPE } from '@/constants/api-enums';
+import type { InspectorTimetable, InspectorWeeklySlot } from '@/lib/inspector-timetable';
 
 import { crossub } from './client';
 
@@ -71,7 +72,7 @@ export async function fetchInspections(): Promise<InspectorInspection[]> {
   return data.items;
 }
 
-/** Field inspections claimable from the mobile job pool (excludes ROUTINE/CONDITION). */
+/** Field inspections claimable from the mobile job pool (excludes CONDITION). */
 const POOL_INSPECTION_TYPES = [
   INSPECTION_TYPE.INGOING,
   INSPECTION_TYPE.OUTGOING,
@@ -185,6 +186,41 @@ export async function setInspectorLocation(
   if (!res.ok) {
     throw new Error('Could not sync location');
   }
+}
+
+async function inspectorJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+  const res = await fetch(`${base}/v1${path}`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    ...init,
+  });
+  if (!res.ok) {
+    let detail = 'Request failed';
+    try {
+      const body = (await res.json()) as { message?: string | string[] };
+      const msg = body.message;
+      if (typeof msg === 'string' && msg.trim()) detail = msg;
+      else if (Array.isArray(msg) && msg.length > 0) detail = msg.join(', ');
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
+  return (await res.json()) as T;
+}
+
+export async function fetchInspectorTimetable(): Promise<InspectorTimetable> {
+  return inspectorJson<InspectorTimetable>('/inspector/timetable');
+}
+
+export async function saveInspectorTimetable(
+  slots: InspectorWeeklySlot[],
+): Promise<InspectorTimetable> {
+  return inspectorJson<InspectorTimetable>('/inspector/timetable', {
+    method: 'PATCH',
+    body: JSON.stringify({ slots }),
+  });
 }
 
 /** Claim a pool inspection (`POST /api/v1/inspector/inspections/{inspectionId}/claim`). */

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight, Clock, MapPin } from 'lucide-react';
+import { ChevronRight, Clock, MapPin, Users } from 'lucide-react';
 
 import { AgentStrip } from '@/components/inspector/agent-strip';
 import { JobTravelInfo } from '@/components/inspector/job-travel-info';
@@ -62,6 +62,16 @@ export function JobCard({
         {formatDateSlash(job.scheduledDate || job.scheduledTime)} ·{' '}
         {formatTime(job.scheduledTime)}
       </p>
+
+      {poolPreview &&
+      job.availableInspectorCount != null &&
+      job.availableInspectorCount >= 0 ? (
+        <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
+          <Users className="size-3 shrink-0" />
+          {job.availableInspectorCount} inspector
+          {job.availableInspectorCount === 1 ? '' : 's'} available this day
+        </p>
+      ) : null}
 
       <JobTravelInfo
         job={job}

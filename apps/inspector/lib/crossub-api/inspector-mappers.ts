@@ -122,6 +122,9 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
   );
   const hasPropertyGeo =
     propertyLatitude != null && propertyLongitude != null;
+  const availableInspectorCount = asNumber(
+    (dto as { availableInspectorCount?: unknown }).availableInspectorCount,
+  );
   return {
     id: dto.id,
     type,
@@ -144,6 +147,7 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     laborAmount,
     fuelAllowance: 0,
     payAmount: laborAmount,
+    availableInspectorCount,
   };
 }
 
