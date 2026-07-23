@@ -13,6 +13,7 @@ export const ROUTES = {
   PROFILE: '/profile',
   REGISTER: '/register',
   SIGNUP: '/signup',
+  WEEKLY_AVAILABILITY: '/weekly-availability',
   SETTINGS: '/settings',
   LOGIN: '/login',
   FORGOT_PASSWORD: '/forgot-password',

@@ -1,7 +1,7 @@
 import type { components } from '@crossub-thongz/api-contract';
 
 import { INSPECTION_TYPE } from '@/constants/api-enums';
-import type { InspectorTimetable, InspectorWeeklySlot } from '@/lib/inspector-timetable';
+import type { InspectorCalendarAvailability } from '@/lib/inspector-timetable';
 
 import { crossub } from './client';
 
@@ -210,16 +210,22 @@ async function inspectorJson<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-export async function fetchInspectorTimetable(): Promise<InspectorTimetable> {
-  return inspectorJson<InspectorTimetable>('/inspector/timetable');
+export async function fetchInspectorTimetable(
+  from: string,
+  to: string,
+): Promise<InspectorCalendarAvailability> {
+  const params = new URLSearchParams({ from, to });
+  return inspectorJson<InspectorCalendarAvailability>(`/inspector/timetable?${params}`);
 }
 
 export async function saveInspectorTimetable(
-  slots: InspectorWeeklySlot[],
-): Promise<InspectorTimetable> {
-  return inspectorJson<InspectorTimetable>('/inspector/timetable', {
+  from: string,
+  to: string,
+  entries: InspectorCalendarAvailability['entries'],
+): Promise<InspectorCalendarAvailability> {
+  return inspectorJson<InspectorCalendarAvailability>('/inspector/timetable', {
     method: 'PATCH',
-    body: JSON.stringify({ slots }),
+    body: JSON.stringify({ from, to, entries }),
   });
 }
 

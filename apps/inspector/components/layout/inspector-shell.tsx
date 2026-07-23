@@ -33,6 +33,7 @@ const PRIMARY_NAV = [
 
 const MORE_NAV = [
   { href: ROUTES.HISTORY, label: 'Job history' },
+  { href: ROUTES.WEEKLY_AVAILABILITY, label: 'Availability calendar' },
   { href: ROUTES.KEY_MANAGEMENT, label: 'Key management' },
   { href: ROUTES.EARNINGS, label: 'Earnings' },
   { href: ROUTES.REGISTER, label: 'Registration' },
