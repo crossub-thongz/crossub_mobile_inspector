@@ -97,7 +97,7 @@ export function KeyCameraCapture({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-black">
       <div className="flex items-center justify-between px-4 py-3">
         <p className="text-sm font-medium text-white">Take photo</p>
         <button
