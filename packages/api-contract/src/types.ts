@@ -5786,6 +5786,15 @@ export interface components {
             name: string;
             photos: components["schemas"]["InspectorPhotoDto"][];
         };
+        InspectorIngoingAreaPlanRoomDto: {
+            /** @example Kitchen */
+            name: string;
+            /** @description Sections photographed / checked during ingoing. */
+            sections: string[];
+        };
+        InspectorIngoingAreaPlanDto: {
+            rooms: components["schemas"]["InspectorIngoingAreaPlanRoomDto"][];
+        };
         InspectorReferenceIngoingDto: {
             /**
              * Format: uuid
@@ -5798,6 +5807,8 @@ export interface components {
              */
             propertyId: string;
             areas: components["schemas"]["InspectorReferenceIngoingAreaDto"][];
+            /** @description Room/section layout from the ingoing walk-through — outgoing jobs inherit this scope. */
+            areaPlan: components["schemas"]["InspectorIngoingAreaPlanDto"] | null;
         };
         InspectorInspectionDetailDto: {
             /** Format: uuid */

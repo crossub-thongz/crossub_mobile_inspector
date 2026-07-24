@@ -15084,6 +15084,36 @@
         },
         "required": ["name", "photos"]
       },
+      "InspectorIngoingAreaPlanRoomDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Kitchen"
+          },
+          "sections": {
+            "description": "Sections photographed / checked during ingoing.",
+            "example": ["Walls / Picture Hooks", "Dishwasher"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["name", "sections"]
+      },
+      "InspectorIngoingAreaPlanDto": {
+        "type": "object",
+        "properties": {
+          "rooms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InspectorIngoingAreaPlanRoomDto"
+            }
+          }
+        },
+        "required": ["rooms"]
+      },
       "InspectorReferenceIngoingDto": {
         "type": "object",
         "properties": {
@@ -15102,9 +15132,18 @@
             "items": {
               "$ref": "#/components/schemas/InspectorReferenceIngoingAreaDto"
             }
+          },
+          "areaPlan": {
+            "nullable": true,
+            "description": "Room/section layout from the ingoing walk-through — outgoing jobs inherit this scope.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InspectorIngoingAreaPlanDto"
+              }
+            ]
           }
         },
-        "required": ["inspectionId", "propertyId", "areas"]
+        "required": ["inspectionId", "propertyId", "areas", "areaPlan"]
       },
       "LinkInspectorAreaPhotosDto": {
         "type": "object",

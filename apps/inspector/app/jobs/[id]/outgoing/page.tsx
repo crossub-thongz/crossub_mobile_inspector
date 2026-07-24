@@ -35,6 +35,12 @@ import {
   matchReferenceSectionPhotos,
   outgoingSavedIngoingPhotos,
 } from '@/lib/outgoing-reference-photos';
+import {
+  buildOutgoingIssueSeed,
+  outgoingSectionsForRoom,
+  referenceIngoingAreaPlan,
+  type IngoingAreaPlan,
+} from '@/lib/ingoing-area-plan';
 import { cn } from '@/lib/utils';
 
 const RESPONSIBILITY = [
@@ -56,13 +62,18 @@ const emptySectionPhotos = (): SectionBeforeAfter => ({
   outgoingPhotoUrls: [],
 });
 
-function emptyAreaIssue(areaName: string): AreaIssue {
+function emptyAreaIssue(
+  areaName: string,
+  seed?: { available: boolean | null; activeSections: string[] },
+): AreaIssue {
   const def = getInspectionAreaDefinition(areaName);
+  const activeSections =
+    seed?.activeSections ?? [...(def?.defaultSections ?? [])];
   return {
-    available: null,
+    available: seed?.available ?? null,
     note: '',
     responsibility: '',
-    activeSections: [...(def?.defaultSections ?? [])],
+    activeSections,
     photosBySection: {},
   };
 }
@@ -89,6 +100,9 @@ export default function OutgoingInspectionPage() {
   const [referenceAreas, setReferenceAreas] = useState<
     Array<{ name: string; photos: Array<{ url: string }> }>
   >([]);
+  const [ingoingAreaPlan, setIngoingAreaPlan] = useState<IngoingAreaPlan | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!apiConnected || !id) {
@@ -105,13 +119,20 @@ export default function OutgoingInspectionPage() {
         const reference = detail.referenceIngoing;
         const refAreas = reference?.areas ?? [];
         setReferenceAreas(refAreas);
+        const plan = referenceIngoingAreaPlan(detail);
+        setIngoingAreaPlan(plan);
 
         const nextIssues: Record<string, AreaIssue> = {};
         let seededFromReference = false;
 
         for (const def of INSPECTION_AREA_CATALOG) {
+          const seed = buildOutgoingIssueSeed(def, plan);
+          const sectionsToSeed =
+            seed.available === true
+              ? seed.activeSections
+              : outgoingSectionsForRoom(plan, def.name);
           const photosBySection: Record<string, SectionBeforeAfter> = {};
-          for (const section of def.defaultSections) {
+          for (const section of sectionsToSeed) {
             const savedIngoing = outgoingSavedIngoingPhotos(
               detail,
               def.name,
@@ -131,14 +152,22 @@ export default function OutgoingInspectionPage() {
             };
           }
           nextIssues[def.name] = {
-            ...emptyAreaIssue(def.name),
+            ...emptyAreaIssue(def.name, seed),
             photosBySection,
           };
         }
 
         setIssues(nextIssues);
         setIngoingFromReference(seededFromReference || Boolean(reference));
-        if (reference && seededFromReference) {
+        if (plan) {
+          const firstAvailable = INSPECTION_AREA_CATALOG.findIndex(
+            (def) => nextIssues[def.name]?.available === true,
+          );
+          if (firstAvailable >= 0) setAreaIndex(firstAvailable);
+          toast.success(
+            `Loaded ${plan.rooms.length} area(s) from the ingoing report`,
+          );
+        } else if (reference && seededFromReference) {
           toast.success('Ingoing photos loaded from the latest ingoing report');
         } else if (!reference) {
           toast.message('No completed ingoing report found for this property');
@@ -205,7 +234,8 @@ export default function OutgoingInspectionPage() {
     const photosBySection: Record<string, SectionBeforeAfter> = {
       ...(issues[area]?.photosBySection ?? {}),
     };
-    for (const section of areaDef.defaultSections) {
+    const sections = outgoingSectionsForRoom(ingoingAreaPlan, area);
+    for (const section of sections) {
       if (!photosBySection[section]) {
         photosBySection[section] = {
           ...emptySectionPhotos(),
@@ -215,7 +245,7 @@ export default function OutgoingInspectionPage() {
     }
     updateIssue({
       available: true,
-      activeSections: [...areaDef.defaultSections],
+      activeSections: [...sections],
       photosBySection,
     });
   };
@@ -319,7 +349,11 @@ export default function OutgoingInspectionPage() {
   };
 
   const removeSection = (section: string) => {
-    if (areaDef.defaultSections.includes(section)) return;
+    const planRoomSections = ingoingAreaPlan?.rooms.find(
+      (room) => room.name === area,
+    )?.sections;
+    if (planRoomSections?.includes(section)) return;
+    if (!ingoingAreaPlan && areaDef.defaultSections.includes(section)) return;
     setIssues((prev) => {
       const current = prev[area] ?? emptyAreaIssue(area);
       const nextPhotos = { ...current.photosBySection };
@@ -465,8 +499,8 @@ export default function OutgoingInspectionPage() {
           <JobWorkflowToolbar job={job} />
 
           <p className="text-muted-foreground text-xs">
-            Confirm each area, then photograph sections. Ingoing photos come from the
-            latest completed ingoing report when available.
+            Confirm each area, then photograph sections. Rooms and sections follow
+            the latest ingoing report when available.
           </p>
 
           {loadingReference ? (
