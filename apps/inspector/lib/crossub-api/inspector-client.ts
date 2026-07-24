@@ -75,6 +75,7 @@ export async function fetchInspections(): Promise<InspectorInspection[]> {
 /** Field inspections claimable from the mobile job pool (excludes CONDITION). */
 const POOL_INSPECTION_TYPES = [
   INSPECTION_TYPE.OPEN,
+  INSPECTION_TYPE.ROUTINE,
   INSPECTION_TYPE.INGOING,
   INSPECTION_TYPE.OUTGOING,
 ] as const;

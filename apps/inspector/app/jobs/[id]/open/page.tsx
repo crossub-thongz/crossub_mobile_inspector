@@ -21,6 +21,7 @@ import {
 } from '@/hooks/use-key-collect-gate';
 import {
   fetchOpenViewing,
+  startOpenViewing,
   type InspectorOpenViewing,
 } from '@/lib/inspector-open-viewing';
 import { cn, formatDateTime } from '@/lib/utils';
@@ -53,6 +54,7 @@ export default function OpenInspectionPage() {
   const [tab, setTab] = useState<Tab>('qr');
   const [viewing, setViewing] = useState<InspectorOpenViewing | null>(null);
   const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
@@ -92,6 +94,27 @@ export default function OpenInspectionPage() {
       ? formatDateTime(job.scheduledDate)
       : '—';
 
+  const isBeforeScheduledStart = Boolean(
+    viewing?.canStart && now < new Date(viewing.startTime).getTime(),
+  );
+
+  const handleStart = async () => {
+    setStarting(true);
+    try {
+      const session = await startOpenViewing(id);
+      setViewing(session);
+      toast.success(
+        session.startedEarly
+          ? 'Open inspection started early — end time unchanged'
+          : 'Open inspection is now live',
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not start open inspection');
+    } finally {
+      setStarting(false);
+    }
+  };
+
   const handleComplete = () => {
     setCompleting(true);
     try {
@@ -121,13 +144,38 @@ export default function OpenInspectionPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Viewing window</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1 text-sm">
+            <CardContent className="space-y-3 text-sm">
               <p className="font-medium">{scheduledLabel}</p>
+              {viewing?.startedEarly && viewing.originalScheduledStart ? (
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Started early — originally scheduled from{' '}
+                  {formatDateTime(viewing.originalScheduledStart)}
+                </p>
+              ) : null}
               {countdown ? (
                 <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
                   <Clock className="size-3.5" />
                   {countdown}
                 </p>
+              ) : null}
+              {viewing?.canStart ? (
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={starting}
+                  onClick={() => void handleStart()}
+                >
+                  {starting ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Starting…
+                    </>
+                  ) : isBeforeScheduledStart ? (
+                    'Start early'
+                  ) : (
+                    'Start open inspection'
+                  )}
+                </Button>
               ) : null}
             </CardContent>
           </Card>
@@ -160,6 +208,11 @@ export default function OpenInspectionPage() {
               <Loader2 className="size-4 animate-spin" />
               Loading viewing session…
             </div>
+          ) : viewing?.canStart ? (
+            <p className="text-muted-foreground rounded-xl border border-dashed px-4 py-8 text-center text-sm">
+              Start the open inspection to open check-in and application links for
+              prospects.
+            </p>
           ) : !viewing ? (
             <p className="text-muted-foreground rounded-xl border border-dashed px-4 py-8 text-center text-sm">
               Viewing links are not available for this job yet. Accept the job and
