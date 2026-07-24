@@ -6,6 +6,7 @@ import { InactivityLogoutProvider } from '@/components/providers/inactivity-logo
 import { InspectorDataProvider } from '@/components/providers/inspector-data-provider';
 import { ProviderErrorBoundary } from '@/components/providers/provider-error-boundary';
 import { RegistrationGate } from '@/components/inspector/registration-gate';
+import { PoolUrgentAlerts } from '@/components/inspector/pool-urgent-alerts';
 import { SystemAccessAgreementGate } from '@/components/auth/system-access-agreement-gate';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -50,7 +51,10 @@ export default function RootLayout({
             <InspectorDataProvider>
               <InactivityLogoutProvider>
                 <SystemAccessAgreementGate>
-                  <RegistrationGate>{children}</RegistrationGate>
+                  <RegistrationGate>
+                    <PoolUrgentAlerts />
+                    {children}
+                  </RegistrationGate>
                 </SystemAccessAgreementGate>
               </InactivityLogoutProvider>
             </InspectorDataProvider>
