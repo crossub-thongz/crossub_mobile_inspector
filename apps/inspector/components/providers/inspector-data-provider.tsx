@@ -478,17 +478,15 @@ export function InspectorDataProvider({
     setLoading(true);
     setApiError(null);
     let connected = false;
+    let healthError: string | null = null;
     try {
       await api.get('/health');
       connected = true;
-      setApiConnected(true);
     } catch (err) {
-      setApiConnected(false);
-      if (err instanceof ApiError) {
-        setApiError(`API unavailable (${err.status})`);
-      } else {
-        setApiError('API unavailable — using demo data');
-      }
+      healthError =
+        err instanceof ApiError
+          ? `API unavailable (${err.status})`
+          : 'API unavailable';
     }
     // Overlay live facade data onto the demo seeds — each domain independently, so a
     // failure in one leaves just that slice on demo data (the board never blanks).
@@ -647,6 +645,13 @@ export function InspectorDataProvider({
       setThreadMessages(demo.threadMessages);
     }
 
+    if (connected) {
+      setApiError(null);
+    } else {
+      setApiError(
+        healthError ?? 'Could not reach the server — check your connection.',
+      );
+    }
     setApiConnected(connected);
     setLoading(false);
     refreshPendingSync();
