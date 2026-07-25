@@ -20,11 +20,18 @@ export function PoolUrgentAlerts() {
     if (!receivingJobs || !apiConnected) return;
 
     const previous = previousPriorityRef.current;
-    const hydrated = hydratedRef.current;
+
+    if (!hydratedRef.current) {
+      for (const job of poolJobs) {
+        previous.set(job.id, job.priority);
+      }
+      hydratedRef.current = true;
+      return;
+    }
 
     for (const job of poolJobs) {
       const was = previous.get(job.id);
-      if (job.priority === 'urgent' && was !== 'urgent' && hydrated) {
+      if (job.priority === 'urgent' && was !== 'urgent') {
         toast.error(`URGENT — ${job.type} inspection needs acceptance`, {
           description: `${job.propertyAddress} · due ${formatTime(job.scheduledTime)}`,
           duration: 12_000,
@@ -37,10 +44,6 @@ export function PoolUrgentAlerts() {
         });
       }
       previous.set(job.id, job.priority);
-    }
-
-    if (!hydrated) {
-      hydratedRef.current = true;
     }
   }, [poolJobs, receivingJobs, apiConnected]);
 

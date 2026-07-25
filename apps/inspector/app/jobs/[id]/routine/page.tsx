@@ -12,6 +12,7 @@ import {
   type SectionBeforeAfter,
 } from '@/components/inspector/outgoing-section-photos';
 import { InspectorShell } from '@/components/layout/inspector-shell';
+import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { ResetInspectionDialog } from '@/components/inspector/reset-inspection-dialog';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';

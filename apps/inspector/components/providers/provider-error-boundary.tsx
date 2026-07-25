@@ -22,6 +22,12 @@ export class ProviderErrorBoundary extends Component<
     try {
       localStorage.removeItem('crossub-inspector-offline-queue');
       localStorage.removeItem('crossub-inspector-store');
+      for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+        const key = localStorage.key(index);
+        if (key?.startsWith('crossub-inspector-job:')) {
+          localStorage.removeItem(key);
+        }
+      }
     } catch {
       // ignore
     }
