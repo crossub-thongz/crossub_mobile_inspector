@@ -1,6 +1,6 @@
 import type { InspectionJob, JobStatus } from '@/lib/types';
 
-const SESSION_PREFIX = 'crossub-inspector-job:';
+const STORAGE_PREFIX = 'crossub-inspector-job:';
 
 const STATUS_RANK: Record<JobStatus, number> = {
   available: 0,
@@ -34,13 +34,58 @@ function hasWorkflowProgress(snapshot: JobProgressSnapshot | undefined): boolean
   return true;
 }
 
-/** Load saved in-progress workflow for a job (session tab storage). */
+function readStorageItem(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const fromLocal = localStorage.getItem(key);
+    if (fromLocal) return fromLocal;
+    const legacy = sessionStorage.getItem(key);
+    if (!legacy) return null;
+    // One-time migration so progress survives logout / new sessions.
+    try {
+      localStorage.setItem(key, legacy);
+      sessionStorage.removeItem(key);
+    } catch {
+      // Keep legacy value for this read if localStorage is unavailable.
+    }
+    return legacy;
+  } catch {
+    return null;
+  }
+}
+
+function writeStorageItem(key: string, value: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, value);
+    sessionStorage.removeItem(key);
+  } catch {
+    // Fall back to session storage when quota is exceeded.
+    try {
+      sessionStorage.setItem(key, value);
+    } catch {
+      // Storage full — in-memory state still holds progress this session.
+    }
+  }
+}
+
+function removeStorageItem(key: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
+/** Load saved in-progress workflow for a job (device-local storage). */
 export function loadPersistedJobProgress(
   jobId: string,
 ): JobProgressSnapshot | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = sessionStorage.getItem(`${SESSION_PREFIX}${jobId}`);
+    const raw = readStorageItem(`${STORAGE_PREFIX}${jobId}`);
     if (!raw) return null;
     return JSON.parse(raw) as JobProgressSnapshot;
   } catch {
@@ -62,10 +107,10 @@ function stripPhotoFields(
 /** Persist workflow progress so leaving the app mid-inspection can be resumed. */
 export function persistJobProgress(job: InspectionJob): void {
   if (typeof window === 'undefined') return;
-  const key = `${SESSION_PREFIX}${job.id}`;
+  const key = `${STORAGE_PREFIX}${job.id}`;
 
   if (job.status === 'completed' || job.status === 'declined') {
-    sessionStorage.removeItem(key);
+    removeStorageItem(key);
     return;
   }
 
@@ -78,10 +123,10 @@ export function persistJobProgress(job: InspectionJob): void {
   };
 
   try {
-    sessionStorage.setItem(key, JSON.stringify(snapshot));
+    writeStorageItem(key, JSON.stringify(snapshot));
   } catch {
     try {
-      sessionStorage.setItem(
+      writeStorageItem(
         key,
         JSON.stringify({
           ...snapshot,

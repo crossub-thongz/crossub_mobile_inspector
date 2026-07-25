@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
+import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
 import {
   OutgoingSectionPhotos,
   type SectionBeforeAfter,
@@ -24,7 +25,7 @@ import {
 import { jobDetail, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
-import { compressPhotoSources } from '@/lib/inspection-area-photos';
+import { inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
 import {
   useInspectionFinishedGate,
   useInspectionInProgress,
@@ -39,6 +40,9 @@ import {
 import type { OutgoingAreaIssueDraft, OutgoingExecutionDraft } from '@/lib/inspection-execution-draft';
 import {
   buildEffectiveAreaCatalog,
+  buildExecutionAreaCatalog,
+  customAreaToDefinition,
+  inferSelectedAreaNamesFromDraft,
   isCustomAreaName,
   normalizeCustomAreaName,
   type CustomAreaSectionMode,
@@ -81,6 +85,7 @@ export default function OutgoingInspectionPage() {
   const {
     getJob,
     commitInspectionAreaPhotos,
+    uploadInspectionPhotos,
     saveInspectionFindings,
     updateJobStatus,
     apiConnected,
@@ -92,11 +97,13 @@ export default function OutgoingInspectionPage() {
   useInspectionInProgress(job, id, updateJobStatus);
 
   const { draft, setDraft, clearDraft, localDraftLoaded } =
-    useInspectionExecutionDraft(id, job, 'outgoing', () => ({
+    useInspectionExecutionDraft(id, job, 'outgoing', (): OutgoingExecutionDraft => ({
       kind: 'outgoing',
       areaIndex: 0,
       issues: {},
       customAreas: [],
+      selectedAreaNames: [],
+      areaSetupComplete: false,
     }));
   const [busy, setBusy] = useState(false);
   const [addAreaOpen, setAddAreaOpen] = useState(false);
@@ -129,11 +136,12 @@ export default function OutgoingInspectionPage() {
         setReferenceAreas(refAreas);
         const plan = referenceIngoingAreaPlan(detail);
         setIngoingAreaPlan(plan);
+        let seededFromReference = false;
 
         setDraft((prev) => {
           const catalog = buildEffectiveAreaCatalog(prev.customAreas ?? []);
           const nextIssues: Record<string, AreaIssue> = { ...prev.issues };
-          let seededFromReference = false;
+          let seeded = false;
 
           for (const def of catalog) {
             if (nextIssues[def.name]) continue;
@@ -157,7 +165,7 @@ export default function OutgoingInspectionPage() {
               const ingoingPhotoUrls =
                 savedIngoing.length > 0 ? savedIngoing : referenceUrls;
               if (savedIngoing.length === 0 && referenceUrls.length > 0) {
-                seededFromReference = true;
+                seeded = true;
               }
               photosBySection[section] = {
                 ...emptySectionPhotos(),
@@ -192,6 +200,7 @@ export default function OutgoingInspectionPage() {
               merged.areaIndex = firstAvailable;
             }
           }
+          seededFromReference = seeded;
           setIngoingFromReference(seededFromReference || Boolean(reference));
           return merged;
         });
@@ -222,9 +231,18 @@ export default function OutgoingInspectionPage() {
   }, [apiConnected, id, setDraft, localDraftLoaded]);
 
   const customAreas = draft.customAreas ?? [];
+  const areaSetupComplete =
+    draft.areaSetupComplete ?? Object.keys(draft.issues).length > 0;
+  const selectedAreaNames =
+    draft.selectedAreaNames && draft.selectedAreaNames.length > 0
+      ? draft.selectedAreaNames
+      : inferSelectedAreaNamesFromDraft(draft.issues, customAreas);
   const areaCatalog = useMemo(
-    () => buildEffectiveAreaCatalog(customAreas),
-    [customAreas],
+    () =>
+      areaSetupComplete
+        ? buildExecutionAreaCatalog(selectedAreaNames, customAreas)
+        : [],
+    [areaSetupComplete, selectedAreaNames, customAreas],
   );
   const areaIndex = Math.min(
     Math.max(draft.areaIndex, 0),
@@ -239,12 +257,13 @@ export default function OutgoingInspectionPage() {
         ...(prev.customAreas ?? []),
         { name: normalized, sectionMode },
       ];
-      const nextCatalog = buildEffectiveAreaCatalog(nextCustomAreas);
-      const def = nextCatalog[nextCatalog.length - 1];
+      const def = customAreaToDefinition({ name: normalized, sectionMode });
+      const nextSelected = [...(prev.selectedAreaNames ?? []), normalized];
       return {
         ...prev,
         customAreas: nextCustomAreas,
-        areaIndex: nextCatalog.length - 1,
+        selectedAreaNames: nextSelected,
+        areaIndex: areaSetupComplete ? nextSelected.length - 1 : prev.areaIndex,
         issues: {
           ...prev.issues,
           [normalized]: emptyAreaIssue(
@@ -261,10 +280,86 @@ export default function OutgoingInspectionPage() {
     toast.success(`Added “${normalized}”`);
   };
 
+  const handleAddBuiltInArea = (name: string) => {
+    setDraft((prev) => {
+      const nextSelected = [...(prev.selectedAreaNames ?? []), name];
+      const def = buildEffectiveAreaCatalog(prev.customAreas ?? []).find(
+        (area) => area.name === name,
+      );
+      return {
+        ...prev,
+        selectedAreaNames: nextSelected,
+        issues: {
+          ...prev.issues,
+          [name]: emptyAreaIssue(
+            name,
+            def
+              ? { available: null, activeSections: [...def.defaultSections] }
+              : undefined,
+            prev.customAreas ?? [],
+          ),
+        },
+      };
+    });
+  };
+
+  const handleRemoveSetupArea = (name: string) => {
+    setDraft((prev) => {
+      const nextSelected = (prev.selectedAreaNames ?? []).filter((item) => item !== name);
+      const nextIssues = { ...prev.issues };
+      delete nextIssues[name];
+      const nextCustom = (prev.customAreas ?? []).filter((item) => item.name !== name);
+      return {
+        ...prev,
+        selectedAreaNames: nextSelected,
+        customAreas: nextCustom,
+        issues: nextIssues,
+        areaIndex: Math.min(prev.areaIndex, Math.max(nextSelected.length - 1, 0)),
+      };
+    });
+  };
+
+  const completeAreaSetup = () => {
+    setDraft((prev) => ({
+      ...prev,
+      areaSetupComplete: true,
+      areaIndex: 0,
+    }));
+  };
+
   if (!job) {
     return (
       <InspectorShell title="Job not found" backHref={ROUTES.INSPECTIONS}>
         <p className="text-muted-foreground text-sm">Job not found.</p>
+      </InspectorShell>
+    );
+  }
+
+  if (!areaSetupComplete) {
+    return (
+      <>
+        <InspectorShell title="Outgoing Inspection" backHref={jobDetail(id)}>
+          <div className="space-y-4">
+            <JobWorkflowToolbar job={job} />
+            <InspectionAreaSetupPanel
+              selectedAreaNames={selectedAreaNames}
+              customAreas={customAreas}
+              busy={busy}
+              onAddBuiltInArea={handleAddBuiltInArea}
+              onAddCustomArea={handleAddCustomArea}
+              onRemoveArea={handleRemoveSetupArea}
+              onComplete={completeAreaSetup}
+            />
+          </div>
+        </InspectorShell>
+      </>
+    );
+  }
+
+  if (areaCatalog.length === 0) {
+    return (
+      <InspectorShell title="Outgoing Inspection" backHref={jobDetail(id)}>
+        <p className="text-muted-foreground text-sm">No areas selected for this inspection.</p>
       </InspectorShell>
     );
   }
@@ -350,7 +445,11 @@ export default function OutgoingInspectionPage() {
     }
     setBusy(true);
     try {
-      const previewUrls = await compressPhotoSources(sources);
+      const uploadedUrls = await uploadInspectionPhotos(
+        id,
+        sources,
+        inspectionPhotoAreaLabel(area, section, side),
+      );
       setDraft((prev) => {
         const rec = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
         const existing = rec.photosBySection[section] ?? emptySectionPhotos();
@@ -365,7 +464,7 @@ export default function OutgoingInspectionPage() {
                 ...rec.photosBySection,
                 [section]: {
                   ...existing,
-                  [key]: [...existing[key], ...previewUrls],
+                  [key]: [...existing[key], ...uploadedUrls],
                 },
               },
             },
@@ -373,7 +472,7 @@ export default function OutgoingInspectionPage() {
         };
       });
     } catch {
-      toast.error('Could not read the photo');
+      toast.error('Could not upload photo');
     } finally {
       setBusy(false);
     }

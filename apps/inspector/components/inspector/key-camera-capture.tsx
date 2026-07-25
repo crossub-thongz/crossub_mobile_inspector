@@ -1,9 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Camera, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { compressCanvasToDataUrl } from '@/lib/compress-image';
 
 export function KeyCameraCapture({
@@ -98,51 +97,52 @@ export function KeyCameraCapture({
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-black">
-      <div className="flex items-center justify-between px-4 py-3">
-        <p className="text-sm font-medium text-white">Take photo</p>
+      <div className="relative flex flex-1 flex-col overflow-hidden">
         <button
           type="button"
           onClick={onClose}
-          className="flex size-9 items-center justify-center rounded-full bg-white/10 text-white"
+          className="absolute top-4 right-4 z-20 flex size-14 items-center justify-center rounded-full bg-black/45 text-white shadow-lg backdrop-blur-sm"
           aria-label="Close camera"
         >
-          <X className="size-5" />
+          <X className="size-8" strokeWidth={2.25} />
         </button>
-      </div>
 
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-black">
-        {error ? (
-          <div className="space-y-4 px-6 text-center">
-            <p className="text-sm text-white/80">{error}</p>
-            {nativeInputId && (
-              <label
-                htmlFor={nativeInputId}
-                onClick={onClose}
-                className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-              >
-                Open device camera
-              </label>
-            )}
-          </div>
-        ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="max-h-full max-w-full object-contain"
-          />
-        )}
-      </div>
+        <div className="flex flex-1 items-center justify-center bg-black pt-14">
+          {error ? (
+            <div className="space-y-4 px-6 text-center">
+              <p className="text-sm text-white/80">{error}</p>
+              {nativeInputId && (
+                <label
+                  htmlFor={nativeInputId}
+                  onClick={onClose}
+                  className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                >
+                  Open device camera
+                </label>
+              )}
+            </div>
+          ) : (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="max-h-full max-w-full object-contain"
+            />
+          )}
+        </div>
 
-      <div className="flex justify-center gap-3 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="button" disabled={!ready || !!error} onClick={capture}>
-          <Camera className="size-4" />
-          Capture
-        </Button>
+        <div className="flex shrink-0 justify-center px-4 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            disabled={!ready || !!error}
+            onClick={capture}
+            aria-label="Capture photo"
+            className="mb-6 flex size-[4.75rem] items-center justify-center rounded-full border-4 border-white/90 bg-primary shadow-[0_4px_24px_rgba(0,212,164,0.45)] transition-transform active:scale-95 disabled:opacity-35"
+          >
+            <span className="size-[3.25rem] rounded-full bg-primary ring-2 ring-white/40" />
+          </button>
+        </div>
       </div>
     </div>
   );

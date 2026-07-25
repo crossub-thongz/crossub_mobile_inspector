@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
+import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
 import { InspectionSectionPhotos } from '@/components/inspector/inspection-section-photos';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
@@ -30,11 +31,12 @@ import {
 } from '@/lib/inspection-execution-hydration';
 import type { IngoingAreaEntryDraft, IngoingExecutionDraft } from '@/lib/inspection-execution-draft';
 import {
-  buildEffectiveAreaCatalog,
+  buildExecutionAreaCatalog,
+  inferSelectedAreaNamesFromDraft,
   normalizeCustomAreaName,
   type CustomAreaSectionMode,
 } from '@/lib/custom-inspection-areas';
-import { compressPhotoSources } from '@/lib/inspection-area-photos';
+import { inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
 import {
   useInspectionFinishedGate,
   useInspectionInProgress,
@@ -55,6 +57,7 @@ export default function IngoingInspectionPage() {
   const {
     getJob,
     commitInspectionAreaPhotos,
+    uploadInspectionPhotos,
     saveInspectionFindings,
     updateJobStatus,
     apiConnected,
@@ -68,7 +71,14 @@ export default function IngoingInspectionPage() {
     id,
     job,
     'ingoing',
-    () => ({ kind: 'ingoing', areaIndex: 0, entries: {}, customAreas: [] }),
+    (): IngoingExecutionDraft => ({
+      kind: 'ingoing',
+      areaIndex: 0,
+      entries: {},
+      customAreas: [],
+      selectedAreaNames: [],
+      areaSetupComplete: false,
+    }),
   );
   const [busy, setBusy] = useState(false);
   const [addAreaOpen, setAddAreaOpen] = useState(false);
@@ -110,9 +120,18 @@ export default function IngoingInspectionPage() {
   }, [apiConnected, id, setDraft, localDraftLoaded]);
 
   const customAreas = draft.customAreas ?? [];
+  const areaSetupComplete =
+    draft.areaSetupComplete ?? Object.keys(draft.entries).length > 0;
+  const selectedAreaNames =
+    draft.selectedAreaNames && draft.selectedAreaNames.length > 0
+      ? draft.selectedAreaNames
+      : inferSelectedAreaNamesFromDraft(draft.entries, customAreas);
   const areaCatalog = useMemo(
-    () => buildEffectiveAreaCatalog(customAreas),
-    [customAreas],
+    () =>
+      areaSetupComplete
+        ? buildExecutionAreaCatalog(selectedAreaNames, customAreas)
+        : [],
+    [areaSetupComplete, selectedAreaNames, customAreas],
   );
   const areaIndex = Math.min(
     Math.max(draft.areaIndex, 0),
@@ -127,11 +146,12 @@ export default function IngoingInspectionPage() {
         ...(prev.customAreas ?? []),
         { name: normalized, sectionMode },
       ];
-      const nextCatalog = buildEffectiveAreaCatalog(nextCustomAreas);
+      const nextSelected = [...(prev.selectedAreaNames ?? []), normalized];
       return {
         ...prev,
         customAreas: nextCustomAreas,
-        areaIndex: nextCatalog.length - 1,
+        selectedAreaNames: nextSelected,
+        areaIndex: areaSetupComplete ? nextSelected.length - 1 : prev.areaIndex,
         entries: {
           ...prev.entries,
           [normalized]: emptyEntry(normalized, nextCustomAreas),
@@ -141,10 +161,83 @@ export default function IngoingInspectionPage() {
     toast.success(`Added “${normalized}”`);
   };
 
+  const handleAddBuiltInArea = (name: string) => {
+    setDraft((prev) => {
+      const nextSelected = [...(prev.selectedAreaNames ?? []), name];
+      return {
+        ...prev,
+        selectedAreaNames: nextSelected,
+        entries: {
+          ...prev.entries,
+          [name]: emptyEntry(name, prev.customAreas ?? []),
+        },
+      };
+    });
+  };
+
+  const handleRemoveSetupArea = (name: string) => {
+    setDraft((prev) => {
+      const nextSelected = (prev.selectedAreaNames ?? []).filter((item) => item !== name);
+      const nextEntries = { ...prev.entries };
+      delete nextEntries[name];
+      const nextCustom = (prev.customAreas ?? []).filter((item) => item.name !== name);
+      return {
+        ...prev,
+        selectedAreaNames: nextSelected,
+        customAreas: nextCustom,
+        entries: nextEntries,
+        areaIndex: Math.min(prev.areaIndex, Math.max(nextSelected.length - 1, 0)),
+      };
+    });
+  };
+
+  const completeAreaSetup = () => {
+    setDraft((prev) => ({
+      ...prev,
+      areaSetupComplete: true,
+      areaIndex: 0,
+    }));
+  };
+
   if (!job) {
     return (
       <InspectorShell title="Job not found" backHref={ROUTES.INSPECTIONS}>
         <p className="text-muted-foreground text-sm">Job not found.</p>
+      </InspectorShell>
+    );
+  }
+
+  if (!areaSetupComplete) {
+    return (
+      <>
+        <InspectorShell title="Ingoing Inspection" backHref={jobDetail(id)}>
+          <div className="space-y-4">
+            <JobWorkflowToolbar job={job} />
+            <InspectionAreaSetupPanel
+              selectedAreaNames={selectedAreaNames}
+              customAreas={customAreas}
+              busy={busy}
+              onAddBuiltInArea={handleAddBuiltInArea}
+              onAddCustomArea={handleAddCustomArea}
+              onRemoveArea={handleRemoveSetupArea}
+              onComplete={completeAreaSetup}
+            />
+          </div>
+        </InspectorShell>
+        <AddCustomAreaDialog
+          open={addAreaOpen}
+          existingCustomAreas={customAreas}
+          onClose={() => setAddAreaOpen(false)}
+          onConfirm={handleAddCustomArea}
+        />
+      </>
+    );
+  }
+
+  if (areaCatalog.length === 0) {
+    return (
+      <InspectorShell title="Ingoing Inspection" backHref={jobDetail(id)}>
+        <p className="text-muted-foreground text-sm">No areas selected for this inspection.</p>
       </InspectorShell>
     );
   }
@@ -196,7 +289,11 @@ export default function IngoingInspectionPage() {
     if (sources.length === 0) return;
     setBusy(true);
     try {
-      const previewUrls = await compressPhotoSources(sources);
+      const uploadedUrls = await uploadInspectionPhotos(
+        id,
+        sources,
+        inspectionPhotoAreaLabel(area, section, 'single'),
+      );
       setDraft((prev) => {
         const current = prev.entries[area] ?? emptyEntry(area, prev.customAreas);
         return {
@@ -209,7 +306,7 @@ export default function IngoingInspectionPage() {
                 ...current.photosBySection,
                 [section]: [
                   ...(current.photosBySection[section] ?? []),
-                  ...previewUrls,
+                  ...uploadedUrls,
                 ],
               },
             },
@@ -217,7 +314,7 @@ export default function IngoingInspectionPage() {
         };
       });
     } catch {
-      toast.error('Could not read the photo');
+      toast.error('Could not upload photo');
     } finally {
       setBusy(false);
     }

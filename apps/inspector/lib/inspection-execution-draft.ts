@@ -1,5 +1,6 @@
 import type { InspectionJob } from '@/lib/types';
 import type { CustomAreaDefinition } from '@/lib/custom-inspection-areas';
+import { loadPersistedJobProgress } from '@/lib/job-workflow-persist';
 
 export const INSPECTION_DRAFT_KEY = 'inspectionDraft';
 
@@ -16,6 +17,8 @@ export type IngoingExecutionDraft = {
   areaIndex: number;
   entries: Record<string, IngoingAreaEntryDraft>;
   customAreas?: CustomAreaDefinition[];
+  selectedAreaNames?: string[];
+  areaSetupComplete?: boolean;
 };
 
 export type SectionBeforeAfterDraft = {
@@ -35,6 +38,9 @@ export type RoutineExecutionDraft = {
   areaIndex: number;
   method: 'physical' | 'self';
   issues: Record<string, RoutineAreaIssueDraft>;
+  customAreas?: CustomAreaDefinition[];
+  selectedAreaNames?: string[];
+  areaSetupComplete?: boolean;
 };
 
 export type OutgoingAreaIssueDraft = {
@@ -50,6 +56,8 @@ export type OutgoingExecutionDraft = {
   areaIndex: number;
   issues: Record<string, OutgoingAreaIssueDraft>;
   customAreas?: CustomAreaDefinition[];
+  selectedAreaNames?: string[];
+  areaSetupComplete?: boolean;
 };
 
 export type InspectionExecutionDraft =
@@ -68,9 +76,17 @@ export function getInspectionExecutionDraft(
 }
 
 export function hasInspectionExecutionDraft(job: InspectionJob | undefined): boolean {
-  return Boolean(getInspectionExecutionDraft(job, 'ingoing'))
-    || Boolean(getInspectionExecutionDraft(job, 'routine'))
-    || Boolean(getInspectionExecutionDraft(job, 'outgoing'));
+  if (!job) return false;
+  if (
+    Boolean(getInspectionExecutionDraft(job, 'ingoing')) ||
+    Boolean(getInspectionExecutionDraft(job, 'routine')) ||
+    Boolean(getInspectionExecutionDraft(job, 'outgoing'))
+  ) {
+    return true;
+  }
+  const persisted = loadPersistedJobProgress(job.id);
+  const raw = persisted?.workflowData?.[INSPECTION_DRAFT_KEY];
+  return Boolean(raw && typeof raw === 'object');
 }
 
 export function buildInspectionDraftPatch(

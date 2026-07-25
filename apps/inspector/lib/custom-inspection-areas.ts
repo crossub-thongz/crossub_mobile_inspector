@@ -81,6 +81,32 @@ export function normalizeCustomAreaName(name: string): string {
   return name.trim().replace(/\s+/g, ' ');
 }
 
+export function buildExecutionAreaCatalog(
+  selectedAreaNames: string[] | undefined,
+  customAreas: CustomAreaDefinition[] = [],
+): InspectionAreaDefinition[] {
+  const full = buildEffectiveAreaCatalog(customAreas);
+  if (!selectedAreaNames?.length) {
+    return full;
+  }
+  const byName = new Map(full.map((area) => [area.name.toLowerCase(), area]));
+  return selectedAreaNames
+    .map((name) => byName.get(name.trim().toLowerCase()))
+    .filter((area): area is InspectionAreaDefinition => Boolean(area));
+}
+
+export function inferSelectedAreaNamesFromDraft(
+  entries: Record<string, unknown>,
+  customAreas: CustomAreaDefinition[] = [],
+): string[] {
+  const keys = Object.keys(entries).filter(Boolean);
+  if (keys.length === 0) return [];
+  const full = buildEffectiveAreaCatalog(customAreas);
+  const order = new Map(full.map((area, index) => [area.name.toLowerCase(), index]));
+  return [...keys].sort(
+    (a, b) => (order.get(a.toLowerCase()) ?? 999) - (order.get(b.toLowerCase()) ?? 999),
+  );
+}
 export function validateNewCustomAreaName(
   name: string,
   customAreas: CustomAreaDefinition[] = [],

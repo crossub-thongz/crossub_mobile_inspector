@@ -383,6 +383,8 @@ export function mergeIngoingExecutionDraft(
       typeof saved.areaIndex === 'number' ? saved.areaIndex : baseline.areaIndex,
     entries,
     customAreas,
+    selectedAreaNames: saved.selectedAreaNames ?? baseline.selectedAreaNames,
+    areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
   };
 }
 
@@ -404,6 +406,9 @@ export function mergeRoutineExecutionDraft(
       typeof saved.areaIndex === 'number' ? saved.areaIndex : baseline.areaIndex,
     method: saved.method ?? baseline.method,
     issues,
+    customAreas: saved.customAreas ?? baseline.customAreas,
+    selectedAreaNames: saved.selectedAreaNames ?? baseline.selectedAreaNames,
+    areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
   };
 }
 
@@ -437,5 +442,7 @@ export function mergeOutgoingExecutionDraft(
       typeof saved.areaIndex === 'number' ? saved.areaIndex : baseline.areaIndex,
     issues,
     customAreas,
+    selectedAreaNames: saved.selectedAreaNames ?? baseline.selectedAreaNames,
+    areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
   };
 }

@@ -1,12 +1,12 @@
 'use client';
 
-import { Plus, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { X } from 'lucide-react';
+import { useMemo } from 'react';
 
+import { AddSectionControl } from '@/components/inspector/add-section-control';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
+import { COMMON_DEFAULT_SECTIONS } from '@/constants/inspection-areas';
 
 type InspectionSectionPhotosProps = {
   definition: InspectionAreaDefinition;
@@ -31,26 +31,18 @@ export function InspectionSectionPhotos({
   onAddDataUrl,
   onRemovePhoto,
 }: InspectionSectionPhotosProps) {
-  const [pick, setPick] = useState('');
-
   const defaultSet = useMemo(
     () => new Set(definition.defaultSections),
     [definition.defaultSections],
   );
 
-  const availableOptional = useMemo(
-    () =>
-      definition.optionalSections.filter(
-        (section) => !activeSections.includes(section),
-      ),
-    [definition.optionalSections, activeSections],
-  );
-
-  const handleAdd = () => {
-    if (!pick) return;
-    onAddSection(pick);
-    setPick('');
-  };
+  const sectionPickerOptions = useMemo(() => {
+    const merged = new Set<string>([
+      ...definition.optionalSections,
+      ...COMMON_DEFAULT_SECTIONS,
+    ]);
+    return [...merged];
+  }, [definition.optionalSections]);
 
   return (
     <div className="space-y-4">
@@ -94,38 +86,12 @@ export function InspectionSectionPhotos({
         })
       )}
 
-      {availableOptional.length > 0 ? (
-        <div className="space-y-2">
-          <Label htmlFor="add-section">Add section</Label>
-          <div className="flex gap-2">
-            <select
-              id="add-section"
-              className="border-input bg-background h-9 min-w-0 flex-1 rounded-md border px-3 text-sm"
-              value={pick}
-              disabled={busy}
-              onChange={(e) => setPick(e.target.value)}
-            >
-              <option value="">Select a section…</option>
-              {availableOptional.map((section) => (
-                <option key={section} value={section}>
-                  {section}
-                </option>
-              ))}
-            </select>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="shrink-0"
-              disabled={busy || !pick}
-              onClick={handleAdd}
-            >
-              <Plus className="size-4" />
-              Add
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      <AddSectionControl
+        optionalSections={sectionPickerOptions}
+        activeSections={activeSections}
+        busy={busy}
+        onAddSection={onAddSection}
+      />
     </div>
   );
 }

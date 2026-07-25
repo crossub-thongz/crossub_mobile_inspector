@@ -1,11 +1,12 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
+import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
 import {
   OutgoingSectionPhotos,
   type SectionBeforeAfter,
@@ -21,10 +22,18 @@ import {
   INSPECTION_AREA_CATALOG,
   sectionAreaName,
 } from '@/constants/inspection-areas';
+import {
+  buildEffectiveAreaCatalog,
+  buildExecutionAreaCatalog,
+  customAreaToDefinition,
+  inferSelectedAreaNamesFromDraft,
+  normalizeCustomAreaName,
+  type CustomAreaSectionMode,
+} from '@/lib/custom-inspection-areas';
 import { jobDetail, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
-import { compressPhotoSources } from '@/lib/inspection-area-photos';
+import { inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
 import {
   useInspectionFinishedGate,
   useInspectionInProgress,
@@ -36,7 +45,7 @@ import {
   emptyRoutineIssue,
   mergeRoutineExecutionDraft,
 } from '@/lib/inspection-execution-hydration';
-import type { RoutineAreaIssueDraft } from '@/lib/inspection-execution-draft';
+import type { RoutineAreaIssueDraft, RoutineExecutionDraft } from '@/lib/inspection-execution-draft';
 import { matchReferenceSectionPhotos } from '@/lib/outgoing-reference-photos';
 import { cn } from '@/lib/utils';
 
@@ -56,6 +65,7 @@ export default function RoutineInspectionPage() {
   const {
     getJob,
     commitInspectionAreaPhotos,
+    uploadInspectionPhotos,
     saveInspectionFindings,
     updateJobStatus,
     apiConnected,
@@ -67,11 +77,14 @@ export default function RoutineInspectionPage() {
   useInspectionInProgress(job, id, updateJobStatus);
 
   const { draft, setDraft, clearDraft, localDraftLoaded } =
-    useInspectionExecutionDraft(id, job, 'routine', () => ({
+    useInspectionExecutionDraft(id, job, 'routine', (): RoutineExecutionDraft => ({
       kind: 'routine',
       areaIndex: 0,
       method: 'physical',
       issues: {},
+      customAreas: [],
+      selectedAreaNames: [],
+      areaSetupComplete: false,
     }));
   const [busy, setBusy] = useState(false);
   const [loadingReference, setLoadingReference] = useState(apiConnected);
@@ -100,7 +113,8 @@ export default function RoutineInspectionPage() {
 
         const nextIssues: Record<string, AreaIssue> = {};
         let seeded = false;
-        for (const def of INSPECTION_AREA_CATALOG) {
+        const catalogForHydration = buildEffectiveAreaCatalog([]);
+        for (const def of catalogForHydration) {
           const photosBySection: Record<string, SectionBeforeAfter> = {};
           for (const section of def.defaultSections) {
             const referenceUrls = reference
@@ -151,8 +165,114 @@ export default function RoutineInspectionPage() {
   }, [apiConnected, id, setDraft, localDraftLoaded]);
 
   const method = draft.method;
-  const areaIndex = draft.areaIndex;
+  const customAreas = draft.customAreas ?? [];
+  const areaSetupComplete =
+    draft.areaSetupComplete ?? Object.keys(draft.issues).length > 0;
+  const selectedAreaNames =
+    draft.selectedAreaNames && draft.selectedAreaNames.length > 0
+      ? draft.selectedAreaNames
+      : inferSelectedAreaNamesFromDraft(draft.issues, customAreas);
+  const areaCatalog = useMemo(
+    () =>
+      areaSetupComplete
+        ? buildExecutionAreaCatalog(selectedAreaNames, customAreas)
+        : [],
+    [areaSetupComplete, selectedAreaNames, customAreas],
+  );
+  const areaIndex = Math.min(
+    Math.max(draft.areaIndex, 0),
+    Math.max(areaCatalog.length - 1, 0),
+  );
   const issues = draft.issues;
+
+  const handleAddCustomArea = (name: string, sectionMode: CustomAreaSectionMode) => {
+    const normalized = normalizeCustomAreaName(name);
+    setDraft((prev) => {
+      const nextCustomAreas = [
+        ...(prev.customAreas ?? []),
+        { name: normalized, sectionMode },
+      ];
+      const def = customAreaToDefinition({ name: normalized, sectionMode });
+      const nextSelected = [...(prev.selectedAreaNames ?? []), normalized];
+      const photosBySection: Record<string, SectionBeforeAfter> = {};
+      for (const section of def.defaultSections) {
+        photosBySection[section] = {
+          ...emptySectionPhotos(),
+          ingoingPhotoUrls: seedSectionIngoingForArea(normalized, section),
+        };
+      }
+      return {
+        ...prev,
+        customAreas: nextCustomAreas,
+        selectedAreaNames: nextSelected,
+        areaIndex: areaSetupComplete ? nextSelected.length - 1 : prev.areaIndex,
+        issues: {
+          ...prev.issues,
+          [normalized]: {
+            ...emptyAreaIssue(normalized),
+            activeSections: [...def.defaultSections],
+            photosBySection,
+          },
+        },
+      };
+    });
+    toast.success(`Added “${normalized}”`);
+  };
+
+  const handleAddBuiltInArea = (name: string) => {
+    setDraft((prev) => {
+      const nextSelected = [...(prev.selectedAreaNames ?? []), name];
+      const def = INSPECTION_AREA_CATALOG.find((area) => area.name === name);
+      const photosBySection: Record<string, SectionBeforeAfter> = {};
+      for (const section of def?.defaultSections ?? []) {
+        photosBySection[section] = {
+          ...emptySectionPhotos(),
+          ingoingPhotoUrls: seedSectionIngoingForArea(name, section),
+        };
+      }
+      return {
+        ...prev,
+        selectedAreaNames: nextSelected,
+        issues: {
+          ...prev.issues,
+          [name]: {
+            ...emptyAreaIssue(name),
+            activeSections: [...(def?.defaultSections ?? [])],
+            photosBySection,
+          },
+        },
+      };
+    });
+  };
+
+  const handleRemoveSetupArea = (name: string) => {
+    setDraft((prev) => {
+      const nextSelected = (prev.selectedAreaNames ?? []).filter((item) => item !== name);
+      const nextIssues = { ...prev.issues };
+      delete nextIssues[name];
+      const nextCustom = (prev.customAreas ?? []).filter((item) => item.name !== name);
+      return {
+        ...prev,
+        selectedAreaNames: nextSelected,
+        customAreas: nextCustom,
+        issues: nextIssues,
+        areaIndex: Math.min(prev.areaIndex, Math.max(nextSelected.length - 1, 0)),
+      };
+    });
+  };
+
+  const completeAreaSetup = () => {
+    setDraft((prev) => ({
+      ...prev,
+      areaSetupComplete: true,
+      areaIndex: 0,
+    }));
+  };
+
+  function seedSectionIngoingForArea(areaName: string, section: string): string[] {
+    if (!ingoingFromReference || referenceAreas.length === 0) return [];
+    return matchReferenceSectionPhotos(areaName, section, referenceAreas);
+  }
 
   if (!job) {
     return (
@@ -162,10 +282,39 @@ export default function RoutineInspectionPage() {
     );
   }
 
-  const areaDef = INSPECTION_AREA_CATALOG[areaIndex];
-  const area = areaDef.name;
+  if (!areaSetupComplete) {
+    return (
+      <>
+        <InspectorShell title="Routine Inspection" backHref={jobDetail(id)}>
+          <div className="space-y-4">
+            <JobWorkflowToolbar job={job} />
+            <InspectionAreaSetupPanel
+              selectedAreaNames={selectedAreaNames}
+              customAreas={customAreas}
+              busy={busy || loadingReference}
+              onAddBuiltInArea={handleAddBuiltInArea}
+              onAddCustomArea={handleAddCustomArea}
+              onRemoveArea={handleRemoveSetupArea}
+              onComplete={completeAreaSetup}
+            />
+          </div>
+        </InspectorShell>
+      </>
+    );
+  }
+
+  if (areaCatalog.length === 0) {
+    return (
+      <InspectorShell title="Routine Inspection" backHref={jobDetail(id)}>
+        <p className="text-muted-foreground text-sm">No areas selected for this inspection.</p>
+      </InspectorShell>
+    );
+  }
+
+  const areaDef = areaCatalog[areaIndex];
+  const area = areaDef?.name ?? areaCatalog[0]?.name ?? 'Area';
   const issue = issues[area] ?? emptyAreaIssue(area);
-  const isLast = areaIndex === INSPECTION_AREA_CATALOG.length - 1;
+  const isLast = areaIndex === areaCatalog.length - 1;
 
   const updateIssue = (patch: Partial<AreaIssue>) => {
     setDraft((prev) => {
@@ -178,14 +327,12 @@ export default function RoutineInspectionPage() {
   };
 
   const goToArea = (index: number) => {
-    if (index < 0 || index >= INSPECTION_AREA_CATALOG.length) return;
+    if (index < 0 || index >= areaCatalog.length) return;
     setDraft((prev) => ({ ...prev, areaIndex: index }));
   };
 
-  const seedSectionIngoing = (section: string): string[] => {
-    if (!ingoingFromReference || referenceAreas.length === 0) return [];
-    return matchReferenceSectionPhotos(area, section, referenceAreas);
-  };
+  const seedSectionIngoing = (section: string): string[] =>
+    seedSectionIngoingForArea(area, section);
 
   const markAvailable = (available: boolean) => {
     if (!available) {
@@ -239,7 +386,11 @@ export default function RoutineInspectionPage() {
     }
     setBusy(true);
     try {
-      const previewUrls = await compressPhotoSources(sources);
+      const uploadedUrls = await uploadInspectionPhotos(
+        id,
+        sources,
+        inspectionPhotoAreaLabel(area, section, side === 'ingoing' ? 'ingoing' : 'single'),
+      );
       setDraft((prev) => {
         const rec = prev.issues[area] ?? emptyAreaIssue(area);
         const existing = rec.photosBySection[section] ?? emptySectionPhotos();
@@ -254,7 +405,7 @@ export default function RoutineInspectionPage() {
                 ...rec.photosBySection,
                 [section]: {
                   ...existing,
-                  [key]: [...existing[key], ...previewUrls],
+                  [key]: [...existing[key], ...uploadedUrls],
                 },
               },
             },
@@ -262,7 +413,7 @@ export default function RoutineInspectionPage() {
         };
       });
     } catch {
-      toast.error('Could not read the photo');
+      toast.error('Could not upload photo');
     } finally {
       setBusy(false);
     }
@@ -363,7 +514,7 @@ export default function RoutineInspectionPage() {
           },
         ],
       },
-      ...INSPECTION_AREA_CATALOG.filter((def) => {
+      ...areaCatalog.filter((def) => {
         const rec = finalIssues[def.name];
         return rec?.available === true;
       }).map((def) => {
@@ -493,7 +644,7 @@ export default function RoutineInspectionPage() {
           ) : null}
 
           <div className="flex gap-1">
-            {INSPECTION_AREA_CATALOG.map((a, i) => (
+            {areaCatalog.map((a, i) => (
               <button
                 key={a.name}
                 type="button"
@@ -509,7 +660,7 @@ export default function RoutineInspectionPage() {
             <AreaAvailablePrompt
               areaName={area}
               areaIndex={areaIndex}
-              totalAreas={INSPECTION_AREA_CATALOG.length}
+              totalAreas={areaCatalog.length}
               onYes={() => markAvailable(true)}
               onNo={() => markAvailable(false)}
             />
@@ -517,7 +668,7 @@ export default function RoutineInspectionPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {area} — skipped ({areaIndex + 1}/{INSPECTION_AREA_CATALOG.length})
+                  {area} — skipped ({areaIndex + 1}/{areaCatalog.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -566,7 +717,7 @@ export default function RoutineInspectionPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {area} ({areaIndex + 1}/{INSPECTION_AREA_CATALOG.length})
+                  {area} ({areaIndex + 1}/{areaCatalog.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">

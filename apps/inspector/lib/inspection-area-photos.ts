@@ -2,6 +2,7 @@ import {
   compressImageForUpload,
   shrinkDataUrlForUpload,
 } from '@/lib/compress-image';
+import { sectionAreaName } from '@/constants/inspection-areas';
 
 export function isPendingPhotoUrl(url: string): boolean {
   return url.startsWith('data:image/');
@@ -25,4 +26,16 @@ export async function compressPhotoSources(
 
 export function pendingPhotoSources(urls: readonly string[]): string[] {
   return urls.filter(isPendingPhotoUrl);
+}
+
+/** Facade area name for incremental photo uploads during an inspection. */
+export function inspectionPhotoAreaLabel(
+  room: string,
+  section: string,
+  side: 'ingoing' | 'outgoing' | 'single',
+): string {
+  const base = sectionAreaName(room, section);
+  if (side === 'ingoing') return `${base} (Ingoing)`;
+  if (side === 'outgoing') return `${base} (Outgoing)`;
+  return base;
 }
