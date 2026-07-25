@@ -21,6 +21,8 @@ export interface JobProgressSnapshot {
 
 function preferStatus(incoming: JobStatus, local?: JobStatus): JobStatus {
   if (!local) return incoming;
+  // Server-cancelled jobs must not resurrect from device-local workflow progress.
+  if (incoming === 'declined') return incoming;
   return STATUS_RANK[local] >= STATUS_RANK[incoming] ? local : incoming;
 }
 

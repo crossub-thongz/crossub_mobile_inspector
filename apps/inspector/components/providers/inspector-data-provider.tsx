@@ -77,6 +77,7 @@ import {
   isDemoJobId,
 } from '@/lib/inspector-job-filters';
 import {
+  clearPersistedJobProgress,
   loadPersistedJobProgress,
   mergeJobWithLocalProgress,
   persistJobProgress,
@@ -551,6 +552,10 @@ export function InspectorDataProvider({
       setJobs((prev) => {
         const prevById = new Map(prev.map((j) => [j.id, j]));
         const mergeApiJob = (apiJob: InspectionJob) => {
+          if (apiJob.status === 'declined') {
+            clearPersistedJobProgress(apiJob.id);
+            return apiJob;
+          }
           const persisted = loadPersistedJobProgress(apiJob.id);
           const sanitizedPersisted =
             persisted && isKeyCollectComplete(apiJob)
@@ -998,7 +1003,13 @@ export function InspectorDataProvider({
                 }
               }
             })
-            .catch(() => undefined)
+            .catch((err) => {
+              toast.error(
+                err instanceof Error
+                  ? err.message
+                  : 'Could not complete the inspection on the server',
+              );
+            })
             .then(() => refresh());
         } else {
           setEarnings((earnPrev) => [
@@ -1440,13 +1451,28 @@ export function InspectorDataProvider({
         return pending.length > 0 ? pending : persisted;
       }
 
-      await clearInspectionAreaPhotos(inspectionId, areaName);
-      const linked =
-        persisted.length > 0
-          ? (await linkInspectionAreaPhotos(inspectionId, areaName, persisted)).map(
-              (photo) => photo.url,
-            )
-          : [];
+      try {
+        await clearInspectionAreaPhotos(inspectionId, areaName);
+      } catch (err) {
+        const detail =
+          err instanceof Error ? err.message : 'Could not clear area photos';
+        toast.error(detail);
+      }
+      let linked: string[] = [];
+      if (persisted.length > 0) {
+        try {
+          linked = (
+            await linkInspectionAreaPhotos(inspectionId, areaName, persisted)
+          ).map((photo) => photo.url);
+        } catch (err) {
+          // Reference ingoing photos are already hosted — keep the URLs so the
+          // report can still complete when link-area is temporarily unreachable.
+          linked = persisted;
+          const detail =
+            err instanceof Error ? err.message : 'Could not link reference photos';
+          toast.error(detail);
+        }
+      }
       const uploaded =
         pending.length > 0
           ? await uploadInspectionPhotos(inspectionId, pending, areaName)

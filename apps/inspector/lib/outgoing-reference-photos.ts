@@ -1,5 +1,18 @@
 import type { InspectorInspectionDetail } from '@/lib/crossub-api/inspector-client';
 import { parseSectionAreaName, sectionAreaName } from '@/constants/inspection-areas';
+import {
+  resolveAreaDefinition,
+  type CustomAreaDefinition,
+} from '@/lib/custom-inspection-areas';
+import {
+  buildOutgoingIssueSeed,
+  outgoingSectionsForRoom,
+  type IngoingAreaPlan,
+} from '@/lib/ingoing-area-plan';
+import {
+  emptyOutgoingIssue,
+  type OutgoingAreaIssueDraft,
+} from '@/lib/inspection-execution-hydration';
 
 const INGOING_SUFFIX = /\s*\(ingoing\)\s*$/i;
 const OUTGOING_SUFFIX = /\s*\(outgoing\)\s*$/i;
@@ -66,6 +79,72 @@ export function matchReferenceSectionPhotos(
   }
 
   return matchReferenceIngoingPhotos(roomName, referenceAreas);
+}
+
+/** Fill empty ingoing photo slots from the latest completed ingoing report. */
+export function seedOutgoingIssuesFromReference(
+  issues: Record<string, OutgoingAreaIssueDraft>,
+  options: {
+    referenceAreas: Array<{ name: string; photos: Array<{ url: string }> }>;
+    plan: IngoingAreaPlan | null;
+    customAreas: CustomAreaDefinition[];
+    areaNames: string[];
+  },
+): { issues: Record<string, OutgoingAreaIssueDraft>; seeded: boolean } {
+  if (options.referenceAreas.length === 0) {
+    return { issues, seeded: false };
+  }
+
+  let seeded = false;
+  const next = { ...issues };
+
+  for (const areaName of options.areaNames) {
+    const def = resolveAreaDefinition(areaName, options.customAreas);
+    const existing = next[areaName];
+    const seed = buildOutgoingIssueSeed(def, options.plan);
+    const sectionsToSeed =
+      existing?.activeSections && existing.activeSections.length > 0
+        ? existing.activeSections
+        : seed.available === true
+          ? seed.activeSections
+          : outgoingSectionsForRoom(options.plan, areaName);
+
+    if (sectionsToSeed.length === 0) continue;
+
+    const photosBySection = { ...(existing?.photosBySection ?? {}) };
+    let areaSeeded = false;
+    for (const section of sectionsToSeed) {
+      const current = photosBySection[section];
+      if ((current?.ingoingPhotoUrls.length ?? 0) > 0) continue;
+      const referenceUrls = matchReferenceSectionPhotos(
+        areaName,
+        section,
+        options.referenceAreas,
+      );
+      if (referenceUrls.length === 0) continue;
+      photosBySection[section] = {
+        ingoingPhotoUrls: referenceUrls,
+        outgoingPhotoUrls: current?.outgoingPhotoUrls ?? [],
+      };
+      areaSeeded = true;
+      seeded = true;
+    }
+
+    if (areaSeeded || existing) {
+      next[areaName] = {
+        ...(existing ?? emptyOutgoingIssue(areaName, seed, options.customAreas)),
+        photosBySection,
+      };
+    }
+  }
+
+  return { issues: next, seeded };
+}
+
+export function referenceIngoingHasPhotos(
+  referenceAreas: Array<{ name: string; photos: Array<{ url: string }> }>,
+): boolean {
+  return referenceAreas.some((area) => area.photos.length > 0);
 }
 
 /** Photos already saved on this OUTGOING job under `Room (Ingoing)` or `Room · Section (Ingoing)`. */

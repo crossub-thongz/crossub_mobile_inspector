@@ -351,7 +351,9 @@ export async function completeInspection(
     '/inspector/inspections/{inspectionId}/complete',
     { params: { path: { inspectionId } }, body },
   );
-  if (error || !data) throw new Error('Failed to complete inspection');
+  if (error || !data) {
+    throw new Error(crossubErrorMessage(error, 'Failed to complete inspection'));
+  }
   return data;
 }
 
@@ -381,6 +383,26 @@ export async function uploadInspectionPhoto(
   return data;
 }
 
+async function inspectorFetchErrorMessage(
+  res: Response,
+  fallback: string,
+): Promise<string> {
+  try {
+    const body = (await res.json()) as { message?: string | string[] };
+    const msg = body.message;
+    if (typeof msg === 'string' && msg.trim()) return msg;
+    if (Array.isArray(msg) && msg.length > 0) {
+      return msg.filter((part) => typeof part === 'string').join(', ');
+    }
+  } catch {
+    // Non-JSON error body — keep generic message.
+  }
+  if (res.status === 503) {
+    return 'API unavailable — start the backend on port 3001 and try again.';
+  }
+  return fallback;
+}
+
 /** Clear area-level proof photos before the inspector resyncs a room. */
 export async function clearInspectionAreaPhotos(
   inspectionId: string,
@@ -397,7 +419,9 @@ export async function clearInspectionAreaPhotos(
     },
   );
   if (!res.ok) {
-    throw new Error('Failed to clear area photos');
+    throw new Error(
+      await inspectorFetchErrorMessage(res, 'Failed to clear area photos'),
+    );
   }
 }
 
@@ -419,7 +443,9 @@ export async function linkInspectionAreaPhotos(
     },
   );
   if (!res.ok) {
-    throw new Error('Failed to link area photos');
+    throw new Error(
+      await inspectorFetchErrorMessage(res, 'Failed to link area photos'),
+    );
   }
   return (await res.json()) as InspectorPhoto[];
 }

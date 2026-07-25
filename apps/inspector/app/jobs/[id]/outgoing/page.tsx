@@ -44,17 +44,16 @@ import {
   buildExecutionAreaCatalog,
   customAreaToDefinition,
   inferSelectedAreaNamesFromDraft,
-  isCustomAreaName,
   normalizeCustomAreaName,
   type CustomAreaSectionMode,
 } from '@/lib/custom-inspection-areas';
 import {
   matchReferenceSectionPhotos,
-  outgoingSavedIngoingPhotos,
+  referenceIngoingHasPhotos,
+  seedOutgoingIssuesFromReference,
 } from '@/lib/outgoing-reference-photos';
 import {
   buildOutgoingIssueSeed,
-  outgoingSectionsForRoom,
   referenceIngoingAreaPlan,
   type IngoingAreaPlan,
 } from '@/lib/ingoing-area-plan';
@@ -141,59 +140,38 @@ export default function OutgoingInspectionPage() {
         setReferenceAreas(refAreas);
         const plan = referenceIngoingAreaPlan(detail);
         setIngoingAreaPlan(plan);
+        const hasReferencePhotos = referenceIngoingHasPhotos(refAreas);
+        setIngoingFromReference(hasReferencePhotos);
         let seededFromReference = false;
 
         setDraft((prev) => {
-          const hasUserProgress =
-            prev.areaSetupComplete === true ||
-            (prev.selectedAreaNames?.length ?? 0) > 0 ||
-            Object.values(prev.issues).some((issue) => issue.available != null);
-
-          if (!hasUserProgress) {
-            return prev;
-          }
+          const areaNames =
+            prev.selectedAreaNames && prev.selectedAreaNames.length > 0
+              ? prev.selectedAreaNames
+              : inferSelectedAreaNamesFromDraft(prev.issues, prev.customAreas ?? []);
 
           const catalog = buildEffectiveAreaCatalog(prev.customAreas ?? []);
           const nextIssues: Record<string, AreaIssue> = { ...prev.issues };
-          let seeded = false;
 
           for (const def of catalog) {
             if (nextIssues[def.name]) continue;
             const seed = buildOutgoingIssueSeed(def, plan);
-            const sectionsToSeed =
-              seed.available === true
-                ? seed.activeSections
-                : isCustomAreaName(def.name, prev.customAreas)
-                  ? def.defaultSections
-                  : outgoingSectionsForRoom(plan, def.name);
-            const photosBySection: Record<string, SectionBeforeAfter> = {};
-            for (const section of sectionsToSeed) {
-              const savedIngoing = outgoingSavedIngoingPhotos(
-                detail,
-                def.name,
-                section,
-              );
-              const referenceUrls = reference
-                ? matchReferenceSectionPhotos(def.name, section, refAreas)
-                : [];
-              const ingoingPhotoUrls =
-                savedIngoing.length > 0 ? savedIngoing : referenceUrls;
-              if (savedIngoing.length === 0 && referenceUrls.length > 0) {
-                seeded = true;
-              }
-              photosBySection[section] = {
-                ...emptySectionPhotos(),
-                ingoingPhotoUrls,
-              };
-            }
-            nextIssues[def.name] = {
-              ...emptyAreaIssue(def.name, seed, prev.customAreas),
-              photosBySection,
-            };
+            nextIssues[def.name] = emptyAreaIssue(def.name, seed, prev.customAreas);
           }
 
+          const seeded = seedOutgoingIssuesFromReference(nextIssues, {
+            referenceAreas: refAreas,
+            plan,
+            customAreas: prev.customAreas ?? [],
+            areaNames:
+              areaNames.length > 0
+                ? areaNames
+                : catalog.map((def) => def.name),
+          });
+          seededFromReference = seeded.seeded;
+
           const withServerPhotos = applyOutgoingDetailPhotos(
-            nextIssues,
+            seeded.issues,
             detail,
             prev.customAreas ?? [],
           );
@@ -214,8 +192,6 @@ export default function OutgoingInspectionPage() {
               merged.areaIndex = firstAvailable;
             }
           }
-          seededFromReference = seeded;
-          setIngoingFromReference(seededFromReference || Boolean(reference));
           return merged;
         });
         if (plan) {
@@ -342,11 +318,27 @@ export default function OutgoingInspectionPage() {
   };
 
   const completeAreaSetup = () => {
-    setDraft((prev) => ({
-      ...prev,
-      areaSetupComplete: true,
-      areaIndex: 0,
-    }));
+    if (referenceIngoingHasPhotos(referenceAreas)) {
+      setIngoingFromReference(true);
+    }
+    setDraft((prev) => {
+      const selected =
+        prev.selectedAreaNames && prev.selectedAreaNames.length > 0
+          ? prev.selectedAreaNames
+          : inferSelectedAreaNamesFromDraft(prev.issues, prev.customAreas ?? []);
+      const { issues: seededIssues } = seedOutgoingIssuesFromReference(prev.issues, {
+        referenceAreas,
+        plan: ingoingAreaPlan,
+        customAreas: prev.customAreas ?? [],
+        areaNames: selected,
+      });
+      return {
+        ...prev,
+        areaSetupComplete: true,
+        areaIndex: 0,
+        issues: seededIssues,
+      };
+    });
   };
 
   if (!job) {
@@ -418,7 +410,7 @@ export default function OutgoingInspectionPage() {
   };
 
   const seedSectionIngoing = (section: string): string[] => {
-    if (!ingoingFromReference || referenceAreas.length === 0) return [];
+    if (referenceAreas.length === 0) return [];
     return matchReferenceSectionPhotos(area, section, referenceAreas);
   };
 
@@ -614,7 +606,7 @@ export default function OutgoingInspectionPage() {
         toast.error(`Add at least one outgoing photo for “${section}”`);
         return;
       }
-      if (!photos.ingoingPhotoUrls.length && !ingoingFromReference) {
+      if (!photos.ingoingPhotoUrls.length && seedSectionIngoing(section).length === 0) {
         toast.error(`Add at least one ingoing photo for “${section}”`);
         return;
       }
@@ -657,8 +649,10 @@ export default function OutgoingInspectionPage() {
         await finalizeAndSubmit(nextIssues);
         return;
       }
-    } catch {
-      toast.error('Photo upload failed — please retry');
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Photo upload failed — please retry',
+      );
     } finally {
       setBusy(false);
     }
