@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,11 +42,19 @@ function formatCountdown(endIso: string, nowMs: number): string {
   return `${s}s remaining`;
 }
 
+function viewingTimes(viewing: InspectorOpenViewing, endTime: string) {
+  return {
+    startTime: viewing.openedAt ?? viewing.startTime,
+    endTime,
+  };
+}
+
 export default function OpenInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, updateJobStatus } = useInspectorData();
+  const { getJob, updateJobStatus, completeOpenInspectionJob, refresh } =
+    useInspectorData();
   const job = getJob(id);
-  const { finish: completeJob, Celebration } = useFinishInspection(id);
+  const { celebrate, Celebration } = useFinishInspection(id);
   useKeyCollectGate(job, id);
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
@@ -57,6 +65,7 @@ export default function OpenInspectionPage() {
   const [starting, setStarting] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const autoCompleteTriggered = useRef(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -68,7 +77,16 @@ export default function OpenInspectionPage() {
     const load = async () => {
       try {
         const session = await fetchOpenViewing(id);
-        if (!cancelled) setViewing(session);
+        if (cancelled) return;
+        setViewing(session);
+        if (
+          session &&
+          !session.canCompleteEarly &&
+          session.sessionStatus !== 'OPEN' &&
+          job?.status !== 'completed'
+        ) {
+          void refresh();
+        }
       } catch {
         if (!cancelled) setViewing(null);
       } finally {
@@ -81,7 +99,7 @@ export default function OpenInspectionPage() {
       cancelled = true;
       window.clearInterval(poll);
     };
-  }, [id]);
+  }, [id, job?.status, refresh]);
 
   const countdown = useMemo(
     () => (viewing ? formatCountdown(viewing.endTime, now) : null),
@@ -97,6 +115,57 @@ export default function OpenInspectionPage() {
   const isBeforeScheduledStart = Boolean(
     viewing?.canStart && now < new Date(viewing.startTime).getTime(),
   );
+
+  const windowEnded = Boolean(
+    viewing && now >= new Date(viewing.endTime).getTime(),
+  );
+
+  const isCompleted = job?.status === 'completed';
+  const canCompleteEarly = Boolean(viewing?.canCompleteEarly) && !isCompleted;
+
+  const runComplete = useCallback(
+    async (early: boolean) => {
+      if (!viewing || completing || isCompleted) return false;
+
+      setCompleting(true);
+      try {
+        const endTime = early ? new Date().toISOString() : viewing.endTime;
+        const ok = await completeOpenInspectionJob(
+          id,
+          viewingTimes(viewing, endTime),
+        );
+        if (!ok) {
+          toast.error('Could not complete job');
+          return false;
+        }
+
+        celebrate(
+          early
+            ? 'Open inspection finished early.'
+            : 'Viewing window ended — job completed automatically.',
+        );
+        return true;
+      } finally {
+        setCompleting(false);
+      }
+    },
+    [
+      viewing,
+      completing,
+      isCompleted,
+      completeOpenInspectionJob,
+      id,
+      celebrate,
+    ],
+  );
+
+  useEffect(() => {
+    if (!canCompleteEarly || !windowEnded || autoCompleteTriggered.current) {
+      return;
+    }
+    autoCompleteTriggered.current = true;
+    void runComplete(false);
+  }, [canCompleteEarly, windowEnded, runComplete]);
 
   const handleStart = async () => {
     setStarting(true);
@@ -115,15 +184,8 @@ export default function OpenInspectionPage() {
     }
   };
 
-  const handleComplete = () => {
-    setCompleting(true);
-    try {
-      completeJob('Open inspection complete');
-    } catch {
-      toast.error('Could not complete job');
-    } finally {
-      setCompleting(false);
-    }
+  const handleCompleteEarly = () => {
+    void runComplete(true);
   };
 
   if (!job) {
@@ -156,6 +218,12 @@ export default function OpenInspectionPage() {
                 <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
                   <Clock className="size-3.5" />
                   {countdown}
+                </p>
+              ) : null}
+              {canCompleteEarly ? (
+                <p className="text-muted-foreground text-xs">
+                  Finish early anytime during the viewing, or this job completes
+                  automatically when the window ends.
                 </p>
               ) : null}
               {viewing?.canStart ? (
@@ -238,32 +306,49 @@ export default function OpenInspectionPage() {
           )}
         </div>
 
-        <div className="border-border bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <div className="mx-auto flex max-w-lg items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Scheduled end
-              </p>
-              <p className="truncate text-xs font-medium">
-                {countdown ?? (viewing ? formatDateTime(viewing.endTime) : '—')}
-              </p>
-            </div>
-            <Button
-              className="shrink-0"
-              disabled={completing || job.status === 'completed'}
-              onClick={handleComplete}
-            >
-              {completing ? (
-                <>
+        {!viewing?.canStart ? (
+          <div className="border-border bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <div className="mx-auto flex max-w-lg items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {isCompleted ? 'Status' : 'Scheduled end'}
+                </p>
+                <p className="truncate text-xs font-medium">
+                  {isCompleted
+                    ? 'Job completed'
+                    : (countdown ?? (viewing ? formatDateTime(viewing.endTime) : '—'))}
+                </p>
+              </div>
+              {canCompleteEarly ? (
+                <Button
+                  className="shrink-0"
+                  disabled={completing}
+                  onClick={handleCompleteEarly}
+                >
+                  {completing ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Completing…
+                    </>
+                  ) : windowEnded ? (
+                    'Completing…'
+                  ) : (
+                    'Complete early'
+                  )}
+                </Button>
+              ) : isCompleted ? (
+                <Button className="shrink-0" disabled variant="secondary">
+                  Completed
+                </Button>
+              ) : windowEnded ? (
+                <Button className="shrink-0" disabled>
                   <Loader2 className="size-4 animate-spin" />
                   Completing…
-                </>
-              ) : (
-                'Complete job'
-              )}
-            </Button>
+                </Button>
+              ) : null}
+            </div>
           </div>
-        </div>
+        ) : null}
       </InspectorShell>
       {Celebration}
     </>

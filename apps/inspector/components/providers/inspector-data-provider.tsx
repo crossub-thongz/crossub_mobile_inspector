@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/auth-provider';
 import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
+import { INSPECTION_STATUS } from '@/constants/api-enums';
 import { ROUTES } from '@/constants/routes';
 import { TRIBUNAL_INSPECTION_HOURS } from '@/constants/inspection-rates';
 import { api, ApiError } from '@/lib/api';
@@ -190,6 +191,11 @@ interface InspectorDataContextValue {
     data?: Record<string, unknown>,
   ) => void;
   completeJob: (id: string) => void;
+  /** Complete an OPEN inspection using viewing-window times (awaitable). */
+  completeOpenInspectionJob: (
+    id: string,
+    times: { startTime: string; endTime: string },
+  ) => Promise<boolean>;
   /** Marks inspection done; returns whether key return is still required. */
   finishInspectionWorkflow: (id: string) => 'needs_key_return' | 'completed';
   saveKeyWorkflow: (
@@ -1023,6 +1029,75 @@ export function InspectorDataProvider({
     [apiConnected, mutateWithOffline, refresh],
   );
 
+  const markJobCompletedLocally = useCallback((id: string) => {
+    setJobs((prev) =>
+      prev.map((j) => {
+        if (j.id !== id || j.status === 'completed') return j;
+        const completed = { ...j, status: 'completed' as const, workflowStep: 99 };
+        persistJobProgress(completed);
+        saveCompletedJobHistory(completed);
+        return completed;
+      }),
+    );
+  }, []);
+
+  const completeOpenInspectionJob = useCallback(
+    async (
+      id: string,
+      times: { startTime: string; endTime: string },
+    ): Promise<boolean> => {
+      const job = jobs.find((j) => j.id === id);
+      if (!job) return false;
+      if (job.status === 'completed') return true;
+
+      const isApiJob = apiInspectionIds.current.has(id);
+
+      if (isApiJob && apiConnected) {
+        try {
+          await apiCompleteInspection(id, times);
+        } catch {
+          try {
+            const list = await fetchInspections();
+            const row = list.find((inspection) => inspection.id === id);
+            if (row?.status === INSPECTION_STATUS.COMPLETED) {
+              markJobCompletedLocally(id);
+              void refresh();
+              return true;
+            }
+          } catch {
+            // fall through
+          }
+          return false;
+        }
+      } else if (!isApiJob) {
+        setEarnings((earnPrev) => [
+          {
+            id: `earn-${Date.now()}`,
+            jobId: id,
+            type: job.type,
+            propertyAddress: job.propertyAddress,
+            completedAt: new Date().toISOString(),
+            hoursWorked: job.estimatedHours,
+            hourlyRate: INSPECTOR_HOURLY_RATE_AUD,
+            travelKmOneWay: job.travelKmOneWay,
+            fuelAllowance: job.fuelAllowance,
+            laborAmount: job.laborAmount,
+            amount: job.payAmount,
+            accountingSynced: false,
+          },
+          ...earnPrev,
+        ]);
+        mutateWithOffline(id, 'complete', {});
+      }
+
+      markJobCompletedLocally(id);
+      toast.success('Open inspection completed');
+      void refresh();
+      return true;
+    },
+    [jobs, apiConnected, markJobCompletedLocally, mutateWithOffline, refresh],
+  );
+
   const saveKeyWorkflow = useCallback(
     async (id: string, phase: 'collect' | 'return', record: KeyPhaseRecord) => {
       const isApiJob =
@@ -1543,6 +1618,7 @@ export function InspectorDataProvider({
     updateJobStatus,
     updateJobWorkflow,
     completeJob,
+    completeOpenInspectionJob,
     finishInspectionWorkflow,
     saveKeyWorkflow,
     loadInspectionFindings,

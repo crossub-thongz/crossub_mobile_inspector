@@ -1,10 +1,11 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
 import {
   OutgoingSectionPhotos,
@@ -18,12 +19,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  INSPECTION_AREA_CATALOG,
-  getInspectionAreaDefinition,
   sectionAreaName,
 } from '@/constants/inspection-areas';
 import { jobDetail, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
+import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
 import { compressPhotoSources } from '@/lib/inspection-area-photos';
 import {
   useInspectionFinishedGate,
@@ -31,6 +31,18 @@ import {
   useKeyCollectGate,
 } from '@/hooks/use-key-collect-gate';
 import { fetchInspectionDetail } from '@/lib/crossub-api/inspector-client';
+import {
+  applyOutgoingDetailPhotos,
+  emptyOutgoingIssue,
+  mergeOutgoingExecutionDraft,
+} from '@/lib/inspection-execution-hydration';
+import type { OutgoingAreaIssueDraft, OutgoingExecutionDraft } from '@/lib/inspection-execution-draft';
+import {
+  buildEffectiveAreaCatalog,
+  isCustomAreaName,
+  normalizeCustomAreaName,
+  type CustomAreaSectionMode,
+} from '@/lib/custom-inspection-areas';
 import {
   matchReferenceSectionPhotos,
   outgoingSavedIngoingPhotos,
@@ -49,13 +61,7 @@ const RESPONSIBILITY = [
   'Fair Wear & Tear',
 ] as const;
 
-type AreaIssue = {
-  available: boolean | null;
-  note: string;
-  responsibility: string;
-  activeSections: string[];
-  photosBySection: Record<string, SectionBeforeAfter>;
-};
+type AreaIssue = OutgoingAreaIssueDraft;
 
 const emptySectionPhotos = (): SectionBeforeAfter => ({
   ingoingPhotoUrls: [],
@@ -65,17 +71,9 @@ const emptySectionPhotos = (): SectionBeforeAfter => ({
 function emptyAreaIssue(
   areaName: string,
   seed?: { available: boolean | null; activeSections: string[] },
+  customAreas?: OutgoingExecutionDraft['customAreas'],
 ): AreaIssue {
-  const def = getInspectionAreaDefinition(areaName);
-  const activeSections =
-    seed?.activeSections ?? [...(def?.defaultSections ?? [])];
-  return {
-    available: seed?.available ?? null,
-    note: '',
-    responsibility: '',
-    activeSections,
-    photosBySection: {},
-  };
+  return emptyOutgoingIssue(areaName, seed, customAreas ?? []);
 }
 
 export default function OutgoingInspectionPage() {
@@ -92,10 +90,17 @@ export default function OutgoingInspectionPage() {
   useKeyCollectGate(job, id);
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
-  const [areaIndex, setAreaIndex] = useState(0);
+
+  const { draft, setDraft, clearDraft, localDraftLoaded } =
+    useInspectionExecutionDraft(id, job, 'outgoing', () => ({
+      kind: 'outgoing',
+      areaIndex: 0,
+      issues: {},
+      customAreas: [],
+    }));
   const [busy, setBusy] = useState(false);
+  const [addAreaOpen, setAddAreaOpen] = useState(false);
   const [loadingReference, setLoadingReference] = useState(apiConnected);
-  const [issues, setIssues] = useState<Record<string, AreaIssue>>({});
   const [ingoingFromReference, setIngoingFromReference] = useState(false);
   const [referenceAreas, setReferenceAreas] = useState<
     Array<{ name: string; photos: Array<{ url: string }> }>
@@ -103,12 +108,15 @@ export default function OutgoingInspectionPage() {
   const [ingoingAreaPlan, setIngoingAreaPlan] = useState<IngoingAreaPlan | null>(
     null,
   );
+  const serverHydrated = useRef(false);
 
   useEffect(() => {
     if (!apiConnected || !id) {
       setLoadingReference(false);
       return;
     }
+    if (!localDraftLoaded.current || serverHydrated.current) return;
+
     let cancelled = false;
     setLoadingReference(true);
     void (async () => {
@@ -122,48 +130,72 @@ export default function OutgoingInspectionPage() {
         const plan = referenceIngoingAreaPlan(detail);
         setIngoingAreaPlan(plan);
 
-        const nextIssues: Record<string, AreaIssue> = {};
-        let seededFromReference = false;
+        setDraft((prev) => {
+          const catalog = buildEffectiveAreaCatalog(prev.customAreas ?? []);
+          const nextIssues: Record<string, AreaIssue> = { ...prev.issues };
+          let seededFromReference = false;
 
-        for (const def of INSPECTION_AREA_CATALOG) {
-          const seed = buildOutgoingIssueSeed(def, plan);
-          const sectionsToSeed =
-            seed.available === true
-              ? seed.activeSections
-              : outgoingSectionsForRoom(plan, def.name);
-          const photosBySection: Record<string, SectionBeforeAfter> = {};
-          for (const section of sectionsToSeed) {
-            const savedIngoing = outgoingSavedIngoingPhotos(
-              detail,
-              def.name,
-              section,
-            );
-            const referenceUrls = reference
-              ? matchReferenceSectionPhotos(def.name, section, refAreas)
-              : [];
-            const ingoingPhotoUrls =
-              savedIngoing.length > 0 ? savedIngoing : referenceUrls;
-            if (savedIngoing.length === 0 && referenceUrls.length > 0) {
-              seededFromReference = true;
+          for (const def of catalog) {
+            if (nextIssues[def.name]) continue;
+            const seed = buildOutgoingIssueSeed(def, plan);
+            const sectionsToSeed =
+              seed.available === true
+                ? seed.activeSections
+                : isCustomAreaName(def.name, prev.customAreas)
+                  ? def.defaultSections
+                  : outgoingSectionsForRoom(plan, def.name);
+            const photosBySection: Record<string, SectionBeforeAfter> = {};
+            for (const section of sectionsToSeed) {
+              const savedIngoing = outgoingSavedIngoingPhotos(
+                detail,
+                def.name,
+                section,
+              );
+              const referenceUrls = reference
+                ? matchReferenceSectionPhotos(def.name, section, refAreas)
+                : [];
+              const ingoingPhotoUrls =
+                savedIngoing.length > 0 ? savedIngoing : referenceUrls;
+              if (savedIngoing.length === 0 && referenceUrls.length > 0) {
+                seededFromReference = true;
+              }
+              photosBySection[section] = {
+                ...emptySectionPhotos(),
+                ingoingPhotoUrls,
+              };
             }
-            photosBySection[section] = {
-              ...emptySectionPhotos(),
-              ingoingPhotoUrls,
+            nextIssues[def.name] = {
+              ...emptyAreaIssue(def.name, seed, prev.customAreas),
+              photosBySection,
             };
           }
-          nextIssues[def.name] = {
-            ...emptyAreaIssue(def.name, seed),
-            photosBySection,
-          };
-        }
 
-        setIssues(nextIssues);
-        setIngoingFromReference(seededFromReference || Boolean(reference));
-        if (plan) {
-          const firstAvailable = INSPECTION_AREA_CATALOG.findIndex(
-            (def) => nextIssues[def.name]?.available === true,
+          const withServerPhotos = applyOutgoingDetailPhotos(
+            nextIssues,
+            detail,
+            prev.customAreas ?? [],
           );
-          if (firstAvailable >= 0) setAreaIndex(firstAvailable);
+          const merged = mergeOutgoingExecutionDraft(
+            {
+              kind: 'outgoing',
+              areaIndex: prev.areaIndex,
+              issues: withServerPhotos,
+              customAreas: prev.customAreas ?? [],
+            },
+            prev,
+          );
+          if (plan) {
+            const firstAvailable = catalog.findIndex(
+              (def) => merged.issues[def.name]?.available === true,
+            );
+            if (firstAvailable >= 0 && prev.areaIndex === 0) {
+              merged.areaIndex = firstAvailable;
+            }
+          }
+          setIngoingFromReference(seededFromReference || Boolean(reference));
+          return merged;
+        });
+        if (plan) {
           toast.success(
             `Loaded ${plan.rooms.length} area(s) from the ingoing report`,
           );
@@ -177,14 +209,57 @@ export default function OutgoingInspectionPage() {
           toast.error('Could not load ingoing reference photos');
         }
       } finally {
-        if (!cancelled) setLoadingReference(false);
+        if (!cancelled) {
+          setLoadingReference(false);
+          serverHydrated.current = true;
+        }
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [apiConnected, id]);
+  }, [apiConnected, id, setDraft, localDraftLoaded]);
+
+  const customAreas = draft.customAreas ?? [];
+  const areaCatalog = useMemo(
+    () => buildEffectiveAreaCatalog(customAreas),
+    [customAreas],
+  );
+  const areaIndex = Math.min(
+    Math.max(draft.areaIndex, 0),
+    Math.max(areaCatalog.length - 1, 0),
+  );
+  const issues = draft.issues;
+
+  const handleAddCustomArea = (name: string, sectionMode: CustomAreaSectionMode) => {
+    const normalized = normalizeCustomAreaName(name);
+    setDraft((prev) => {
+      const nextCustomAreas = [
+        ...(prev.customAreas ?? []),
+        { name: normalized, sectionMode },
+      ];
+      const nextCatalog = buildEffectiveAreaCatalog(nextCustomAreas);
+      const def = nextCatalog[nextCatalog.length - 1];
+      return {
+        ...prev,
+        customAreas: nextCustomAreas,
+        areaIndex: nextCatalog.length - 1,
+        issues: {
+          ...prev.issues,
+          [normalized]: emptyAreaIssue(
+            normalized,
+            {
+              available: null,
+              activeSections: [...def.defaultSections],
+            },
+            nextCustomAreas,
+          ),
+        },
+      };
+    });
+    toast.success(`Added “${normalized}”`);
+  };
 
   if (!job) {
     return (
@@ -194,21 +269,24 @@ export default function OutgoingInspectionPage() {
     );
   }
 
-  const areaDef = INSPECTION_AREA_CATALOG[areaIndex];
-  const area = areaDef.name;
-  const issue = issues[area] ?? emptyAreaIssue(area);
-  const isLast = areaIndex === INSPECTION_AREA_CATALOG.length - 1;
+  const areaDef = areaCatalog[areaIndex];
+  const area = areaDef?.name ?? areaCatalog[0]?.name ?? 'Area';
+  const issue = issues[area] ?? emptyAreaIssue(area, undefined, customAreas);
+  const isLast = areaIndex === areaCatalog.length - 1;
 
   const updateIssue = (patch: Partial<AreaIssue>) => {
-    setIssues((prev) => {
-      const current = prev[area] ?? emptyAreaIssue(area);
-      return { ...prev, [area]: { ...current, ...patch } };
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
+      return {
+        ...prev,
+        issues: { ...prev.issues, [area]: { ...current, ...patch } },
+      };
     });
   };
 
   const goToArea = (index: number) => {
-    if (index < 0 || index >= INSPECTION_AREA_CATALOG.length) return;
-    setAreaIndex(index);
+    if (index < 0 || index >= areaCatalog.length) return;
+    setDraft((prev) => ({ ...prev, areaIndex: index }));
   };
 
   const seedSectionIngoing = (section: string): string[] => {
@@ -218,23 +296,28 @@ export default function OutgoingInspectionPage() {
 
   const markAvailable = (available: boolean) => {
     if (!available) {
-      setIssues((prev) => ({
+      setDraft((prev) => ({
         ...prev,
-        [area]: {
-          ...emptyAreaIssue(area),
-          available: false,
-          activeSections: [],
-          photosBySection: {},
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...emptyAreaIssue(area, undefined, prev.customAreas),
+            available: false,
+            activeSections: [],
+            photosBySection: {},
+          },
         },
+        areaIndex: !isLast ? prev.areaIndex + 1 : prev.areaIndex,
       }));
-      if (!isLast) setAreaIndex((i) => i + 1);
       return;
     }
 
     const photosBySection: Record<string, SectionBeforeAfter> = {
       ...(issues[area]?.photosBySection ?? {}),
     };
-    const sections = outgoingSectionsForRoom(ingoingAreaPlan, area);
+    const sections = isCustomAreaName(area, customAreas)
+      ? [...areaDef.defaultSections]
+      : outgoingSectionsForRoom(ingoingAreaPlan, area);
     for (const section of sections) {
       if (!photosBySection[section]) {
         photosBySection[section] = {
@@ -256,7 +339,7 @@ export default function OutgoingInspectionPage() {
     sources: Array<File | string>,
   ) => {
     if (sources.length === 0) return;
-    const current = issues[area] ?? emptyAreaIssue(area);
+    const current = issues[area] ?? emptyAreaIssue(area, undefined, customAreas);
     const sectionPhotos = current.photosBySection[section] ?? emptySectionPhotos();
     if (
       side === 'ingoing' &&
@@ -268,19 +351,22 @@ export default function OutgoingInspectionPage() {
     setBusy(true);
     try {
       const previewUrls = await compressPhotoSources(sources);
-      setIssues((prev) => {
-        const rec = prev[area] ?? emptyAreaIssue(area);
+      setDraft((prev) => {
+        const rec = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
         const existing = rec.photosBySection[section] ?? emptySectionPhotos();
         const key = side === 'ingoing' ? 'ingoingPhotoUrls' : 'outgoingPhotoUrls';
         return {
           ...prev,
-          [area]: {
-            ...rec,
-            photosBySection: {
-              ...rec.photosBySection,
-              [section]: {
-                ...existing,
-                [key]: [...existing[key], ...previewUrls],
+          issues: {
+            ...prev.issues,
+            [area]: {
+              ...rec,
+              photosBySection: {
+                ...rec.photosBySection,
+                [section]: {
+                  ...existing,
+                  [key]: [...existing[key], ...previewUrls],
+                },
               },
             },
           },
@@ -298,7 +384,7 @@ export default function OutgoingInspectionPage() {
     side: 'ingoing' | 'outgoing',
     index: number,
   ) => {
-    const current = issues[area] ?? emptyAreaIssue(area);
+    const current = issues[area] ?? emptyAreaIssue(area, undefined, customAreas);
     const sectionPhotos = current.photosBySection[section] ?? emptySectionPhotos();
     if (
       side === 'ingoing' &&
@@ -307,19 +393,22 @@ export default function OutgoingInspectionPage() {
     ) {
       return;
     }
-    setIssues((prev) => {
-      const rec = prev[area] ?? emptyAreaIssue(area);
+    setDraft((prev) => {
+      const rec = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
       const existing = rec.photosBySection[section] ?? emptySectionPhotos();
       const key = side === 'ingoing' ? 'ingoingPhotoUrls' : 'outgoingPhotoUrls';
       return {
         ...prev,
-        [area]: {
-          ...rec,
-          photosBySection: {
-            ...rec.photosBySection,
-            [section]: {
-              ...existing,
-              [key]: existing[key].filter((_, i) => i !== index),
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...rec,
+            photosBySection: {
+              ...rec.photosBySection,
+              [section]: {
+                ...existing,
+                [key]: existing[key].filter((_, i) => i !== index),
+              },
             },
           },
         },
@@ -328,19 +417,22 @@ export default function OutgoingInspectionPage() {
   };
 
   const addSection = (section: string) => {
-    setIssues((prev) => {
-      const current = prev[area] ?? emptyAreaIssue(area);
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
       if (current.activeSections.includes(section)) return prev;
       return {
         ...prev,
-        [area]: {
-          ...current,
-          activeSections: [...current.activeSections, section],
-          photosBySection: {
-            ...current.photosBySection,
-            [section]: {
-              ...emptySectionPhotos(),
-              ingoingPhotoUrls: seedSectionIngoing(section),
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            activeSections: [...current.activeSections, section],
+            photosBySection: {
+              ...current.photosBySection,
+              [section]: {
+                ...emptySectionPhotos(),
+                ingoingPhotoUrls: seedSectionIngoing(section),
+              },
             },
           },
         },
@@ -353,17 +445,20 @@ export default function OutgoingInspectionPage() {
       (room) => room.name === area,
     )?.sections;
     if (planRoomSections?.includes(section)) return;
-    if (!ingoingAreaPlan && areaDef.defaultSections.includes(section)) return;
-    setIssues((prev) => {
-      const current = prev[area] ?? emptyAreaIssue(area);
+    if (areaDef.defaultSections.includes(section)) return;
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
       const nextPhotos = { ...current.photosBySection };
       delete nextPhotos[section];
       return {
         ...prev,
-        [area]: {
-          ...current,
-          activeSections: current.activeSections.filter((s) => s !== section),
-          photosBySection: nextPhotos,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            activeSections: current.activeSections.filter((s) => s !== section),
+            photosBySection: nextPhotos,
+          },
         },
       };
     });
@@ -417,13 +512,16 @@ export default function OutgoingInspectionPage() {
         photosBySection: nextPhotos,
       };
       const nextIssues = { ...issues, [area]: committedIssue };
-      setIssues(nextIssues);
+      setDraft((prev) => ({
+        ...prev,
+        issues: nextIssues,
+        areaIndex: isLast ? prev.areaIndex : prev.areaIndex + 1,
+      }));
 
       if (isLast) {
         await finalizeAndSubmit(nextIssues);
         return;
       }
-      setAreaIndex((i) => i + 1);
     } catch {
       toast.error('Photo upload failed — please retry');
     } finally {
@@ -434,7 +532,7 @@ export default function OutgoingInspectionPage() {
   const finalizeAndSubmit = async (finalIssues: Record<string, AreaIssue>) => {
     await saveInspectionFindings(
       id,
-      INSPECTION_AREA_CATALOG.filter((def) => {
+      areaCatalog.filter((def) => {
         const rec = finalIssues[def.name];
         return (
           rec &&
@@ -469,6 +567,7 @@ export default function OutgoingInspectionPage() {
         };
       }),
     );
+    clearDraft();
     submitInspection('Outgoing report synced with bond claims and accounting');
   };
 
@@ -509,24 +608,36 @@ export default function OutgoingInspectionPage() {
             </p>
           ) : null}
 
-          <div className="flex gap-1">
-            {INSPECTION_AREA_CATALOG.map((a, i) => (
-              <button
-                key={a.name}
-                type="button"
-                title={a.name}
-                aria-label={`Go to ${a.name}`}
-                className={cn('h-1.5 flex-1 rounded-full', progressTone(i, a.name))}
-                onClick={() => goToArea(i)}
-              />
-            ))}
+          <div className="space-y-2">
+            <div className="flex gap-1">
+              {areaCatalog.map((a, i) => (
+                <button
+                  key={a.name}
+                  type="button"
+                  title={a.name}
+                  aria-label={`Go to ${a.name}`}
+                  className={cn('h-1.5 flex-1 rounded-full', progressTone(i, a.name))}
+                  onClick={() => goToArea(i)}
+                />
+              ))}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setAddAreaOpen(true)}
+            >
+              <Plus className="size-4" />
+              Add area
+            </Button>
           </div>
 
           {issue.available == null ? (
             <AreaAvailablePrompt
               areaName={area}
               areaIndex={areaIndex}
-              totalAreas={INSPECTION_AREA_CATALOG.length}
+              totalAreas={areaCatalog.length}
               onYes={() => markAvailable(true)}
               onNo={() => markAvailable(false)}
             />
@@ -534,7 +645,7 @@ export default function OutgoingInspectionPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {area} — skipped ({areaIndex + 1}/{INSPECTION_AREA_CATALOG.length})
+                  {area} — skipped ({areaIndex + 1}/{areaCatalog.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -588,7 +699,7 @@ export default function OutgoingInspectionPage() {
               <CardHeader>
                 <CardTitle>
                   {area} — Before / After ({areaIndex + 1}/
-                  {INSPECTION_AREA_CATALOG.length})
+                  {areaCatalog.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -681,6 +792,12 @@ export default function OutgoingInspectionPage() {
         </div>
       </InspectorShell>
       {Celebration}
+      <AddCustomAreaDialog
+        open={addAreaOpen}
+        existingCustomAreas={customAreas}
+        onClose={() => setAddAreaOpen(false)}
+        onConfirm={handleAddCustomArea}
+      />
     </>
   );
 }

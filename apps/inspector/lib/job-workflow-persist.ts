@@ -27,9 +27,11 @@ function preferStatus(incoming: JobStatus, local?: JobStatus): JobStatus {
 function hasWorkflowProgress(snapshot: JobProgressSnapshot | undefined): boolean {
   if (!snapshot) return false;
   if ((snapshot.workflowStep ?? 0) > 0) return true;
-  return Boolean(
-    snapshot.workflowData && Object.keys(snapshot.workflowData).length > 0,
-  );
+  if (snapshot.status === 'in_progress') return true;
+  const data = snapshot.workflowData;
+  if (!data || Object.keys(data).length === 0) return false;
+  if ('inspectionDraft' in data && data.inspectionDraft) return true;
+  return true;
 }
 
 /** Load saved in-progress workflow for a job (session tab storage). */

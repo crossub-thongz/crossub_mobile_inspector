@@ -24,6 +24,7 @@ import {
   isKeyCollectComplete,
   isKeyReturnComplete,
 } from '@/lib/key-access-workflow';
+import { hasInspectionExecutionDraft } from '@/lib/inspection-execution-draft';
 
 const STATUS_FLOW = [
   { status: 'accepted' as const, label: 'Accepted' },
@@ -51,7 +52,10 @@ export default function JobDetailPage() {
   const backHref = poolPreview ? ROUTES.JOB_POOL : ROUTES.INSPECTIONS;
 
   const workflowHref = jobWorkflow(job.id, job.type);
-  const workflowStarted = (job.workflowStep ?? 0) > 0;
+  const workflowStarted =
+    (job.workflowStep ?? 0) > 0 ||
+    hasInspectionExecutionDraft(job) ||
+    job.status === 'in_progress';
   const canStartInspection =
     job.status === 'arrived' || job.status === 'in_progress';
   const keyCollectDone = isKeyCollectComplete(job);

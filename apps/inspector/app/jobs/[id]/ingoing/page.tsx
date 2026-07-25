@@ -1,10 +1,11 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
-import { ChevronLeft, Mic } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronLeft, Mic, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
 import { InspectionSectionPhotos } from '@/components/inspector/inspection-section-photos';
 import { InspectorShell } from '@/components/layout/inspector-shell';
@@ -15,13 +16,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  INSPECTION_AREA_CATALOG,
-  getInspectionAreaDefinition,
   sectionAreaName,
 } from '@/constants/inspection-areas';
 import { jobDetail, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
+import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
 import type { InspectorFindingAreaPayload } from '@/lib/crossub-api/inspector-client';
+import { fetchInspectionDetail } from '@/lib/crossub-api/inspector-client';
+import {
+  applyIngoingDetailPhotos,
+  emptyIngoingEntry,
+  mergeIngoingExecutionDraft,
+} from '@/lib/inspection-execution-hydration';
+import type { IngoingAreaEntryDraft, IngoingExecutionDraft } from '@/lib/inspection-execution-draft';
+import {
+  buildEffectiveAreaCatalog,
+  normalizeCustomAreaName,
+  type CustomAreaSectionMode,
+} from '@/lib/custom-inspection-areas';
 import { compressPhotoSources } from '@/lib/inspection-area-photos';
 import {
   useInspectionFinishedGate,
@@ -32,24 +44,10 @@ import { cn } from '@/lib/utils';
 
 const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor', 'Damaged'];
 
-type AreaEntry = {
-  /** null = not answered yet */
-  available: boolean | null;
-  condition: string;
-  comments: string;
-  activeSections: string[];
-  photosBySection: Record<string, string[]>;
-};
+type AreaEntry = IngoingAreaEntryDraft;
 
-function emptyEntry(areaName: string): AreaEntry {
-  const def = getInspectionAreaDefinition(areaName);
-  return {
-    available: null,
-    condition: '',
-    comments: '',
-    activeSections: [...(def?.defaultSections ?? [])],
-    photosBySection: {},
-  };
+function emptyEntry(areaName: string, customAreas: IngoingExecutionDraft['customAreas']): AreaEntry {
+  return emptyIngoingEntry(areaName, customAreas ?? []);
 }
 
 export default function IngoingInspectionPage() {
@@ -59,15 +57,89 @@ export default function IngoingInspectionPage() {
     commitInspectionAreaPhotos,
     saveInspectionFindings,
     updateJobStatus,
+    apiConnected,
   } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
   useKeyCollectGate(job, id);
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
-  const [areaIndex, setAreaIndex] = useState(0);
+  const { draft, setDraft, clearDraft, localDraftLoaded } = useInspectionExecutionDraft(
+    id,
+    job,
+    'ingoing',
+    () => ({ kind: 'ingoing', areaIndex: 0, entries: {}, customAreas: [] }),
+  );
   const [busy, setBusy] = useState(false);
-  const [entries, setEntries] = useState<Record<string, AreaEntry>>({});
+  const [addAreaOpen, setAddAreaOpen] = useState(false);
+  const serverHydrated = useRef(false);
+
+  useEffect(() => {
+    if (!apiConnected || !id || !localDraftLoaded.current || serverHydrated.current) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const detail = await fetchInspectionDetail(id);
+        if (cancelled) return;
+        setDraft((prev) =>
+          mergeIngoingExecutionDraft(
+            {
+              kind: 'ingoing',
+              areaIndex: prev.areaIndex,
+              entries: applyIngoingDetailPhotos(
+                prev.entries,
+                detail,
+                prev.customAreas ?? [],
+              ),
+              customAreas: prev.customAreas ?? [],
+            },
+            prev,
+          ),
+        );
+      } catch {
+        // Offline or demo — local draft still applies.
+      } finally {
+        if (!cancelled) serverHydrated.current = true;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiConnected, id, setDraft, localDraftLoaded]);
+
+  const customAreas = draft.customAreas ?? [];
+  const areaCatalog = useMemo(
+    () => buildEffectiveAreaCatalog(customAreas),
+    [customAreas],
+  );
+  const areaIndex = Math.min(
+    Math.max(draft.areaIndex, 0),
+    Math.max(areaCatalog.length - 1, 0),
+  );
+  const entries = draft.entries;
+
+  const handleAddCustomArea = (name: string, sectionMode: CustomAreaSectionMode) => {
+    const normalized = normalizeCustomAreaName(name);
+    setDraft((prev) => {
+      const nextCustomAreas = [
+        ...(prev.customAreas ?? []),
+        { name: normalized, sectionMode },
+      ];
+      const nextCatalog = buildEffectiveAreaCatalog(nextCustomAreas);
+      return {
+        ...prev,
+        customAreas: nextCustomAreas,
+        areaIndex: nextCatalog.length - 1,
+        entries: {
+          ...prev.entries,
+          [normalized]: emptyEntry(normalized, nextCustomAreas),
+        },
+      };
+    });
+    toast.success(`Added “${normalized}”`);
+  };
 
   if (!job) {
     return (
@@ -77,37 +149,41 @@ export default function IngoingInspectionPage() {
     );
   }
 
-  const areaDef = INSPECTION_AREA_CATALOG[areaIndex];
-  const area = areaDef.name;
-  const entry = entries[area] ?? emptyEntry(area);
-  const isLast = areaIndex === INSPECTION_AREA_CATALOG.length - 1;
+  const areaDef = areaCatalog[areaIndex];
+  const area = areaDef?.name ?? areaCatalog[0]?.name ?? 'Area';
+  const entry = entries[area] ?? emptyEntry(area, customAreas);
+  const isLast = areaIndex === areaCatalog.length - 1;
 
   const updateEntry = (patch: Partial<AreaEntry>) => {
-    setEntries((prev) => {
-      const current = prev[area] ?? emptyEntry(area);
-      return { ...prev, [area]: { ...current, ...patch } };
+    setDraft((prev) => {
+      const current = prev.entries[area] ?? emptyEntry(area, prev.customAreas);
+      return {
+        ...prev,
+        entries: { ...prev.entries, [area]: { ...current, ...patch } },
+      };
     });
   };
 
   const goToArea = (index: number) => {
-    if (index < 0 || index >= INSPECTION_AREA_CATALOG.length) return;
-    setAreaIndex(index);
+    if (index < 0 || index >= areaCatalog.length) return;
+    setDraft((prev) => ({ ...prev, areaIndex: index }));
   };
 
   const markAvailable = (available: boolean) => {
     if (!available) {
-      setEntries((prev) => ({
+      setDraft((prev) => ({
         ...prev,
-        [area]: {
-          ...emptyEntry(area),
-          available: false,
-          activeSections: [],
-          photosBySection: {},
+        entries: {
+          ...prev.entries,
+          [area]: {
+            ...emptyEntry(area, prev.customAreas),
+            available: false,
+            activeSections: [],
+            photosBySection: {},
+          },
         },
+        areaIndex: !isLast ? prev.areaIndex + 1 : prev.areaIndex,
       }));
-      if (!isLast) {
-        setAreaIndex((i) => i + 1);
-      }
       return;
     }
     updateEntry({
@@ -121,18 +197,21 @@ export default function IngoingInspectionPage() {
     setBusy(true);
     try {
       const previewUrls = await compressPhotoSources(sources);
-      setEntries((prev) => {
-        const current = prev[area] ?? emptyEntry(area);
+      setDraft((prev) => {
+        const current = prev.entries[area] ?? emptyEntry(area, prev.customAreas);
         return {
           ...prev,
-          [area]: {
-            ...current,
-            photosBySection: {
-              ...current.photosBySection,
-              [section]: [
-                ...(current.photosBySection[section] ?? []),
-                ...previewUrls,
-              ],
+          entries: {
+            ...prev.entries,
+            [area]: {
+              ...current,
+              photosBySection: {
+                ...current.photosBySection,
+                [section]: [
+                  ...(current.photosBySection[section] ?? []),
+                  ...previewUrls,
+                ],
+              },
             },
           },
         };
@@ -145,17 +224,20 @@ export default function IngoingInspectionPage() {
   };
 
   const removePhoto = (section: string, index: number) => {
-    setEntries((prev) => {
-      const current = prev[area] ?? emptyEntry(area);
+    setDraft((prev) => {
+      const current = prev.entries[area] ?? emptyEntry(area, prev.customAreas);
       return {
         ...prev,
-        [area]: {
-          ...current,
-          photosBySection: {
-            ...current.photosBySection,
-            [section]: (current.photosBySection[section] ?? []).filter(
-              (_, i) => i !== index,
-            ),
+        entries: {
+          ...prev.entries,
+          [area]: {
+            ...current,
+            photosBySection: {
+              ...current.photosBySection,
+              [section]: (current.photosBySection[section] ?? []).filter(
+                (_, i) => i !== index,
+              ),
+            },
           },
         },
       };
@@ -163,14 +245,17 @@ export default function IngoingInspectionPage() {
   };
 
   const addSection = (section: string) => {
-    setEntries((prev) => {
-      const current = prev[area] ?? emptyEntry(area);
+    setDraft((prev) => {
+      const current = prev.entries[area] ?? emptyEntry(area, prev.customAreas);
       if (current.activeSections.includes(section)) return prev;
       return {
         ...prev,
-        [area]: {
-          ...current,
-          activeSections: [...current.activeSections, section],
+        entries: {
+          ...prev.entries,
+          [area]: {
+            ...current,
+            activeSections: [...current.activeSections, section],
+          },
         },
       };
     });
@@ -178,16 +263,19 @@ export default function IngoingInspectionPage() {
 
   const removeSection = (section: string) => {
     if (areaDef.defaultSections.includes(section)) return;
-    setEntries((prev) => {
-      const current = prev[area] ?? emptyEntry(area);
+    setDraft((prev) => {
+      const current = prev.entries[area] ?? emptyEntry(area, prev.customAreas);
       const nextPhotos = { ...current.photosBySection };
       delete nextPhotos[section];
       return {
         ...prev,
-        [area]: {
-          ...current,
-          activeSections: current.activeSections.filter((s) => s !== section),
-          photosBySection: nextPhotos,
+        entries: {
+          ...prev.entries,
+          [area]: {
+            ...current,
+            activeSections: current.activeSections.filter((s) => s !== section),
+            photosBySection: nextPhotos,
+          },
         },
       };
     });
@@ -231,13 +319,16 @@ export default function IngoingInspectionPage() {
         photosBySection: nextPhotos,
       };
       const finalEntries = { ...entries, [area]: committedEntry };
-      setEntries(finalEntries);
+      setDraft((prev) => ({
+        ...prev,
+        entries: finalEntries,
+        areaIndex: isLast ? prev.areaIndex : prev.areaIndex + 1,
+      }));
 
       if (isLast) {
         await finalizeAndSubmit(finalEntries);
         return;
       }
-      setAreaIndex((i) => i + 1);
     } catch {
       toast.error('Photo upload failed — please retry');
     } finally {
@@ -248,7 +339,7 @@ export default function IngoingInspectionPage() {
   const finalizeAndSubmit = async (finalEntries: Record<string, AreaEntry>) => {
     // Ensure skipped trailing areas are recorded if user finishes from an earlier revisit.
     const findings: InspectorFindingAreaPayload[] = [];
-    for (const def of INSPECTION_AREA_CATALOG) {
+    for (const def of areaCatalog) {
       const rec = finalEntries[def.name];
       if (!rec || rec.available !== true) continue;
       findings.push({
@@ -270,7 +361,7 @@ export default function IngoingInspectionPage() {
     }
 
     // Also commit any still-local photos for available areas already visited.
-    for (const def of INSPECTION_AREA_CATALOG) {
+    for (const def of areaCatalog) {
       const rec = finalEntries[def.name];
       if (!rec || rec.available !== true) continue;
       for (const section of rec.activeSections) {
@@ -289,6 +380,7 @@ export default function IngoingInspectionPage() {
     }
 
     await saveInspectionFindings(id, findings);
+    clearDraft();
     submitInspection('Ingoing report sent to tenant, agent, and landlord');
   };
 
@@ -319,24 +411,36 @@ export default function IngoingInspectionPage() {
         <div className="space-y-4">
           <JobWorkflowToolbar job={job} />
 
-          <div className="flex gap-1">
-            {INSPECTION_AREA_CATALOG.map((a, i) => (
-              <button
-                key={a.name}
-                type="button"
-                title={a.name}
-                aria-label={`Go to ${a.name}`}
-                className={cn('h-1.5 flex-1 rounded-full', progressTone(i, a.name))}
-                onClick={() => goToArea(i)}
-              />
-            ))}
+          <div className="space-y-2">
+            <div className="flex gap-1">
+              {areaCatalog.map((a, i) => (
+                <button
+                  key={a.name}
+                  type="button"
+                  title={a.name}
+                  aria-label={`Go to ${a.name}`}
+                  className={cn('h-1.5 flex-1 rounded-full', progressTone(i, a.name))}
+                  onClick={() => goToArea(i)}
+                />
+              ))}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setAddAreaOpen(true)}
+            >
+              <Plus className="size-4" />
+              Add area
+            </Button>
           </div>
 
           {entry.available == null ? (
             <AreaAvailablePrompt
               areaName={area}
               areaIndex={areaIndex}
-              totalAreas={INSPECTION_AREA_CATALOG.length}
+              totalAreas={areaCatalog.length}
               onYes={() => markAvailable(true)}
               onNo={() => markAvailable(false)}
             />
@@ -344,7 +448,7 @@ export default function IngoingInspectionPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {area} — skipped ({areaIndex + 1}/{INSPECTION_AREA_CATALOG.length})
+                  {area} — skipped ({areaIndex + 1}/{areaCatalog.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -401,7 +505,7 @@ export default function IngoingInspectionPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {area} ({areaIndex + 1}/{INSPECTION_AREA_CATALOG.length})
+                  {area} ({areaIndex + 1}/{areaCatalog.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -487,6 +591,12 @@ export default function IngoingInspectionPage() {
         </div>
       </InspectorShell>
       {Celebration}
+      <AddCustomAreaDialog
+        open={addAreaOpen}
+        existingCustomAreas={customAreas}
+        onClose={() => setAddAreaOpen(false)}
+        onConfirm={handleAddCustomArea}
+      />
     </>
   );
 }

@@ -9,6 +9,8 @@ export type InspectorOpenViewing = {
   startedEarlyAt?: string | null;
   originalScheduledStart?: string | null;
   canStart?: boolean;
+  /** Inspector may finish the pool job before the scheduled window ends. */
+  canCompleteEarly?: boolean;
   checkInUrl: string;
   applyUrl: string;
   visitors: InspectorOpenViewingVisitor[];

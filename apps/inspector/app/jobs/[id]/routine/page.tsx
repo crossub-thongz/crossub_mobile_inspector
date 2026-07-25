@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -19,11 +19,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   INSPECTION_AREA_CATALOG,
-  getInspectionAreaDefinition,
   sectionAreaName,
 } from '@/constants/inspection-areas';
 import { jobDetail, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
+import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
 import { compressPhotoSources } from '@/lib/inspection-area-photos';
 import {
   useInspectionFinishedGate,
@@ -31,15 +31,16 @@ import {
   useKeyCollectGate,
 } from '@/hooks/use-key-collect-gate';
 import { fetchInspectionDetail } from '@/lib/crossub-api/inspector-client';
+import {
+  applyRoutineDetailPhotos,
+  emptyRoutineIssue,
+  mergeRoutineExecutionDraft,
+} from '@/lib/inspection-execution-hydration';
+import type { RoutineAreaIssueDraft } from '@/lib/inspection-execution-draft';
 import { matchReferenceSectionPhotos } from '@/lib/outgoing-reference-photos';
 import { cn } from '@/lib/utils';
 
-type AreaIssue = {
-  available: boolean | null;
-  notes: string;
-  activeSections: string[];
-  photosBySection: Record<string, SectionBeforeAfter>;
-};
+type AreaIssue = RoutineAreaIssueDraft;
 
 const emptySectionPhotos = (): SectionBeforeAfter => ({
   ingoingPhotoUrls: [],
@@ -47,13 +48,7 @@ const emptySectionPhotos = (): SectionBeforeAfter => ({
 });
 
 function emptyAreaIssue(areaName: string): AreaIssue {
-  const def = getInspectionAreaDefinition(areaName);
-  return {
-    available: null,
-    notes: '',
-    activeSections: [...(def?.defaultSections ?? [])],
-    photosBySection: {},
-  };
+  return emptyRoutineIssue(areaName);
 }
 
 export default function RoutineInspectionPage() {
@@ -71,21 +66,28 @@ export default function RoutineInspectionPage() {
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
 
-  const [method, setMethod] = useState<'physical' | 'self'>('physical');
-  const [areaIndex, setAreaIndex] = useState(0);
+  const { draft, setDraft, clearDraft, localDraftLoaded } =
+    useInspectionExecutionDraft(id, job, 'routine', () => ({
+      kind: 'routine',
+      areaIndex: 0,
+      method: 'physical',
+      issues: {},
+    }));
   const [busy, setBusy] = useState(false);
   const [loadingReference, setLoadingReference] = useState(apiConnected);
-  const [issues, setIssues] = useState<Record<string, AreaIssue>>({});
   const [ingoingFromReference, setIngoingFromReference] = useState(false);
   const [referenceAreas, setReferenceAreas] = useState<
     Array<{ name: string; photos: Array<{ url: string }> }>
   >([]);
+  const serverHydrated = useRef(false);
 
   useEffect(() => {
     if (!apiConnected || !id) {
       setLoadingReference(false);
       return;
     }
+    if (!localDraftLoaded.current || serverHydrated.current) return;
+
     let cancelled = false;
     setLoadingReference(true);
     void (async () => {
@@ -115,7 +117,19 @@ export default function RoutineInspectionPage() {
             photosBySection,
           };
         }
-        setIssues(nextIssues);
+
+        const withServerPhotos = applyRoutineDetailPhotos(nextIssues, detail);
+        setDraft((prev) =>
+          mergeRoutineExecutionDraft(
+            {
+              kind: 'routine',
+              areaIndex: prev.areaIndex,
+              method: prev.method,
+              issues: withServerPhotos,
+            },
+            prev,
+          ),
+        );
         setIngoingFromReference(seeded || Boolean(reference));
         if (reference && seeded) {
           toast.success('Latest ingoing photos loaded for comparison');
@@ -125,13 +139,20 @@ export default function RoutineInspectionPage() {
       } catch {
         if (!cancelled) toast.error('Could not load latest ingoing photos');
       } finally {
-        if (!cancelled) setLoadingReference(false);
+        if (!cancelled) {
+          setLoadingReference(false);
+          serverHydrated.current = true;
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [apiConnected, id]);
+  }, [apiConnected, id, setDraft, localDraftLoaded]);
+
+  const method = draft.method;
+  const areaIndex = draft.areaIndex;
+  const issues = draft.issues;
 
   if (!job) {
     return (
@@ -147,15 +168,18 @@ export default function RoutineInspectionPage() {
   const isLast = areaIndex === INSPECTION_AREA_CATALOG.length - 1;
 
   const updateIssue = (patch: Partial<AreaIssue>) => {
-    setIssues((prev) => {
-      const current = prev[area] ?? emptyAreaIssue(area);
-      return { ...prev, [area]: { ...current, ...patch } };
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area);
+      return {
+        ...prev,
+        issues: { ...prev.issues, [area]: { ...current, ...patch } },
+      };
     });
   };
 
   const goToArea = (index: number) => {
     if (index < 0 || index >= INSPECTION_AREA_CATALOG.length) return;
-    setAreaIndex(index);
+    setDraft((prev) => ({ ...prev, areaIndex: index }));
   };
 
   const seedSectionIngoing = (section: string): string[] => {
@@ -165,16 +189,19 @@ export default function RoutineInspectionPage() {
 
   const markAvailable = (available: boolean) => {
     if (!available) {
-      setIssues((prev) => ({
+      setDraft((prev) => ({
         ...prev,
-        [area]: {
-          ...emptyAreaIssue(area),
-          available: false,
-          activeSections: [],
-          photosBySection: {},
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...emptyAreaIssue(area),
+            available: false,
+            activeSections: [],
+            photosBySection: {},
+          },
         },
+        areaIndex: !isLast ? prev.areaIndex + 1 : prev.areaIndex,
       }));
-      if (!isLast) setAreaIndex((i) => i + 1);
       return;
     }
     const photosBySection: Record<string, SectionBeforeAfter> = {
@@ -213,19 +240,22 @@ export default function RoutineInspectionPage() {
     setBusy(true);
     try {
       const previewUrls = await compressPhotoSources(sources);
-      setIssues((prev) => {
-        const rec = prev[area] ?? emptyAreaIssue(area);
+      setDraft((prev) => {
+        const rec = prev.issues[area] ?? emptyAreaIssue(area);
         const existing = rec.photosBySection[section] ?? emptySectionPhotos();
         const key = side === 'ingoing' ? 'ingoingPhotoUrls' : 'outgoingPhotoUrls';
         return {
           ...prev,
-          [area]: {
-            ...rec,
-            photosBySection: {
-              ...rec.photosBySection,
-              [section]: {
-                ...existing,
-                [key]: [...existing[key], ...previewUrls],
+          issues: {
+            ...prev.issues,
+            [area]: {
+              ...rec,
+              photosBySection: {
+                ...rec.photosBySection,
+                [section]: {
+                  ...existing,
+                  [key]: [...existing[key], ...previewUrls],
+                },
               },
             },
           },
@@ -252,19 +282,22 @@ export default function RoutineInspectionPage() {
     ) {
       return;
     }
-    setIssues((prev) => {
-      const rec = prev[area] ?? emptyAreaIssue(area);
+    setDraft((prev) => {
+      const rec = prev.issues[area] ?? emptyAreaIssue(area);
       const existing = rec.photosBySection[section] ?? emptySectionPhotos();
       const key = side === 'ingoing' ? 'ingoingPhotoUrls' : 'outgoingPhotoUrls';
       return {
         ...prev,
-        [area]: {
-          ...rec,
-          photosBySection: {
-            ...rec.photosBySection,
-            [section]: {
-              ...existing,
-              [key]: existing[key].filter((_, i) => i !== index),
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...rec,
+            photosBySection: {
+              ...rec.photosBySection,
+              [section]: {
+                ...existing,
+                [key]: existing[key].filter((_, i) => i !== index),
+              },
             },
           },
         },
@@ -273,19 +306,22 @@ export default function RoutineInspectionPage() {
   };
 
   const addSection = (section: string) => {
-    setIssues((prev) => {
-      const current = prev[area] ?? emptyAreaIssue(area);
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area);
       if (current.activeSections.includes(section)) return prev;
       return {
         ...prev,
-        [area]: {
-          ...current,
-          activeSections: [...current.activeSections, section],
-          photosBySection: {
-            ...current.photosBySection,
-            [section]: {
-              ...emptySectionPhotos(),
-              ingoingPhotoUrls: seedSectionIngoing(section),
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            activeSections: [...current.activeSections, section],
+            photosBySection: {
+              ...current.photosBySection,
+              [section]: {
+                ...emptySectionPhotos(),
+                ingoingPhotoUrls: seedSectionIngoing(section),
+              },
             },
           },
         },
@@ -295,16 +331,19 @@ export default function RoutineInspectionPage() {
 
   const removeSection = (section: string) => {
     if (areaDef.defaultSections.includes(section)) return;
-    setIssues((prev) => {
-      const current = prev[area] ?? emptyAreaIssue(area);
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area);
       const nextPhotos = { ...current.photosBySection };
       delete nextPhotos[section];
       return {
         ...prev,
-        [area]: {
-          ...current,
-          activeSections: current.activeSections.filter((s) => s !== section),
-          photosBySection: nextPhotos,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            activeSections: current.activeSections.filter((s) => s !== section),
+            photosBySection: nextPhotos,
+          },
         },
       };
     });
@@ -343,6 +382,7 @@ export default function RoutineInspectionPage() {
         };
       }),
     ]);
+    clearDraft();
     submitInspection('Routine report sent to agent and landlord');
   };
 
@@ -382,12 +422,15 @@ export default function RoutineInspectionPage() {
       }
       const committed: AreaIssue = { ...issue, photosBySection: nextPhotos };
       const nextIssues = { ...issues, [area]: committed };
-      setIssues(nextIssues);
+      setDraft((prev) => ({
+        ...prev,
+        issues: nextIssues,
+        areaIndex: isLast ? prev.areaIndex : prev.areaIndex + 1,
+      }));
       if (isLast) {
         await finalizeAndSubmit(nextIssues);
         return;
       }
-      setAreaIndex((i) => i + 1);
     } catch {
       toast.error('Photo upload failed — please retry');
     } finally {
@@ -425,14 +468,14 @@ export default function RoutineInspectionPage() {
             <Button
               variant={method === 'physical' ? 'default' : 'outline'}
               className="flex-1"
-              onClick={() => setMethod('physical')}
+              onClick={() => setDraft((prev) => ({ ...prev, method: 'physical' }))}
             >
               Physical Inspection
             </Button>
             <Button
               variant={method === 'self' ? 'default' : 'outline'}
               className="flex-1"
-              onClick={() => setMethod('self')}
+              onClick={() => setDraft((prev) => ({ ...prev, method: 'self' }))}
             >
               Self Inspection
             </Button>

@@ -20,26 +20,33 @@ export function useFinishInspection(jobId: string) {
   const overlayRef = useRef(overlay);
   overlayRef.current = overlay;
 
+  const celebrate = useCallback(
+    (
+      successMessage: string,
+      redirect: OverlayState['redirect'] = 'home',
+      title = 'Inspection complete',
+    ) => {
+      setOverlay({ title, subtitle: successMessage, redirect });
+    },
+    [],
+  );
+
   const finish = useCallback(
     (successMessage: string) => {
       const outcome = finishInspectionWorkflow(jobId);
 
       if (outcome === 'needs_key_return') {
-        setOverlay({
-          title: 'Report generated',
-          subtitle: 'Return the keys to complete this task.',
-          redirect: 'keys',
-        });
+        celebrate(
+          'Return the keys to complete this task.',
+          'keys',
+          'Report generated',
+        );
         return;
       }
 
-      setOverlay({
-        title: 'Inspection complete',
-        subtitle: successMessage,
-        redirect: 'home',
-      });
+      celebrate(successMessage);
     },
-    [jobId, finishInspectionWorkflow],
+    [jobId, finishInspectionWorkflow, celebrate],
   );
 
   const dismissOverlay = useCallback(() => {
@@ -63,5 +70,5 @@ export function useFinishInspection(jobId: string) {
     />
   );
 
-  return { finish, Celebration };
+  return { finish, celebrate, Celebration };
 }
