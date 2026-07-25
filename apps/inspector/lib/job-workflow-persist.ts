@@ -169,3 +169,14 @@ export function clampOpenWorkflowStep(step: number | undefined): number {
   if (step >= 99) return 5;
   return Math.min(step, 5);
 }
+
+/** Drop saved workflow progress for a job (e.g. after the user resets an inspection). */
+export function clearPersistedJobProgress(jobId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(`${STORAGE_PREFIX}${jobId}`);
+    sessionStorage.removeItem(`${STORAGE_PREFIX}${jobId}`);
+  } catch {
+    // ignore
+  }
+}

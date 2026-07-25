@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 
 import { compressCanvasToDataUrl } from '@/lib/compress-image';
+import { cn } from '@/lib/utils';
 
 export function KeyCameraCapture({
   open,
@@ -26,6 +27,19 @@ export function KeyCameraCapture({
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setReady(false);
+  }, []);
+
+  const attachStream = useCallback(async (stream: MediaStream) => {
+    const video = videoRef.current;
+    if (!video) return false;
+    video.srcObject = stream;
+    try {
+      await video.play();
+      setReady(true);
+      return true;
+    } catch {
+      return false;
+    }
   }, []);
 
   useEffect(() => {
@@ -56,11 +70,11 @@ export function KeyCameraCapture({
           return;
         }
         streamRef.current = stream;
-        const video = videoRef.current;
-        if (!video) return;
-        video.srcObject = stream;
-        await video.play();
-        setReady(true);
+        if (!(await attachStream(stream))) {
+          window.requestAnimationFrame(() => {
+            if (!cancelled) void attachStream(stream);
+          });
+        }
       } catch {
         setError(
           'Could not open the camera. Allow camera access in browser settings, or use Upload.',
@@ -74,7 +88,7 @@ export function KeyCameraCapture({
       cancelled = true;
       stopStream();
     };
-  }, [open, stopStream]);
+  }, [attachStream, open, stopStream]);
 
   const capture = () => {
     const video = videoRef.current;
@@ -96,54 +110,60 @@ export function KeyCameraCapture({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black">
-      <div className="relative flex flex-1 flex-col overflow-hidden">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 z-20 flex size-14 items-center justify-center rounded-full bg-black/45 text-white shadow-lg backdrop-blur-sm"
-          aria-label="Close camera"
-        >
-          <X className="size-8" strokeWidth={2.25} />
-        </button>
+    <div className="fixed inset-0 z-[100] flex h-[100dvh] flex-col bg-black">
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 z-30 flex size-14 items-center justify-center rounded-full bg-black/45 text-white shadow-lg backdrop-blur-sm"
+        aria-label="Close camera"
+      >
+        <X className="size-8" strokeWidth={2.25} />
+      </button>
 
-        <div className="flex flex-1 items-center justify-center bg-black pt-14">
-          {error ? (
-            <div className="space-y-4 px-6 text-center">
-              <p className="text-sm text-white/80">{error}</p>
-              {nativeInputId && (
-                <label
-                  htmlFor={nativeInputId}
-                  onClick={onClose}
-                  className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-                >
-                  Open device camera
-                </label>
-              )}
-            </div>
-          ) : (
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="max-h-full max-w-full object-contain"
-            />
-          )}
-        </div>
-
-        <div className="flex shrink-0 justify-center px-4 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
-          <button
-            type="button"
-            disabled={!ready || !!error}
-            onClick={capture}
-            aria-label="Capture photo"
-            className="mb-6 flex size-[4.75rem] items-center justify-center rounded-full border-4 border-white/90 bg-primary shadow-[0_4px_24px_rgba(0,212,164,0.45)] transition-transform active:scale-95 disabled:opacity-35"
-          >
-            <span className="size-[3.25rem] rounded-full bg-primary ring-2 ring-white/40" />
-          </button>
-        </div>
+      <div className="relative min-h-0 flex-1 overflow-hidden pt-14">
+        {error ? (
+          <div className="flex h-full flex-col items-center justify-center space-y-4 px-6 text-center">
+            <p className="text-sm text-white/80">{error}</p>
+            {nativeInputId && (
+              <label
+                htmlFor={nativeInputId}
+                onClick={onClose}
+                className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              >
+                Open device camera
+              </label>
+            )}
+          </div>
+        ) : (
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            onLoadedData={() => setReady(true)}
+            className="h-full w-full object-contain"
+          />
+        )}
       </div>
+
+      {!error ? (
+        <div className="relative z-20 shrink-0 bg-gradient-to-t from-black via-black/90 to-transparent px-4 pt-4 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
+          <div className="flex justify-center">
+            <button
+              type="button"
+              disabled={!ready}
+              onClick={capture}
+              aria-label="Capture photo"
+              className={cn(
+                'mb-2 flex size-[4.75rem] items-center justify-center rounded-full border-4 border-white/95 bg-[#00d4a4] shadow-[0_4px_24px_rgba(0,212,164,0.5)] transition-transform active:scale-95',
+                !ready && 'opacity-70',
+              )}
+            >
+              <span className="size-[3.25rem] rounded-full bg-[#00d4a4] ring-2 ring-white/50" />
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,3 +1,20 @@
+import { COMMON_DEFAULT_SECTIONS } from '@/constants/inspection-areas';
+import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
+
+const CUSTOM_OTHER_LABEL = 'Custom / Other';
+
+/** Catalog sections offered in the “pick a common section” dropdown. */
+export function buildSectionPickerOptions(
+  definition: Pick<InspectionAreaDefinition, 'optionalSections'>,
+): string[] {
+  const merged = new Set<string>([
+    ...definition.optionalSections,
+    ...COMMON_DEFAULT_SECTIONS,
+  ]);
+  merged.delete(CUSTOM_OTHER_LABEL);
+  return [...merged];
+}
+
 export function normalizeSectionName(name: string): string {
   return name.trim().replace(/\s+/g, ' ');
 }

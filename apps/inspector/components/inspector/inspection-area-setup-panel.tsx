@@ -106,10 +106,7 @@ export function InspectionAreaSetupPanel({
             <ul className="divide-y rounded-lg border">
               {selectedAreaNames.map((name) => {
                 const def = resolveDefinition(name);
-                const sectionHint =
-                  def && def.defaultSections.length > 0
-                    ? `${def.defaultSections.length} standard sections`
-                    : 'Add sections manually';
+                const sectionHint = 'Add sections when you reach this area';
                 return (
                   <li
                     key={name}

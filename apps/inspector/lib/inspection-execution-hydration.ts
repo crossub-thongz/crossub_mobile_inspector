@@ -59,7 +59,7 @@ export function emptyIngoingEntry(
     available: null,
     condition: '',
     comments: '',
-    activeSections: [...def.defaultSections],
+    activeSections: [],
     photosBySection: {},
   };
 }
@@ -69,7 +69,7 @@ export function emptyRoutineIssue(areaName: string): RoutineAreaIssueDraft {
   return {
     available: null,
     notes: '',
-    activeSections: [...def.defaultSections],
+    activeSections: [],
     photosBySection: {},
   };
 }
@@ -84,7 +84,7 @@ export function emptyOutgoingIssue(
     available: seed?.available ?? null,
     note: '',
     responsibility: '',
-    activeSections: seed?.activeSections ?? [...def.defaultSections],
+    activeSections: seed?.activeSections ?? [],
     photosBySection: {},
   };
 }

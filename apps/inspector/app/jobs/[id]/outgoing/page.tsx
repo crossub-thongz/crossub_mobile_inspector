@@ -257,7 +257,6 @@ export default function OutgoingInspectionPage() {
         ...(prev.customAreas ?? []),
         { name: normalized, sectionMode },
       ];
-      const def = customAreaToDefinition({ name: normalized, sectionMode });
       const nextSelected = [...(prev.selectedAreaNames ?? []), normalized];
       return {
         ...prev,
@@ -266,14 +265,7 @@ export default function OutgoingInspectionPage() {
         areaIndex: areaSetupComplete ? nextSelected.length - 1 : prev.areaIndex,
         issues: {
           ...prev.issues,
-          [normalized]: emptyAreaIssue(
-            normalized,
-            {
-              available: null,
-              activeSections: [...def.defaultSections],
-            },
-            nextCustomAreas,
-          ),
+          [normalized]: emptyAreaIssue(normalized, undefined, nextCustomAreas),
         },
       };
     });
@@ -283,21 +275,12 @@ export default function OutgoingInspectionPage() {
   const handleAddBuiltInArea = (name: string) => {
     setDraft((prev) => {
       const nextSelected = [...(prev.selectedAreaNames ?? []), name];
-      const def = buildEffectiveAreaCatalog(prev.customAreas ?? []).find(
-        (area) => area.name === name,
-      );
       return {
         ...prev,
         selectedAreaNames: nextSelected,
         issues: {
           ...prev.issues,
-          [name]: emptyAreaIssue(
-            name,
-            def
-              ? { available: null, activeSections: [...def.defaultSections] }
-              : undefined,
-            prev.customAreas ?? [],
-          ),
+          [name]: emptyAreaIssue(name, undefined, prev.customAreas ?? []),
         },
       };
     });
@@ -382,6 +365,14 @@ export default function OutgoingInspectionPage() {
   const goToArea = (index: number) => {
     if (index < 0 || index >= areaCatalog.length) return;
     setDraft((prev) => ({ ...prev, areaIndex: index }));
+  };
+
+  const goBackArea = () => {
+    if (areaIndex > 0) {
+      goToArea(areaIndex - 1);
+      return;
+    }
+    setDraft((prev) => ({ ...prev, areaSetupComplete: false }));
   };
 
   const seedSectionIngoing = (section: string): string[] => {
@@ -766,8 +757,7 @@ export default function OutgoingInspectionPage() {
                     type="button"
                     variant="outline"
                     className="flex-1"
-                    disabled={areaIndex === 0}
-                    onClick={() => goToArea(areaIndex - 1)}
+                    onClick={goBackArea}
                   >
                     <ChevronLeft className="size-4" />
                     Back
@@ -856,8 +846,8 @@ export default function OutgoingInspectionPage() {
                     type="button"
                     variant="outline"
                     className="flex-1"
-                    disabled={areaIndex === 0 || busy}
-                    onClick={() => goToArea(areaIndex - 1)}
+                    disabled={busy}
+                    onClick={goBackArea}
                   >
                     <ChevronLeft className="size-4" />
                     Back

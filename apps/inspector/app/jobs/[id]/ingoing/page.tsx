@@ -262,6 +262,14 @@ export default function IngoingInspectionPage() {
     setDraft((prev) => ({ ...prev, areaIndex: index }));
   };
 
+  const goBackArea = () => {
+    if (areaIndex > 0) {
+      goToArea(areaIndex - 1);
+      return;
+    }
+    setDraft((prev) => ({ ...prev, areaSetupComplete: false }));
+  };
+
   const markAvailable = (available: boolean) => {
     if (!available) {
       setDraft((prev) => ({
@@ -281,7 +289,8 @@ export default function IngoingInspectionPage() {
     }
     updateEntry({
       available: true,
-      activeSections: [...areaDef.defaultSections],
+      activeSections: [],
+      photosBySection: {},
     });
   };
 
@@ -560,7 +569,8 @@ export default function IngoingInspectionPage() {
                   onClick={() =>
                     updateEntry({
                       available: true,
-                      activeSections: [...areaDef.defaultSections],
+                      activeSections: [],
+                      photosBySection: {},
                     })
                   }
                 >
@@ -571,8 +581,7 @@ export default function IngoingInspectionPage() {
                     type="button"
                     variant="outline"
                     className="flex-1"
-                    disabled={areaIndex === 0}
-                    onClick={() => goToArea(areaIndex - 1)}
+                    onClick={goBackArea}
                   >
                     <ChevronLeft className="size-4" />
                     Back
@@ -653,8 +662,8 @@ export default function IngoingInspectionPage() {
                     type="button"
                     variant="outline"
                     className="flex-1"
-                    disabled={areaIndex === 0 || busy}
-                    onClick={() => goToArea(areaIndex - 1)}
+                    disabled={busy}
+                    onClick={goBackArea}
                   >
                     <ChevronLeft className="size-4" />
                     Back

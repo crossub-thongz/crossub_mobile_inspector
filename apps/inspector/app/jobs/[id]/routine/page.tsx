@@ -12,7 +12,7 @@ import {
   type SectionBeforeAfter,
 } from '@/components/inspector/outgoing-section-photos';
 import { InspectorShell } from '@/components/layout/inspector-shell';
-import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
+import { ResetInspectionDialog } from '@/components/inspector/reset-inspection-dialog';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,7 +39,7 @@ import {
   useInspectionInProgress,
   useKeyCollectGate,
 } from '@/hooks/use-key-collect-gate';
-import { fetchInspectionDetail } from '@/lib/crossub-api/inspector-client';
+import { fetchInspectionDetail, clearInspectionAreaPhotos } from '@/lib/crossub-api/inspector-client';
 import {
   applyRoutineDetailPhotos,
   emptyRoutineIssue,
@@ -76,7 +76,7 @@ export default function RoutineInspectionPage() {
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
 
-  const { draft, setDraft, clearDraft, localDraftLoaded } =
+  const { draft, setDraft, clearDraft, resetDraft, localDraftLoaded } =
     useInspectionExecutionDraft(id, job, 'routine', (): RoutineExecutionDraft => ({
       kind: 'routine',
       areaIndex: 0,
@@ -87,6 +87,7 @@ export default function RoutineInspectionPage() {
       areaSetupComplete: false,
     }));
   const [busy, setBusy] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const [loadingReference, setLoadingReference] = useState(apiConnected);
   const [ingoingFromReference, setIngoingFromReference] = useState(false);
   const [referenceAreas, setReferenceAreas] = useState<
@@ -185,6 +186,56 @@ export default function RoutineInspectionPage() {
   );
   const issues = draft.issues;
 
+  const resetInspection = async () => {
+    setResetOpen(false);
+    setBusy(true);
+    try {
+      if (apiConnected) {
+        try {
+          const detail = await fetchInspectionDetail(id);
+          const areaNames = [
+            ...new Set(
+              detail.areas
+                .map((area) => area.name?.trim())
+                .filter((name): name is string => Boolean(name)),
+            ),
+          ];
+          await Promise.all(
+            areaNames.map((areaName) => clearInspectionAreaPhotos(id, areaName)),
+          );
+        } catch {
+          // Best effort — local reset still applies.
+        }
+      }
+      resetDraft();
+      toast.success('Routine inspection reset — start again from area setup');
+    } catch {
+      toast.error('Could not reset inspection');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resetControls = (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        className="border-destructive/40 text-destructive hover:bg-destructive/10 w-full"
+        disabled={busy || loadingReference}
+        onClick={() => setResetOpen(true)}
+      >
+        Reset inspection
+      </Button>
+      <ResetInspectionDialog
+        open={resetOpen}
+        busy={busy}
+        onClose={() => setResetOpen(false)}
+        onConfirm={() => void resetInspection()}
+      />
+    </>
+  );
+
   const handleAddCustomArea = (name: string, sectionMode: CustomAreaSectionMode) => {
     const normalized = normalizeCustomAreaName(name);
     setDraft((prev) => {
@@ -192,15 +243,7 @@ export default function RoutineInspectionPage() {
         ...(prev.customAreas ?? []),
         { name: normalized, sectionMode },
       ];
-      const def = customAreaToDefinition({ name: normalized, sectionMode });
       const nextSelected = [...(prev.selectedAreaNames ?? []), normalized];
-      const photosBySection: Record<string, SectionBeforeAfter> = {};
-      for (const section of def.defaultSections) {
-        photosBySection[section] = {
-          ...emptySectionPhotos(),
-          ingoingPhotoUrls: seedSectionIngoingForArea(normalized, section),
-        };
-      }
       return {
         ...prev,
         customAreas: nextCustomAreas,
@@ -208,11 +251,7 @@ export default function RoutineInspectionPage() {
         areaIndex: areaSetupComplete ? nextSelected.length - 1 : prev.areaIndex,
         issues: {
           ...prev.issues,
-          [normalized]: {
-            ...emptyAreaIssue(normalized),
-            activeSections: [...def.defaultSections],
-            photosBySection,
-          },
+          [normalized]: emptyAreaIssue(normalized),
         },
       };
     });
@@ -222,24 +261,12 @@ export default function RoutineInspectionPage() {
   const handleAddBuiltInArea = (name: string) => {
     setDraft((prev) => {
       const nextSelected = [...(prev.selectedAreaNames ?? []), name];
-      const def = INSPECTION_AREA_CATALOG.find((area) => area.name === name);
-      const photosBySection: Record<string, SectionBeforeAfter> = {};
-      for (const section of def?.defaultSections ?? []) {
-        photosBySection[section] = {
-          ...emptySectionPhotos(),
-          ingoingPhotoUrls: seedSectionIngoingForArea(name, section),
-        };
-      }
       return {
         ...prev,
         selectedAreaNames: nextSelected,
         issues: {
           ...prev.issues,
-          [name]: {
-            ...emptyAreaIssue(name),
-            activeSections: [...(def?.defaultSections ?? [])],
-            photosBySection,
-          },
+          [name]: emptyAreaIssue(name),
         },
       };
     });
@@ -288,6 +315,7 @@ export default function RoutineInspectionPage() {
         <InspectorShell title="Routine Inspection" backHref={jobDetail(id)}>
           <div className="space-y-4">
             <JobWorkflowToolbar job={job} />
+            {resetControls}
             <InspectionAreaSetupPanel
               selectedAreaNames={selectedAreaNames}
               customAreas={customAreas}
@@ -331,6 +359,14 @@ export default function RoutineInspectionPage() {
     setDraft((prev) => ({ ...prev, areaIndex: index }));
   };
 
+  const goBackArea = () => {
+    if (areaIndex > 0) {
+      goToArea(areaIndex - 1);
+      return;
+    }
+    setDraft((prev) => ({ ...prev, areaSetupComplete: false }));
+  };
+
   const seedSectionIngoing = (section: string): string[] =>
     seedSectionIngoingForArea(area, section);
 
@@ -351,21 +387,10 @@ export default function RoutineInspectionPage() {
       }));
       return;
     }
-    const photosBySection: Record<string, SectionBeforeAfter> = {
-      ...(issues[area]?.photosBySection ?? {}),
-    };
-    for (const section of areaDef.defaultSections) {
-      if (!photosBySection[section]) {
-        photosBySection[section] = {
-          ...emptySectionPhotos(),
-          ingoingPhotoUrls: seedSectionIngoing(section),
-        };
-      }
-    }
     updateIssue({
       available: true,
-      activeSections: [...areaDef.defaultSections],
-      photosBySection,
+      activeSections: [],
+      photosBySection: {},
     });
   };
 
@@ -614,6 +639,7 @@ export default function RoutineInspectionPage() {
       <InspectorShell title="Routine Inspection" backHref={jobDetail(id)}>
         <div className="space-y-4">
           <JobWorkflowToolbar job={job} />
+          {resetControls}
 
           <div className="flex gap-2">
             <Button
@@ -686,8 +712,7 @@ export default function RoutineInspectionPage() {
                     type="button"
                     variant="outline"
                     className="flex-1"
-                    disabled={areaIndex === 0}
-                    onClick={() => goToArea(areaIndex - 1)}
+                    onClick={goBackArea}
                   >
                     <ChevronLeft className="size-4" />
                     Back
@@ -757,8 +782,8 @@ export default function RoutineInspectionPage() {
                     type="button"
                     variant="outline"
                     className="flex-1"
-                    disabled={areaIndex === 0 || busy}
-                    onClick={() => goToArea(areaIndex - 1)}
+                    disabled={busy}
+                    onClick={goBackArea}
                   >
                     <ChevronLeft className="size-4" />
                     Back

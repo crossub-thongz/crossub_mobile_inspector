@@ -10,6 +10,7 @@ import {
   clearInspectionDraftPatch,
   getInspectionExecutionDraft,
 } from '@/lib/inspection-execution-draft';
+import { clearPersistedJobProgress } from '@/lib/job-workflow-persist';
 
 export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
   jobId: string,
@@ -23,6 +24,9 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
   const localDraftLoaded = useRef(false);
   const draftRef = useRef(draft);
   draftRef.current = draft;
+
+  const createEmptyRef = useRef(createEmpty);
+  createEmptyRef.current = createEmpty;
 
   useEffect(() => {
     if (!job || localDraftLoaded.current) return;
@@ -74,6 +78,14 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
     updateJobWorkflow(jobId, job.workflowStep ?? 99, clearInspectionDraftPatch());
   }, [job, jobId, updateJobWorkflow]);
 
+  const resetDraft = useCallback(() => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    setDraftState(createEmptyRef.current());
+    if (!job) return;
+    updateJobWorkflow(jobId, 1, clearInspectionDraftPatch());
+    clearPersistedJobProgress(jobId);
+  }, [job, jobId, updateJobWorkflow]);
+
   useEffect(
     () => () => {
       if (persistTimer.current) {
@@ -89,6 +101,7 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
     setDraft,
     replaceDraft,
     clearDraft,
+    resetDraft,
     localDraftLoaded,
   };
 }

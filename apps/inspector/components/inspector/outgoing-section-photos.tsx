@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 import { AddSectionControl } from '@/components/inspector/add-section-control';
 import { BeforeAfterPhotoColumn } from '@/components/inspector/before-after-photo-column';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
-import { COMMON_DEFAULT_SECTIONS } from '@/constants/inspection-areas';
+import { buildSectionPickerOptions } from '@/lib/inspection-section-utils';
 
 export type SectionBeforeAfter = {
   ingoingPhotoUrls: string[];
@@ -57,13 +57,10 @@ export function OutgoingSectionPhotos({
     [definition.defaultSections],
   );
 
-  const sectionPickerOptions = useMemo(() => {
-    const merged = new Set<string>([
-      ...definition.optionalSections,
-      ...COMMON_DEFAULT_SECTIONS,
-    ]);
-    return [...merged];
-  }, [definition.optionalSections]);
+  const sectionPickerOptions = useMemo(
+    () => buildSectionPickerOptions(definition),
+    [definition],
+  );
 
   return (
     <div className="space-y-4">
