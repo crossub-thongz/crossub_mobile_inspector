@@ -2,11 +2,12 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, Plus } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
+import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
 import {
   OutgoingSectionPhotos,
@@ -57,7 +58,11 @@ import {
   referenceIngoingAreaPlan,
   type IngoingAreaPlan,
 } from '@/lib/ingoing-area-plan';
-import { cn } from '@/lib/utils';
+import {
+  existingAreaNamesFromPlan,
+  isAreaSetupComplete,
+  sectionsForAvailableArea,
+} from '@/lib/inspection-area-workflow';
 
 const RESPONSIBILITY = [
   'Tenant Responsible',
@@ -139,6 +144,15 @@ export default function OutgoingInspectionPage() {
         let seededFromReference = false;
 
         setDraft((prev) => {
+          const hasUserProgress =
+            prev.areaSetupComplete === true ||
+            (prev.selectedAreaNames?.length ?? 0) > 0 ||
+            Object.values(prev.issues).some((issue) => issue.available != null);
+
+          if (!hasUserProgress) {
+            return prev;
+          }
+
           const catalog = buildEffectiveAreaCatalog(prev.customAreas ?? []);
           const nextIssues: Record<string, AreaIssue> = { ...prev.issues };
           let seeded = false;
@@ -231,8 +245,8 @@ export default function OutgoingInspectionPage() {
   }, [apiConnected, id, setDraft, localDraftLoaded]);
 
   const customAreas = draft.customAreas ?? [];
-  const areaSetupComplete =
-    draft.areaSetupComplete ?? Object.keys(draft.issues).length > 0;
+  const areaSetupComplete = isAreaSetupComplete(draft);
+  const ingoingExistingAreas = existingAreaNamesFromPlan(ingoingAreaPlan);
   const selectedAreaNames =
     draft.selectedAreaNames && draft.selectedAreaNames.length > 0
       ? draft.selectedAreaNames
@@ -302,6 +316,31 @@ export default function OutgoingInspectionPage() {
     });
   };
 
+  const addAllFromIngoing = () => {
+    const names = ingoingExistingAreas.filter(
+      (name) =>
+        !selectedAreaNames.some(
+          (selected) => selected.toLowerCase() === name.toLowerCase(),
+        ),
+    );
+    if (names.length === 0) return;
+    setDraft((prev) => {
+      const nextSelected = [...(prev.selectedAreaNames ?? []), ...names];
+      const nextIssues = { ...prev.issues };
+      for (const name of names) {
+        if (!nextIssues[name]) {
+          nextIssues[name] = emptyAreaIssue(name, undefined, prev.customAreas ?? []);
+        }
+      }
+      return {
+        ...prev,
+        selectedAreaNames: nextSelected,
+        issues: nextIssues,
+      };
+    });
+    toast.success(`Added ${names.length} area(s) from the ingoing report`);
+  };
+
   const completeAreaSetup = () => {
     setDraft((prev) => ({
       ...prev,
@@ -327,10 +366,13 @@ export default function OutgoingInspectionPage() {
             <InspectionAreaSetupPanel
               selectedAreaNames={selectedAreaNames}
               customAreas={customAreas}
-              busy={busy}
+              existingAreaNames={ingoingExistingAreas}
+              continuing={selectedAreaNames.length > 0 || areaIndex > 0}
+              busy={busy || loadingReference}
               onAddBuiltInArea={handleAddBuiltInArea}
               onAddCustomArea={handleAddCustomArea}
               onRemoveArea={handleRemoveSetupArea}
+              onAddAllExisting={ingoingExistingAreas.length > 0 ? addAllFromIngoing : undefined}
               onComplete={completeAreaSetup}
             />
           </div>
@@ -401,9 +443,12 @@ export default function OutgoingInspectionPage() {
     const photosBySection: Record<string, SectionBeforeAfter> = {
       ...(issues[area]?.photosBySection ?? {}),
     };
-    const sections = isCustomAreaName(area, customAreas)
-      ? [...areaDef.defaultSections]
-      : outgoingSectionsForRoom(ingoingAreaPlan, area);
+    const sections = sectionsForAvailableArea(
+      area,
+      customAreas,
+      ingoingAreaPlan,
+      'outgoing',
+    );
     for (const section of sections) {
       if (!photosBySection[section]) {
         photosBySection[section] = {
@@ -698,30 +743,13 @@ export default function OutgoingInspectionPage() {
             </p>
           ) : null}
 
-          <div className="space-y-2">
-            <div className="flex gap-1">
-              {areaCatalog.map((a, i) => (
-                <button
-                  key={a.name}
-                  type="button"
-                  title={a.name}
-                  aria-label={`Go to ${a.name}`}
-                  className={cn('h-1.5 flex-1 rounded-full', progressTone(i, a.name))}
-                  onClick={() => goToArea(i)}
-                />
-              ))}
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => setAddAreaOpen(true)}
-            >
-              <Plus className="size-4" />
-              Add area
-            </Button>
-          </div>
+          <InspectionAreaNav
+            areaCatalog={areaCatalog}
+            areaIndex={areaIndex}
+            progressTone={progressTone}
+            onGoToArea={goToArea}
+            onAddArea={() => setAddAreaOpen(true)}
+          />
 
           {issue.available == null ? (
             <AreaAvailablePrompt

@@ -189,6 +189,13 @@ export default function JobDetailPage() {
               </p>
             )}
 
+            {job.reportDeclineReason && job.status !== 'completed' ? (
+              <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                <span className="font-semibold">Report declined — </span>
+                {job.reportDeclineReason} Redo the inspection and resubmit your report.
+              </p>
+            ) : null}
+
             {returnPending && (
               <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
                 Inspection finished — return the keys to complete this task.
@@ -209,7 +216,7 @@ export default function JobDetailPage() {
                   className="w-full"
                   disabled={startBlocked || (!canStartInspection && job.status !== 'accepted')}
                 >
-                  {workflowStarted ? 'Continue' : 'Start'} {job.type} inspection
+                  {workflowStarted ? 'Continue' : 'Start'} inspection
                 </Button>
               </Link>
             )}

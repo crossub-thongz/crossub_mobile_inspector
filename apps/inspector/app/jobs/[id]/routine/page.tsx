@@ -6,6 +6,7 @@ import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
+import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
 import {
   OutgoingSectionPhotos,
@@ -20,13 +21,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  INSPECTION_AREA_CATALOG,
   sectionAreaName,
 } from '@/constants/inspection-areas';
 import {
-  buildEffectiveAreaCatalog,
   buildExecutionAreaCatalog,
-  customAreaToDefinition,
   inferSelectedAreaNamesFromDraft,
   normalizeCustomAreaName,
   type CustomAreaSectionMode,
@@ -47,8 +45,17 @@ import {
   mergeRoutineExecutionDraft,
 } from '@/lib/inspection-execution-hydration';
 import type { RoutineAreaIssueDraft, RoutineExecutionDraft } from '@/lib/inspection-execution-draft';
+import {
+  existingAreaNamesFromPlan,
+  isAreaSetupComplete,
+  resolveIngoingAreaPlan,
+  sectionsForAvailableArea,
+} from '@/lib/inspection-area-workflow';
+import {
+  referenceIngoingAreaPlan,
+  type IngoingAreaPlan,
+} from '@/lib/ingoing-area-plan';
 import { matchReferenceSectionPhotos } from '@/lib/outgoing-reference-photos';
-import { cn } from '@/lib/utils';
 
 type AreaIssue = RoutineAreaIssueDraft;
 
@@ -94,6 +101,9 @@ export default function RoutineInspectionPage() {
   const [referenceAreas, setReferenceAreas] = useState<
     Array<{ name: string; photos: Array<{ url: string }> }>
   >([]);
+  const [ingoingAreaPlan, setIngoingAreaPlan] = useState<IngoingAreaPlan | null>(
+    null,
+  );
   const serverHydrated = useRef(false);
 
   useEffect(() => {
@@ -112,44 +122,47 @@ export default function RoutineInspectionPage() {
         const reference = detail.referenceIngoing;
         const refAreas = reference?.areas ?? [];
         setReferenceAreas(refAreas);
+        const plan = resolveIngoingAreaPlan(
+          referenceIngoingAreaPlan(detail),
+          refAreas,
+        );
+        setIngoingAreaPlan(plan);
 
-        const nextIssues: Record<string, AreaIssue> = {};
-        let seeded = false;
-        const catalogForHydration = buildEffectiveAreaCatalog([]);
-        for (const def of catalogForHydration) {
-          const photosBySection: Record<string, SectionBeforeAfter> = {};
-          for (const section of def.defaultSections) {
-            const referenceUrls = reference
-              ? matchReferenceSectionPhotos(def.name, section, refAreas)
-              : [];
-            if (referenceUrls.length > 0) seeded = true;
-            photosBySection[section] = {
-              ...emptySectionPhotos(),
-              ingoingPhotoUrls: referenceUrls,
-            };
+        setDraft((prev) => {
+          const hasUserProgress =
+            prev.areaSetupComplete === true ||
+            (prev.selectedAreaNames?.length ?? 0) > 0 ||
+            Object.values(prev.issues).some((issue) => issue.available != null);
+
+          if (!hasUserProgress) {
+            return prev;
           }
-          nextIssues[def.name] = {
-            ...emptyAreaIssue(def.name),
-            photosBySection,
-          };
-        }
 
-        const withServerPhotos = applyRoutineDetailPhotos(nextIssues, detail);
-        setDraft((prev) =>
-          mergeRoutineExecutionDraft(
+          const nextIssues: Record<string, AreaIssue> = { ...prev.issues };
+          for (const name of prev.selectedAreaNames ?? []) {
+            if (nextIssues[name]) continue;
+            nextIssues[name] = emptyAreaIssue(name);
+          }
+
+          const withServerPhotos = applyRoutineDetailPhotos(nextIssues, detail);
+          return mergeRoutineExecutionDraft(
             {
               kind: 'routine',
               areaIndex: prev.areaIndex,
               method: prev.method,
               issues: withServerPhotos,
+              selectedAreaNames: prev.selectedAreaNames,
             },
             prev,
-          ),
-        );
-        setIngoingFromReference(seeded || Boolean(reference));
-        if (reference && seeded) {
-          toast.success('Latest ingoing photos loaded for comparison');
-        } else if (!reference) {
+          );
+        });
+
+        setIngoingFromReference(Boolean(reference) || refAreas.length > 0);
+        if (plan?.rooms.length) {
+          toast.success(
+            `Loaded ${plan.rooms.length} area(s) from the ingoing report`,
+          );
+        } else if (reference) {
           toast.message('No completed ingoing report found for this property');
         }
       } catch {
@@ -168,8 +181,8 @@ export default function RoutineInspectionPage() {
 
   const method = draft.method;
   const customAreas = draft.customAreas ?? [];
-  const areaSetupComplete =
-    draft.areaSetupComplete ?? Object.keys(draft.issues).length > 0;
+  const areaSetupComplete = isAreaSetupComplete(draft);
+  const ingoingExistingAreas = existingAreaNamesFromPlan(ingoingAreaPlan);
   const selectedAreaNames =
     draft.selectedAreaNames && draft.selectedAreaNames.length > 0
       ? draft.selectedAreaNames
@@ -289,6 +302,29 @@ export default function RoutineInspectionPage() {
     });
   };
 
+  const addAllFromIngoing = () => {
+    const names = ingoingExistingAreas.filter(
+      (name) =>
+        !selectedAreaNames.some(
+          (selected) => selected.toLowerCase() === name.toLowerCase(),
+        ),
+    );
+    if (names.length === 0) return;
+    setDraft((prev) => {
+      const nextSelected = [...(prev.selectedAreaNames ?? []), ...names];
+      const nextIssues = { ...prev.issues };
+      for (const name of names) {
+        if (!nextIssues[name]) nextIssues[name] = emptyAreaIssue(name);
+      }
+      return {
+        ...prev,
+        selectedAreaNames: nextSelected,
+        issues: nextIssues,
+      };
+    });
+    toast.success(`Added ${names.length} area(s) from the ingoing report`);
+  };
+
   const completeAreaSetup = () => {
     setDraft((prev) => ({
       ...prev,
@@ -320,10 +356,13 @@ export default function RoutineInspectionPage() {
             <InspectionAreaSetupPanel
               selectedAreaNames={selectedAreaNames}
               customAreas={customAreas}
+              existingAreaNames={ingoingExistingAreas}
+              continuing={selectedAreaNames.length > 0 || areaIndex > 0}
               busy={busy || loadingReference}
               onAddBuiltInArea={handleAddBuiltInArea}
               onAddCustomArea={handleAddCustomArea}
               onRemoveArea={handleRemoveSetupArea}
+              onAddAllExisting={ingoingExistingAreas.length > 0 ? addAllFromIngoing : undefined}
               onComplete={completeAreaSetup}
             />
           </div>
@@ -388,10 +427,36 @@ export default function RoutineInspectionPage() {
       }));
       return;
     }
+
+    const sections = sectionsForAvailableArea(
+      area,
+      customAreas,
+      ingoingAreaPlan,
+      'routine',
+    );
+    const photosBySection: Record<string, SectionBeforeAfter> = {
+      ...(issue.photosBySection ?? {}),
+    };
+    for (const section of sections) {
+      if (!photosBySection[section]) {
+        photosBySection[section] = {
+          ...emptySectionPhotos(),
+          ingoingPhotoUrls: seedSectionIngoing(section),
+        };
+      } else if (
+        photosBySection[section].ingoingPhotoUrls.length === 0 &&
+        ingoingFromReference
+      ) {
+        photosBySection[section] = {
+          ...photosBySection[section],
+          ingoingPhotoUrls: seedSectionIngoing(section),
+        };
+      }
+    }
     updateIssue({
       available: true,
-      activeSections: [],
-      photosBySection: {},
+      activeSections: [...sections],
+      photosBySection,
     });
   };
 
@@ -670,18 +735,12 @@ export default function RoutineInspectionPage() {
             </p>
           ) : null}
 
-          <div className="flex gap-1">
-            {areaCatalog.map((a, i) => (
-              <button
-                key={a.name}
-                type="button"
-                title={a.name}
-                aria-label={`Go to ${a.name}`}
-                className={cn('h-1.5 flex-1 rounded-full', progressTone(i, a.name))}
-                onClick={() => goToArea(i)}
-              />
-            ))}
-          </div>
+          <InspectionAreaNav
+            areaCatalog={areaCatalog}
+            areaIndex={areaIndex}
+            progressTone={progressTone}
+            onGoToArea={goToArea}
+          />
 
           {issue.available == null ? (
             <AreaAvailablePrompt

@@ -2,11 +2,12 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, Mic, Plus } from 'lucide-react';
+import { ChevronLeft, Mic } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
+import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
 import { InspectionSectionPhotos } from '@/components/inspector/inspection-section-photos';
 import { InspectorShell } from '@/components/layout/inspector-shell';
@@ -38,12 +39,14 @@ import {
 } from '@/lib/custom-inspection-areas';
 import { inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
 import {
+  isAreaSetupComplete,
+  sectionsForAvailableArea,
+} from '@/lib/inspection-area-workflow';
+import {
   useInspectionFinishedGate,
   useInspectionInProgress,
   useKeyCollectGate,
 } from '@/hooks/use-key-collect-gate';
-import { cn } from '@/lib/utils';
-
 const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor', 'Damaged'];
 
 type AreaEntry = IngoingAreaEntryDraft;
@@ -120,8 +123,7 @@ export default function IngoingInspectionPage() {
   }, [apiConnected, id, setDraft, localDraftLoaded]);
 
   const customAreas = draft.customAreas ?? [];
-  const areaSetupComplete =
-    draft.areaSetupComplete ?? Object.keys(draft.entries).length > 0;
+  const areaSetupComplete = isAreaSetupComplete(draft);
   const selectedAreaNames =
     draft.selectedAreaNames && draft.selectedAreaNames.length > 0
       ? draft.selectedAreaNames
@@ -216,6 +218,8 @@ export default function IngoingInspectionPage() {
             <InspectionAreaSetupPanel
               selectedAreaNames={selectedAreaNames}
               customAreas={customAreas}
+              continuing={selectedAreaNames.length > 0 || areaIndex > 0}
+              sectionsHint="Standard sections load when you reach each area — add more as needed"
               busy={busy}
               onAddBuiltInArea={handleAddBuiltInArea}
               onAddCustomArea={handleAddCustomArea}
@@ -287,10 +291,22 @@ export default function IngoingInspectionPage() {
       }));
       return;
     }
+    const sections = sectionsForAvailableArea(
+      area,
+      customAreas,
+      null,
+      'ingoing',
+    );
+    const photosBySection: Record<string, string[]> = {
+      ...(entry.photosBySection ?? {}),
+    };
+    for (const section of sections) {
+      if (!photosBySection[section]) photosBySection[section] = [];
+    }
     updateEntry({
       available: true,
-      activeSections: [],
-      photosBySection: {},
+      activeSections: sections,
+      photosBySection,
     });
   };
 
@@ -517,30 +533,13 @@ export default function IngoingInspectionPage() {
         <div className="space-y-4">
           <JobWorkflowToolbar job={job} />
 
-          <div className="space-y-2">
-            <div className="flex gap-1">
-              {areaCatalog.map((a, i) => (
-                <button
-                  key={a.name}
-                  type="button"
-                  title={a.name}
-                  aria-label={`Go to ${a.name}`}
-                  className={cn('h-1.5 flex-1 rounded-full', progressTone(i, a.name))}
-                  onClick={() => goToArea(i)}
-                />
-              ))}
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => setAddAreaOpen(true)}
-            >
-              <Plus className="size-4" />
-              Add area
-            </Button>
-          </div>
+          <InspectionAreaNav
+            areaCatalog={areaCatalog}
+            areaIndex={areaIndex}
+            progressTone={progressTone}
+            onGoToArea={goToArea}
+            onAddArea={() => setAddAreaOpen(true)}
+          />
 
           {entry.available == null ? (
             <AreaAvailablePrompt
@@ -566,13 +565,7 @@ export default function IngoingInspectionPage() {
                   type="button"
                   variant="outline"
                   className="w-full"
-                  onClick={() =>
-                    updateEntry({
-                      available: true,
-                      activeSections: [],
-                      photosBySection: {},
-                    })
-                  }
+                  onClick={() => markAvailable(true)}
                 >
                   Mark available & photograph
                 </Button>

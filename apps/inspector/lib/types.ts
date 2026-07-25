@@ -171,6 +171,8 @@ export interface InspectionJob {
   workflowData?: Record<string, unknown>;
   /** Pool jobs — inspectors available on the scheduled day (from timetables). */
   availableInspectorCount?: number | null;
+  /** Agent declined the last submitted report — redo and resubmit. */
+  reportDeclineReason?: string;
 }
 
 export interface TribunalHearing {

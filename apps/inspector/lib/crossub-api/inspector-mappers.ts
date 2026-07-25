@@ -125,6 +125,9 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
   const availableInspectorCount = asNumber(
     (dto as { availableInspectorCount?: unknown }).availableInspectorCount,
   );
+  const reportDeclineReason = asString(
+    (dto as { reportDeclineReason?: unknown }).reportDeclineReason,
+  );
   return {
     id: dto.id,
     type,
@@ -148,6 +151,7 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     fuelAllowance: 0,
     payAmount: laborAmount,
     availableInspectorCount,
+    ...(reportDeclineReason ? { reportDeclineReason } : {}),
   };
 }
 
