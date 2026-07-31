@@ -542,12 +542,15 @@ export function InspectorDataProvider({
         ...poolFromApi.map((j) => j.id),
       ]);
       let assignedWithKeys = assignedFromApi;
-      let poolWithKeys = poolFromApi;
+      // Pool jobs are deliberately NOT enriched. Key collection only exists for a
+      // job this inspector has taken — an unaccepted pool job has no keys for them
+      // to collect, and neither the pool cards nor the key-pending counts read a
+      // pool row's key state. Enriching it issued one request per pool job on every
+      // 5s refresh (113 jobs on staging), which exhausted the browser's connection
+      // pool and made unrelated fetches fail as "API unavailable".
+      const poolWithKeys = poolFromApi;
       if (connected) {
-        [assignedWithKeys, poolWithKeys] = await Promise.all([
-          enrichJobsWithKeyCollection(assignedFromApi),
-          enrichJobsWithKeyCollection(poolFromApi),
-        ]);
+        assignedWithKeys = await enrichJobsWithKeyCollection(assignedFromApi);
       }
       setJobs((prev) => {
         const prevById = new Map(prev.map((j) => [j.id, j]));

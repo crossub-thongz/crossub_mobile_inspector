@@ -12,6 +12,10 @@ import {
 } from '@/lib/key-access-workflow';
 import { shrinkDataUrlForUpload } from '@/lib/compress-image';
 import { formatDateTime } from '@/lib/utils';
+import {
+  KEY_COLLECTION_CACHE_TTL_MS,
+  KEY_COLLECTION_FETCH_CONCURRENCY,
+} from '@/constants/key-collection-sync';
 
 import {
   acceptInspection,
@@ -160,10 +164,63 @@ export async function enrichJobWithKeyCollection(
   }
 }
 
+/**
+ * Key-collection responses, kept briefly so the 5s refresh does not re-issue the
+ * whole fan-out. Invalidated explicitly whenever this device records a key phase.
+ */
+const keyCollectionCache = new Map<string, { at: number; job: InspectionJob }>();
+
+/** Drop a job's cached key-collection so the next refresh re-reads the server. */
+export function invalidateKeyCollectionCache(inspectionId?: string): void {
+  if (inspectionId) keyCollectionCache.delete(inspectionId);
+  else keyCollectionCache.clear();
+}
+
+/**
+ * Enrich in bounded batches rather than one burst.
+ *
+ * This used to be `Promise.all(jobs.map(...))`, which opened one request per job
+ * simultaneously. Called on both the assigned list and the job pool every 5s, a
+ * 113-job pool meant ~1,000 concurrent requests — enough to exhaust the browser's
+ * connection pool and make unrelated fetches fail outright. Callers should also
+ * pass only jobs that need keys (see the provider: pool jobs are not the
+ * inspector's yet, so they have no keys to collect).
+ */
 export async function enrichJobsWithKeyCollection(
   jobs: InspectionJob[],
 ): Promise<InspectionJob[]> {
-  return Promise.all(jobs.map((job) => enrichJobWithKeyCollection(job)));
+  const now = Date.now();
+  const results = new Array<InspectionJob>(jobs.length);
+  const pending: number[] = [];
+
+  jobs.forEach((job, index) => {
+    const cached = keyCollectionCache.get(job.id);
+    if (cached && now - cached.at < KEY_COLLECTION_CACHE_TTL_MS) {
+      // Re-merge the cached key fields onto the *current* job so live status
+      // and local workflow edits are never overwritten by a stale snapshot.
+      results[index] = {
+        ...job,
+        keyAccess: cached.job.keyAccess,
+        leasingKeyCollection: cached.job.leasingKeyCollection,
+        workflowData: cached.job.workflowData,
+      };
+      return;
+    }
+    pending.push(index);
+  });
+
+  for (let i = 0; i < pending.length; i += KEY_COLLECTION_FETCH_CONCURRENCY) {
+    const slice = pending.slice(i, i + KEY_COLLECTION_FETCH_CONCURRENCY);
+    await Promise.all(
+      slice.map(async (index) => {
+        const enriched = await enrichJobWithKeyCollection(jobs[index]);
+        results[index] = enriched;
+        keyCollectionCache.set(jobs[index].id, { at: Date.now(), job: enriched });
+      }),
+    );
+  }
+
+  return results;
 }
 
 import { dataUrlToUploadParts } from '@/lib/compress-image';
@@ -223,9 +280,13 @@ export async function syncKeyCustodyToServer(
   if (photos.length > 0 && uploaded === 0) {
     throw new Error('Could not read proof photo — try snapping again.');
   }
-  return await recordKeyCustody(
+  const recorded = await recordKeyCustody(
     inspectionId,
     phase,
     record.notes ? { notes: record.notes } : {},
   );
+  // This device just changed key custody — drop the cached copy so the next
+  // refresh reads the server rather than serving a pre-record snapshot.
+  invalidateKeyCollectionCache(inspectionId);
+  return recorded;
 }

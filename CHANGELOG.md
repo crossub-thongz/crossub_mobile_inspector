@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-31
+
+### Fixed
+- **The inspector app no longer floods itself with key-collection requests.** Every 5s refresh enriched *both* the assigned list and the whole job pool, one `GET /inspector/inspections/:id/key-collection` per job via an unbounded `Promise.all`. With 113 pool jobs that was ~115 simultaneous requests every five seconds, which exhausted the browser's per-host connection pool — so unrelated fetches died with `TypeError: Failed to fetch` and the UI blamed the server: "API unavailable" on completing an inspection, "Job not found" on a job that existed, a dashboard reading `Today 0 / Pool 0 / Week 0`, and Next's RSC prefetch for `/jobs/:id/keys` retrying in a tight loop. Three changes: pool jobs are no longer enriched at all (an unaccepted job has no keys for this inspector to collect, and neither the pool cards nor the key-pending counts read a pool row's key state), the remaining fan-out runs in bounded batches instead of one burst, and responses are cached briefly so the 5s poll stops re-fetching data that only changes when the inspector records a key phase. Recording a phase invalidates that job's cache immediately, so the inspector never sees their own action go missing.
+
 ## 2026-07-03 (history)
 
 ### Changed
