@@ -9,6 +9,7 @@ import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar'
 import { OpenInspectionLinkQrBlock } from '@/components/open-inspection/open-inspection-link-qr-block';
 import { OpenInspectionVisitorList } from '@/components/open-inspection/open-inspection-visitor-list';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
+import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
@@ -62,7 +63,7 @@ export default function OpenInspectionPage() {
   } = useInspectorData();
   const job = getJob(id);
   const { celebrate, Celebration } = useFinishInspection(id);
-  useKeyCollectGate(job, id);
+  const keysCollected = useKeyCollectGate(job, id);
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
 
@@ -202,6 +203,13 @@ export default function OpenInspectionPage() {
         backHref={ROUTES.INSPECTIONS}
       />
     );
+  }
+
+  // The redirect useKeyCollectGate asks for is asynchronous and can fail; rendering
+  // the workflow in the meantime is how a whole field pass gets typed into a screen
+  // whose writes the API rejects.
+  if (!keysCollected) {
+    return <KeyCollectionRequired jobId={id} />;
   }
 
   return (

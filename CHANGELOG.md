@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-08-01
+
+### Fixed
+- **An inspection can no longer be carried out, thrown away, and then declared finished.** Driving a real outgoing job surfaced three faults that compound into losing a whole site visit. (1) The key-collection gate was a `router.replace` inside an effect — a request, not a gate. `replace` is asynchronous, so the workflow kept rendering until it landed, and when the navigation failed it never landed: four areas, twelve photos, notes and responsibility flags went into a screen whose every write the API rejected, with nothing but a generic "API unavailable" banner to show for it while the API was healthy. The four workflow screens now render a **Collect the keys first** panel instead of the form, so nothing can be entered before the keys are recorded. (2) All three gate effects re-issued their redirect on every 5s poll, because `job` is a fresh object each time; each failed RSC fetch queued another, and one blocked screen produced a thousand console errors that read exactly like the server being down. The redirects are now latched. (3) `finalizeAndSubmit` ignored the result of `saveInspectionFindings`, so a save that never reached the server still cleared the draft — the only other copy of the field pass — and still set the local `inspectionFinished` flag, which then redirected the inspector to key return and told them the job was finished, on an inspection the server had zero areas for. The draft is now kept and the submission refused when the findings did not save. `saveInspectionFindings` also had to stop reporting "nothing to persist" (a demo job, or an inspection with no recorded areas) as failure: its boolean now means *the findings are safe*, and being offline correctly reads as not safe rather than as success.
+
 ## 2026-07-31
 
 ### Fixed

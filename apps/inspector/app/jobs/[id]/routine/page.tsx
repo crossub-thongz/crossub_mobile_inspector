@@ -13,6 +13,7 @@ import {
   type SectionBeforeAfter,
 } from '@/components/inspector/outgoing-section-photos';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
+import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { ResetInspectionDialog } from '@/components/inspector/reset-inspection-dialog';
@@ -83,7 +84,7 @@ export default function RoutineInspectionPage() {
   } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
-  useKeyCollectGate(job, id);
+  const keysCollected = useKeyCollectGate(job, id);
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
 
@@ -350,6 +351,13 @@ export default function RoutineInspectionPage() {
     );
   }
 
+  // The redirect useKeyCollectGate asks for is asynchronous and can fail; rendering
+  // the workflow in the meantime is how a whole field pass gets typed into a screen
+  // whose writes the API rejects.
+  if (!keysCollected) {
+    return <KeyCollectionRequired jobId={id} />;
+  }
+
   if (!areaSetupComplete) {
     return (
       <>
@@ -596,7 +604,7 @@ export default function RoutineInspectionPage() {
   };
 
   const finalizeAndSubmit = async (finalIssues: Record<string, AreaIssue>) => {
-    await saveInspectionFindings(id, [
+    const saved = await saveInspectionFindings(id, [
       {
         name: 'General',
         items: [
@@ -628,6 +636,16 @@ export default function RoutineInspectionPage() {
         };
       }),
     ]);
+    // The draft is the only other copy of the field pass. Clearing it after a save
+    // that never reached the server threw the whole inspection away and still marked
+    // the job finished, so the workflow refused to reopen.
+    if (!saved) {
+      toast.error('Report not submitted — your photos and notes are still here', {
+        description:
+          'The findings could not be saved. Check your connection and complete the report again.',
+      });
+      return;
+    }
     clearDraft();
     submitInspection('Routine report sent to agent and landlord');
   };

@@ -14,6 +14,7 @@ import {
   type SectionBeforeAfter,
 } from '@/components/inspector/outgoing-section-photos';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
+import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -99,7 +100,7 @@ export default function OutgoingInspectionPage() {
   } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
-  useKeyCollectGate(job, id);
+  const keysCollected = useKeyCollectGate(job, id);
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
 
@@ -351,6 +352,13 @@ export default function OutgoingInspectionPage() {
         backHref={ROUTES.INSPECTIONS}
       />
     );
+  }
+
+  // The redirect useKeyCollectGate asks for is asynchronous and can fail; rendering
+  // the workflow in the meantime is how a whole field pass gets typed into a screen
+  // whose writes the API rejects.
+  if (!keysCollected) {
+    return <KeyCollectionRequired jobId={id} />;
   }
 
   if (!areaSetupComplete) {
@@ -663,7 +671,7 @@ export default function OutgoingInspectionPage() {
   };
 
   const finalizeAndSubmit = async (finalIssues: Record<string, AreaIssue>) => {
-    await saveInspectionFindings(
+    const saved = await saveInspectionFindings(
       id,
       areaCatalog.filter((def) => {
         const rec = finalIssues[def.name];
@@ -700,6 +708,16 @@ export default function OutgoingInspectionPage() {
         };
       }),
     );
+    // The draft is the only other copy of the field pass. Clearing it after a save
+    // that never reached the server threw the whole inspection away and still marked
+    // the job finished, so the workflow refused to reopen.
+    if (!saved) {
+      toast.error('Report not submitted — your photos and notes are still here', {
+        description:
+          'The findings could not be saved. Check your connection and complete the report again.',
+      });
+      return;
+    }
     clearDraft();
     submitInspection('Outgoing report synced with bond claims and accounting');
   };

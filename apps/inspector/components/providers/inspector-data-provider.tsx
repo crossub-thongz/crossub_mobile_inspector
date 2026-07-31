@@ -1510,13 +1510,15 @@ export function InspectorDataProvider({
       inspectionId: string,
       areas: InspectorFindingAreaPayload[],
     ): Promise<boolean> => {
-      if (
-        !apiInspectionIds.current.has(inspectionId) ||
-        !apiConnected ||
-        areas.length === 0
-      ) {
-        return false;
-      }
+      // True means "the findings are safe", not "a request went out" — callers use it
+      // to decide whether it is safe to clear the inspector's draft, which is the only
+      // other copy of a field pass. A demo job and an inspection with nothing recorded
+      // have nothing to persist, so both are safe. An API-backed job whose findings did
+      // not reach the server is not, and that includes being offline — which used to
+      // read exactly like success and took the draft down with it.
+      if (!apiInspectionIds.current.has(inspectionId)) return true;
+      if (areas.length === 0) return true;
+      if (!apiConnected) return false;
       try {
         await apiSaveInspectionFindings(inspectionId, { areas });
         return true;
