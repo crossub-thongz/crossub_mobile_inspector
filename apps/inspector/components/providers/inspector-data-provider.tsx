@@ -1085,9 +1085,15 @@ export function InspectorDataProvider({
 
       const isApiJob = apiInspectionIds.current.has(id);
 
-      if (isApiJob && apiConnected) {
+      // Deliberately NOT gated on `apiConnected`: that is a cached verdict from the last
+      // 5s poll, and one dropped poll used to skip the server call entirely — this
+      // function then fell through both branches and returned true, so the device showed
+      // the job completed while the server never heard about it. The request decides.
+      if (isApiJob) {
         try {
           await apiCompleteInspection(id, times);
+          // A success is proof of reachability — don't make the UI wait for the next poll.
+          setApiConnected(true);
         } catch {
           try {
             const list = await fetchInspections();
@@ -1128,7 +1134,7 @@ export function InspectorDataProvider({
       void refresh();
       return true;
     },
-    [jobs, apiConnected, markJobCompletedLocally, mutateWithOffline, refresh],
+    [jobs, markJobCompletedLocally, mutateWithOffline, refresh],
   );
 
   const saveKeyWorkflow = useCallback(
@@ -1518,16 +1524,27 @@ export function InspectorDataProvider({
       // read exactly like success and took the draft down with it.
       if (!apiInspectionIds.current.has(inspectionId)) return true;
       if (areas.length === 0) return true;
-      if (!apiConnected) return false;
+      // Genuinely offline: don't attempt, and don't let the caller clear the draft.
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        toast.error('You are offline — the report stays on this device until you reconnect');
+        return false;
+      }
+      // Deliberately NOT gated on `apiConnected`. That flag is a cached verdict from the
+      // last 5s poll, and one dropped poll refused submissions the server would have
+      // accepted — the inspector was told to check a connection that was working, with
+      // no request ever attempted and nothing in the console to explain it. The request
+      // is the only thing that actually knows whether the server is reachable.
       try {
         await apiSaveInspectionFindings(inspectionId, { areas });
+        // A success is proof of reachability — don't make the UI wait for the next poll.
+        setApiConnected(true);
         return true;
       } catch {
         toast.error('Findings could not be saved to the server');
         return false;
       }
     },
-    [apiConnected],
+    [],
   );
 
   const poolJobs = useMemo(
