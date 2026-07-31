@@ -11,6 +11,7 @@ import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
 import { InspectionSectionPhotos } from '@/components/inspector/inspection-section-photos';
 import { InspectorShell } from '@/components/layout/inspector-shell';
+import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ import {
   type CustomAreaSectionMode,
 } from '@/lib/custom-inspection-areas';
 import { inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
+import { jobLookupMiss } from '@/lib/job-lookup';
 import {
   isAreaSetupComplete,
   sectionsForAvailableArea,
@@ -64,6 +66,7 @@ export default function IngoingInspectionPage() {
     saveInspectionFindings,
     updateJobStatus,
     apiConnected,
+    jobsHydrated,
   } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
@@ -203,9 +206,10 @@ export default function IngoingInspectionPage() {
 
   if (!job) {
     return (
-      <InspectorShell title="Job not found" backHref={ROUTES.INSPECTIONS}>
-        <p className="text-muted-foreground text-sm">Job not found.</p>
-      </InspectorShell>
+      <JobLookupFallback
+        state={jobLookupMiss(jobsHydrated)}
+        backHref={ROUTES.INSPECTIONS}
+      />
     );
   }
 

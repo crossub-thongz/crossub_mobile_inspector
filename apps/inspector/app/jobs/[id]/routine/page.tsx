@@ -12,6 +12,7 @@ import {
   OutgoingSectionPhotos,
   type SectionBeforeAfter,
 } from '@/components/inspector/outgoing-section-photos';
+import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { ResetInspectionDialog } from '@/components/inspector/reset-inspection-dialog';
@@ -56,6 +57,7 @@ import {
   type IngoingAreaPlan,
 } from '@/lib/ingoing-area-plan';
 import { matchReferenceSectionPhotos } from '@/lib/outgoing-reference-photos';
+import { jobLookupMiss } from '@/lib/job-lookup';
 
 type AreaIssue = RoutineAreaIssueDraft;
 
@@ -77,6 +79,7 @@ export default function RoutineInspectionPage() {
     saveInspectionFindings,
     updateJobStatus,
     apiConnected,
+    jobsHydrated,
   } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
@@ -340,9 +343,10 @@ export default function RoutineInspectionPage() {
 
   if (!job) {
     return (
-      <InspectorShell title="Job not found" backHref={ROUTES.INSPECTIONS}>
-        <p className="text-muted-foreground text-sm">Job not found.</p>
-      </InspectorShell>
+      <JobLookupFallback
+        state={jobLookupMiss(jobsHydrated)}
+        backHref={ROUTES.INSPECTIONS}
+      />
     );
   }
 

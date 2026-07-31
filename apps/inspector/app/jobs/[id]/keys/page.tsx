@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 import { KeyPhasePhotoField } from '@/components/inspector/key-phase-photo-field';
 import { LeasingKeyCollectionPanel } from '@/components/inspector/leasing-key-collection-panel';
+import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import {
   isKeyReturnComplete,
 } from '@/lib/key-access-workflow';
 import { cn, formatDateTime } from '@/lib/utils';
+import { jobLookupMiss } from '@/lib/job-lookup';
 
 type Tab = 'collect' | 'return';
 
@@ -31,7 +33,8 @@ export default function JobKeysPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'return' ? 'return' : 'collect';
-  const { getJob, saveKeyWorkflow, completeJob, refresh } = useInspectorData();
+  const { getJob, saveKeyWorkflow, completeJob, refresh, jobsHydrated } =
+    useInspectorData();
   const job = getJob(id);
 
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -71,9 +74,11 @@ export default function JobKeysPage() {
 
   if (!job) {
     return (
-      <InspectorShell title="Key details" backHref={jobDetail(id)}>
-        <p className="text-muted-foreground text-sm">Job not found.</p>
-      </InspectorShell>
+      <JobLookupFallback
+        state={jobLookupMiss(jobsHydrated)}
+        backHref={jobDetail(id)}
+        missingTitle="Key details"
+      />
     );
   }
 

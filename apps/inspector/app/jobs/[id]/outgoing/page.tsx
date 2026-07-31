@@ -13,6 +13,7 @@ import {
   OutgoingSectionPhotos,
   type SectionBeforeAfter,
 } from '@/components/inspector/outgoing-section-photos';
+import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -39,6 +40,7 @@ import {
   mergeOutgoingExecutionDraft,
 } from '@/lib/inspection-execution-hydration';
 import type { OutgoingAreaIssueDraft, OutgoingExecutionDraft } from '@/lib/inspection-execution-draft';
+import { jobLookupMiss } from '@/lib/job-lookup';
 import {
   buildEffectiveAreaCatalog,
   buildExecutionAreaCatalog,
@@ -93,6 +95,7 @@ export default function OutgoingInspectionPage() {
     saveInspectionFindings,
     updateJobStatus,
     apiConnected,
+    jobsHydrated,
   } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
@@ -343,9 +346,10 @@ export default function OutgoingInspectionPage() {
 
   if (!job) {
     return (
-      <InspectorShell title="Job not found" backHref={ROUTES.INSPECTIONS}>
-        <p className="text-muted-foreground text-sm">Job not found.</p>
-      </InspectorShell>
+      <JobLookupFallback
+        state={jobLookupMiss(jobsHydrated)}
+        backHref={ROUTES.INSPECTIONS}
+      />
     );
   }
 

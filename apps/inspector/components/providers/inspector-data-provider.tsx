@@ -143,6 +143,13 @@ import type { LabeledPhoto } from '@/lib/job-history';
 
 interface InspectorDataContextValue {
   loading: boolean;
+  /**
+   * True once the first job load of this session has settled — the answer to
+   * "is this id genuinely unknown, or has the list simply not arrived yet?".
+   * `loading` cannot answer it: the 5s poll flips `loading` back to true, so a
+   * screen gated on it would flash its placeholder every five seconds.
+   */
+  jobsHydrated: boolean;
   apiConnected: boolean;
   apiError: string | null;
   /** Set when the job pool API fails (e.g. roster not approved). */
@@ -290,6 +297,9 @@ export function InspectorDataProvider({
 }) {
   const { status, user } = useAuth();
   const [loading, setLoading] = useState(true);
+  // Latched: set once the first refresh settles, cleared only when the session
+  // changes. Job screens read this to tell "still loading" from "no such job".
+  const [jobsHydrated, setJobsHydrated] = useState(false);
   const [apiConnected, setApiConnected] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [poolError, setPoolError] = useState<string | null>(null);
@@ -474,6 +484,9 @@ export function InspectorDataProvider({
   const refresh = useCallback(async () => {
     if (status !== 'authed') {
       setLoading(false);
+      // Auth still settling means nothing has been decided yet — a job screen
+      // must keep waiting. Signed out, the empty list is the final answer.
+      setJobsHydrated(status !== 'loading');
       return;
     }
     setLoading(true);
@@ -662,6 +675,7 @@ export function InspectorDataProvider({
     }
     setApiConnected(connected);
     setLoading(false);
+    setJobsHydrated(true);
     refreshPendingSync();
   }, [status, user?.email, refreshPendingSync]);
 
@@ -1611,6 +1625,7 @@ export function InspectorDataProvider({
 
   const value: InspectorDataContextValue = {
     loading,
+    jobsHydrated,
     apiConnected,
     apiError,
     poolError,

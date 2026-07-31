@@ -13,12 +13,14 @@ import {
   JobStatusBadge,
   PriorityBadge,
 } from '@/components/inspector/status-badge';
+import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { jobHistory, jobKeys, jobWorkflow, ROUTES } from '@/constants/routes';
 import { isPoolJob } from '@/lib/inspector-job-filters';
+import { jobLookupMiss } from '@/lib/job-lookup';
 import {
   isInspectionWorkflowFinished,
   isKeyCollectComplete,
@@ -36,15 +38,22 @@ const STATUS_FLOW = [
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { getJob, updateJobStatus, acceptJob, declineJob, deviceLocation } =
-    useInspectorData();
+  const {
+    getJob,
+    updateJobStatus,
+    acceptJob,
+    declineJob,
+    deviceLocation,
+    jobsHydrated,
+  } = useInspectorData();
   const job = getJob(id);
 
   if (!job) {
     return (
-      <InspectorShell title="Job not found" backHref={ROUTES.JOB_POOL}>
-        <p className="text-muted-foreground text-sm">This job could not be found.</p>
-      </InspectorShell>
+      <JobLookupFallback
+        state={jobLookupMiss(jobsHydrated)}
+        backHref={ROUTES.JOB_POOL}
+      />
     );
   }
 

@@ -8,15 +8,17 @@ import {
   JobStatusBadge,
   JobTypeBadge,
 } from '@/components/inspector/status-badge';
+import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { ROUTES } from '@/constants/routes';
 import { mergeJobWithHistory } from '@/lib/job-history';
 import { isDemoJobId } from '@/lib/inspector-job-filters';
+import { jobLookupMiss } from '@/lib/job-lookup';
 
 export default function JobHistoryDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob } = useInspectorData();
+  const { getJob, jobsHydrated } = useInspectorData();
   const raw = getJob(id);
   const job = raw
     ? mergeJobWithHistory(raw, { serverBacked: !isDemoJobId(raw.id) })
@@ -24,9 +26,11 @@ export default function JobHistoryDetailPage() {
 
   if (!job) {
     return (
-      <InspectorShell title="Report not found" backHref={ROUTES.HISTORY}>
-        <p className="text-muted-foreground text-sm">This job could not be found.</p>
-      </InspectorShell>
+      <JobLookupFallback
+        state={jobLookupMiss(jobsHydrated)}
+        backHref={ROUTES.HISTORY}
+        missingTitle="Report not found"
+      />
     );
   }
 

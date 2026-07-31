@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { OpenInspectionLinkQrBlock } from '@/components/open-inspection/open-inspection-link-qr-block';
 import { OpenInspectionVisitorList } from '@/components/open-inspection/open-inspection-visitor-list';
+import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import {
   type InspectorOpenViewing,
 } from '@/lib/inspector-open-viewing';
 import { cn, formatDateTime } from '@/lib/utils';
+import { jobLookupMiss } from '@/lib/job-lookup';
 
 type Tab = 'checkins' | 'qr';
 
@@ -51,8 +53,13 @@ function viewingTimes(viewing: InspectorOpenViewing, endTime: string) {
 
 export default function OpenInspectionPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, updateJobStatus, completeOpenInspectionJob, refresh } =
-    useInspectorData();
+  const {
+    getJob,
+    updateJobStatus,
+    completeOpenInspectionJob,
+    refresh,
+    jobsHydrated,
+  } = useInspectorData();
   const job = getJob(id);
   const { celebrate, Celebration } = useFinishInspection(id);
   useKeyCollectGate(job, id);
@@ -190,9 +197,10 @@ export default function OpenInspectionPage() {
 
   if (!job) {
     return (
-      <InspectorShell title="Job not found" backHref={ROUTES.INSPECTIONS}>
-        <p className="text-muted-foreground text-sm">Job not found.</p>
-      </InspectorShell>
+      <JobLookupFallback
+        state={jobLookupMiss(jobsHydrated)}
+        backHref={ROUTES.INSPECTIONS}
+      />
     );
   }
 
