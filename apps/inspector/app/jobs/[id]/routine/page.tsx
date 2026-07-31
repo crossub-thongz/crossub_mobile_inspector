@@ -115,7 +115,14 @@ export default function RoutineInspectionPage() {
       setLoadingReference(false);
       return;
     }
-    if (!localDraftLoaded.current || serverHydrated.current) return;
+    // Not loading on these paths either. Leaving the flag set here permanently
+    // disabled "Complete Outgoing Report" / "Submit" — and a disabled button says
+    // nothing at all, so the inspector clicks the only control that finishes the job
+    // and the app simply does not react: no toast, no error, no state change.
+    if (!localDraftLoaded.current || serverHydrated.current) {
+      setLoadingReference(false);
+      return;
+    }
 
     let cancelled = false;
     setLoadingReference(true);
