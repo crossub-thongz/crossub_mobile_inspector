@@ -5,23 +5,16 @@ export const PASSWORD_MIN = 10;
 export const PASSWORD_MAX = 128;
 
 /**
- * Idle window before the inspector is signed out.
+ * There is deliberately no client-side idle logout.
  *
- * This is a deliberate security control — an inspector's phone left on a bench inside someone
- * else's property must not stay signed in — so it is raised, not removed.
+ * There used to be a 30-minute one, measured only from raw DOM input on the page. That is the
+ * wrong measure for a field app — photographing a property means leaving the browser for the
+ * camera, and a backgrounded tab fires no `mousemove`, `keydown`, `scroll` or `touchstart` —
+ * so it signed inspectors out mid-inspection for doing the job, and they had to sign in again
+ * inside someone's home on whatever reception they had.
  *
- * It was 30 minutes, measured only from raw DOM input on the page. That is the wrong measure
- * for a field app: photographing a property means leaving the browser for the camera, and a
- * backgrounded tab produces no `mousemove`, `keydown`, `scroll` or `touchstart` at all. An
- * inspector working a large property could be signed out mid-job purely for using the camera,
- * then have to sign in again somewhere with poor reception. Returning to the app now counts as
- * activity (see the visibility/focus handling in `InactivityLogoutProvider`), and the window is
- * two hours so a normal inspection cannot outlast it.
+ * Session lifetime is now bounded solely by the backend access token (`ACCESS_TTL`, 24h) and
+ * its refresh. Removed on Tony's instruction, 2026-08-01. If a shorter field session is ever
+ * wanted again, shorten `ACCESS_TTL` server-side rather than re-adding a timer here — the
+ * server is the only place that can actually enforce it.
  */
-export const IDLE_LOGOUT_MS = 2 * 60 * 60 * 1000;
-
-/**
- * Floor between activity reschedules. `mousemove` fires continuously and the provider used to
- * tear down and recreate the logout timer on every single one.
- */
-export const IDLE_ACTIVITY_THROTTLE_MS = 30 * 1000;
