@@ -750,9 +750,14 @@ export function InspectorDataProvider({
       remaining.push(item);
     }
 
+    // Always write back, even when nothing synced. Only `key_workflow` items are ever drained
+    // here — every other action is pushed straight onto `remaining` and kept forever — so
+    // skipping the write when `synced === 0` meant an oversized queue was never rewritten, and
+    // therefore never trimmed by `saveOfflineQueue`'s bounds. That is how it reached 5,024 KB
+    // on staging and started throwing QuotaExceededError out of this provider.
+    saveOfflineQueue(remaining);
+    setPendingSync(remaining.length);
     if (synced > 0) {
-      saveOfflineQueue(remaining);
-      setPendingSync(remaining.length);
       toast.success(`Synced ${synced} offline change(s)`);
       await refresh();
     }
