@@ -1,33 +1,27 @@
 'use client';
 
-import { useEffect } from 'react';
 import { CheckCircle2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 
 export function InspectionCompleteOverlay({
   open,
   title,
   subtitle,
   onDone,
-  durationMs = 2400,
 }: {
   open: boolean;
   title: string;
   subtitle?: string;
   onDone: () => void;
-  durationMs?: number;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const timer = window.setTimeout(onDone, durationMs);
-    return () => window.clearTimeout(timer);
-  }, [open, onDone, durationMs]);
-
   if (!open) return null;
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-background/92 backdrop-blur-md"
-      role="status"
+      role="dialog"
+      aria-modal="true"
       aria-live="polite"
       aria-label={title}
     >
@@ -41,10 +35,13 @@ export function InspectionCompleteOverlay({
         </div>
         <div className="inspection-complete-copy space-y-1">
           <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-          {subtitle && (
+          {subtitle ? (
             <p className="text-muted-foreground text-sm leading-relaxed">{subtitle}</p>
-          )}
+          ) : null}
         </div>
+        <Button type="button" className="mt-1 w-full" onClick={onDone}>
+          Continue
+        </Button>
       </div>
     </div>
   );

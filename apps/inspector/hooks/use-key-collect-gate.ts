@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
-import { jobDetail, jobKeys } from '@/constants/routes';
+import { jobDetail, jobKeys, ROUTES } from '@/constants/routes';
 import {
   canAccessKeyReturnTab,
   isKeyCollectComplete,
@@ -97,12 +97,20 @@ export function useInspectionFinishedGate(
   const redirected = useRef(false);
 
   useEffect(() => {
-    if (!job?.keyAccess) return;
+    if (!job) return;
+
+    if (job.status === 'completed') {
+      if (redirected.current) return;
+      redirected.current = true;
+      router.replace(ROUTES.DASHBOARD);
+      return;
+    }
+
+    if (!job.keyAccess) return;
     if (!isInspectionWorkflowFinished(job)) {
       redirected.current = false;
       return;
     }
-    if (job.status === 'completed') return;
     // Latched — see useKeyCollectGate.
     if (redirected.current) return;
     redirected.current = true;
