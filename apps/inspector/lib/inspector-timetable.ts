@@ -1,3 +1,5 @@
+import { LAST_MINUTE_OF_DAY, MINUTES_PER_HOUR } from '@/constants/availability';
+
 const SYDNEY_TZ = 'Australia/Sydney';
 
 export type InspectorDateAvailabilityEntry = {
@@ -14,21 +16,35 @@ export type InspectorCalendarAvailability = {
   configured: boolean;
 };
 
-export const DEFAULT_START_MINUTE = 9 * 60;
-export const DEFAULT_END_MINUTE = 17 * 60;
-
 export const WEEKDAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
 export function minuteToTimeInput(minute: number): string {
-  const h = Math.floor(minute / 60);
-  const m = minute % 60;
+  const h = Math.floor(minute / MINUTES_PER_HOUR);
+  const m = minute % MINUTES_PER_HOUR;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-export function timeInputToMinute(value: string): number {
-  const [h, m] = value.split(':').map((part) => Number(part));
-  if (!Number.isFinite(h) || !Number.isFinite(m)) return 0;
-  return Math.max(0, Math.min(23 * 60 + 59, h * 60 + m));
+/**
+ * Parse an `<input type="time">` value, or null when there is no complete time in it.
+ *
+ * A time input reports `''` while a segment is mid-edit and while it is cleared. Coercing
+ * that to 0 silently rewrote the window to 00:00 and, since the end time was left alone,
+ * produced an inverted window the API rejects for the whole month. Callers keep the
+ * previous value on null instead.
+ */
+export function parseTimeInput(value: string): number | null {
+  const match = /^(\d{1,2}):(\d{2})/.exec(value.trim());
+  if (!match) return null;
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  if (h > 23 || m > 59) return null;
+  return Math.max(0, Math.min(LAST_MINUTE_OF_DAY, h * MINUTES_PER_HOUR + m));
+}
+
+/** The API rejects the whole PATCH when any entry is inverted or empty. */
+export function isValidWindow(startMinute: number, endMinute: number): boolean {
+  return endMinute > startMinute;
 }
 
 export function sydneyDateKey(date: Date): string {

@@ -198,14 +198,24 @@ async function inspectorJson<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   if (!res.ok) {
-    let detail = 'Request failed';
+    // The bare "Request failed" said nothing about *why*, so an auth or roster problem was
+    // indistinguishable from a bug in the screen. Keep the server's message when there is
+    // one, and name the common statuses when there is not.
+    let detail = `Request failed (${res.status})`;
     try {
       const body = (await res.json()) as { message?: string | string[] };
       const msg = body.message;
       if (typeof msg === 'string' && msg.trim()) detail = msg;
       else if (Array.isArray(msg) && msg.length > 0) detail = msg.join(', ');
     } catch {
-      // ignore
+      if (res.status === 401) {
+        detail = 'Session expired — sign out and sign in again.';
+      } else if (res.status === 403) {
+        detail =
+          'Your account is not linked to an approved inspector roster yet. Ask ops to approve your registration.';
+      } else if (res.status === 503) {
+        detail = 'API unavailable — start the backend on port 3001 and try again.';
+      }
     }
     throw new Error(detail);
   }

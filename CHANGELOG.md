@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-09
+
+### Fixed
+- **Availability hours can be saved.** The calendar's "Save month" button is wired to a `dirty` flag that only the **Available** / **Not available** buttons ever set — `applyTimeToSelectedAvailable` bailed on any date that was not *already* marked, so it did nothing at all on a fresh month. The natural flow (tap the dates, set From/To, press Save) therefore left the button disabled and unresponsive from first load to last, with no error and nothing to indicate the hours had not been taken; the one working path — set the hours, press **Available**, *then* Save — was documented only in an 11px line of helper text under the inputs. Setting hours now *is* the act of declaring availability: the window applies to every selected date that is not explicitly marked "not available", marks the edit dirty, and enables the save.
+- **One inverted window no longer takes the whole month's save down.** The time inputs applied `startMinute`/`endMinute` to the selection with no validation, unlike the Available button which checks them — so setting To earlier than From (or clearing a field, which `timeInputToMinute` coerced to 00:00) wrote `endMinute <= startMinute` into the payload. The API rejects the *entire* `PATCH /inspector/timetable` with a 400 naming a date the inspector cannot see, so every later save of that month failed too. The window is now validated where it is entered, shown inline, and blocks the save until it is fixed; `parseTimeInput` returns null for an incomplete time instead of silently meaning midnight; and the save re-checks every entry and names the offending day.
+- **A saved day visibly turns green.** Selected dates render amber over the availability colour and the selection survived the save, so the days just published looked exactly like they had before — the save reported success onto a calendar that had not changed. The selection is cleared on save, the green/red status dot is kept while a date is selected, and the toast counts the days published.
+- **Changing month no longer silently discards the month's edits.** The arrows re-fetched the range and overwrote local state, so unsaved marks vanished with no warning. Month navigation now stops while there are unsaved changes, next to an explicit **Discard changes** control.
+- **The floating receiving/on-break bubble no longer covers the last control on a page.** It floats over the ~150px above the bottom nav while `main` reserved only 96px, so the right-hand side of "Save month" — and the last button on every other screen — sat under it, and a tap there toggled the inspector's receiving state instead of saving.
+- **Inspector API failures say what went wrong.** `inspectorJson` reported every non-JSON error body as a bare "Request failed", making an expired session or an unapproved roster record indistinguishable from a broken screen. It now carries the status and names the 401/403/503 cases, as the other inspector calls already did.
+
 ## 2026-08-01
 
 ### Fixed

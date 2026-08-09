@@ -273,7 +273,13 @@ export function InspectorShell({
       )}
 
       <main
-        className="flex-1 px-4 pb-24"
+        className={cn(
+          'flex-1 px-4',
+          // The receiving/on-break bubble floats over the last ~150px above the nav. With
+          // only pb-24 the final control on a page sits under it, so a tap on the right of
+          // (say) "Save month" toggled availability instead of saving.
+          showAvailabilityBubble ? 'pb-40' : 'pb-24',
+        )}
         style={bare ? { paddingTop: 8 } : { paddingTop: headerHeight }}
       >
         {user && !bare && (

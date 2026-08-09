@@ -13,18 +13,22 @@ import {
   saveInspectorTimetable,
 } from '@/lib/crossub-api/inspector-client';
 import {
-  DEFAULT_END_MINUTE,
-  DEFAULT_START_MINUTE,
+  DEFAULT_AVAILABILITY_END_MINUTE,
+  DEFAULT_AVAILABILITY_START_MINUTE,
+  INVALID_WINDOW_MESSAGE,
+} from '@/constants/availability';
+import {
   daysInMonth,
   entriesToMap,
   formatSelectedDateLabel,
   isPastDateKey,
+  isValidWindow,
   mapToEntries,
   minuteToTimeInput,
   monthRange,
   monthStartWeekday,
+  parseTimeInput,
   sydneyTodayParts,
-  timeInputToMinute,
   WEEKDAY_HEADERS,
   type InspectorDateAvailabilityEntry,
 } from '@/lib/inspector-timetable';
@@ -39,11 +43,12 @@ export function InspectorWeeklyTimetableCard() {
   >(new Map());
   const [unavailableDates, setUnavailableDates] = useState<Set<string>>(new Set());
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
-  const [startMinute, setStartMinute] = useState(DEFAULT_START_MINUTE);
-  const [endMinute, setEndMinute] = useState(DEFAULT_END_MINUTE);
+  const [startMinute, setStartMinute] = useState(DEFAULT_AVAILABILITY_START_MINUTE);
+  const [endMinute, setEndMinute] = useState(DEFAULT_AVAILABILITY_END_MINUTE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [timeError, setTimeError] = useState<string | null>(null);
 
   const range = useMemo(() => monthRange(year, month), [year, month]);
   const monthLabel = useMemo(
@@ -61,6 +66,9 @@ export function InspectorWeeklyTimetableCard() {
     try {
       const timetable = await fetchInspectorTimetable(range.from, range.to);
       setEntriesByDate(entriesToMap(timetable.entries));
+      setSelectedDates(new Set());
+      setUnavailableDates(new Set());
+      setTimeError(null);
       setDirty(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not load availability');
@@ -74,26 +82,36 @@ export function InspectorWeeklyTimetableCard() {
   }, [load]);
 
   const shiftMonth = (delta: number) => {
+    // Changing month reloads from the server, which used to drop the month's edits on the
+    // floor without saying so. Make the inspector resolve them first.
+    if (dirty) {
+      toast.error('Save this month first, or discard the changes.');
+      return;
+    }
     const next = new Date(Date.UTC(year, month - 1 + delta, 1));
     setYear(next.getUTCFullYear());
     setMonth(next.getUTCMonth() + 1);
     setSelectedDates(new Set());
     setUnavailableDates(new Set());
+    setTimeError(null);
   };
 
   const dateKeyForDay = (day: number) =>
     `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
   const toggleSelected = (dateKey: string) => {
-    setSelectedDates((current) => {
-      const next = new Set(current);
-      if (next.has(dateKey)) next.delete(dateKey);
-      else next.add(dateKey);
-      return next;
-    });
+    const next = new Set(selectedDates);
+    const selecting = !next.has(dateKey);
+    if (selecting) next.add(dateKey);
+    else next.delete(dateKey);
+    setSelectedDates(next);
+
+    // The time inputs are hidden with no selection, so a stale error would block the save
+    // with nothing on screen to explain it.
+    if (next.size === 0) setTimeError(null);
 
     const entry = entriesByDate.get(dateKey);
-    if (entry) {
+    if (selecting && entry) {
       setStartMinute(entry.startMinute);
       setEndMinute(entry.endMinute);
     }
@@ -104,10 +122,12 @@ export function InspectorWeeklyTimetableCard() {
       toast.error('Select one or more dates on the calendar');
       return;
     }
-    if (endMinute <= startMinute) {
-      toast.error('End time must be after start time');
+    if (!isValidWindow(startMinute, endMinute)) {
+      setTimeError(INVALID_WINDOW_MESSAGE);
+      toast.error(INVALID_WINDOW_MESSAGE);
       return;
     }
+    setTimeError(null);
     setEntriesByDate((current) => {
       const next = new Map(current);
       for (const dateKey of selectedDates) {
@@ -128,6 +148,7 @@ export function InspectorWeeklyTimetableCard() {
       toast.error('Select one or more dates on the calendar');
       return;
     }
+    setTimeError(null);
     setEntriesByDate((current) => {
       const next = new Map(current);
       for (const dateKey of selectedDates) {
@@ -143,12 +164,26 @@ export function InspectorWeeklyTimetableCard() {
     setDirty(true);
   };
 
-  const applyTimeToSelectedAvailable = (nextStart: number, nextEnd: number) => {
+  /**
+   * Setting hours *is* declaring availability — the previous version only rewrote dates that
+   * were already marked, so picking dates, typing a window and pressing Save did nothing:
+   * `dirty` stayed false and the Save button stayed disabled. Dates explicitly marked "not
+   * available" are left alone; everything else in the selection takes the window.
+   */
+  const applyWindowToSelected = (nextStart: number, nextEnd: number) => {
     if (selectedDates.size === 0) return;
+    if (!isValidWindow(nextStart, nextEnd)) {
+      setTimeError(INVALID_WINDOW_MESSAGE);
+      return;
+    }
+    setTimeError(null);
+    const targets = [...selectedDates].filter(
+      (dateKey) => !unavailableDates.has(dateKey) || entriesByDate.has(dateKey),
+    );
+    if (targets.length === 0) return;
     setEntriesByDate((current) => {
       const next = new Map(current);
-      for (const dateKey of selectedDates) {
-        if (!next.has(dateKey)) continue;
+      for (const dateKey of targets) {
         next.set(dateKey, { date: dateKey, startMinute: nextStart, endMinute: nextEnd });
       }
       return next;
@@ -157,11 +192,20 @@ export function InspectorWeeklyTimetableCard() {
   };
 
   const save = async () => {
+    const entries = mapToEntries(entriesByDate).filter(
+      (entry) => entry.date >= range.from && entry.date <= range.to,
+    );
+    // One inverted window makes the API reject the entire month, so name the day rather
+    // than let the save fail with the server's message for a date the inspector can't see.
+    const invalid = entries.find((entry) => !isValidWindow(entry.startMinute, entry.endMinute));
+    if (invalid) {
+      setTimeError(INVALID_WINDOW_MESSAGE);
+      toast.error(`${INVALID_WINDOW_MESSAGE} Fix ${formatSelectedDateLabel(invalid.date)}.`);
+      return;
+    }
+
     setSaving(true);
     try {
-      const entries = mapToEntries(entriesByDate).filter(
-        (entry) => entry.date >= range.from && entry.date <= range.to,
-      );
       const timetable = await saveInspectorTimetable(range.from, range.to, entries);
       const savedEntries = entriesToMap(timetable.entries);
       setEntriesByDate(savedEntries);
@@ -174,8 +218,16 @@ export function InspectorWeeklyTimetableCard() {
         }
         return next;
       });
+      // Clearing the selection is the confirmation: selected days render amber, so without
+      // this the days just saved never turn green and the save reads as having done nothing.
+      setSelectedDates(new Set());
+      setTimeError(null);
       setDirty(false);
-      toast.success('Availability saved');
+      toast.success(
+        savedEntries.size > 0
+          ? `Availability saved — ${savedEntries.size} day${savedEntries.size === 1 ? '' : 's'} in ${monthLabel}`
+          : `Availability saved — no available days in ${monthLabel}`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not save availability');
     } finally {
@@ -212,8 +264,9 @@ export function InspectorWeeklyTimetableCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-muted-foreground text-xs leading-relaxed">
-          Select one or more dates (yellow), mark <strong>Available</strong> (green) or{' '}
-          <strong>Not available</strong> (red), then save.
+          Tap one or more dates (yellow), set your hours or mark{' '}
+          <strong>Not available</strong> (red), then <strong>Save</strong>. A green dot means
+          the day is published as available.
         </p>
 
         <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground">
@@ -315,10 +368,12 @@ export function InspectorWeeklyTimetableCard() {
                     )}
                   >
                     <span>{cell.day}</span>
-                    {!isSelected && isAvailable ? (
+                    {/* Kept visible while selected — the amber selection used to hide the
+                        mark, so marking a day looked like it had done nothing. */}
+                    {isAvailable ? (
                       <span className="absolute bottom-1 size-1.5 rounded-full bg-emerald-500" />
                     ) : null}
-                    {!isSelected && isUnavailable ? (
+                    {isUnavailable ? (
                       <span className="absolute bottom-1 size-1.5 rounded-full bg-red-500" />
                     ) : null}
                   </button>
@@ -373,11 +428,13 @@ export function InspectorWeeklyTimetableCard() {
                     <Label className="text-[10px] uppercase tracking-wide">From</Label>
                     <Input
                       type="time"
+                      aria-invalid={timeError !== null}
                       value={minuteToTimeInput(startMinute)}
                       onChange={(e) => {
-                        const next = timeInputToMinute(e.target.value);
+                        const next = parseTimeInput(e.target.value);
+                        if (next === null) return;
                         setStartMinute(next);
-                        if (anySelectedAvailable) applyTimeToSelectedAvailable(next, endMinute);
+                        applyWindowToSelected(next, endMinute);
                       }}
                     />
                   </div>
@@ -385,20 +442,26 @@ export function InspectorWeeklyTimetableCard() {
                     <Label className="text-[10px] uppercase tracking-wide">To</Label>
                     <Input
                       type="time"
+                      aria-invalid={timeError !== null}
                       value={minuteToTimeInput(endMinute)}
                       onChange={(e) => {
-                        const next = timeInputToMinute(e.target.value);
+                        const next = parseTimeInput(e.target.value);
+                        if (next === null) return;
                         setEndMinute(next);
-                        if (anySelectedAvailable) applyTimeToSelectedAvailable(startMinute, next);
+                        applyWindowToSelected(startMinute, next);
                       }}
                     />
                   </div>
                 </div>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
-                  {anySelectedAvailable
-                    ? 'Time applies to all selected available dates. Tap Available to apply this window to newly selected dates.'
-                    : 'Set your hours, then tap Available to mark the selected dates.'}
-                </p>
+                {timeError ? (
+                  <p className="text-destructive text-[11px] font-medium">{timeError}</p>
+                ) : (
+                  <p className="text-muted-foreground text-[11px] leading-relaxed">
+                    {anySelectedAvailable
+                      ? 'These hours apply to every selected date. Save to publish them.'
+                      : 'Set your hours — the selected dates are marked available. Then save.'}
+                  </p>
+                )}
               </>
             ) : (
               <p className="text-muted-foreground border-t border-border/60 pt-3 text-[11px] leading-relaxed">
@@ -412,21 +475,38 @@ export function InspectorWeeklyTimetableCard() {
           </p>
         )}
 
-        <Button
-          type="button"
-          className="w-full"
-          disabled={loading || saving || !dirty}
-          onClick={() => void save()}
-        >
-          {saving ? (
-            <>
-              <Loader2 className="mr-1.5 size-4 animate-spin" />
-              Saving…
-            </>
-          ) : (
-            'Save month'
-          )}
-        </Button>
+        <div className="space-y-2">
+          <Button
+            type="button"
+            className="w-full"
+            disabled={loading || saving || !dirty || timeError !== null}
+            onClick={() => void save()}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-1.5 size-4 animate-spin" />
+                Saving…
+              </>
+            ) : (
+              `Save ${monthLabel}`
+            )}
+          </Button>
+          {dirty ? (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-amber-600 text-[11px] font-medium dark:text-amber-400">
+                Unsaved changes
+              </p>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void load()}
+                className="text-muted-foreground hover:text-foreground text-[11px] underline disabled:opacity-50"
+              >
+                Discard changes
+              </button>
+            </div>
+          ) : null}
+        </div>
       </CardContent>
     </Card>
   );
