@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 import { jobDetail, jobKeys, ROUTES } from '@/constants/routes';
@@ -11,6 +11,9 @@ import {
   isKeyReturnComplete,
 } from '@/lib/key-access-workflow';
 import type { InspectionJob, JobStatus } from '@/lib/types';
+
+const WORKFLOW_PATH =
+  /^\/jobs\/[^/]+\/(ingoing|routine|outgoing|open)\/?$/;
 
 /**
  * Guard a workflow screen that must not start before the keys are in hand.
@@ -94,6 +97,7 @@ export function useInspectionFinishedGate(
   jobId: string,
 ): void {
   const router = useRouter();
+  const pathname = usePathname();
   const redirected = useRef(false);
 
   useEffect(() => {
@@ -111,13 +115,21 @@ export function useInspectionFinishedGate(
       redirected.current = false;
       return;
     }
+
+    // The post-report celebration overlay on workflow screens owns the first hop
+    // to key return — racing router.replace here left the overlay stuck on Continue.
+    if (WORKFLOW_PATH.test(pathname)) {
+      redirected.current = false;
+      return;
+    }
+
     // Latched — see useKeyCollectGate.
     if (redirected.current) return;
     redirected.current = true;
     if (!isKeyReturnComplete(job)) {
-      router.replace(jobKeys(jobId, 'return'));
+      window.location.assign(jobKeys(jobId, 'return'));
       return;
     }
     router.replace(jobDetail(jobId));
-  }, [job, jobId, router]);
+  }, [job, jobId, pathname, router]);
 }

@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { InspectionCompleteOverlay } from '@/components/inspector/inspection-complete-overlay';
@@ -16,31 +15,35 @@ type OverlayState = {
 const POST_FINISH_DELAY_MS = 2400;
 
 export function useFinishInspection(jobId: string) {
-  const router = useRouter();
   const { finishInspectionWorkflow } = useInspectorData();
   const [overlay, setOverlay] = useState<OverlayState | null>(null);
   const overlayRef = useRef(overlay);
   overlayRef.current = overlay;
+  const pendingRedirectRef = useRef<OverlayState['redirect'] | null>(null);
   const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navigateToNextStep = useCallback(
     (redirect: OverlayState['redirect']) => {
+      if (navigationTimerRef.current) {
+        window.clearTimeout(navigationTimerRef.current);
+        navigationTimerRef.current = null;
+      }
+      pendingRedirectRef.current = null;
       setOverlay(null);
-      router.replace(
-        redirect === 'keys' ? jobKeys(jobId, 'return') : ROUTES.DASHBOARD,
-      );
+      const url =
+        redirect === 'keys' ? jobKeys(jobId, 'return') : ROUTES.DASHBOARD;
+      // Hard navigation — soft router.replace can no-op when a latched gate already
+      // attempted the same route, leaving the celebration overlay stuck on screen.
+      window.location.assign(url);
     },
-    [jobId, router],
+    [jobId],
   );
 
   const dismissOverlay = useCallback(() => {
-    if (navigationTimerRef.current) {
-      window.clearTimeout(navigationTimerRef.current);
-      navigationTimerRef.current = null;
-    }
-    const current = overlayRef.current;
-    if (!current) return;
-    navigateToNextStep(current.redirect);
+    const redirect =
+      pendingRedirectRef.current ?? overlayRef.current?.redirect ?? null;
+    if (!redirect) return;
+    navigateToNextStep(redirect);
   }, [navigateToNextStep]);
 
   const scheduleNavigation = useCallback(
@@ -71,6 +74,7 @@ export function useFinishInspection(jobId: string) {
       redirect: OverlayState['redirect'] = 'home',
       title = 'Inspection complete',
     ) => {
+      pendingRedirectRef.current = redirect;
       setOverlay({ title, subtitle: successMessage, redirect });
       scheduleNavigation(redirect);
     },

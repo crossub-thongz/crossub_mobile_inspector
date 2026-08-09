@@ -43,6 +43,13 @@ export default function JobKeysPage() {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'return' || tabParam === 'collect') {
+      setTab(tabParam);
+    }
+  }, [searchParams]);
+
   const workflow = job ? getKeyWorkflow(job) : undefined;
   const collectDone = job ? isKeyCollectComplete(job) : false;
   const returnDone = job ? isKeyReturnComplete(job) : false;
