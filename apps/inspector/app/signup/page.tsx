@@ -29,7 +29,6 @@ import { ApiError, api } from '@/lib/api';
 import type { AuthUser } from '@/lib/auth-types';
 import { normalizeAuthEmail } from '@/lib/auth-email';
 import { clearLocalSession } from '@/lib/local-auth';
-import { postAuthDestination } from '@/lib/system-access-agreement';
 
 const schema = z
   .object({
@@ -56,9 +55,7 @@ export default function SignupPage() {
 
   useLayoutEffect(() => {
     if (status !== 'authed' || !user || submitLock.current) return;
-    window.location.replace(
-      postAuthDestination(user, ROUTES.REGISTER, ROUTES.SYSTEM_ACCESS_AGREEMENT),
-    );
+    window.location.replace(ROUTES.REGISTER);
   }, [status, user]);
 
   const {
@@ -90,13 +87,7 @@ export default function SignupPage() {
 
       clearLocalSession();
       toast.success('Account created — you are signed in.');
-      window.location.assign(
-        postAuthDestination(
-          result.user,
-          ROUTES.REGISTER,
-          ROUTES.SYSTEM_ACCESS_AGREEMENT,
-        ),
-      );
+      window.location.assign(ROUTES.REGISTER);
     } catch (err) {
       submitLock.current = false;
       if (err instanceof ApiError) {

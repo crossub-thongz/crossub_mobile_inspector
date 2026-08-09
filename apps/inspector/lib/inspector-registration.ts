@@ -94,6 +94,9 @@ export function isInspectorOnboardingComplete(options: {
   registration: InspectorRegistration | null;
   hasRoster: boolean;
   serverRegistrationStatus?: string | null;
+  /** True once we've attempted to load the server profile for this session. */
+  serverChecked?: boolean;
+  serverHasRegistration?: boolean;
 }): boolean {
   if (options.hasRoster) return true;
   if (
@@ -101,6 +104,15 @@ export function isInspectorOnboardingComplete(options: {
     options.serverRegistrationStatus === 'pending_review'
   ) {
     return true;
+  }
+  // A failed local-only save can leave pending_review in localStorage while the
+  // server never received the application — let the user resubmit.
+  if (
+    options.serverChecked &&
+    !options.serverHasRegistration &&
+    !options.hasRoster
+  ) {
+    return false;
   }
   return isRegistrationComplete(options.registration);
 }

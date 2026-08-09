@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
 import { useAuth } from '@/components/providers/auth-provider';
+import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ import {
 
 export default function SystemAccessAgreementPage() {
   const { user, status, refresh } = useAuth();
+  const { registrationComplete, registrationResolved } = useInspectorData();
   const [agreement, setAgreement] = useState<SystemAccessAgreementView | null>(null);
   const [signerName, setSignerName] = useState('');
   const [agreed, setAgreed] = useState(false);
@@ -32,8 +34,15 @@ export default function SystemAccessAgreementPage() {
     }
     if (status !== 'authed' || !user) return;
 
-    if (!needsSystemAccessAgreement(user)) {
+    if (!registrationResolved) return;
+
+    if (!registrationComplete) {
       window.location.replace(ROUTES.REGISTER);
+      return;
+    }
+
+    if (!needsSystemAccessAgreement(user)) {
+      window.location.replace(ROUTES.DASHBOARD);
       return;
     }
 
@@ -50,7 +59,7 @@ export default function SystemAccessAgreementPage() {
         setLoading(false);
       }
     })();
-  }, [status, user]);
+  }, [status, user, registrationComplete, registrationResolved]);
 
   const onAccept = async () => {
     if (!signerName.trim()) {
@@ -71,7 +80,7 @@ export default function SystemAccessAgreementPage() {
       await api.post('/auth/refresh');
       await refresh();
       toast.success('Agreement accepted. Welcome to CROSSUB Inspector.');
-      window.location.assign(ROUTES.REGISTER);
+      window.location.assign(ROUTES.DASHBOARD);
     } catch (err) {
       if (err instanceof ApiError) {
         toast.error(err.message || 'Unable to record your agreement.');

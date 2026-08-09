@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 
 import { AuthLoadingScreen } from '@/components/auth/auth-loading-screen';
 import { useAuth } from '@/components/providers/auth-provider';
+import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { ROUTES, isPublicRoute } from '@/constants/routes';
 import { needsSystemAccessAgreement } from '@/lib/system-access-agreement';
 
@@ -12,6 +13,11 @@ const AGREEMENT_EXEMPT = [ROUTES.SYSTEM_ACCESS_AGREEMENT, ROUTES.REGISTER, ROUTE
 
 export function SystemAccessAgreementGate({ children }: { children: React.ReactNode }) {
   const { user, status } = useAuth();
+  const {
+    registrationComplete,
+    registrationHydrated,
+    registrationResolved,
+  } = useInspectorData();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -19,8 +25,15 @@ export function SystemAccessAgreementGate({ children }: { children: React.ReactN
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 
+  const onboardingReady =
+    registrationHydrated && registrationResolved && registrationComplete;
+
   const mustSign =
-    status === 'authed' && !!user && needsSystemAccessAgreement(user) && !onAgreementPage;
+    status === 'authed' &&
+    !!user &&
+    onboardingReady &&
+    needsSystemAccessAgreement(user) &&
+    !onAgreementPage;
 
   useEffect(() => {
     if (!mustSign || isPublicRoute(pathname)) return;

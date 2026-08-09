@@ -23,3 +23,15 @@ export function postAuthDestination(
 ): string {
   return needsSystemAccessAgreement(user) ? agreementRoute : defaultRoute;
 }
+
+/** After inspector profile details are saved — agreement before dashboard. */
+export function postRegistrationDestination(
+  user: {
+    systemAccessAgreementRequired?: boolean;
+    systemAccessAccepted?: boolean;
+  },
+  dashboardRoute: string,
+  agreementRoute: string,
+): string {
+  return needsSystemAccessAgreement(user) ? agreementRoute : dashboardRoute;
+}

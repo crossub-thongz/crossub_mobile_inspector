@@ -19,6 +19,7 @@ import {
 } from '@/constants/inspector-registration';
 import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
 import { ROUTES } from '@/constants/routes';
+import { postRegistrationDestination } from '@/lib/system-access-agreement';
 import type { InspectorRegistration } from '@/lib/types';
 
 const schema = z.object({
@@ -94,13 +95,18 @@ export default function RegisterPage() {
       firstName,
       lastName,
       email: user.email,
-      registrationStatus: 'pending_review',
-      submittedAt: new Date().toISOString(),
+      registrationStatus: 'not_started',
     };
     try {
       await saveRegistration(payload);
-      toast.success('Profile saved — you will not be asked again');
-      window.location.assign(ROUTES.DASHBOARD);
+      toast.success('Profile saved — review the access agreement to continue');
+      window.location.assign(
+        postRegistrationDestination(
+          user,
+          ROUTES.DASHBOARD,
+          ROUTES.SYSTEM_ACCESS_AGREEMENT,
+        ),
+      );
     } catch {
       // saveRegistration already toasts on server failure.
     }

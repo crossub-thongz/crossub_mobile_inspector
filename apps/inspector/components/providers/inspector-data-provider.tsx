@@ -431,6 +431,8 @@ export function InspectorDataProvider({
     registration,
     hasRoster: Boolean(serverProfile?.roster),
     serverRegistrationStatus: serverProfile?.registration?.registrationStatus,
+    serverChecked: registrationResolved,
+    serverHasRegistration: Boolean(serverProfile?.registration),
   });
 
   const saveRegistration = useCallback(
@@ -440,13 +442,16 @@ export function InspectorDataProvider({
         throw new Error('Missing account email');
       }
       const payload = { ...data, email };
-      // Local copy first — it keeps the never-echoed PII/bank fields for display
-      // and is the offline fallback.
-      saveInspectorRegistration(email, payload);
-      setRegistration(payload);
-      // Then submit to the real registry intake: the application lands
-      // PENDING_REVIEW in the staff review queue (approve there mints the roster
-      // record), and the response's status truth overlays the local copy.
+      const draft: InspectorRegistration = {
+        ...payload,
+        registrationStatus: 'not_started',
+      };
+      // Local draft first — keeps never-echoed PII/bank fields without marking
+      // onboarding complete until the server accepts the application.
+      saveInspectorRegistration(email, draft);
+      setRegistration(draft);
+      // Submit to the real registry intake: the application lands PENDING_REVIEW
+      // in the staff review queue (approve there mints the roster record).
       try {
         const serverReg = await submitInspectorRegistration({
           firstName: payload.firstName,
@@ -468,6 +473,12 @@ export function InspectorDataProvider({
         saveInspectorRegistration(email, merged);
         setRegistration(merged);
       } catch {
+        const reverted: InspectorRegistration = {
+          ...draft,
+          registrationStatus: 'not_started',
+        };
+        saveInspectorRegistration(email, reverted);
+        setRegistration(reverted);
         toast.error(
           'Could not save your profile to the server. Check your connection and try again.',
         );
