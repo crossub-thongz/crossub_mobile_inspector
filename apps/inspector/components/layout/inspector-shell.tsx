@@ -124,13 +124,13 @@ export function InspectorShell({
       <header
         ref={headerRef}
         className={cn(
-          'fixed top-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80',
+          'fixed top-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pt-[env(safe-area-inset-top,0px)]',
           isHome && 'bg-background',
         )}
       >
         <div ref={toolbarRef} className="relative">
         {isHome ? (
-          <div className="flex items-center justify-between gap-2 px-4 py-3">
+          <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-3">
             {user ? (
               <Link href={ROUTES.PROFILE} className="flex min-w-0 flex-1 items-center gap-3">
                 <div className="ring-primary bg-secondary flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2">
@@ -171,7 +171,7 @@ export function InspectorShell({
             </div>
           </div>
         ) : (
-          <div className="flex h-14 items-center justify-between gap-2 px-4">
+          <div className="flex h-14 items-center justify-between gap-2 px-4 pt-1">
           {backHref ? (
             <Link
               href={backHref}
