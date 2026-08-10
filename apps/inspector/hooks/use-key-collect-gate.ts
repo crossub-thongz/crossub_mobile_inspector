@@ -110,6 +110,7 @@ export function useInspectionInProgress(
 ): void {
   useEffect(() => {
     if (!job || job.status === 'completed') return;
+    if (job.awaitingAgentPayment) return;
     if (job.keyAccess && !isKeyCollectComplete(job)) return;
     if (job.status === 'in_progress') return;
     updateJobStatus(jobId, 'in_progress');

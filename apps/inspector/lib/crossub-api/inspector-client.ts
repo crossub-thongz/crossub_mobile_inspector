@@ -250,7 +250,9 @@ export async function claimInspection(
     '/inspector/inspections/{inspectionId}/claim',
     { params: { path: { inspectionId } } },
   );
-  if (error || !data) throw new Error('Failed to claim inspection');
+  if (error || !data) {
+    throw new Error(crossubErrorMessage(error, 'Failed to claim inspection'));
+  }
   return data;
 }
 

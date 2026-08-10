@@ -819,7 +819,14 @@ export function InspectorDataProvider({
         toast.error('You are on break — switch to receiving jobs to accept new work.');
         return;
       }
+      if (job?.awaitingAgentPayment) {
+        toast.error(
+          'Agency must pay the platform fee before you can accept this job.',
+        );
+        return { awaitingAgentPayment: true };
+      }
       const isAssignedApiJob = apiInspectionIds.current.has(id);
+      const previous = job;
       setJobs((prev) =>
         prev.map((j) =>
           j.id === id
@@ -853,14 +860,32 @@ export function InspectorDataProvider({
                 : j,
             ),
           );
+          if (awaitingAgentPayment) {
+            toast.error(
+              'Agency must pay the platform fee before you can start this job.',
+            );
+          } else {
+            toast.success('Job accepted');
+          }
           void refresh();
-        } catch {
+        } catch (err) {
+          if (previous) {
+            setJobs((prev) =>
+              prev.map((j) => (j.id === id ? previous : j)),
+            );
+          }
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : 'Could not accept this job — agency payment may still be required.',
+          );
           void refresh();
+          return { awaitingAgentPayment: true };
         }
       } else {
         mutateWithOffline(id, 'accept', {});
+        toast.success('Job accepted');
       }
-      toast.success('Job accepted');
       return { awaitingAgentPayment };
     },
     [apiConnected, jobs, mutateWithOffline, refresh],
