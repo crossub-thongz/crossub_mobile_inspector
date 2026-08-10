@@ -82,6 +82,7 @@ const POOL_INSPECTION_TYPES = [
 
 async function fetchPoolInspectionsByType(
   type: (typeof POOL_INSPECTION_TYPES)[number],
+  search?: string,
 ): Promise<InspectorInspection[]> {
   const base = process.env.NEXT_PUBLIC_API_URL ?? '/api';
   const params = new URLSearchParams({
@@ -89,6 +90,8 @@ async function fetchPoolInspectionsByType(
     pageSize: '100',
     type,
   });
+  const trimmed = search?.trim();
+  if (trimmed) params.set('search', trimmed);
   const res = await fetch(`${base}/v1/inspector/inspections/pool?${params}`, {
     credentials: 'include',
   });
@@ -136,9 +139,11 @@ function mergePoolInspections(
 }
 
 /** Unassigned pool inspections (`GET /api/v1/inspector/inspections/pool`). */
-export async function fetchPoolInspections(): Promise<InspectorInspection[]> {
+export async function fetchPoolInspections(
+  search?: string,
+): Promise<InspectorInspection[]> {
   const batches = await Promise.all(
-    POOL_INSPECTION_TYPES.map((type) => fetchPoolInspectionsByType(type)),
+    POOL_INSPECTION_TYPES.map((type) => fetchPoolInspectionsByType(type, search)),
   );
   return mergePoolInspections(batches);
 }

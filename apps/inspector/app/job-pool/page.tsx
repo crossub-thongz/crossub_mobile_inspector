@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, Search } from 'lucide-react';
 
 import { EmptyState } from '@/components/inspector/empty-state';
 import {
@@ -11,6 +11,7 @@ import {
 import { JobCard } from '@/components/inspector/job-card';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
+import { Input } from '@/components/ui/input';
 import {
   CORE_INSPECTION_TYPES,
   INSPECTION_TYPE_LABEL,
@@ -21,29 +22,53 @@ export default function JobPoolPage() {
   const { poolJobs, receivingJobs, loading, rosterLinked, poolError } =
     useInspectorData();
   const [filter, setFilter] = useState<JobPoolFilter>('all');
+  const [query, setQuery] = useState('');
+
+  const searchedJobs = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return poolJobs;
+    return poolJobs.filter((j) => {
+      const address = (j.propertyAddress ?? '').toLowerCase();
+      const suburb = (j.suburb ?? '').toLowerCase();
+      const haystack = `${address} ${suburb}`.trim();
+      return haystack.includes(q);
+    });
+  }, [poolJobs, query]);
 
   const counts = useMemo(
     () =>
       CORE_INSPECTION_TYPES.reduce(
         (acc, type) => {
-          acc[type] = poolJobs.filter((j) => j.type === type).length;
+          acc[type] = searchedJobs.filter((j) => j.type === type).length;
           return acc;
         },
         {} as Record<CoreInspectionType, number>,
       ),
-    [poolJobs],
+    [searchedJobs],
   );
 
   const filteredJobs = useMemo(() => {
-    if (filter === 'all') return poolJobs;
-    return poolJobs.filter((j) => j.type === filter);
-  }, [poolJobs, filter]);
+    if (filter === 'all') return searchedJobs;
+    return searchedJobs.filter((j) => j.type === filter);
+  }, [searchedJobs, filter]);
 
   const totalAvailable = poolJobs.length;
+  const searchActive = query.trim().length > 0;
 
   return (
     <InspectorShell title="Job Pool">
       <div className="space-y-3">
+        <div className="relative">
+          <Input
+            placeholder="Search address or suburb"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="border-border bg-card h-10 rounded-full pr-10"
+            aria-label="Search job pool by property"
+          />
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+        </div>
+
         <JobPoolTypeTags active={filter} onChange={setFilter} counts={counts} />
 
         {!receivingJobs ? (
@@ -74,16 +99,22 @@ export default function JobPoolPage() {
           <EmptyState
             icon={Briefcase}
             title={
-              filter === 'all'
-                ? 'No jobs in this filter'
-                : `No ${INSPECTION_TYPE_LABEL[filter]} jobs`
+              searchActive
+                ? 'No matching properties'
+                : filter === 'all'
+                  ? 'No jobs in this filter'
+                  : `No ${INSPECTION_TYPE_LABEL[filter]} jobs`
             }
-            description="Try another type tag or check back later."
+            description={
+              searchActive
+                ? 'Try a different street name or suburb.'
+                : 'Try another type tag or check back later.'
+            }
           />
         ) : filter === 'all' ? (
           <div className="space-y-5">
             {CORE_INSPECTION_TYPES.map((type) => {
-              const typeJobs = poolJobs.filter((j) => j.type === type);
+              const typeJobs = searchedJobs.filter((j) => j.type === type);
               if (typeJobs.length === 0) return null;
 
               return (
