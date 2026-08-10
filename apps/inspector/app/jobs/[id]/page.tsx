@@ -18,7 +18,7 @@ import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { jobHistory, jobKeys, jobWorkflow, ROUTES } from '@/constants/routes';
+import { jobDetail, jobHistory, jobKeys, jobWorkflow, ROUTES } from '@/constants/routes';
 import { isPoolJob } from '@/lib/inspector-job-filters';
 import { jobLookupMiss } from '@/lib/job-lookup';
 import {
@@ -70,13 +70,17 @@ export default function JobDetailPage() {
   const keyCollectDone = isKeyCollectComplete(job);
   const keyReturnDone = isKeyReturnComplete(job);
   const inspectionFinished = isInspectionWorkflowFinished(job);
-  const startBlocked = job.keyAccess && !keyCollectDone;
+  const paymentBlocked = Boolean(job.awaitingAgentPayment);
+  const startBlocked = (job.keyAccess && !keyCollectDone) || paymentBlocked;
   const returnPending =
     job.keyAccess && inspectionFinished && !keyReturnDone && job.status !== 'completed';
 
   const handleAccept = () => {
-    acceptJob(id);
-    router.push(workflowHref);
+    void (async () => {
+      const result = await acceptJob(id);
+      if (result?.awaitingAgentPayment) return;
+      router.push(workflowHref);
+    })();
   };
 
   return (
@@ -205,6 +209,13 @@ export default function JobDetailPage() {
               </p>
             ) : null}
 
+            {paymentBlocked ? (
+              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                Waiting for the agency to pay the platform fee. This job stays locked
+                until payment clears.
+              </p>
+            ) : null}
+
             {returnPending && (
               <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
                 Inspection finished — return the keys to complete this task.
@@ -220,12 +231,29 @@ export default function JobDetailPage() {
                 <Button className="w-full">Return keys</Button>
               </Link>
             ) : (
-              <Link href={startBlocked ? jobKeys(job.id, 'collect') : workflowHref}>
+              <Link
+                href={
+                  paymentBlocked
+                    ? jobDetail(job.id)
+                    : startBlocked && job.keyAccess && !keyCollectDone
+                      ? jobKeys(job.id, 'collect')
+                      : workflowHref
+                }
+                onClick={(event) => {
+                  if (paymentBlocked) event.preventDefault();
+                }}
+              >
                 <Button
                   className="w-full"
-                  disabled={startBlocked || (!canStartInspection && job.status !== 'accepted')}
+                  disabled={
+                    paymentBlocked ||
+                    startBlocked ||
+                    (!canStartInspection && job.status !== 'accepted')
+                  }
                 >
-                  {workflowStarted ? 'Continue' : 'Start'} inspection
+                  {paymentBlocked
+                    ? 'Waiting for agency payment'
+                    : `${workflowStarted ? 'Continue' : 'Start'} inspection`}
                 </Button>
               </Link>
             )}

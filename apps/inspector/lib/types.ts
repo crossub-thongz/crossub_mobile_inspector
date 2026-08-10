@@ -173,6 +173,11 @@ export interface InspectionJob {
   availableInspectorCount?: number | null;
   /** Agent declined the last submitted report — redo and resubmit. */
   reportDeclineReason?: string;
+  /**
+   * Level 1 prepaid: true until the agency pays at order create —
+   * inspector cannot claim or accept while this is true.
+   */
+  awaitingAgentPayment?: boolean;
 }
 
 export interface TribunalHearing {

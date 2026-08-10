@@ -128,6 +128,9 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
   const reportDeclineReason = asString(
     (dto as { reportDeclineReason?: unknown }).reportDeclineReason,
   );
+  const awaitingAgentPayment = Boolean(
+    (dto as { awaitingAgentPayment?: unknown }).awaitingAgentPayment,
+  );
   return {
     id: dto.id,
     type,
@@ -152,6 +155,7 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     payAmount: laborAmount,
     availableInspectorCount,
     ...(reportDeclineReason ? { reportDeclineReason } : {}),
+    ...(awaitingAgentPayment ? { awaitingAgentPayment: true } : {}),
   };
 }
 

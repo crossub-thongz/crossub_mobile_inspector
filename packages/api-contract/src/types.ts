@@ -5632,6 +5632,11 @@ export interface components {
             urgent: boolean;
             /** Format: date-time */
             createdAt: string;
+            /**
+             * @description Level 1 prepaid: true after accept until the agent pays the platform fee — inspector cannot start the job while this is true.
+             * @example false
+             */
+            awaitingAgentPayment?: boolean;
         };
         PaginatedInspectorInspectionsDto: {
             /**

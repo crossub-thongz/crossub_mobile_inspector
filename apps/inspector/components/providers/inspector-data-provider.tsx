@@ -54,6 +54,7 @@ import {
   mapInspectorRegistration,
   mapPoolInspections,
   mapTribunalCases,
+  toInspectionJob,
 } from '@/lib/crossub-api/inspector-mappers';
 import {
   enrichJobsWithKeyCollection,
@@ -186,7 +187,7 @@ interface InspectorDataContextValue {
   getJob: (id: string) => InspectionJob | undefined;
   getTribunal: (id: string) => TribunalHearing | undefined;
   getThreadMessages: (threadId: string) => ThreadMessage[];
-  acceptJob: (id: string) => void;
+  acceptJob: (id: string) => Promise<{ awaitingAgentPayment: boolean } | void>;
   declineJob: (id: string) => void;
   cancelJob: (
     id: string,
@@ -809,7 +810,7 @@ export function InspectorDataProvider({
   );
 
   const acceptJob = useCallback(
-    (id: string) => {
+    async (id: string): Promise<{ awaitingAgentPayment: boolean } | void> => {
       const job = jobs.find((j) => j.id === id);
       const isPoolApiJob = apiPoolIds.current.has(id);
       const isPoolRow =
@@ -831,18 +832,36 @@ export function InspectorDataProvider({
             : j,
         ),
       );
+      let awaitingAgentPayment = false;
       if ((isAssignedApiJob || isPoolApiJob) && apiConnected) {
         apiInspectionIds.current.add(id);
         const persist = isPoolApiJob
           ? apiClaimInspection(id).then(() => apiAcceptInspection(id))
           : apiAcceptInspection(id);
-        void persist
-          .then(() => refresh())
-          .catch(() => undefined);
+        try {
+          const accepted = await persist;
+          const mapped = toInspectionJob(accepted);
+          awaitingAgentPayment = Boolean(mapped.awaitingAgentPayment);
+          setJobs((prev) =>
+            prev.map((j) =>
+              j.id === id
+                ? {
+                    ...j,
+                    ...mapped,
+                    status: awaitingAgentPayment ? 'accepted' : mapped.status,
+                  }
+                : j,
+            ),
+          );
+          void refresh();
+        } catch {
+          void refresh();
+        }
       } else {
         mutateWithOffline(id, 'accept', {});
       }
       toast.success('Job accepted');
+      return { awaitingAgentPayment };
     },
     [apiConnected, jobs, mutateWithOffline, refresh],
   );

@@ -53,6 +53,31 @@ export function useKeyCollectGate(
   return allowed;
 }
 
+/**
+ * Level 1 prepaid: block workflow screens until the agency pays.
+ * Accept is allowed; Start / findings / complete are not.
+ */
+export function useAwaitingAgentPaymentGate(
+  job: InspectionJob | undefined,
+  jobId: string,
+): boolean {
+  const router = useRouter();
+  const redirected = useRef(false);
+  const allowed = !job?.awaitingAgentPayment;
+
+  useEffect(() => {
+    if (allowed) {
+      redirected.current = false;
+      return;
+    }
+    if (redirected.current) return;
+    redirected.current = true;
+    router.replace(jobDetail(jobId));
+  }, [allowed, jobId, router]);
+
+  return allowed;
+}
+
 /** Keep return tab inaccessible until the inspection workflow is finished. */
 export function useKeyReturnGate(
   job: InspectionJob | undefined,
