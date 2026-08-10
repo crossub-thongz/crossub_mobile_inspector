@@ -17,6 +17,9 @@ import {
   INSPECTION_TYPE_LABEL,
   type CoreInspectionType,
 } from '@/constants/inspection';
+import { fetchPoolInspections } from '@/lib/crossub-api/inspector-client';
+import { mapPoolInspections } from '@/lib/crossub-api/inspector-mappers';
+import type { InspectionJob } from '@/lib/types';
 
 export default function JobPoolPage() {
   const {
@@ -29,22 +32,73 @@ export default function JobPoolPage() {
   } = useInspectorData();
   const [filter, setFilter] = useState<JobPoolFilter>('all');
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [searchJobs, setSearchJobs] = useState<InspectionJob[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!receivingJobs) return;
     void refresh({ background: true, includePool: true });
   }, [receivingJobs, refresh]);
 
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [query]);
+
+  useEffect(() => {
+    if (!receivingJobs) {
+      setSearchJobs(null);
+      setSearchError(null);
+      return;
+    }
+    if (debouncedQuery.length < 2) {
+      setSearchJobs(null);
+      setSearchError(null);
+      setSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSearchLoading(true);
+    setSearchError(null);
+    void (async () => {
+      try {
+        const items = await fetchPoolInspections(debouncedQuery);
+        if (cancelled) return;
+        setSearchJobs(mapPoolInspections(items));
+      } catch (err) {
+        if (cancelled) return;
+        setSearchJobs([]);
+        setSearchError(
+          err instanceof Error ? err.message : 'Could not search the job pool.',
+        );
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery, receivingJobs]);
+
+  const sourceJobs = searchJobs ?? poolJobs;
+
   const searchedJobs = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return poolJobs;
+    // Server search already filtered; only client-filter when using the local pool list.
+    if (searchJobs) return searchJobs;
+    const q = debouncedQuery.toLowerCase();
+    if (q.length < 2) return poolJobs;
     return poolJobs.filter((j) => {
       const address = (j.propertyAddress ?? '').toLowerCase();
       const suburb = (j.suburb ?? '').toLowerCase();
-      const haystack = `${address} ${suburb}`.trim();
-      return haystack.includes(q);
+      return `${address} ${suburb}`.includes(q);
     });
-  }, [poolJobs, query]);
+  }, [poolJobs, searchJobs, debouncedQuery]);
 
   const counts = useMemo(
     () =>
@@ -63,8 +117,9 @@ export default function JobPoolPage() {
     return searchedJobs.filter((j) => j.type === filter);
   }, [searchedJobs, filter]);
 
-  const totalAvailable = poolJobs.length;
-  const searchActive = query.trim().length > 0;
+  const totalAvailable = sourceJobs.length;
+  const searchActive = debouncedQuery.length >= 2;
+  const showLoading = loading || searchLoading;
 
   return (
     <InspectorShell title="Job Pool">
@@ -88,23 +143,39 @@ export default function JobPoolPage() {
             title="You're on break"
             description="Tap the red bubble above the footer to start receiving open inspection jobs from the pool."
           />
-        ) : !loading && !rosterLinked ? (
+        ) : !showLoading && !rosterLinked ? (
           <EmptyState
             icon={Briefcase}
             title="Roster not approved yet"
             description="Complete your registration in Profile and ask ops to approve your inspector roster. Pool jobs appear here once you're on the live roster."
           />
-        ) : poolError ? (
+        ) : poolError && !searchActive ? (
           <EmptyState
             icon={Briefcase}
             title="Could not load the pool"
             description={poolError}
           />
+        ) : searchError ? (
+          <EmptyState
+            icon={Briefcase}
+            title="Could not search the pool"
+            description={searchError}
+          />
+        ) : showLoading && totalAvailable === 0 ? (
+          <EmptyState
+            icon={Briefcase}
+            title="Loading jobs…"
+            description="Fetching the latest pool listings."
+          />
         ) : totalAvailable === 0 ? (
           <EmptyState
             icon={Briefcase}
-            title="No jobs available"
-            description="Check back later — new jobs are posted throughout the day."
+            title={searchActive ? 'No matching properties' : 'No jobs available'}
+            description={
+              searchActive
+                ? 'Try a different street name or suburb.'
+                : 'Check back later — new jobs are posted throughout the day.'
+            }
           />
         ) : filteredJobs.length === 0 ? (
           <EmptyState
