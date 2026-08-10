@@ -96,6 +96,28 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
     [job, persistDraft],
   );
 
+  // Flush immediately when the inspector leaves the tab / backgrounds the app so
+  // returning to the job restores photos in the correct sections.
+  useEffect(() => {
+    const flush = () => {
+      if (!job) return;
+      if (persistTimer.current) {
+        clearTimeout(persistTimer.current);
+        persistTimer.current = null;
+      }
+      persistDraft(draftRef.current);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [job, persistDraft]);
+
   return {
     draft,
     setDraft,
