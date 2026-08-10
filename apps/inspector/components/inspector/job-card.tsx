@@ -16,7 +16,7 @@ import { jobDetail, jobHistory } from '@/constants/routes';
 import { formatJobRefId } from '@/lib/job-cancellation';
 import { isPoolJob } from '@/lib/inspector-job-filters';
 import type { InspectionJob } from '@/lib/types';
-import { formatCurrency, formatDateSlash, formatTime } from '@/lib/utils';
+import { formatDateSlash, formatTime } from '@/lib/utils';
 
 export function JobCard({
   job,
@@ -26,14 +26,25 @@ export function JobCard({
   /** Pool list — tap through to preview before accepting. */
   showActions?: boolean;
 }) {
-  const { deviceLocation } = useInspectorData();
+  const { deviceLocation, receivingJobs } = useInspectorData();
   const poolPreview = showActions && isPoolJob(job);
   const detailHref =
     job.status === 'completed' ? jobHistory(job.id) : jobDetail(job.id);
+  // Soft Next.js nav stalls while Receiving is fan-outing hundreds of pool
+  // rows — hard-assign so the job preview actually opens.
+  const hardOpenPoolJob = poolPreview && receivingJobs;
 
   return (
     <Link
       href={detailHref}
+      onClick={
+        hardOpenPoolJob
+          ? (event) => {
+              event.preventDefault();
+              window.location.assign(detailHref);
+            }
+          : undefined
+      }
       className="block rounded-2xl border border-border/80 bg-card p-4 transition hover:border-primary/30"
     >
       <div className="mb-2 flex flex-wrap items-center gap-2">

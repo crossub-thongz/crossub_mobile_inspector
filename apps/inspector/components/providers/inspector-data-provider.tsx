@@ -528,6 +528,11 @@ export function InspectorDataProvider({
     // Mid-inspection soft nav needs free browser connections. Never fan out the
     // pool (4×100) while the inspector is photographing — and skip it on most
     // background ticks so leaving + continuing a second time does not hang.
+    // Mid-inspection soft nav needs free browser connections. Never fan out the
+    // pool (4×100) while the inspector is photographing — and skip it on most
+    // background ticks so leaving + continuing a second time does not hang.
+    // Job *preview* (`/jobs/:id`) still needs the pool on first load so hard-nav
+    // from Job Pool can resolve the card.
     const onWorkflowScreen =
       /^\/jobs\/[^/]+\/(ingoing|routine|outgoing|open)\/?$/.test(path);
     const onJobPool =
@@ -1735,13 +1740,9 @@ export function InspectorDataProvider({
   useEffect(() => {
     if (status !== 'authed' || !receivingJobs || !apiConnected) return;
     const id = window.setInterval(() => {
-      // Pause the Receiving poll entirely on workflow screens so Back / tabs
-      // stay responsive after the inspector continues a job a second time.
-      if (
-        /^\/jobs\/[^/]+\/(ingoing|routine|outgoing|open)\/?$/.test(
-          window.location.pathname,
-        )
-      ) {
+      // Pause the Receiving poll on every job screen (preview + workflow) so
+      // opening a pool card is not starved by a 500+ row pool fan-out.
+      if (/^\/jobs(\/|$)/.test(window.location.pathname)) {
         return;
       }
       void refresh({ background: true });
