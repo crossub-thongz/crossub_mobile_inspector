@@ -54,8 +54,8 @@ export function useKeyCollectGate(
 }
 
 /**
- * Level 1 prepaid: block workflow screens until the agency pays.
- * Accept is allowed; Start / findings / complete are not.
+ * Level 1 prepaid: block workflow / key screens until the agency pays.
+ * Claim and accept are also gated on the API — this keeps UI routes honest.
  */
 export function useAwaitingAgentPaymentGate(
   job: InspectionJob | undefined,
