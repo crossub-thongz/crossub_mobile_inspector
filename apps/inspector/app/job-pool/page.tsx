@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Briefcase, Search } from 'lucide-react';
 
 import { EmptyState } from '@/components/inspector/empty-state';
@@ -19,10 +19,21 @@ import {
 } from '@/constants/inspection';
 
 export default function JobPoolPage() {
-  const { poolJobs, receivingJobs, loading, rosterLinked, poolError } =
-    useInspectorData();
+  const {
+    poolJobs,
+    receivingJobs,
+    loading,
+    rosterLinked,
+    poolError,
+    refresh,
+  } = useInspectorData();
   const [filter, setFilter] = useState<JobPoolFilter>('all');
   const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    if (!receivingJobs) return;
+    void refresh({ background: true, includePool: true });
+  }, [receivingJobs, refresh]);
 
   const searchedJobs = useMemo(() => {
     const q = query.trim().toLowerCase();

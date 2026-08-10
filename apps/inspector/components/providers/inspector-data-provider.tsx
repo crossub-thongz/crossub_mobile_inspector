@@ -164,7 +164,11 @@ interface InspectorDataContextValue {
   deviceLocation: GeoPoint | null;
   availability: InspectorAvailability;
   toggleReceivingJobs: () => void;
-  refresh: (opts?: { background?: boolean }) => Promise<void>;
+  refresh: (opts?: {
+    background?: boolean;
+    /** Force a pool reload (e.g. Job Pool page). Ignored on workflow screens. */
+    includePool?: boolean;
+  }) => Promise<void>;
   syncOfflineQueue: () => Promise<void>;
   profile: InspectorProfile;
   registration: InspectorRegistration | null;
@@ -495,7 +499,10 @@ export function InspectorDataProvider({
     setPendingSync(loadOfflineQueue().length);
   }, []);
 
-  const refresh = useCallback(async (opts?: { background?: boolean }) => {
+  const refresh = useCallback(async (opts?: {
+    background?: boolean;
+    includePool?: boolean;
+  }): Promise<void> => {
     if (status !== 'authed') {
       setLoading(false);
       // Auth still settling means nothing has been decided yet — a job screen
@@ -504,20 +511,31 @@ export function InspectorDataProvider({
       return;
     }
     if (refreshInFlight.current) {
-      return refreshInFlight.current;
+      const inflight = refreshInFlight.current;
+      // A plain poll can join the in-flight request.
+      if (!opts?.includePool) return inflight;
+      // A forced pool reload must run after in-flight work clears — otherwise
+      // opening Job Pool during a light tick would never fetch the pool.
+      await inflight;
+      while (refreshInFlight.current) {
+        await refreshInFlight.current;
+      }
     }
 
     const background = Boolean(opts?.background);
-    // Mid-inspection soft nav (Back / bottom tabs) needs free browser connections for
-    // Next.js RSC fetches. Skip the heavy pool fan-out while the inspector is on a
-    // workflow screen — assigned jobs + profile still refresh.
+    const path =
+      typeof window !== 'undefined' ? window.location.pathname : '';
+    // Mid-inspection soft nav needs free browser connections. Never fan out the
+    // pool (4×100) while the inspector is photographing — and skip it on most
+    // background ticks so leaving + continuing a second time does not hang.
     const onWorkflowScreen =
-      typeof window !== 'undefined' &&
-      /^\/jobs\/[^/]+\/(ingoing|routine|outgoing|open)\/?$/.test(
-        window.location.pathname,
-      );
+      /^\/jobs\/[^/]+\/(ingoing|routine|outgoing|open)\/?$/.test(path);
+    const onJobPool =
+      path === '/job-pool' || path.startsWith('/job-pool/');
     const fetchPool =
-      receivingJobsRef.current && !(background && onWorkflowScreen);
+      receivingJobsRef.current &&
+      !onWorkflowScreen &&
+      (Boolean(opts?.includePool) || onJobPool || !background);
 
     const run = (async () => {
     if (!background) {
@@ -1717,8 +1735,17 @@ export function InspectorDataProvider({
   useEffect(() => {
     if (status !== 'authed' || !receivingJobs || !apiConnected) return;
     const id = window.setInterval(() => {
+      // Pause the Receiving poll entirely on workflow screens so Back / tabs
+      // stay responsive after the inspector continues a job a second time.
+      if (
+        /^\/jobs\/[^/]+\/(ingoing|routine|outgoing|open)\/?$/.test(
+          window.location.pathname,
+        )
+      ) {
+        return;
+      }
       void refresh({ background: true });
-    }, 5_000);
+    }, 15_000);
     return () => window.clearInterval(id);
   }, [status, receivingJobs, apiConnected, refresh]);
 
