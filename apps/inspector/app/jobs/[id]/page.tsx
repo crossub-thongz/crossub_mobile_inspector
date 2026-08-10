@@ -77,11 +77,9 @@ export default function JobDetailPage() {
     job.keyAccess && inspectionFinished && !keyReturnDone && job.status !== 'completed';
 
   const handleAccept = () => {
-    if (paymentBlocked) {
-      return;
-    }
     void (async () => {
       const result = await acceptJob(id);
+      // After accept, unpaid Level 1 jobs await agency payment before start.
       if (result?.awaitingAgentPayment) return;
       router.push(workflowHref);
     })();
@@ -99,17 +97,16 @@ export default function JobDetailPage() {
             <JobSummaryCard job={job} />
             {paymentBlocked ? (
               <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-                Waiting for the agency to pay the platform fee. You cannot accept
-                or start this job until payment clears.
+                Waiting for the agency to pay the platform fee. You can accept this
+                job, but you cannot start until payment clears.
               </p>
             ) : null}
             <div className="space-y-2">
               <Button
                 className="w-full"
-                disabled={paymentBlocked}
                 onClick={handleAccept}
               >
-                {paymentBlocked ? 'Waiting for agency payment' : 'Accept job'}
+                Accept job
               </Button>
               <Button
                 className="w-full"
