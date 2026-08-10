@@ -128,9 +128,10 @@ function mergePoolInspections(
   }
   return [...byId.values()].sort((a, b) => {
     if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
-    const dateA = a.scheduledDate ?? a.inspectionDate ?? a.createdAt ?? '';
-    const dateB = b.scheduledDate ?? b.inspectionDate ?? b.createdAt ?? '';
-    return String(dateA).localeCompare(String(dateB));
+    const dateA = a.createdAt ?? a.scheduledDate ?? a.inspectionDate ?? '';
+    const dateB = b.createdAt ?? b.scheduledDate ?? b.inspectionDate ?? '';
+    // Newest → oldest
+    return String(dateB).localeCompare(String(dateA));
   });
 }
 
