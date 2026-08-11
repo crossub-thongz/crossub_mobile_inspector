@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-08-11
+
+### Fixed
+- **The sign-in form no longer rejects a correct password before sending it.** `schema` enforced `.min(PASSWORD_MIN)` — 10 characters — on the *login* field, so an account whose password predates the policy greyed out with "Min 10 characters" under credentials that were perfectly valid, in the browser, without the API ever seeing the attempt. Signing in verifies a password; it does not set one, and the minimum still applies on every screen that does. `LoginDto` dropped this exact rule on 10 Aug 2026 after it locked out 23 of the 43 migrated agent logins, and `login-dto-validation.spec.ts` pins it there; the agent app's copy went with it and the other four were missed. Found while fixing the tenant app's "cannot log in" P0 and cleared across tenant, inspector, landlord and maintenance together. `.max(PASSWORD_MAX)` stays, as a cost guard on what reaches Argon2. **Preventive here rather than urgent: production carries one INSPECTOR account and it has signed in.** This app's `/forgot-password` already posts to the API correctly and was left alone.
+
 ## 2026-08-09
 
 ### Fixed
