@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Calendar } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { jobHistory, jobWorkflow } from '@/constants/routes';
+import { jobDetail, jobHistory, jobWorkflow } from '@/constants/routes';
 import { buildMapUrl } from '@/lib/navigation';
 import { formatJobRefId } from '@/lib/job-cancellation';
 import type { InspectionJob } from '@/lib/types';
@@ -29,9 +29,12 @@ export function InspectionListCard({
     job.estimatedHours,
     job.propertyAddress,
   );
+  const paymentBlocked = Boolean(job.awaitingAgentPayment);
   const actionHref = completed
     ? jobHistory(job.id)
-    : jobWorkflow(job.id, job.type);
+    : paymentBlocked
+      ? jobDetail(job.id)
+      : jobWorkflow(job.id, job.type);
 
   return (
     <article className="rounded-2xl border border-border bg-card p-4">
@@ -46,6 +49,12 @@ export function InspectionListCard({
         <Calendar className="text-primary size-3.5 shrink-0" />
         {formatDateSlash(job.scheduledDate || job.scheduledTime)}
       </p>
+
+      {!completed && paymentBlocked ? (
+        <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+          Waiting for the agency to pay the platform fee before you can start.
+        </p>
+      ) : null}
 
       {!completed && (
         <Button
@@ -73,18 +82,28 @@ export function InspectionListCard({
             </a>
           </Button>
         )}
-        <Button
-          size="sm"
-          variant={completed ? 'outline' : 'default'}
-          className={
-            completed
-              ? 'border-primary text-primary h-8 w-full rounded-full text-xs font-medium'
-              : 'h-8 min-w-[4.5rem] rounded-full px-4 text-xs font-medium'
-          }
-          asChild
-        >
-          <Link href={actionHref}>{completed ? 'View report' : 'Start'}</Link>
-        </Button>
+        {paymentBlocked && !completed ? (
+          <Button
+            size="sm"
+            disabled
+            className="h-8 min-w-[4.5rem] rounded-full px-4 text-xs font-medium"
+          >
+            Awaiting payment
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant={completed ? 'outline' : 'default'}
+            className={
+              completed
+                ? 'border-primary text-primary h-8 w-full rounded-full text-xs font-medium'
+                : 'h-8 min-w-[4.5rem] rounded-full px-4 text-xs font-medium'
+            }
+            asChild
+          >
+            <Link href={actionHref}>{completed ? 'View report' : 'Start'}</Link>
+          </Button>
+        )}
       </div>
     </article>
   );
