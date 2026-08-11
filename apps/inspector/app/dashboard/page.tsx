@@ -7,7 +7,12 @@ import {
 import { JobReminders } from '@/components/inspector/job-reminders';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
-import { ROUTES, inspectionsByType } from '@/constants/routes';
+import {
+  ROUTES,
+  inspectionsAssignedByCrossub,
+  inspectionsByType,
+} from '@/constants/routes';
+import { isStaffAssignedJob } from '@/lib/inspector-job-filters';
 import { isKeyCollectComplete, isKeyReturnComplete } from '@/lib/key-access-workflow';
 
 export default function DashboardPage() {
@@ -18,6 +23,10 @@ export default function DashboardPage() {
       j.keyAccess &&
       j.status !== 'completed' &&
       (!isKeyCollectComplete(j) || !isKeyReturnComplete(j)),
+  ).length;
+
+  const crossubAssignedPending = jobs.filter(
+    (j) => isStaffAssignedJob(j) && j.status !== 'completed',
   ).length;
 
   return (
@@ -55,6 +64,19 @@ export default function DashboardPage() {
             <DashboardHubCard
               href={ROUTES.INSPECTIONS}
               title="Crossub Inspection"
+            />
+            <DashboardHubCard
+              href={inspectionsAssignedByCrossub()}
+              title={
+                <>
+                  Assigned by CROSSUB
+                  {crossubAssignedPending > 0 && (
+                    <span className="bg-primary/15 text-primary mx-1 inline-flex rounded-md px-1.5 py-0.5 text-xs font-bold tabular-nums">
+                      {crossubAssignedPending}
+                    </span>
+                  )}
+                </>
+              }
             />
             <DashboardHubCard
               href={inspectionsByType('open')}

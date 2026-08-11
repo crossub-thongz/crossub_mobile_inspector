@@ -46,5 +46,7 @@ export const jobKeys = (id: string, tab?: 'collect' | 'return') =>
   tab ? `/jobs/${id}/keys?tab=${tab}` : `/jobs/${id}/keys`;
 export const jobWorkflow = (id: string, type: string) => `/jobs/${id}/${type}`;
 export const inspectionsByType = (type: string) => `/inspections?type=${type}`;
+export const inspectionsAssignedByCrossub = () =>
+  '/inspections?section=crossub';
 export const tribunalDetail = (id: string) => `/tribunal/${id}`;
 export const messageDetail = (id: string) => `/messages/${id}`;

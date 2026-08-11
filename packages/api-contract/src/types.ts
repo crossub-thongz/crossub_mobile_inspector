@@ -5637,6 +5637,11 @@ export interface components {
              * @example false
              */
             awaitingAgentPayment?: boolean;
+            /**
+             * @description True when CROSSUB staff manually assigned this job (no accept step) — surface under “Assigned by CROSSUB” in the inspector app.
+             * @example false
+             */
+            assignedByStaff?: boolean;
         };
         PaginatedInspectorInspectionsDto: {
             /**

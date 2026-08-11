@@ -17,8 +17,15 @@ export function isApiInspectionId(id: string): boolean {
 export function isPoolJob(job: InspectionJob): boolean {
   return (
     job.status === 'available' ||
-    (job.source === 'assigned' && job.status === 'assigned')
+    (job.source === 'assigned' &&
+      job.status === 'assigned' &&
+      job.assignedBy !== 'CROSSUB')
   );
+}
+
+/** Staff-manual assignments — no accept step; shown under “Assigned by CROSSUB”. */
+export function isStaffAssignedJob(job: InspectionJob): boolean {
+  return job.assignedBy === 'CROSSUB' && job.source === 'assigned';
 }
 
 /** Accepted/active inspection work scheduled for today. */

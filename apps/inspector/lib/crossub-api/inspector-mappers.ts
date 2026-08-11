@@ -131,6 +131,9 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
   const awaitingAgentPayment = Boolean(
     (dto as { awaitingAgentPayment?: unknown }).awaitingAgentPayment,
   );
+  const assignedByStaff = Boolean(
+    (dto as { assignedByStaff?: unknown }).assignedByStaff,
+  );
   return {
     id: dto.id,
     type,
@@ -145,6 +148,7 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     distanceKm: 0,
     status: INSPECTION_STATUS_VIEW[dto.status] ?? 'assigned',
     source: 'assigned',
+    ...(assignedByStaff ? { assignedBy: 'CROSSUB' } : {}),
     serviceRegion: DEFAULT_REGION,
     property: DEFAULT_PROPERTY,
     durationLabel: `~${estimatedHours} hr${estimatedHours === 1 ? '' : 's'}`,

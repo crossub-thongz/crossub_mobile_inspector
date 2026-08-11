@@ -19,10 +19,12 @@ import {
   CORE_INSPECTION_TYPES,
   type CoreInspectionType,
 } from '@/constants/inspection';
+import { isStaffAssignedJob } from '@/lib/inspector-job-filters';
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 type StatusFilter = 'pending' | 'completed';
+type ListSection = 'all' | 'crossub';
 
 function parseType(value: string | null): CoreInspectionType {
   if (
@@ -34,6 +36,10 @@ function parseType(value: string | null): CoreInspectionType {
   return 'outgoing';
 }
 
+function parseSection(value: string | null): ListSection {
+  return value === 'crossub' ? 'crossub' : 'all';
+}
+
 function isAssignedInspection(job: InspectionJob): boolean {
   return (
     job.status !== 'available' &&
@@ -42,10 +48,20 @@ function isAssignedInspection(job: InspectionJob): boolean {
   );
 }
 
+function matchesQuery(job: InspectionJob, q: string): boolean {
+  if (!q) return true;
+  return (
+    job.propertyAddress.toLowerCase().includes(q) ||
+    job.suburb.toLowerCase().includes(q)
+  );
+}
+
 export default function InspectionsPageClient() {
   const searchParams = useSearchParams();
   const initialType = parseType(searchParams.get('type'));
+  const initialSection = parseSection(searchParams.get('section'));
   const [type, setType] = useState<CoreInspectionType>(initialType);
+  const [section, setSection] = useState<ListSection>(initialSection);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
   const [query, setQuery] = useState('');
   const { jobs, completedJobs } = useInspectorData();
@@ -55,20 +71,31 @@ export default function InspectionsPageClient() {
     [jobs],
   );
 
-  const filteredJobs = useMemo(() => {
-    const q = query.trim().toLowerCase();
+  const q = query.trim().toLowerCase();
+
+  const staffAssignedJobs = useMemo(() => {
     const bucket =
       statusFilter === 'completed' ? completedJobs : pendingJobs;
+    return bucket
+      .filter(isStaffAssignedJob)
+      .filter((j) => (section === 'crossub' ? true : j.type === type))
+      .filter((j) => matchesQuery(j, q));
+  }, [completedJobs, pendingJobs, q, section, statusFilter, type]);
 
+  const typeJobs = useMemo(() => {
+    if (section === 'crossub') return [];
+    const bucket =
+      statusFilter === 'completed' ? completedJobs : pendingJobs;
     return bucket
       .filter((j) => j.type === type)
-      .filter(
-        (j) =>
-          !q ||
-          j.propertyAddress.toLowerCase().includes(q) ||
-          j.suburb.toLowerCase().includes(q),
-      );
-  }, [completedJobs, pendingJobs, query, statusFilter, type]);
+      .filter((j) => !isStaffAssignedJob(j))
+      .filter((j) => matchesQuery(j, q));
+  }, [completedJobs, pendingJobs, q, section, statusFilter, type]);
+
+  const empty =
+    section === 'crossub'
+      ? staffAssignedJobs.length === 0
+      : staffAssignedJobs.length === 0 && typeJobs.length === 0;
 
   return (
     <InspectorShell bare>
@@ -97,34 +124,92 @@ export default function InspectionsPageClient() {
             <Search className="text-primary pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
           </div>
 
-          <div className="mt-3">
-            <InspectionTypeStrip active={type} onChange={setType} />
+          <div className="mt-3 flex gap-2">
+            {(
+              [
+                { id: 'all' as const, label: 'By type' },
+                { id: 'crossub' as const, label: 'Assigned by CROSSUB' },
+              ] as const
+            ).map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSection(id)}
+                className={cn(
+                  'rounded-full px-3 py-1.5 text-xs font-semibold transition',
+                  section === id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-muted-foreground border-border border hover:text-foreground',
+                )}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+
+          {section === 'all' ? (
+            <div className="mt-3">
+              <InspectionTypeStrip active={type} onChange={setType} />
+            </div>
+          ) : null}
         </div>
 
         <div className="flex-1 space-y-3 pt-3 pb-28">
-          {filteredJobs.length === 0 ? (
+          {empty ? (
             <EmptyState
               icon={ClipboardCheck}
               title={
-                statusFilter === 'pending'
-                  ? 'No pending inspections'
-                  : 'No completed inspections'
+                section === 'crossub'
+                  ? statusFilter === 'pending'
+                    ? 'No CROSSUB assignments'
+                    : 'No completed CROSSUB jobs'
+                  : statusFilter === 'pending'
+                    ? 'No pending inspections'
+                    : 'No completed inspections'
               }
               description={
-                statusFilter === 'pending'
-                  ? `No pending ${type} jobs. Accept work from the pool or switch type.`
-                  : `No completed ${type} inspections yet.`
+                section === 'crossub'
+                  ? statusFilter === 'pending'
+                    ? 'When the office assigns you a job, it appears here ready to start — no accept step.'
+                    : 'Completed jobs assigned by CROSSUB will show here.'
+                  : statusFilter === 'pending'
+                    ? `No pending ${type} jobs. Accept work from the pool or switch type.`
+                    : `No completed ${type} inspections yet.`
               }
             />
           ) : (
-            filteredJobs.map((job) => (
-              <InspectionListCard
-                key={job.id}
-                job={job}
-                completed={statusFilter === 'completed'}
-              />
-            ))
+            <>
+              {staffAssignedJobs.length > 0 && section === 'all' ? (
+                <section className="space-y-2">
+                  <h2 className="text-muted-foreground px-0.5 text-[11px] font-semibold tracking-wide uppercase">
+                    Assigned by CROSSUB
+                  </h2>
+                  {staffAssignedJobs.map((job) => (
+                    <InspectionListCard
+                      key={job.id}
+                      job={job}
+                      completed={statusFilter === 'completed'}
+                    />
+                  ))}
+                </section>
+              ) : null}
+
+              {section === 'crossub'
+                ? staffAssignedJobs.map((job) => (
+                    <InspectionListCard
+                      key={job.id}
+                      job={job}
+                      completed={statusFilter === 'completed'}
+                    />
+                  ))
+                : typeJobs.map((job) => (
+                    <InspectionListCard
+                      key={job.id}
+                      job={job}
+                      completed={statusFilter === 'completed'}
+                    />
+                  ))}
+            </>
           )}
         </div>
 

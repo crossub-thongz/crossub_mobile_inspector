@@ -17,7 +17,7 @@
         },
         "responses": {
           "200": {
-            "description": "Authenticated — tokens in the body.",
+            "description": "Authenticated \u2014 tokens in the body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -27,7 +27,7 @@
             }
           }
         },
-        "summary": "Mobile login — returns access + refresh tokens in the body.",
+        "summary": "Mobile login \u2014 returns access + refresh tokens in the body.",
         "tags": [
           "auth"
         ]
@@ -49,7 +49,7 @@
         },
         "responses": {
           "200": {
-            "description": "Rotated — new tokens in the body.",
+            "description": "Rotated \u2014 new tokens in the body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -59,7 +59,7 @@
             }
           }
         },
-        "summary": "Mobile token refresh — rotates and returns new tokens.",
+        "summary": "Mobile token refresh \u2014 rotates and returns new tokens.",
         "tags": [
           "auth"
         ]
@@ -84,7 +84,7 @@
             "description": ""
           }
         },
-        "summary": "Mobile logout — revokes the presented refresh token.",
+        "summary": "Mobile logout \u2014 revokes the presented refresh token.",
         "tags": [
           "auth"
         ]
@@ -143,7 +143,7 @@
         ]
       },
       "get": {
-        "description": "Returns a page of the tenant’s own submitted requests (scoped to the tickets they filed), newest first.",
+        "description": "Returns a page of the tenant\u2019s own submitted requests (scoped to the tickets they filed), newest first.",
         "operationId": "TenantMaintenanceController_list",
         "parameters": [
           {
@@ -240,7 +240,7 @@
             "bearer": []
           }
         ],
-        "summary": "Stage a repair-evidence photo (base64-through-API → R2) before creating.",
+        "summary": "Stage a repair-evidence photo (base64-through-API \u2192 R2) before creating.",
         "tags": [
           "tenant"
         ]
@@ -289,7 +289,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one of the signed-in tenant’s submitted requests by id.",
+        "summary": "Get one of the signed-in tenant\u2019s submitted requests by id.",
         "tags": [
           "tenant"
         ]
@@ -346,7 +346,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in tenant’s tenancies (current and historical leases).",
+        "summary": "List the signed-in tenant\u2019s tenancies (current and historical leases).",
         "tags": [
           "tenant"
         ]
@@ -395,7 +395,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one of the signed-in tenant’s tenancies by id.",
+        "summary": "Get one of the signed-in tenant\u2019s tenancies by id.",
         "tags": [
           "tenant"
         ]
@@ -501,7 +501,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one of the signed-in tenant’s leased properties by id.",
+        "summary": "Get one of the signed-in tenant\u2019s leased properties by id.",
         "tags": [
           "tenant"
         ]
@@ -559,7 +559,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in tenant’s ledger lines (payments and charges).",
+        "summary": "List the signed-in tenant\u2019s ledger lines (payments and charges).",
         "tags": [
           "tenant"
         ]
@@ -567,7 +567,7 @@
     },
     "/tenant/inspections": {
       "get": {
-        "description": "Scheduled and past inspections on the tenant’s leased property, newest first, with the generated report URL when published. Read-only.",
+        "description": "Scheduled and past inspections on the tenant\u2019s leased property, newest first, with the generated report URL when published. Read-only.",
         "operationId": "TenantAccountController_listInspections",
         "parameters": [
           {
@@ -625,7 +625,7 @@
     },
     "/tenant/documents": {
       "get": {
-        "description": "Real file URLs — inspection reports, maintenance completion reports, and lease PDFs on the leased property, plus rental-application uploads (100-point check) for this applicant. Newest first. Application docs appear even before a lease is active.",
+        "description": "Real file URLs \u2014 inspection reports, maintenance completion reports, and lease PDFs on the leased property, plus rental-application uploads (100-point check) for this applicant. Newest first. Application docs appear even before a lease is active.",
         "operationId": "TenantAccountController_listDocuments",
         "parameters": [],
         "responses": {
@@ -662,7 +662,7 @@
     },
     "/tenant/applications": {
       "get": {
-        "description": "The tenant’s in-flight applications on agent-opened new-leasing cycles (scoped to applications they are the applicant on), newest first. Read-only.",
+        "description": "The tenant\u2019s in-flight applications on agent-opened new-leasing cycles (scoped to applications they are the applicant on), newest first. Read-only.",
         "operationId": "TenantAccountController_listApplications",
         "parameters": [
           {
@@ -712,7 +712,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in tenant’s own rental applications.",
+        "summary": "List the signed-in tenant\u2019s own rental applications.",
         "tags": [
           "tenant"
         ]
@@ -1329,7 +1329,7 @@
             "bearer": []
           }
         ],
-        "summary": "List rent reviews on the tenant’s leased property.",
+        "summary": "List rent reviews on the tenant\u2019s leased property.",
         "tags": [
           "tenant"
         ]
@@ -1337,7 +1337,7 @@
     },
     "/tenant/rent-reviews/{reviewId}/respond": {
       "patch": {
-        "description": "Accept the proposed rent, decline and indicate move-out, or submit a counter-offer when the review is marked negotiable. The review must be on the tenant’s leased property and in the tenant-notified state.",
+        "description": "Accept the proposed rent, decline and indicate move-out, or submit a counter-offer when the review is marked negotiable. The review must be on the tenant\u2019s leased property and in the tenant-notified state.",
         "operationId": "TenantAccountController_respondToRentReview",
         "parameters": [
           {
@@ -1483,7 +1483,7 @@
         ]
       },
       "get": {
-        "description": "Agent-opened end-leasing cases scoped to the tenant’s property. Returns active and withdrawn (cancelled) cases. Cases the tenant opened themselves are excluded.",
+        "description": "Agent-opened end-leasing cases scoped to the tenant\u2019s property. Returns active and withdrawn (cancelled) cases. Cases the tenant opened themselves are excluded.",
         "operationId": "TenantAccountController_listVacatingCases",
         "parameters": [],
         "responses": {
@@ -1512,7 +1512,7 @@
             "bearer": []
           }
         ],
-        "summary": "List end-leasing cases on the tenant’s leased property.",
+        "summary": "List end-leasing cases on the tenant\u2019s leased property.",
         "tags": [
           "tenant"
         ]
@@ -1563,7 +1563,7 @@
             "description": "Caller is not a TENANT, or has no tenant profile anchor."
           },
           "404": {
-            "description": "caseId does not exist or is not on the tenant’s leased property."
+            "description": "caseId does not exist or is not on the tenant\u2019s leased property."
           },
           "409": {
             "description": "The case is already withdrawn or completed."
@@ -1625,7 +1625,7 @@
             "description": "Caller is not a TENANT, or has no tenant profile anchor."
           },
           "404": {
-            "description": "caseId does not exist or is not on the tenant’s leased property."
+            "description": "caseId does not exist or is not on the tenant\u2019s leased property."
           },
           "409": {
             "description": "The case is no longer open for updates."
@@ -1784,13 +1784,13 @@
             "bearer": []
           }
         ],
-        "summary": "List message threads about the tenant’s leased property.",
+        "summary": "List message threads about the tenant\u2019s leased property.",
         "tags": [
           "tenant"
         ]
       },
       "post": {
-        "description": "Creates a conversation in the staff communication hub with the tenant’s first message. A given propertyId must be the property the tenant leases. Returns the new thread.",
+        "description": "Creates a conversation in the staff communication hub with the tenant\u2019s first message. A given propertyId must be the property the tenant leases. Returns the new thread.",
         "operationId": "TenantAccountController_createMessageThread",
         "parameters": [],
         "requestBody": {
@@ -1891,7 +1891,7 @@
             "bearer": []
           }
         ],
-        "summary": "Reply to one of the tenant’s existing message threads.",
+        "summary": "Reply to one of the tenant\u2019s existing message threads.",
         "tags": [
           "tenant"
         ]
@@ -1927,7 +1927,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in tenant’s notifications.",
+        "summary": "List the signed-in tenant\u2019s notifications.",
         "tags": [
           "tenant"
         ]
@@ -1968,7 +1968,7 @@
             "description": "Caller is not a TENANT, or has no tenant profile anchor."
           },
           "404": {
-            "description": "notificationId does not exist or is not this tenant’s."
+            "description": "notificationId does not exist or is not this tenant\u2019s."
           }
         },
         "security": [
@@ -1976,7 +1976,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark one of the tenant’s notifications read.",
+        "summary": "Mark one of the tenant\u2019s notifications read.",
         "tags": [
           "tenant"
         ]
@@ -2009,7 +2009,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark all of the tenant’s unread notifications read.",
+        "summary": "Mark all of the tenant\u2019s unread notifications read.",
         "tags": [
           "tenant"
         ]
@@ -2045,7 +2045,7 @@
             "bearer": []
           }
         ],
-        "summary": "Live leasing onboarding (step 4) for the tenant’s approved application — deposit, bond, lease, keys, ingoing.",
+        "summary": "Live leasing onboarding (step 4) for the tenant\u2019s approved application \u2014 deposit, bond, lease, keys, ingoing.",
         "tags": [
           "tenant"
         ]
@@ -2071,7 +2071,7 @@
             "bearer": []
           }
         ],
-        "summary": "Download the pre-filled NSW residential tenancy agreement PDF for the tenant’s in-progress leasing onboarding.",
+        "summary": "Download the pre-filled NSW residential tenancy agreement PDF for the tenant\u2019s in-progress leasing onboarding.",
         "tags": [
           "tenant"
         ]
@@ -2217,7 +2217,7 @@
     },
     "/tenant/leasing/onboarding/deposit/proof/upload-session": {
       "post": {
-        "description": "Returns a presigned PUT URL for large files so bytes never pass through the API. Local dev without R2 returns `{ mode: \"inline\" }` — use POST .../deposit/proof/upload with base64.",
+        "description": "Returns a presigned PUT URL for large files so bytes never pass through the API. Local dev without R2 returns `{ mode: \"inline\" }` \u2014 use POST .../deposit/proof/upload with base64.",
         "operationId": "TenantAccountController_beginDepositProofUpload",
         "parameters": [],
         "requestBody": {
@@ -2395,7 +2395,7 @@
     },
     "/tenant/leasing/onboarding/bond/proof/upload-session": {
       "post": {
-        "description": "Returns a presigned PUT URL for large files so bytes never pass through the API. Local dev without R2 returns `{ mode: \"inline\" }` — use POST .../bond/proof/upload with base64.",
+        "description": "Returns a presigned PUT URL for large files so bytes never pass through the API. Local dev without R2 returns `{ mode: \"inline\" }` \u2014 use POST .../bond/proof/upload with base64.",
         "operationId": "TenantAccountController_beginBondProofUpload",
         "parameters": [],
         "requestBody": {
@@ -2607,7 +2607,7 @@
             "bearer": []
           }
         ],
-        "summary": "Record lease agreement signing — generates a PDF with the tenant name and submits for agent confirmation.",
+        "summary": "Record lease agreement signing \u2014 generates a PDF with the tenant name and submits for agent confirmation.",
         "tags": [
           "tenant"
         ]
@@ -2946,7 +2946,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one of the signed-in landlord’s properties by id.",
+        "summary": "Get one of the signed-in landlord\u2019s properties by id.",
         "tags": [
           "landlord"
         ]
@@ -3003,7 +3003,7 @@
             "bearer": []
           }
         ],
-        "summary": "List maintenance across the signed-in landlord’s properties.",
+        "summary": "List maintenance across the signed-in landlord\u2019s properties.",
         "tags": [
           "landlord"
         ]
@@ -3052,7 +3052,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one maintenance request on a landlord’s property.",
+        "summary": "Get one maintenance request on a landlord\u2019s property.",
         "tags": [
           "landlord"
         ]
@@ -3109,7 +3109,7 @@
             "bearer": []
           }
         ],
-        "summary": "List inspections across the signed-in landlord’s properties.",
+        "summary": "List inspections across the signed-in landlord\u2019s properties.",
         "tags": [
           "landlord"
         ]
@@ -3158,7 +3158,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one inspection on a landlord’s property.",
+        "summary": "Get one inspection on a landlord\u2019s property.",
         "tags": [
           "landlord"
         ]
@@ -3166,7 +3166,7 @@
     },
     "/landlord/statements": {
       "get": {
-        "description": "The landlord’s Disbursement (owner-payout) lines, newest first. Sensitive bank details are never included.",
+        "description": "The landlord\u2019s Disbursement (owner-payout) lines, newest first. Sensitive bank details are never included.",
         "operationId": "LandlordAccountController_listStatements",
         "parameters": [
           {
@@ -3216,7 +3216,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in landlord’s owner statements (payouts).",
+        "summary": "List the signed-in landlord\u2019s owner statements (payouts).",
         "tags": [
           "landlord"
         ]
@@ -3253,7 +3253,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in landlord’s monthly owner statements (P&L).",
+        "summary": "List the signed-in landlord\u2019s monthly owner statements (P&L).",
         "tags": [
           "landlord"
         ]
@@ -3290,7 +3290,7 @@
             "bearer": []
           }
         ],
-        "summary": "List rent payments received across the landlord’s properties.",
+        "summary": "List rent payments received across the landlord\u2019s properties.",
         "tags": [
           "landlord"
         ]
@@ -3327,7 +3327,7 @@
             "bearer": []
           }
         ],
-        "summary": "List outstanding amounts owed across the landlord’s properties.",
+        "summary": "List outstanding amounts owed across the landlord\u2019s properties.",
         "tags": [
           "landlord"
         ]
@@ -3364,7 +3364,7 @@
             "bearer": []
           }
         ],
-        "summary": "List documents across the landlord’s properties.",
+        "summary": "List documents across the landlord\u2019s properties.",
         "tags": [
           "landlord"
         ]
@@ -3401,13 +3401,13 @@
             "bearer": []
           }
         ],
-        "summary": "List message threads across the landlord’s properties.",
+        "summary": "List message threads across the landlord\u2019s properties.",
         "tags": [
           "landlord"
         ]
       },
       "post": {
-        "description": "Creates a conversation in the staff communication hub with the landlord’s first message. A given propertyId must be one the landlord owns. Returns the new thread.",
+        "description": "Creates a conversation in the staff communication hub with the landlord\u2019s first message. A given propertyId must be one the landlord owns. Returns the new thread.",
         "operationId": "LandlordAccountController_createMessageThread",
         "parameters": [],
         "requestBody": {
@@ -3508,7 +3508,7 @@
             "bearer": []
           }
         ],
-        "summary": "Reply to one of the landlord’s existing message threads.",
+        "summary": "Reply to one of the landlord\u2019s existing message threads.",
         "tags": [
           "landlord"
         ]
@@ -3603,7 +3603,7 @@
             "bearer": []
           }
         ],
-        "summary": "Record the landlord’s decision on an approval.",
+        "summary": "Record the landlord\u2019s decision on an approval.",
         "tags": [
           "landlord"
         ]
@@ -3639,7 +3639,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in landlord’s notifications.",
+        "summary": "List the signed-in landlord\u2019s notifications.",
         "tags": [
           "landlord"
         ]
@@ -3680,7 +3680,7 @@
             "description": "Caller is not a LANDLORD, or has no landlord profile anchor."
           },
           "404": {
-            "description": "notificationId does not exist or is not this landlord’s."
+            "description": "notificationId does not exist or is not this landlord\u2019s."
           }
         },
         "security": [
@@ -3688,7 +3688,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark one of the landlord’s notifications read.",
+        "summary": "Mark one of the landlord\u2019s notifications read.",
         "tags": [
           "landlord"
         ]
@@ -3721,7 +3721,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark all of the landlord’s unread notifications read.",
+        "summary": "Mark all of the landlord\u2019s unread notifications read.",
         "tags": [
           "landlord"
         ]
@@ -3828,7 +3828,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one of the signed-in contractor’s assigned jobs by id.",
+        "summary": "Get one of the signed-in contractor\u2019s assigned jobs by id.",
         "tags": [
           "contractor"
         ]
@@ -3880,7 +3880,7 @@
             "bearer": []
           }
         ],
-        "summary": "Accept an assigned job (APPROVED → SCHEDULED).",
+        "summary": "Accept an assigned job (APPROVED \u2192 SCHEDULED).",
         "tags": [
           "contractor"
         ]
@@ -3942,7 +3942,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark an assigned job complete (SCHEDULED → COMPLETED).",
+        "summary": "Mark an assigned job complete (SCHEDULED \u2192 COMPLETED).",
         "tags": [
           "contractor"
         ]
@@ -3950,7 +3950,7 @@
     },
     "/contractor/jobs/{jobId}/invoice": {
       "post": {
-        "description": "Stamps the contractor’s invoice number/amount/date onto the job and moves it to INVOICED. Only a COMPLETED job can be invoiced.",
+        "description": "Stamps the contractor\u2019s invoice number/amount/date onto the job and moves it to INVOICED. Only a COMPLETED job can be invoiced.",
         "operationId": "ContractorPortalController_submitInvoice",
         "parameters": [
           {
@@ -4005,7 +4005,7 @@
             "bearer": []
           }
         ],
-        "summary": "Invoice a finished job (COMPLETED → INVOICED).",
+        "summary": "Invoice a finished job (COMPLETED \u2192 INVOICED).",
         "tags": [
           "contractor"
         ]
@@ -4126,7 +4126,7 @@
     },
     "/contractor/jobs/{jobId}/photos": {
       "post": {
-        "description": "Appends the supplied URLs to the job’s result photos.",
+        "description": "Appends the supplied URLs to the job\u2019s result photos.",
         "operationId": "ContractorPortalController_addPhotos",
         "parameters": [
           {
@@ -4233,7 +4233,7 @@
     },
     "/contractor/jobs/{jobId}/photos/upload": {
       "post": {
-        "description": "Decodes the inline base64 file, stores it in object storage, and appends the resulting public URL to the job’s result photos. Use this for a real device upload; POST /photos only records caller-supplied URLs.",
+        "description": "Decodes the inline base64 file, stores it in object storage, and appends the resulting public URL to the job\u2019s result photos. Use this for a real device upload; POST /photos only records caller-supplied URLs.",
         "operationId": "ContractorPortalController_uploadPhoto",
         "parameters": [
           {
@@ -4285,7 +4285,7 @@
             "bearer": []
           }
         ],
-        "summary": "Upload a completion/evidence photo to an assigned job (base64 → R2).",
+        "summary": "Upload a completion/evidence photo to an assigned job (base64 \u2192 R2).",
         "tags": [
           "contractor"
         ]
@@ -4322,13 +4322,13 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in contractor’s message threads.",
+        "summary": "List the signed-in contractor\u2019s message threads.",
         "tags": [
           "contractor"
         ]
       },
       "post": {
-        "description": "Creates a conversation in the staff communication hub with the contractor’s first message. A given jobId must be one assigned to the contractor. Returns the new thread.",
+        "description": "Creates a conversation in the staff communication hub with the contractor\u2019s first message. A given jobId must be one assigned to the contractor. Returns the new thread.",
         "operationId": "ContractorAccountController_createMessageThread",
         "parameters": [],
         "requestBody": {
@@ -4429,7 +4429,7 @@
             "bearer": []
           }
         ],
-        "summary": "Reply to one of the contractor’s existing message threads.",
+        "summary": "Reply to one of the contractor\u2019s existing message threads.",
         "tags": [
           "contractor"
         ]
@@ -4465,7 +4465,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in contractor’s notifications.",
+        "summary": "List the signed-in contractor\u2019s notifications.",
         "tags": [
           "contractor"
         ]
@@ -4506,7 +4506,7 @@
             "description": "Caller is not a CONTRACTOR, or has no contractor profile anchor."
           },
           "404": {
-            "description": "notificationId does not exist or is not this contractor’s."
+            "description": "notificationId does not exist or is not this contractor\u2019s."
           }
         },
         "security": [
@@ -4514,7 +4514,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark one of the contractor’s notifications read.",
+        "summary": "Mark one of the contractor\u2019s notifications read.",
         "tags": [
           "contractor"
         ]
@@ -4547,7 +4547,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark all of the contractor’s unread notifications read.",
+        "summary": "Mark all of the contractor\u2019s unread notifications read.",
         "tags": [
           "contractor"
         ]
@@ -4654,7 +4654,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one of the signed-in inspector’s jobs by id.",
+        "summary": "Get one of the signed-in inspector\u2019s jobs by id.",
         "tags": [
           "inspector"
         ]
@@ -4720,7 +4720,7 @@
     },
     "/inspector/inspections/pool": {
       "get": {
-        "description": "Returns DRAFT inspections with no assigned inspector — available for an inspector to claim. Empty when nothing is waiting in the pool.",
+        "description": "Returns DRAFT inspections with no assigned inspector \u2014 available for an inspector to claim. Empty when nothing is waiting in the pool.",
         "operationId": "InspectorInspectionsController_listPool",
         "parameters": [
           {
@@ -4836,7 +4836,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one of the signed-in inspector’s assigned inspections by id.",
+        "summary": "Get one of the signed-in inspector\u2019s assigned inspections by id.",
         "tags": [
           "inspector"
         ]
@@ -4938,7 +4938,7 @@
             "bearer": []
           }
         ],
-        "summary": "Accept an assigned inspection (DRAFT → IN_PROGRESS).",
+        "summary": "Accept an assigned inspection (DRAFT \u2192 IN_PROGRESS).",
         "tags": [
           "inspector"
         ]
@@ -4946,7 +4946,7 @@
     },
     "/inspector/inspections/{inspectionId}/claim": {
       "post": {
-        "description": "Assigns the inspection to the signed-in inspector. The inspector can then accept it (DRAFT → IN_PROGRESS) via the accept endpoint.",
+        "description": "Assigns the inspection to the signed-in inspector. The inspector can then accept it (DRAFT \u2192 IN_PROGRESS) via the accept endpoint.",
         "operationId": "InspectorInspectionsController_claim",
         "parameters": [
           {
@@ -5233,7 +5233,7 @@
             "bearer": []
           }
         ],
-        "summary": "Complete an assigned inspection (IN_PROGRESS → COMPLETED).",
+        "summary": "Complete an assigned inspection (IN_PROGRESS \u2192 COMPLETED).",
         "tags": [
           "inspector"
         ]
@@ -5405,7 +5405,7 @@
             "bearer": []
           }
         ],
-        "summary": "Upload an inspection-level evidence photo (base64-through-API → R2).",
+        "summary": "Upload an inspection-level evidence photo (base64-through-API \u2192 R2).",
         "tags": [
           "inspector"
         ]
@@ -5465,7 +5465,9 @@
           }
         ],
         "summary": "Attach existing photo URLs to an area (copy reference INGOING photos onto OUTGOING).",
-        "tags": ["inspector"]
+        "tags": [
+          "inspector"
+        ]
       }
     },
     "/inspector/inspections/{inspectionId}/photos/clear-area": {
@@ -5516,7 +5518,7 @@
     },
     "/inspector/inspections/{inspectionId}/key-custody/photos/upload": {
       "post": {
-        "description": "Decodes the base64 body, puts it to object storage (R2), and appends the URL to the collect or return proof array (per `phase`) on the inspection’s key-custody record. Distinct from findings photos — this proof never enters the findings tree.",
+        "description": "Decodes the base64 body, puts it to object storage (R2), and appends the URL to the collect or return proof array (per `phase`) on the inspection\u2019s key-custody record. Distinct from findings photos \u2014 this proof never enters the findings tree.",
         "operationId": "InspectorInspectionsController_uploadKeyCustodyPhoto",
         "parameters": [
           {
@@ -5568,7 +5570,7 @@
             "bearer": []
           }
         ],
-        "summary": "Upload a key-custody proof photo (base64 → R2) for a collect/return phase.",
+        "summary": "Upload a key-custody proof photo (base64 \u2192 R2) for a collect/return phase.",
         "tags": [
           "inspector"
         ]
@@ -5728,13 +5730,13 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in inspector’s message threads.",
+        "summary": "List the signed-in inspector\u2019s message threads.",
         "tags": [
           "inspector"
         ]
       },
       "post": {
-        "description": "Creates a conversation in the staff communication hub with the inspector’s first message. A given inspectionId must be one assigned to the inspector. Returns the new thread.",
+        "description": "Creates a conversation in the staff communication hub with the inspector\u2019s first message. A given inspectionId must be one assigned to the inspector. Returns the new thread.",
         "operationId": "InspectorAccountController_createMessageThread",
         "parameters": [],
         "requestBody": {
@@ -5835,7 +5837,7 @@
             "bearer": []
           }
         ],
-        "summary": "Reply to one of the inspector’s existing message threads.",
+        "summary": "Reply to one of the inspector\u2019s existing message threads.",
         "tags": [
           "inspector"
         ]
@@ -5871,7 +5873,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in inspector’s notifications.",
+        "summary": "List the signed-in inspector\u2019s notifications.",
         "tags": [
           "inspector"
         ]
@@ -5912,7 +5914,7 @@
             "description": "Caller is not an INSPECTOR, or has no inspector roster record."
           },
           "404": {
-            "description": "notificationId does not exist or is not this inspector’s."
+            "description": "notificationId does not exist or is not this inspector\u2019s."
           }
         },
         "security": [
@@ -5920,7 +5922,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark one of the inspector’s notifications read.",
+        "summary": "Mark one of the inspector\u2019s notifications read.",
         "tags": [
           "inspector"
         ]
@@ -5953,7 +5955,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark all of the inspector’s unread notifications read.",
+        "summary": "Mark all of the inspector\u2019s unread notifications read.",
         "tags": [
           "inspector"
         ]
@@ -5961,7 +5963,7 @@
     },
     "/inspector/tribunal-cases": {
       "get": {
-        "description": "The inspector’s hearing briefs — logistics, claim figures, evidence checklist, and the staff-recorded outcome once the hearing is done. Read-only.",
+        "description": "The inspector\u2019s hearing briefs \u2014 logistics, claim figures, evidence checklist, and the staff-recorded outcome once the hearing is done. Read-only.",
         "operationId": "InspectorAccountController_listTribunalCases",
         "parameters": [],
         "responses": {
@@ -6039,7 +6041,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one of the signed-in inspector’s assigned tribunal cases by id.",
+        "summary": "Get one of the signed-in inspector\u2019s assigned tribunal cases by id.",
         "tags": [
           "inspector"
         ]
@@ -6047,7 +6049,7 @@
     },
     "/inspector/profile": {
       "get": {
-        "description": "Login identity + roster credentials (null until staff approve a registration) + the latest registration application (null when never submitted). Does not require a roster link — a fresh registrant sees their pending application here. Bank details and PII are never echoed (only the account number’s last 4 digits).",
+        "description": "Login identity + roster credentials (null until staff approve a registration) + the latest registration application (null when never submitted). Does not require a roster link \u2014 a fresh registrant sees their pending application here. Bank details and PII are never echoed (only the account number\u2019s last 4 digits).",
         "operationId": "InspectorAccountController_getProfile",
         "parameters": [],
         "responses": {
@@ -6073,7 +6075,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get the signed-in inspector’s own profile.",
+        "summary": "Get the signed-in inspector\u2019s own profile.",
         "tags": [
           "inspector"
         ]
@@ -6081,7 +6083,7 @@
     },
     "/inspector/registration": {
       "post": {
-        "description": "Lands PENDING_REVIEW in the same staff review queue as the web registry intake (approve there mints/updates the roster record). The email is the signed-in user’s — never the body’s. While the latest application is still pending a resubmission updates it in place; after a verdict a new application is filed.",
+        "description": "Lands PENDING_REVIEW in the same staff review queue as the web registry intake (approve there mints/updates the roster record). The email is the signed-in user\u2019s \u2014 never the body\u2019s. While the latest application is still pending a resubmission updates it in place; after a verdict a new application is filed.",
         "operationId": "InspectorAccountController_submitRegistration",
         "parameters": [],
         "requestBody": {
@@ -6120,7 +6122,7 @@
             "bearer": []
           }
         ],
-        "summary": "Submit (or resubmit) the inspector’s own registration application.",
+        "summary": "Submit (or resubmit) the inspector\u2019s own registration application.",
         "tags": [
           "inspector"
         ]
@@ -6368,7 +6370,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one of the agent’s assigned agencies by id.",
+        "summary": "Get one of the agent\u2019s assigned agencies by id.",
         "tags": [
           "agent"
         ]
@@ -6485,7 +6487,7 @@
             "bearer": []
           }
         ],
-        "summary": "List tax invoices for the signed-in agent’s agencies.",
+        "summary": "List tax invoices for the signed-in agent\u2019s agencies.",
         "tags": [
           "agent"
         ]
@@ -6689,7 +6691,7 @@
     },
     "/agent/agencies/{agencyId}/preferred-contractors": {
       "get": {
-        "description": "Returns AgencyPreferredContractor rows created by this agent only — the same maintenance contractor records staff create in crossub_web, scoped to the creator.",
+        "description": "Returns AgencyPreferredContractor rows created by this agent only \u2014 the same maintenance contractor records staff create in crossub_web, scoped to the creator.",
         "operationId": "AgentPortalController_listPreferredContractors",
         "parameters": [
           {
@@ -6737,7 +6739,7 @@
         ]
       },
       "post": {
-        "description": "Creates an AgencyPreferredContractor for the assigned agency — same model as crossub_web Maintenance Contractor Create. Only this agent will see the entry.",
+        "description": "Creates an AgencyPreferredContractor for the assigned agency \u2014 same model as crossub_web Maintenance Contractor Create. Only this agent will see the entry.",
         "operationId": "AgentPortalController_addPreferredContractor",
         "parameters": [
           {
@@ -6789,7 +6791,7 @@
             "bearer": []
           }
         ],
-        "summary": "Save a handyman to the signed-in agent’s personal preferred list.",
+        "summary": "Save a handyman to the signed-in agent\u2019s personal preferred list.",
         "tags": [
           "agent"
         ]
@@ -6846,13 +6848,13 @@
             "bearer": []
           }
         ],
-        "summary": "List properties across the signed-in agent’s assigned agencies.",
+        "summary": "List properties across the signed-in agent\u2019s assigned agencies.",
         "tags": [
           "agent"
         ]
       },
       "post": {
-        "description": "Creates the same registry record staff see in crossub_web Properties. The managing agency is resolved from the signed-in agent’s profile — it is not accepted in the body.",
+        "description": "Creates the same registry record staff see in crossub_web Properties. The managing agency is resolved from the signed-in agent\u2019s profile \u2014 it is not accepted in the body.",
         "operationId": "AgentPortalController_createProperty",
         "parameters": [],
         "requestBody": {
@@ -6891,7 +6893,7 @@
             "bearer": []
           }
         ],
-        "summary": "Register a property under the agent’s primary assigned agency.",
+        "summary": "Register a property under the agent\u2019s primary assigned agency.",
         "tags": [
           "agent"
         ]
@@ -6940,7 +6942,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get one property within the agent’s assigned agencies.",
+        "summary": "Get one property within the agent\u2019s assigned agencies.",
         "tags": [
           "agent"
         ]
@@ -8183,7 +8185,7 @@
     },
     "/agent/properties/{propertyId}/workflows/maintenance/photos/upload": {
       "post": {
-        "description": "Decodes the base64 body, puts it to object storage (R2), and returns its public URL for inclusion in the maintenance create call’s `photos`.",
+        "description": "Decodes the base64 body, puts it to object storage (R2), and returns its public URL for inclusion in the maintenance create call\u2019s `photos`.",
         "operationId": "AgentPortalController_uploadMaintenancePhoto",
         "parameters": [
           {
@@ -8227,7 +8229,7 @@
             "description": "Caller is not an ACCOUNT_MANAGER."
           },
           "404": {
-            "description": "Property not in the agent’s book."
+            "description": "Property not in the agent\u2019s book."
           }
         },
         "security": [
@@ -8235,7 +8237,7 @@
             "bearer": []
           }
         ],
-        "summary": "Upload maintenance evidence photo or video (base64-through-API → object storage).",
+        "summary": "Upload maintenance evidence photo or video (base64-through-API \u2192 object storage).",
         "tags": [
           "agent"
         ]
@@ -8380,7 +8382,7 @@
             "description": "Caller is not an ACCOUNT_MANAGER."
           },
           "404": {
-            "description": "Property not in the agent’s book, or no active leasing cycle."
+            "description": "Property not in the agent\u2019s book, or no active leasing cycle."
           }
         },
         "security": [
@@ -8388,7 +8390,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get the key-collection state for a managed property’s active leasing cycle.",
+        "summary": "Get the key-collection state for a managed property\u2019s active leasing cycle.",
         "tags": [
           "agent"
         ]
@@ -8437,7 +8439,7 @@
             "description": "Caller is not an ACCOUNT_MANAGER."
           },
           "404": {
-            "description": "Property not in the agent’s book, or no active leasing cycle."
+            "description": "Property not in the agent\u2019s book, or no active leasing cycle."
           },
           "409": {
             "description": "The leasing cycle is closed, or onboarding has not started."
@@ -8499,7 +8501,7 @@
             "description": "Caller is not an ACCOUNT_MANAGER."
           },
           "404": {
-            "description": "Property not in the agent’s book, no active leasing cycle, or handover not ready."
+            "description": "Property not in the agent\u2019s book, no active leasing cycle, or handover not ready."
           },
           "409": {
             "description": "The leasing cycle is closed, or onboarding has not started."
@@ -8518,7 +8520,7 @@
     },
     "/agent/properties/{propertyId}/key-collection/photos/upload": {
       "post": {
-        "description": "Decodes the base64 body, puts it to object storage (R2), and returns its public URL for inclusion in the report’s photos.",
+        "description": "Decodes the base64 body, puts it to object storage (R2), and returns its public URL for inclusion in the report\u2019s photos.",
         "operationId": "AgentPortalController_uploadKeyCollectionPhoto",
         "parameters": [
           {
@@ -8562,7 +8564,7 @@
             "description": "Caller is not an ACCOUNT_MANAGER."
           },
           "404": {
-            "description": "Property not in the agent’s book."
+            "description": "Property not in the agent\u2019s book."
           }
         },
         "security": [
@@ -8570,7 +8572,7 @@
             "bearer": []
           }
         ],
-        "summary": "Upload a key-collection proof photo (base64-through-API → object storage).",
+        "summary": "Upload a key-collection proof photo (base64-through-API \u2192 object storage).",
         "tags": [
           "agent"
         ]
@@ -8603,7 +8605,7 @@
             "bearer": []
           }
         ],
-        "summary": "The agent’s whole operational portfolio in one snapshot — inspections, maintenance, rent reviews, vacating, tenant selections, leasing, accounting and tribunal, scoped to the assigned agencies and keyed by real property ids.",
+        "summary": "The agent\u2019s whole operational portfolio in one snapshot \u2014 inspections, maintenance, rent reviews, vacating, tenant selections, leasing, accounting and tribunal, scoped to the assigned agencies and keyed by real property ids.",
         "tags": [
           "agent"
         ]
@@ -8640,13 +8642,13 @@
             "bearer": []
           }
         ],
-        "summary": "List message threads across the agent’s managed properties.",
+        "summary": "List message threads across the agent\u2019s managed properties.",
         "tags": [
           "agent"
         ]
       },
       "post": {
-        "description": "Creates a conversation in the staff communication hub with the agent’s first message. A given propertyId must be within the agent’s assigned book. Returns the new thread.",
+        "description": "Creates a conversation in the staff communication hub with the agent\u2019s first message. A given propertyId must be within the agent\u2019s assigned book. Returns the new thread.",
         "operationId": "AgentPortalController_createMessageThread",
         "parameters": [],
         "requestBody": {
@@ -8680,7 +8682,7 @@
             "description": "Caller is not an ACCOUNT_MANAGER."
           },
           "404": {
-            "description": "propertyId is set but is not within the agent’s assigned book."
+            "description": "propertyId is set but is not within the agent\u2019s assigned book."
           }
         },
         "security": [
@@ -8731,7 +8733,7 @@
             "bearer": []
           }
         ],
-        "summary": "Message Center — linked mailboxes and full correspondence history.",
+        "summary": "Message Center \u2014 linked mailboxes and full correspondence history.",
         "tags": [
           "agent"
         ]
@@ -8788,7 +8790,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mailbox OAuth readiness — which providers are configured on this API server.",
+        "summary": "Mailbox OAuth readiness \u2014 which providers are configured on this API server.",
         "tags": [
           "agent"
         ]
@@ -8815,7 +8817,7 @@
             "bearer": []
           }
         ],
-        "summary": "Start Gmail OAuth — returns the provider consent URL.",
+        "summary": "Start Gmail OAuth \u2014 returns the provider consent URL.",
         "tags": [
           "agent"
         ]
@@ -8842,7 +8844,7 @@
             "bearer": []
           }
         ],
-        "summary": "Start Yahoo OAuth — returns the provider consent URL.",
+        "summary": "Start Yahoo OAuth \u2014 returns the provider consent URL.",
         "tags": [
           "agent"
         ]
@@ -8990,7 +8992,7 @@
             "name": "threadId",
             "required": true,
             "in": "path",
-            "description": "CROSSUB conversation UUID or external thread id (`ext:…`).",
+            "description": "CROSSUB conversation UUID or external thread id (`ext:\u2026`).",
             "schema": {
               "type": "string"
             }
@@ -9072,7 +9074,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark one of the agent’s message threads as read.",
+        "summary": "Mark one of the agent\u2019s message threads as read.",
         "tags": [
           "agent"
         ]
@@ -9131,7 +9133,7 @@
             "bearer": []
           }
         ],
-        "summary": "Reply to one of the agent’s existing message threads.",
+        "summary": "Reply to one of the agent\u2019s existing message threads.",
         "tags": [
           "agent"
         ]
@@ -9167,7 +9169,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the signed-in agent’s notifications.",
+        "summary": "List the signed-in agent\u2019s notifications.",
         "tags": [
           "agent"
         ]
@@ -9208,7 +9210,7 @@
             "description": "Caller is not an ACCOUNT_MANAGER."
           },
           "404": {
-            "description": "notificationId does not exist or is not this agent’s."
+            "description": "notificationId does not exist or is not this agent\u2019s."
           }
         },
         "security": [
@@ -9216,7 +9218,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark one of the agent’s notifications read.",
+        "summary": "Mark one of the agent\u2019s notifications read.",
         "tags": [
           "agent"
         ]
@@ -9249,7 +9251,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark all of the agent’s unread notifications read.",
+        "summary": "Mark all of the agent\u2019s unread notifications read.",
         "tags": [
           "agent"
         ]
@@ -9257,7 +9259,7 @@
     },
     "/agent/documents": {
       "get": {
-        "description": "A union of real file URLs aggregated off the managed rows (inspection/maintenance reports, lease PDFs) and the agent’s uploaded portal documents. Newest first.",
+        "description": "A union of real file URLs aggregated off the managed rows (inspection/maintenance reports, lease PDFs) and the agent\u2019s uploaded portal documents. Newest first.",
         "operationId": "AgentPortalController_listDocuments",
         "parameters": [],
         "responses": {
@@ -9286,13 +9288,13 @@
             "bearer": []
           }
         ],
-        "summary": "List documents across the agent’s managed properties.",
+        "summary": "List documents across the agent\u2019s managed properties.",
         "tags": [
           "agent"
         ]
       },
       "post": {
-        "description": "Decodes the base64 body, puts it to object storage (R2), and records a PortalDocument. A given propertyId must be within the agent’s assigned book.",
+        "description": "Decodes the base64 body, puts it to object storage (R2), and records a PortalDocument. A given propertyId must be within the agent\u2019s assigned book.",
         "operationId": "AgentPortalController_uploadDocument",
         "parameters": [],
         "requestBody": {
@@ -9326,7 +9328,7 @@
             "description": "Caller is not an ACCOUNT_MANAGER."
           },
           "404": {
-            "description": "propertyId is set but is not within the agent’s assigned book."
+            "description": "propertyId is set but is not within the agent\u2019s assigned book."
           }
         },
         "security": [
@@ -9334,7 +9336,7 @@
             "bearer": []
           }
         ],
-        "summary": "Upload a document (base64-through-API → object storage).",
+        "summary": "Upload a document (base64-through-API \u2192 object storage).",
         "tags": [
           "agent"
         ]
@@ -9342,7 +9344,7 @@
     },
     "/agent/documents/upload-session": {
       "post": {
-        "description": "Returns a presigned PUT URL for large files so bytes never pass through the API. Local dev without R2 returns `{ mode: \"inline\" }` — use POST /agent/documents with base64.",
+        "description": "Returns a presigned PUT URL for large files so bytes never pass through the API. Local dev without R2 returns `{ mode: \"inline\" }` \u2014 use POST /agent/documents with base64.",
         "operationId": "AgentPortalController_beginDocumentUpload",
         "parameters": [],
         "requestBody": {
@@ -9452,7 +9454,7 @@
             "description": "Caller is not an ACCOUNT_MANAGER, or the document is not deletable."
           },
           "404": {
-            "description": "Document not found or not within the agent’s assigned book."
+            "description": "Document not found or not within the agent\u2019s assigned book."
           }
         },
         "security": [
@@ -9512,7 +9514,7 @@
             "bearer": []
           }
         ],
-        "summary": "Approve a contractor’s quote on a maintenance request (QUOTING → SCHEDULED), recording the agency approval.",
+        "summary": "Approve a contractor\u2019s quote on a maintenance request (QUOTING \u2192 SCHEDULED), recording the agency approval.",
         "tags": [
           "agent"
         ]
@@ -9574,7 +9576,7 @@
             "bearer": []
           }
         ],
-        "summary": "Decline a contractor’s quote on a maintenance request (QUOTING → OPEN), re-opening it for a fresh quote.",
+        "summary": "Decline a contractor\u2019s quote on a maintenance request (QUOTING \u2192 OPEN), re-opening it for a fresh quote.",
         "tags": [
           "agent"
         ]
@@ -9582,7 +9584,7 @@
     },
     "/agent/tenants": {
       "get": {
-        "description": "Tenant accounts whose linked applicant is on an application for a property in one of the agent’s assigned agencies — the read side of POST /agent/tenants. Newest first.",
+        "description": "Tenant accounts whose linked applicant is on an application for a property in one of the agent\u2019s assigned agencies \u2014 the read side of POST /agent/tenants. Newest first.",
         "operationId": "AgentPortalController_listTenants",
         "parameters": [
           {
@@ -9632,7 +9634,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the tenant logins within the agent’s book.",
+        "summary": "List the tenant logins within the agent\u2019s book.",
         "tags": [
           "agent"
         ]
@@ -9679,7 +9681,7 @@
             "bearer": []
           }
         ],
-        "summary": "Provision a tenant login — creates a real TENANT User (Argon2 password) the tenant signs in with on the tenant app, replacing any per-app account store.",
+        "summary": "Provision a tenant login \u2014 creates a real TENANT User (Argon2 password) the tenant signs in with on the tenant app, replacing any per-app account store.",
         "tags": [
           "agent"
         ]
@@ -9747,7 +9749,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get the signed-in user’s profile.",
+        "summary": "Get the signed-in user\u2019s profile.",
         "tags": [
           "me"
         ]
@@ -9797,7 +9799,7 @@
         ]
       },
       "delete": {
-        "description": "Idempotent and scoped to the caller’s own tokens — an unknown token is a no-op.",
+        "description": "Idempotent and scoped to the caller\u2019s own tokens \u2014 an unknown token is a no-op.",
         "operationId": "MeController_unregisterDeviceToken",
         "parameters": [],
         "requestBody": {
@@ -9835,7 +9837,7 @@
   },
   "info": {
     "title": "CROSSUB Mobile API",
-    "description": "CROSSUB mobile contract — the /api/v1 facades consumed by the tenant, landlord, contractor, inspector, and agent apps. Authenticate via POST /api/v1/auth/login and send the access token as `Authorization: Bearer <token>`.",
+    "description": "CROSSUB mobile contract \u2014 the /api/v1 facades consumed by the tenant, landlord, contractor, inspector, and agent apps. Authenticate via POST /api/v1/auth/login and send the access token as `Authorization: Bearer <token>`.",
     "version": "1.0",
     "contact": {}
   },
@@ -9863,16 +9865,16 @@
         "properties": {
           "accessToken": {
             "type": "string",
-            "description": "JWT access token — send as Authorization: Bearer <token>."
+            "description": "JWT access token \u2014 send as Authorization: Bearer <token>."
           },
           "refreshToken": {
             "type": "string",
-            "description": "JWT refresh token — send in the body to POST /api/v1/auth/refresh."
+            "description": "JWT refresh token \u2014 send in the body to POST /api/v1/auth/refresh."
           },
           "user": {
             "type": "object",
             "additionalProperties": true,
-            "description": "The authenticated user (id, email, role key, status, …)."
+            "description": "The authenticated user (id, email, role key, status, \u2026)."
           }
         },
         "required": [
@@ -9993,7 +9995,7 @@
           "sizeBytes": {
             "type": "number",
             "example": 184321,
-            "description": "Decoded byte size (≤ 25 MB)."
+            "description": "Decoded byte size (\u2264 25 MB)."
           },
           "contentBase64": {
             "type": "string",
@@ -10452,7 +10454,7 @@
           "description": {
             "type": "string",
             "nullable": true,
-            "example": "Rent — week ending 2026-07-05"
+            "example": "Rent \u2014 week ending 2026-07-05"
           },
           "occurredAt": {
             "type": "string",
@@ -10637,7 +10639,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "example": "inspection:a1b2…",
+            "example": "inspection:a1b2\u2026",
             "description": "Composite id (source + row id)."
           },
           "name": {
@@ -10672,7 +10674,7 @@
           "version": {
             "type": "number",
             "example": 1,
-            "description": "Always 1 — no document-versioning store."
+            "description": "Always 1 \u2014 no document-versioning store."
           },
           "url": {
             "type": "string",
@@ -11393,7 +11395,7 @@
         "properties": {
           "subject": {
             "type": "string",
-            "example": "Notice of rent increase — 1 Example St"
+            "example": "Notice of rent increase \u2014 1 Example St"
           },
           "body": {
             "type": "string"
@@ -11751,7 +11753,7 @@
               "PUSH"
             ],
             "example": "APP",
-            "description": "The channel the message was sent on (APP / EMAIL / …)."
+            "description": "The channel the message was sent on (APP / EMAIL / \u2026)."
           }
         },
         "required": [
@@ -11809,7 +11811,7 @@
           "lastMessage": {
             "type": "string",
             "nullable": true,
-            "example": "Thanks — see you then."
+            "example": "Thanks \u2014 see you then."
           },
           "lastAt": {
             "type": "string",
@@ -11852,7 +11854,7 @@
           "body": {
             "type": "string",
             "maxLength": 4000,
-            "example": "The kitchen tap is leaking — could someone take a look?"
+            "example": "The kitchen tap is leaking \u2014 could someone take a look?"
           },
           "department": {
             "type": "string",
@@ -11884,7 +11886,7 @@
           "body": {
             "type": "string",
             "maxLength": 4000,
-            "example": "Tuesday 10am works — thanks."
+            "example": "Tuesday 10am works \u2014 thanks."
           }
         },
         "required": [
@@ -12256,7 +12258,7 @@
             "description": "Linked ingoing inspection id when the agent has scheduled one."
           },
           "applicationDocuments": {
-            "description": "Documents uploaded with the NSW tenancy application — mirrored in new-leasing onboarding.",
+            "description": "Documents uploaded with the NSW tenancy application \u2014 mirrored in new-leasing onboarding.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TenantApplicationDocumentDto"
@@ -12314,7 +12316,7 @@
           "sizeBytes": {
             "type": "number",
             "example": 184321,
-            "description": "Decoded byte size (≤ 25 MB)."
+            "description": "Decoded byte size (\u2264 25 MB)."
           },
           "contentBase64": {
             "type": "string",
@@ -12345,7 +12347,7 @@
           "sizeBytes": {
             "type": "number",
             "example": 184321,
-            "description": "Raw file size in bytes (≤ 100 MB)."
+            "description": "Raw file size in bytes (\u2264 100 MB)."
           }
         },
         "required": [
@@ -12389,7 +12391,7 @@
           "proofUrl": {
             "type": "string",
             "description": "Public URL returned by the proof upload endpoint.",
-            "example": "https://media.crossub.example/tenant-deposit-proof/…/receipt.pdf"
+            "example": "https://media.crossub.example/tenant-deposit-proof/\u2026/receipt.pdf"
           },
           "fileName": {
             "type": "string",
@@ -12567,7 +12569,7 @@
           "sizeBytes": {
             "type": "number",
             "example": 184321,
-            "description": "Decoded byte size (≤ 25 MB)."
+            "description": "Decoded byte size (\u2264 25 MB)."
           },
           "contentBase64": {
             "type": "string",
@@ -12621,7 +12623,7 @@
           "viewingSessionId": {
             "type": "string",
             "format": "uuid",
-            "description": "Open inspection session — links the application to applicants list."
+            "description": "Open inspection session \u2014 links the application to applicants list."
           },
           "clientRequestId": {
             "type": "string",
@@ -12630,11 +12632,11 @@
           },
           "formData": {
             "type": "object",
-            "description": "Structured NSW tenancy application form fields (sections A–K from the standard application PDF).",
+            "description": "Structured NSW tenancy application form fields (sections A\u2013K from the standard application PDF).",
             "additionalProperties": true
           },
           "documents": {
-            "description": "100-point check uploads — identity, income, and supporting documentation categories.",
+            "description": "100-point check uploads \u2014 identity, income, and supporting documentation categories.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PublicApplicationDocumentDto"
@@ -13389,7 +13391,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "example": "a1b2…:rent",
+            "example": "a1b2\u2026:rent",
             "description": "Composite id (case id + type)."
           },
           "propertyId": {
@@ -13435,12 +13437,12 @@
         "properties": {
           "id": {
             "type": "string",
-            "example": "inspection:a1b2…",
+            "example": "inspection:a1b2\u2026",
             "description": "Composite id (source + row id)."
           },
           "name": {
             "type": "string",
-            "example": "Inspection report — 2 Mobile Way"
+            "example": "Inspection report \u2014 2 Mobile Way"
           },
           "category": {
             "type": "string",
@@ -13470,7 +13472,7 @@
           "version": {
             "type": "number",
             "example": 1,
-            "description": "Always 1 — no document-versioning store."
+            "description": "Always 1 \u2014 no document-versioning store."
           },
           "url": {
             "type": "string",
@@ -13567,7 +13569,7 @@
           "lastMessage": {
             "type": "string",
             "nullable": true,
-            "example": "Thanks — received."
+            "example": "Thanks \u2014 received."
           },
           "lastAt": {
             "type": "string",
@@ -13642,7 +13644,7 @@
           "body": {
             "type": "string",
             "maxLength": 4000,
-            "example": "Thanks — that clears it up."
+            "example": "Thanks \u2014 that clears it up."
           }
         },
         "required": [
@@ -13691,7 +13693,7 @@
           },
           "description": {
             "type": "string",
-            "example": "The unit’s hot water system has failed and needs replacing."
+            "example": "The unit\u2019s hot water system has failed and needs replacing."
           },
           "propertyId": {
             "type": "string",
@@ -13745,7 +13747,7 @@
           "recommendation": {
             "type": "string",
             "nullable": true,
-            "example": "Recommend approval — quote is competitive."
+            "example": "Recommend approval \u2014 quote is competitive."
           }
         },
         "required": [
@@ -13775,12 +13777,12 @@
               "MORE_INFO"
             ],
             "example": "APPROVED",
-            "description": "The decision — APPROVED, DECLINED, or MORE_INFO (PENDING is rejected)."
+            "description": "The decision \u2014 APPROVED, DECLINED, or MORE_INFO (PENDING is rejected)."
           },
           "note": {
             "type": "string",
             "maxLength": 1000,
-            "example": "Approved — please proceed with the quoted contractor."
+            "example": "Approved \u2014 please proceed with the quoted contractor."
           }
         },
         "required": [
@@ -13902,7 +13904,7 @@
             "type": "string",
             "nullable": true,
             "example": "2026-07-15",
-            "description": "Contractor’s estimated completion (free-text or date)."
+            "description": "Contractor\u2019s estimated completion (free-text or date)."
           },
           "descriptions": {
             "type": "string",
@@ -14015,7 +14017,7 @@
           },
           "quote": {
             "nullable": true,
-            "description": "The contractor’s latest own-submitted quote for this job, or null. Its presence (while the job is still pre-scheduled) is what puts the job in the app’s “awaiting quotation approval” bucket — no status transition is implied.",
+            "description": "The contractor\u2019s latest own-submitted quote for this job, or null. Its presence (while the job is still pre-scheduled) is what puts the job in the app\u2019s \u201cawaiting quotation approval\u201d bucket \u2014 no status transition is implied.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ContractorQuoteResponseDto"
@@ -14164,7 +14166,7 @@
           "clientRequestId": {
             "type": "string",
             "maxLength": 200,
-            "description": "Opt-in idempotency key — a reused key returns 409."
+            "description": "Opt-in idempotency key \u2014 a reused key returns 409."
           }
         },
         "required": [
@@ -14230,7 +14232,7 @@
           "sizeBytes": {
             "type": "number",
             "example": 184321,
-            "description": "Decoded byte size (≤ 25 MB)."
+            "description": "Decoded byte size (\u2264 25 MB)."
           },
           "contentBase64": {
             "type": "string",
@@ -14343,7 +14345,7 @@
           "lastMessage": {
             "type": "string",
             "nullable": true,
-            "example": "Thanks — confirmed."
+            "example": "Thanks \u2014 confirmed."
           },
           "lastAt": {
             "type": "string",
@@ -14405,7 +14407,7 @@
           "body": {
             "type": "string",
             "maxLength": 4000,
-            "example": "Thanks — I will attend Thursday morning."
+            "example": "Thanks \u2014 I will attend Thursday morning."
           }
         },
         "required": [
@@ -14436,7 +14438,7 @@
           },
           "body": {
             "type": "string",
-            "example": "Replace the leaking hot-water valve at 1 Mobile Way — respond within 4 hours."
+            "example": "Replace the leaking hot-water valve at 1 Mobile Way \u2014 respond within 4 hours."
           },
           "jobTrackingNumber": {
             "type": "string",
@@ -14501,7 +14503,7 @@
           },
           "sourceLabel": {
             "type": "string",
-            "example": "Routine inspection — 1 Mobile Way"
+            "example": "Routine inspection \u2014 1 Mobile Way"
           },
           "propertyLabel": {
             "type": "string",
@@ -14630,7 +14632,7 @@
               "CANCELLED"
             ],
             "example": "DRAFT",
-            "description": "Lifecycle state. An inspector drives DRAFT → IN_PROGRESS (accept) → COMPLETED (complete); the staff review chain is staff-only."
+            "description": "Lifecycle state. An inspector drives DRAFT \u2192 IN_PROGRESS (accept) \u2192 COMPLETED (complete); the staff review chain is staff-only."
           },
           "propertyId": {
             "type": "object",
@@ -14683,7 +14685,12 @@
           "awaitingAgentPayment": {
             "type": "boolean",
             "example": false,
-            "description": "Level 1 prepaid: true after accept until the agent pays the platform fee — inspector cannot start the job while this is true."
+            "description": "Level 1 prepaid: true after accept until the agent pays the platform fee \u2014 inspector cannot start the job while this is true."
+          },
+          "assignedByStaff": {
+            "type": "boolean",
+            "example": false,
+            "description": "True when CROSSUB staff manually assigned this job (no accept step) \u2014 surface under \u201cAssigned by CROSSUB\u201d in the inspector app."
           }
         },
         "required": [
@@ -14699,7 +14706,8 @@
           "inspectionDate",
           "completedDate",
           "urgent",
-          "createdAt"
+          "createdAt",
+          "assignedByStaff"
         ]
       },
       "PaginatedInspectorInspectionsDto": {
@@ -14843,7 +14851,7 @@
             "type": "string",
             "minLength": 10,
             "maxLength": 1000,
-            "example": "Vehicle broke down — cannot reach the property today."
+            "example": "Vehicle broke down \u2014 cannot reach the property today."
           },
           "mode": {
             "type": "string",
@@ -14852,7 +14860,7 @@
               "flag_admin"
             ],
             "default": "release_pool",
-            "description": "'release_pool' returns the job for anyone to claim; 'flag_admin' also marks it for staff attention and hides it from this inspector’s own pool."
+            "description": "'release_pool' returns the job for anyone to claim; 'flag_admin' also marks it for staff attention and hides it from this inspector\u2019s own pool."
           }
         },
         "required": [
@@ -14915,7 +14923,7 @@
               "Damaged"
             ],
             "example": "Good",
-            "description": "The app's condition label — stored raw (ratingRaw) and mapped best-effort onto the ConditionRating enum."
+            "description": "The app's condition label \u2014 stored raw (ratingRaw) and mapped best-effort onto the ConditionRating enum."
           },
           "items": {
             "type": "array",
@@ -15043,7 +15051,7 @@
             "type": "string",
             "nullable": true,
             "example": "Excellent",
-            "description": "The raw condition label as submitted (the app's own vocabulary) — prefer this over the mapped enum when displaying an app-authored area."
+            "description": "The raw condition label as submitted (the app's own vocabulary) \u2014 prefer this over the mapped enum when displaying an app-authored area."
           },
           "sortOrder": {
             "type": "number",
@@ -15087,7 +15095,10 @@
             }
           }
         },
-        "required": ["name", "photos"]
+        "required": [
+          "name",
+          "photos"
+        ]
       },
       "InspectorIngoingAreaPlanRoomDto": {
         "type": "object",
@@ -15098,14 +15109,20 @@
           },
           "sections": {
             "description": "Sections photographed / checked during ingoing.",
-            "example": ["Walls / Picture Hooks", "Dishwasher"],
+            "example": [
+              "Walls / Picture Hooks",
+              "Dishwasher"
+            ],
             "type": "array",
             "items": {
               "type": "string"
             }
           }
         },
-        "required": ["name", "sections"]
+        "required": [
+          "name",
+          "sections"
+        ]
       },
       "InspectorIngoingAreaPlanDto": {
         "type": "object",
@@ -15117,7 +15134,9 @@
             }
           }
         },
-        "required": ["rooms"]
+        "required": [
+          "rooms"
+        ]
       },
       "InspectorReferenceIngoingDto": {
         "type": "object",
@@ -15140,7 +15159,7 @@
           },
           "areaPlan": {
             "nullable": true,
-            "description": "Room/section layout from the ingoing walk-through — outgoing jobs inherit this scope.",
+            "description": "Room/section layout from the ingoing walk-through \u2014 outgoing jobs inherit this scope.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/InspectorIngoingAreaPlanDto"
@@ -15148,7 +15167,12 @@
             ]
           }
         },
-        "required": ["inspectionId", "propertyId", "areas", "areaPlan"]
+        "required": [
+          "inspectionId",
+          "propertyId",
+          "areas",
+          "areaPlan"
+        ]
       },
       "LinkInspectorAreaPhotosDto": {
         "type": "object",
@@ -15164,7 +15188,10 @@
             }
           }
         },
-        "required": ["areaName", "urls"]
+        "required": [
+          "areaName",
+          "urls"
+        ]
       },
       "InspectorInspectionDetailDto": {
         "type": "object",
@@ -15267,7 +15294,7 @@
           "sizeBytes": {
             "type": "number",
             "example": 184321,
-            "description": "Decoded byte size (≤ 25 MB)."
+            "description": "Decoded byte size (\u2264 25 MB)."
           },
           "contentBase64": {
             "type": "string",
@@ -15326,7 +15353,7 @@
           "sizeBytes": {
             "type": "number",
             "example": 184321,
-            "description": "Decoded byte size (≤ 25 MB)."
+            "description": "Decoded byte size (\u2264 25 MB)."
           },
           "contentBase64": {
             "type": "string",
@@ -15450,7 +15477,7 @@
           "lastMessage": {
             "type": "string",
             "nullable": true,
-            "example": "Thanks — confirmed."
+            "example": "Thanks \u2014 confirmed."
           },
           "lastAt": {
             "type": "string",
@@ -15512,7 +15539,7 @@
           "body": {
             "type": "string",
             "maxLength": 4000,
-            "example": "Thanks — I will attend Friday morning."
+            "example": "Thanks \u2014 I will attend Friday morning."
           }
         },
         "required": [
@@ -15543,7 +15570,7 @@
           },
           "body": {
             "type": "string",
-            "example": "Routine inspection at 1 Mobile Way — accept and schedule a visit."
+            "example": "Routine inspection at 1 Mobile Way \u2014 accept and schedule a visit."
           },
           "inspectionTrackingNumber": {
             "type": "string",
@@ -15654,8 +15681,8 @@
           },
           "caseSummary": {
             "type": "string",
-            "example": "Rental arrears — 5 weeks outstanding",
-            "description": "The case trigger label (the staff module’s case summary line)."
+            "example": "Rental arrears \u2014 5 weeks outstanding",
+            "description": "The case trigger label (the staff module\u2019s case summary line)."
           },
           "propertyAddress": {
             "type": "string",
@@ -15672,7 +15699,7 @@
           "hearingDate": {
             "type": "string",
             "nullable": true,
-            "description": "Hearing date (ISO date string) — null until staff schedule it."
+            "description": "Hearing date (ISO date string) \u2014 null until staff schedule it."
           },
           "hearingTime": {
             "type": "string",
@@ -15719,12 +15746,12 @@
           "outcomeResult": {
             "type": "string",
             "nullable": true,
-            "description": "Staff-recorded outcome (FE literal, e.g. 'claim_successful') — null until recorded."
+            "description": "Staff-recorded outcome (FE literal, e.g. 'claim_successful') \u2014 null until recorded."
           },
           "attendanceRecorded": {
             "type": "boolean",
             "example": false,
-            "description": "Whether the inspector’s hearing attendance has been billed by staff."
+            "description": "Whether the inspector\u2019s hearing attendance has been billed by staff."
           },
           "closed": {
             "type": "boolean",
@@ -15830,7 +15857,7 @@
           "averageRating": {
             "type": "number",
             "nullable": true,
-            "description": "Average performance rating (1–5). Null until enough completed jobs."
+            "description": "Average performance rating (1\u20135). Null until enough completed jobs."
           },
           "totalCompleted": {
             "type": "number",
@@ -16057,12 +16084,12 @@
           "dateOfBirth": {
             "type": "string",
             "maxLength": 40,
-            "description": "PII — stored, never echoed."
+            "description": "PII \u2014 stored, never echoed."
           },
           "residentialAddress": {
             "type": "string",
             "maxLength": 200,
-            "description": "PII — stored, never echoed."
+            "description": "PII \u2014 stored, never echoed."
           },
           "abn": {
             "type": "string",
@@ -16113,17 +16140,17 @@
           "bankAccountName": {
             "type": "string",
             "maxLength": 120,
-            "description": "Confidential — stored, never echoed."
+            "description": "Confidential \u2014 stored, never echoed."
           },
           "bankBsb": {
             "type": "string",
             "maxLength": 20,
-            "description": "Confidential — stored, never echoed."
+            "description": "Confidential \u2014 stored, never echoed."
           },
           "bankAccountNumber": {
             "type": "string",
             "maxLength": 40,
-            "description": "Confidential — stored; only the last 4 digits are ever echoed."
+            "description": "Confidential \u2014 stored; only the last 4 digits are ever echoed."
           }
         },
         "required": [
@@ -16219,7 +16246,7 @@
           },
           "rentPaidTo": {
             "type": "string",
-            "description": "ISO date — rent paid to."
+            "description": "ISO date \u2014 rent paid to."
           }
         }
       },
@@ -16236,7 +16263,7 @@
           },
           "dueDate": {
             "type": "string",
-            "description": "ISO date — bill due date."
+            "description": "ISO date \u2014 bill due date."
           },
           "amount": {
             "type": "number",
@@ -16252,11 +16279,11 @@
         "properties": {
           "leaseStartDate": {
             "type": "string",
-            "description": "ISO date — lease agreement start."
+            "description": "ISO date \u2014 lease agreement start."
           },
           "agreementEndDate": {
             "type": "string",
-            "description": "ISO date — agreement / lease end. Bond days overdue count from this date once the tenant has vacated."
+            "description": "ISO date \u2014 agreement / lease end. Bond days overdue count from this date once the tenant has vacated."
           },
           "bondAmount": {
             "type": "number"
@@ -16412,12 +16439,12 @@
           "leaseStart": {
             "type": "string",
             "nullable": true,
-            "description": "ISO date — lease / agreement start."
+            "description": "ISO date \u2014 lease / agreement start."
           },
           "agreementEnd": {
             "type": "string",
             "nullable": true,
-            "description": "ISO date — lease / agreement end."
+            "description": "ISO date \u2014 lease / agreement end."
           },
           "currentRent": {
             "type": "number",
@@ -16436,7 +16463,7 @@
           "rentPaidTo": {
             "type": "string",
             "nullable": true,
-            "description": "ISO date — rent paid to."
+            "description": "ISO date \u2014 rent paid to."
           },
           "arrears": {
             "type": "array",
@@ -16455,12 +16482,12 @@
           "lodgementDate": {
             "type": "string",
             "nullable": true,
-            "description": "ISO date — tribunal lodgement."
+            "description": "ISO date \u2014 tribunal lodgement."
           },
           "hearingDate": {
             "type": "string",
             "nullable": true,
-            "description": "ISO date — hearing."
+            "description": "ISO date \u2014 hearing."
           },
           "hearingNoticeUrl": {
             "type": "string",
@@ -16511,11 +16538,11 @@
           },
           "lodgementDate": {
             "type": "string",
-            "description": "ISO date — tribunal lodgement (optional)."
+            "description": "ISO date \u2014 tribunal lodgement (optional)."
           },
           "hearingDate": {
             "type": "string",
-            "description": "ISO date — hearing (optional)."
+            "description": "ISO date \u2014 hearing (optional)."
           },
           "hearingNotice": {
             "$ref": "#/components/schemas/AgentTribunalFileUploadDto"
@@ -16651,15 +16678,15 @@
           },
           "periodStart": {
             "type": "string",
-            "description": "ISO date — period start."
+            "description": "ISO date \u2014 period start."
           },
           "periodEnd": {
             "type": "string",
-            "description": "ISO date — period end."
+            "description": "ISO date \u2014 period end."
           },
           "invoiceDate": {
             "type": "string",
-            "description": "ISO date — invoice date."
+            "description": "ISO date \u2014 invoice date."
           },
           "dueDate": {
             "type": "string",
@@ -16702,15 +16729,15 @@
           },
           "periodStart": {
             "type": "string",
-            "description": "ISO date — period start."
+            "description": "ISO date \u2014 period start."
           },
           "periodEnd": {
             "type": "string",
-            "description": "ISO date — period end."
+            "description": "ISO date \u2014 period end."
           },
           "invoiceDate": {
             "type": "string",
-            "description": "ISO date — invoice date."
+            "description": "ISO date \u2014 invoice date."
           },
           "dueDate": {
             "type": "string",
@@ -16828,19 +16855,19 @@
           },
           "invoiceDate": {
             "type": "string",
-            "description": "ISO date — invoice date."
+            "description": "ISO date \u2014 invoice date."
           },
           "dueDate": {
             "type": "string",
-            "description": "ISO date — due date."
+            "description": "ISO date \u2014 due date."
           },
           "periodStart": {
             "type": "string",
-            "description": "ISO date — period start (From)."
+            "description": "ISO date \u2014 period start (From)."
           },
           "periodEnd": {
             "type": "string",
-            "description": "ISO date — period end (To)."
+            "description": "ISO date \u2014 period end (To)."
           },
           "reference": {
             "type": "string"
@@ -16908,19 +16935,19 @@
           },
           "invoiceDate": {
             "type": "string",
-            "description": "ISO date — invoice date."
+            "description": "ISO date \u2014 invoice date."
           },
           "dueDate": {
             "type": "string",
-            "description": "ISO date — due date."
+            "description": "ISO date \u2014 due date."
           },
           "periodStart": {
             "type": "string",
-            "description": "ISO date — period start (From)."
+            "description": "ISO date \u2014 period start (From)."
           },
           "periodEnd": {
             "type": "string",
-            "description": "ISO date — period end (To)."
+            "description": "ISO date \u2014 period end (To)."
           },
           "reference": {
             "type": "string"
@@ -17028,17 +17055,17 @@
               "LEVEL_2_FULL_MANAGEMENT"
             ],
             "example": "LEVEL_2_FULL_MANAGEMENT",
-            "description": "Agent portal service tier for this client agency — Level 1 is inspection-only; Level 2 is full property management."
+            "description": "Agent portal service tier for this client agency \u2014 Level 1 is inspection-only; Level 2 is full property management."
           },
           "abn": {
             "type": "string",
             "nullable": true,
-            "description": "Australian Business Number — shown on tax invoices."
+            "description": "Australian Business Number \u2014 shown on tax invoices."
           },
           "licenceNumber": {
             "type": "string",
             "nullable": true,
-            "description": "Estate agent licence number — shown on tax invoices."
+            "description": "Estate agent licence number \u2014 shown on tax invoices."
           },
           "bankName": {
             "type": "string",
@@ -17427,13 +17454,13 @@
             "type": "string",
             "format": "date-time",
             "nullable": true,
-            "description": "Expected vacate — from an open end-leasing case or tenant rent-review decline."
+            "description": "Expected vacate \u2014 from an open end-leasing case or tenant rent-review decline."
           },
           "nextRentReviewAt": {
             "type": "string",
             "format": "date-time",
             "nullable": true,
-            "description": "Earliest date the next rent review may open — updated when the tenant accepts a rent increase."
+            "description": "Earliest date the next rent review may open \u2014 updated when the tenant accepts a rent increase."
           },
           "rentPaidUntil": {
             "type": "string",
@@ -17714,7 +17741,7 @@
           },
           "archiveOnBondRelease": {
             "type": "boolean",
-            "description": "When true (e.g. End Leasing → End management), record the date now but keep the property active until bond release / Job completed confirms archive."
+            "description": "When true (e.g. End Leasing \u2192 End management), record the date now but keep the property active until bond release / Job completed confirms archive."
           }
         },
         "required": [
@@ -17763,7 +17790,7 @@
         "properties": {
           "reason": {
             "type": "string",
-            "example": "Opened in error — landlord not proceeding with increase",
+            "example": "Opened in error \u2014 landlord not proceeding with increase",
             "maxLength": 500
           }
         },
@@ -17788,7 +17815,7 @@
         "properties": {
           "reason": {
             "type": "string",
-            "example": "Tenant decided to stay — case no longer required",
+            "example": "Tenant decided to stay \u2014 case no longer required",
             "maxLength": 500
           }
         },
@@ -17858,7 +17885,7 @@
         "properties": {
           "reason": {
             "type": "string",
-            "example": "Logged against the wrong property — duplicate case",
+            "example": "Logged against the wrong property \u2014 duplicate case",
             "maxLength": 500
           }
         },
@@ -17883,7 +17910,7 @@
           "sizeBytes": {
             "type": "number",
             "example": 184321,
-            "description": "Decoded byte size (≤ 25 MB)."
+            "description": "Decoded byte size (\u2264 25 MB)."
           },
           "contentBase64": {
             "type": "string",
@@ -18423,7 +18450,7 @@
               "periodic"
             ],
             "nullable": true,
-            "description": "Agent lease-type choice at create — fixed or periodic."
+            "description": "Agent lease-type choice at create \u2014 fixed or periodic."
           },
           "fixedTermWeeks": {
             "type": "number",
@@ -18815,7 +18842,7 @@
           },
           "matter": {
             "type": "string",
-            "example": "Rental arrears — 3 weeks overdue"
+            "example": "Rental arrears \u2014 3 weeks overdue"
           },
           "tenantName": {
             "type": "string",
@@ -19002,7 +19029,7 @@
           },
           "cancelReason": {
             "type": "string",
-            "example": "Opened in error — landlord not proceeding"
+            "example": "Opened in error \u2014 landlord not proceeding"
           },
           "cancelledAt": {
             "type": "string",
@@ -19232,7 +19259,7 @@
           "lastMessage": {
             "type": "string",
             "nullable": true,
-            "example": "Thanks — confirmed."
+            "example": "Thanks \u2014 confirmed."
           },
           "lastAt": {
             "type": "string",
@@ -19366,7 +19393,7 @@
         "properties": {
           "authorizationUrl": {
             "type": "string",
-            "description": "Provider OAuth consent URL — redirect the browser here."
+            "description": "Provider OAuth consent URL \u2014 redirect the browser here."
           }
         },
         "required": [
@@ -19378,7 +19405,7 @@
         "properties": {
           "body": {
             "type": "string",
-            "example": "Thanks — we will follow up shortly."
+            "example": "Thanks \u2014 we will follow up shortly."
           }
         },
         "required": [
@@ -19428,7 +19455,7 @@
           "body": {
             "type": "string",
             "maxLength": 4000,
-            "example": "Confirmed — booked for next Tuesday."
+            "example": "Confirmed \u2014 booked for next Tuesday."
           }
         },
         "required": [
@@ -19515,12 +19542,12 @@
         "properties": {
           "id": {
             "type": "string",
-            "example": "inspection:a1b2…",
+            "example": "inspection:a1b2\u2026",
             "description": "Composite id (source + row id)."
           },
           "name": {
             "type": "string",
-            "example": "Inspection report — 12/45 Campbell Parade"
+            "example": "Inspection report \u2014 12/45 Campbell Parade"
           },
           "category": {
             "type": "string",
@@ -19544,7 +19571,7 @@
           },
           "url": {
             "type": "string",
-            "example": "https://files.crossub.example/portal-documents/…"
+            "example": "https://files.crossub.example/portal-documents/\u2026"
           },
           "version": {
             "type": "number",
@@ -19578,7 +19605,7 @@
           "sizeBytes": {
             "type": "number",
             "example": 184321,
-            "description": "Raw file size in bytes (≤ 100 MB)."
+            "description": "Raw file size in bytes (\u2264 100 MB)."
           },
           "category": {
             "type": "string",
@@ -19669,7 +19696,7 @@
           "sizeBytes": {
             "type": "number",
             "example": 184321,
-            "description": "Decoded byte size (≤ 100 MB)."
+            "description": "Decoded byte size (\u2264 100 MB)."
           },
           "contentBase64": {
             "type": "string",
@@ -19713,7 +19740,7 @@
             "type": "string",
             "minLength": 3,
             "maxLength": 500,
-            "example": "Quote above budget — please re-quote with cheaper parts."
+            "example": "Quote above budget \u2014 please re-quote with cheaper parts."
           }
         },
         "required": [
@@ -19747,7 +19774,7 @@
           "role": {
             "type": "string",
             "example": "TENANT",
-            "description": "Role key — always TENANT."
+            "description": "Role key \u2014 always TENANT."
           },
           "status": {
             "type": "string",
@@ -19878,7 +19905,7 @@
           "applicationId": {
             "type": "string",
             "format": "uuid",
-            "description": "Approved rental application — links the new login to the applicant Person and advances onboarding."
+            "description": "Approved rental application \u2014 links the new login to the applicant Person and advances onboarding."
           }
         },
         "required": [
@@ -19911,7 +19938,7 @@
           "role": {
             "type": "string",
             "example": "TENANT",
-            "description": "Role key — always TENANT."
+            "description": "Role key \u2014 always TENANT."
           },
           "status": {
             "type": "string",
@@ -19945,7 +19972,7 @@
           },
           "content": {
             "type": "string",
-            "example": "66 Berry Street — tenant moving out 31 August 2026"
+            "example": "66 Berry Street \u2014 tenant moving out 31 August 2026"
           }
         },
         "required": [
@@ -20021,7 +20048,7 @@
           },
           "band": {
             "type": "string",
-            "example": "50–<75%"
+            "example": "50\u2013<75%"
           },
           "totalFee": {
             "type": "number",
@@ -20288,7 +20315,7 @@
         "properties": {
           "reply": {
             "type": "string",
-            "example": "That is a break lease — 243 of 365 days elapsed (66.6%), so a 2-week fee of $2,000.00 applies."
+            "example": "That is a break lease \u2014 243 of 365 days elapsed (66.6%), so a 2-week fee of $2,000.00 applies."
           },
           "assessment": {
             "nullable": true,
