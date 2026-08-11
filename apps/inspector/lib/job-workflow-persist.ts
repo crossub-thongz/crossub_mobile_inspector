@@ -23,6 +23,9 @@ function preferStatus(incoming: JobStatus, local?: JobStatus): JobStatus {
   if (!local) return incoming;
   // Server-cancelled jobs must not resurrect from device-local workflow progress.
   if (incoming === 'declined') return incoming;
+  // Still in the pool on the server — a device-local "accepted" is a ghost accept
+  // (offline optimism or a failed claim) and must not hide the unclaimed state.
+  if (incoming === 'available') return incoming;
   return STATUS_RANK[local] >= STATUS_RANK[incoming] ? local : incoming;
 }
 

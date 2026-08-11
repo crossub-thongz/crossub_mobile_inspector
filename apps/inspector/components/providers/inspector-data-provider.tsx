@@ -75,6 +75,7 @@ import {
   filterPoolJobs,
   filterTodaysInspections,
   filterUpcomingInspections,
+  isApiInspectionId,
   isDemoJobId,
 } from '@/lib/inspector-job-filters';
 import {
@@ -664,12 +665,20 @@ export function InspectorDataProvider({
                   j.status === 'available',
               )
             : [];
-        const localOnly = prev.filter(
-          (j) =>
-            !isDemoJobId(j.id) &&
-            !apiIds.has(j.id) &&
-            !keptPoolRows.some((p) => p.id === j.id),
-        );
+        // When the API is reachable, UUID jobs must come from assigned/pool
+        // responses. Keeping a stale local "accepted" card after a failed or
+        // never-persisted claim is why admin/agent saw no inspector while the
+        // phone still showed Cancel task.
+        const localOnly = prev.filter((j) => {
+          if (isDemoJobId(j.id)) return false;
+          if (apiIds.has(j.id)) return false;
+          if (keptPoolRows.some((p) => p.id === j.id)) return false;
+          if (connected && isApiInspectionId(j.id)) {
+            clearPersistedJobProgress(j.id);
+            return false;
+          }
+          return true;
+        });
         const merged = [
           ...assignedWithKeys.map(mergeApiJobFinal),
           ...(fetchPool
@@ -887,6 +896,12 @@ export function InspectorDataProvider({
         return;
       }
       const isAssignedApiJob = apiInspectionIds.current.has(id);
+      // Mid-workflow refreshes skip the pool fan-out, so a UUID job can look
+      // "local only" even though claim+accept must still hit the facade —
+      // otherwise admin/agent never see the assignee.
+      const shouldPersistApi =
+        apiConnected &&
+        (isAssignedApiJob || isPoolApiJob || isApiInspectionId(id));
       const previous = job;
       setJobs((prev) =>
         prev.map((j) =>
@@ -894,20 +909,24 @@ export function InspectorDataProvider({
             ? {
                 ...j,
                 status: 'accepted',
-                source:
-                  isAssignedApiJob || isPoolApiJob ? 'assigned' : ('pool' as const),
+                source: shouldPersistApi ? 'assigned' : ('pool' as const),
               }
             : j,
         ),
       );
       let awaitingAgentPayment = false;
-      if ((isAssignedApiJob || isPoolApiJob) && apiConnected) {
+      if (shouldPersistApi) {
         apiInspectionIds.current.add(id);
-        const persist = isPoolApiJob
-          ? apiClaimInspection(id).then(() => apiAcceptInspection(id))
-          : apiAcceptInspection(id);
+        const claimThenAccept = async () => {
+          try {
+            await apiClaimInspection(id);
+          } catch {
+            // Already mine, or staff-assigned — accept validates ownership.
+          }
+          return apiAcceptInspection(id);
+        };
         try {
-          const accepted = await persist;
+          const accepted = await claimThenAccept();
           const mapped = toInspectionJob(accepted);
           awaitingAgentPayment = Boolean(mapped.awaitingAgentPayment);
           setJobs((prev) =>

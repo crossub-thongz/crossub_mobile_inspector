@@ -6,6 +6,13 @@ export function isDemoJobId(id: string): boolean {
   return id.startsWith('job-');
 }
 
+/** Live facade inspection ids are UUIDs; demo / offline stubs are not. */
+export function isApiInspectionId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    id,
+  );
+}
+
 /** Jobs on the pool board (unclaimed rows + assigned drafts awaiting accept). */
 export function isPoolJob(job: InspectionJob): boolean {
   return (
