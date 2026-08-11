@@ -53,6 +53,31 @@ export function useKeyCollectGate(
   return allowed;
 }
 
+/**
+ * Level 1 prepaid: block workflow / key screens until the agency pays.
+ * Claim and accept are also gated on the API — this keeps UI routes honest.
+ */
+export function useAwaitingAgentPaymentGate(
+  job: InspectionJob | undefined,
+  jobId: string,
+): boolean {
+  const router = useRouter();
+  const redirected = useRef(false);
+  const allowed = !job?.awaitingAgentPayment;
+
+  useEffect(() => {
+    if (allowed) {
+      redirected.current = false;
+      return;
+    }
+    if (redirected.current) return;
+    redirected.current = true;
+    router.replace(jobDetail(jobId));
+  }, [allowed, jobId, router]);
+
+  return allowed;
+}
+
 /** Keep return tab inaccessible until the inspection workflow is finished. */
 export function useKeyReturnGate(
   job: InspectionJob | undefined,
@@ -85,6 +110,7 @@ export function useInspectionInProgress(
 ): void {
   useEffect(() => {
     if (!job || job.status === 'completed') return;
+    if (job.awaitingAgentPayment) return;
     if (job.keyAccess && !isKeyCollectComplete(job)) return;
     if (job.status === 'in_progress') return;
     updateJobStatus(jobId, 'in_progress');

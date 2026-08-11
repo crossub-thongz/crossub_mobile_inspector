@@ -9,6 +9,8 @@ export type InspectorOpenViewing = {
   startedEarlyAt?: string | null;
   originalScheduledStart?: string | null;
   canStart?: boolean;
+  /** Level 1 prepaid — agent must pay before Start is allowed. */
+  awaitingAgentPayment?: boolean;
   /** Inspector may finish the pool job before the scheduled window ends. */
   canCompleteEarly?: boolean;
   checkInUrl: string;

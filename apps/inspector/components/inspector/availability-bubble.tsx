@@ -11,7 +11,9 @@ export function AvailabilityBubble() {
   return (
     <div
       className={cn(
-        'pointer-events-none fixed left-1/2 z-[60] w-full max-w-lg -translate-x-1/2 px-4',
+        // Sit under the bottom nav (z-60) so tab taps always win. Full-width
+        // wrapper stays pointer-events-none; only the FAB captures taps.
+        'pointer-events-none fixed left-1/2 z-40 w-full max-w-lg -translate-x-1/2 px-4',
         'bottom-[calc(4.5rem+env(safe-area-inset-bottom))]',
       )}
     >

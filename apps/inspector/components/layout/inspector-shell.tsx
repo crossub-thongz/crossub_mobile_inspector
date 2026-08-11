@@ -48,6 +48,15 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+/** In-progress field workflows — soft Next.js nav often stalls under Receiving polls. */
+function isInspectionWorkflowPath(pathname: string): boolean {
+  return /^\/jobs\/[^/]+\/(ingoing|routine|outgoing|open)\/?$/.test(pathname);
+}
+
+function navigateFromWorkflow(href: string) {
+  window.location.assign(href);
+}
+
 function roleLabel(role: string): string {
   if (role === Role.SUPER_ADMIN) return 'Admin';
   if (role === Role.HR) return 'HR';
@@ -87,6 +96,7 @@ export function InspectorShell({
   const [headerHeight, setHeaderHeight] = useState(56);
   const { notifications, messages, poolJobs, todaysJobs } = useInspectorData();
   const showAvailabilityBubble = Boolean(user) && !isPublicRoute(pathname);
+  const hardLeaveFromWorkflow = isInspectionWorkflowPath(pathname);
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const unreadMessages = messages.reduce((s, m) => s + m.unread, 0);
 
@@ -176,6 +186,11 @@ export function InspectorShell({
             <Link
               href={backHref}
               className="text-primary -ml-1 text-sm font-medium"
+              onClick={(event) => {
+                if (!hardLeaveFromWorkflow) return;
+                event.preventDefault();
+                navigateFromWorkflow(backHref);
+              }}
             >
               ← Back
             </Link>
@@ -193,6 +208,11 @@ export function InspectorShell({
               href={ROUTES.MESSAGES}
               className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
               aria-label="Messages"
+              onClick={(event) => {
+                if (!hardLeaveFromWorkflow) return;
+                event.preventDefault();
+                navigateFromWorkflow(ROUTES.MESSAGES);
+              }}
             >
               <MessageSquare className="size-5" />
               {unreadMessages > 0 && (
@@ -205,6 +225,11 @@ export function InspectorShell({
               href={ROUTES.NOTIFICATIONS}
               className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
               aria-label="Notifications"
+              onClick={(event) => {
+                if (!hardLeaveFromWorkflow) return;
+                event.preventDefault();
+                navigateFromWorkflow(ROUTES.NOTIFICATIONS);
+              }}
             >
               <Bell className="size-5" />
               {unreadNotifications > 0 && (
@@ -251,7 +276,12 @@ export function InspectorShell({
                   <Link
                     key={href}
                     href={href}
-                    onClick={() => setMoreOpen(false)}
+                    onClick={(event) => {
+                      setMoreOpen(false);
+                      if (!hardLeaveFromWorkflow) return;
+                      event.preventDefault();
+                      navigateFromWorkflow(href);
+                    }}
                     className="rounded-lg px-3 py-2.5 text-sm hover:bg-secondary"
                   >
                     {label}
@@ -290,7 +320,7 @@ export function InspectorShell({
         {children}
       </main>
 
-      <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+      <nav className="fixed bottom-0 left-1/2 z-[60] w-full max-w-lg -translate-x-1/2 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
         <div className="flex h-16 items-stretch justify-around px-1">
           {PRIMARY_NAV.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
@@ -304,6 +334,11 @@ export function InspectorShell({
               <Link
                 key={href}
                 href={href}
+                onClick={(event) => {
+                  if (!hardLeaveFromWorkflow) return;
+                  event.preventDefault();
+                  navigateFromWorkflow(href);
+                }}
                 className={cn(
                   'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors',
                   active ? 'text-primary' : 'text-muted-foreground',
@@ -321,6 +356,11 @@ export function InspectorShell({
           })}
           <Link
             href={ROUTES.EARNINGS}
+            onClick={(event) => {
+              if (!hardLeaveFromWorkflow) return;
+              event.preventDefault();
+              navigateFromWorkflow(ROUTES.EARNINGS);
+            }}
             className={cn(
               'flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors',
               isActive(pathname, ROUTES.EARNINGS)

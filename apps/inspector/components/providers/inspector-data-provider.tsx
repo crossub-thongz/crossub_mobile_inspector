@@ -54,6 +54,7 @@ import {
   mapInspectorRegistration,
   mapPoolInspections,
   mapTribunalCases,
+  toInspectionJob,
 } from '@/lib/crossub-api/inspector-mappers';
 import {
   enrichJobsWithKeyCollection,
@@ -163,7 +164,11 @@ interface InspectorDataContextValue {
   deviceLocation: GeoPoint | null;
   availability: InspectorAvailability;
   toggleReceivingJobs: () => void;
-  refresh: () => Promise<void>;
+  refresh: (opts?: {
+    background?: boolean;
+    /** Force a pool reload (e.g. Job Pool page). Ignored on workflow screens. */
+    includePool?: boolean;
+  }) => Promise<void>;
   syncOfflineQueue: () => Promise<void>;
   profile: InspectorProfile;
   registration: InspectorRegistration | null;
@@ -186,7 +191,7 @@ interface InspectorDataContextValue {
   getJob: (id: string) => InspectionJob | undefined;
   getTribunal: (id: string) => TribunalHearing | undefined;
   getThreadMessages: (threadId: string) => ThreadMessage[];
-  acceptJob: (id: string) => void;
+  acceptJob: (id: string) => Promise<{ awaitingAgentPayment: boolean } | void>;
   declineJob: (id: string) => void;
   cancelJob: (
     id: string,
@@ -339,6 +344,8 @@ export function InspectorDataProvider({
   // Tribunal cases from `GET /inspector/tribunal-cases` — read-only overlay; the
   // checklist toggles and outcome recorder stay local for these rows.
   const apiTribunalIds = useRef<Set<string>>(new Set());
+  /** Coalesce overlapping refreshes so the 5s Receiving poll cannot saturate the browser. */
+  const refreshInFlight = useRef<Promise<void> | null>(null);
 
   useLayoutEffect(() => {
     if (status === 'loading') {
@@ -492,7 +499,10 @@ export function InspectorDataProvider({
     setPendingSync(loadOfflineQueue().length);
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: {
+    background?: boolean;
+    includePool?: boolean;
+  }): Promise<void> => {
     if (status !== 'authed') {
       setLoading(false);
       // Auth still settling means nothing has been decided yet — a job screen
@@ -500,7 +510,42 @@ export function InspectorDataProvider({
       setJobsHydrated(status !== 'loading');
       return;
     }
-    setLoading(true);
+    if (refreshInFlight.current) {
+      const inflight = refreshInFlight.current;
+      // A plain poll can join the in-flight request.
+      if (!opts?.includePool) return inflight;
+      // A forced pool reload must run after in-flight work clears — otherwise
+      // opening Job Pool during a light tick would never fetch the pool.
+      await inflight;
+      while (refreshInFlight.current) {
+        await refreshInFlight.current;
+      }
+    }
+
+    const background = Boolean(opts?.background);
+    const path =
+      typeof window !== 'undefined' ? window.location.pathname : '';
+    // Mid-inspection soft nav needs free browser connections. Never fan out the
+    // pool (4×100) while the inspector is photographing — and skip it on most
+    // background ticks so leaving + continuing a second time does not hang.
+    // Mid-inspection soft nav needs free browser connections. Never fan out the
+    // pool (4×100) while the inspector is photographing — and skip it on most
+    // background ticks so leaving + continuing a second time does not hang.
+    // Job *preview* (`/jobs/:id`) still needs the pool on first load so hard-nav
+    // from Job Pool can resolve the card.
+    const onWorkflowScreen =
+      /^\/jobs\/[^/]+\/(ingoing|routine|outgoing|open)\/?$/.test(path);
+    const onJobPool =
+      path === '/job-pool' || path.startsWith('/job-pool/');
+    const fetchPool =
+      receivingJobsRef.current &&
+      !onWorkflowScreen &&
+      (Boolean(opts?.includePool) || onJobPool || !background);
+
+    const run = (async () => {
+    if (!background) {
+      setLoading(true);
+    }
     setApiError(null);
     let connected = false;
     let healthError: string | null = null;
@@ -520,9 +565,7 @@ export function InspectorDataProvider({
     const [inspections, pool, ledger, threads, notifs, tribs, profileRes] =
       await Promise.allSettled([
         fetchInspections(),
-        receivingJobsRef.current
-          ? fetchPoolInspections()
-          : Promise.resolve([]),
+        fetchPool ? fetchPoolInspections() : Promise.resolve([]),
         fetchInspectorJobs(),
         fetchInspectorMessages(),
         fetchInspectorNotifications(),
@@ -541,12 +584,14 @@ export function InspectorDataProvider({
       assignedFromApi = [];
     }
     if (pool.status === 'fulfilled') {
-      poolFromApi = mapPoolInspections(pool.value);
-      apiPoolIds.current = new Set(poolFromApi.map((j) => j.id));
-      setPoolError(null);
+      if (fetchPool) {
+        poolFromApi = mapPoolInspections(pool.value);
+        apiPoolIds.current = new Set(poolFromApi.map((j) => j.id));
+        setPoolError(null);
+      }
       connected = true;
       setApiConnected(true);
-    } else if (pool.status === 'rejected') {
+    } else if (pool.status === 'rejected' && fetchPool) {
       apiPoolIds.current = new Set();
       const reason = pool.reason;
       setPoolError(
@@ -558,12 +603,12 @@ export function InspectorDataProvider({
     // Pool + assigned rows both hit the real facade — key proof must sync for either.
     apiInspectionIds.current = new Set([
       ...assignedFromApi.map((j) => j.id),
-      ...poolFromApi.map((j) => j.id),
+      ...(fetchPool ? poolFromApi.map((j) => j.id) : [...apiPoolIds.current]),
     ]);
-    if (inspections.status === 'fulfilled' || pool.status === 'fulfilled') {
+    if (inspections.status === 'fulfilled' || (fetchPool && pool.status === 'fulfilled')) {
       const apiIds = new Set([
         ...assignedFromApi.map((j) => j.id),
-        ...poolFromApi.map((j) => j.id),
+        ...(fetchPool ? poolFromApi.map((j) => j.id) : []),
       ]);
       let assignedWithKeys = assignedFromApi;
       // Pool jobs are deliberately NOT enriched. Key collection only exists for a
@@ -609,12 +654,27 @@ export function InspectorDataProvider({
             ? mergeJobWithHistory(merged, { serverBacked: true })
             : merged;
         };
+        // When skipping the pool fan-out mid-workflow, keep existing pool rows in place.
+        const keptPoolRows =
+          !fetchPool
+            ? prev.filter(
+                (j) =>
+                  apiPoolIds.current.has(j.id) ||
+                  j.source === 'pool' ||
+                  j.status === 'available',
+              )
+            : [];
         const localOnly = prev.filter(
-          (j) => !isDemoJobId(j.id) && !apiIds.has(j.id),
+          (j) =>
+            !isDemoJobId(j.id) &&
+            !apiIds.has(j.id) &&
+            !keptPoolRows.some((p) => p.id === j.id),
         );
         const merged = [
           ...assignedWithKeys.map(mergeApiJobFinal),
-          ...poolWithKeys.map(mergeApiJobFinal),
+          ...(fetchPool
+            ? poolWithKeys.map(mergeApiJobFinal)
+            : keptPoolRows),
           ...localOnly,
         ];
         return merged.filter((j) => !isDemoJobId(j.id));
@@ -685,9 +745,17 @@ export function InspectorDataProvider({
       );
     }
     setApiConnected(connected);
-    setLoading(false);
+    if (!background) {
+      setLoading(false);
+    }
     setJobsHydrated(true);
     refreshPendingSync();
+    })();
+
+    refreshInFlight.current = run.finally(() => {
+      refreshInFlight.current = null;
+    });
+    return refreshInFlight.current;
   }, [status, user?.email, refreshPendingSync]);
 
   const toggleReceivingJobs = useCallback(() => {
@@ -809,7 +877,7 @@ export function InspectorDataProvider({
   );
 
   const acceptJob = useCallback(
-    (id: string) => {
+    async (id: string): Promise<{ awaitingAgentPayment: boolean } | void> => {
       const job = jobs.find((j) => j.id === id);
       const isPoolApiJob = apiPoolIds.current.has(id);
       const isPoolRow =
@@ -819,6 +887,7 @@ export function InspectorDataProvider({
         return;
       }
       const isAssignedApiJob = apiInspectionIds.current.has(id);
+      const previous = job;
       setJobs((prev) =>
         prev.map((j) =>
           j.id === id
@@ -831,18 +900,53 @@ export function InspectorDataProvider({
             : j,
         ),
       );
+      let awaitingAgentPayment = false;
       if ((isAssignedApiJob || isPoolApiJob) && apiConnected) {
         apiInspectionIds.current.add(id);
         const persist = isPoolApiJob
           ? apiClaimInspection(id).then(() => apiAcceptInspection(id))
           : apiAcceptInspection(id);
-        void persist
-          .then(() => refresh())
-          .catch(() => undefined);
+        try {
+          const accepted = await persist;
+          const mapped = toInspectionJob(accepted);
+          awaitingAgentPayment = Boolean(mapped.awaitingAgentPayment);
+          setJobs((prev) =>
+            prev.map((j) =>
+              j.id === id
+                ? {
+                    ...j,
+                    ...mapped,
+                  }
+                : j,
+            ),
+          );
+          if (awaitingAgentPayment) {
+            toast.success(
+              'Job accepted — waiting for the agency to pay before you can start.',
+            );
+          } else {
+            toast.success('Job accepted');
+          }
+          void refresh();
+        } catch (err) {
+          if (previous) {
+            setJobs((prev) =>
+              prev.map((j) => (j.id === id ? previous : j)),
+            );
+          }
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : 'Could not accept this job.',
+          );
+          void refresh();
+          return;
+        }
       } else {
         mutateWithOffline(id, 'accept', {});
+        toast.success('Job accepted');
       }
-      toast.success('Job accepted');
+      return { awaitingAgentPayment };
     },
     [apiConnected, jobs, mutateWithOffline, refresh],
   );
@@ -1636,8 +1740,13 @@ export function InspectorDataProvider({
   useEffect(() => {
     if (status !== 'authed' || !receivingJobs || !apiConnected) return;
     const id = window.setInterval(() => {
-      void refresh();
-    }, 5_000);
+      // Pause the Receiving poll on every job screen (preview + workflow) so
+      // opening a pool card is not starved by a 500+ row pool fan-out.
+      if (/^\/jobs(\/|$)/.test(window.location.pathname)) {
+        return;
+      }
+      void refresh({ background: true });
+    }, 15_000);
     return () => window.clearInterval(id);
   }, [status, receivingJobs, apiConnected, refresh]);
 

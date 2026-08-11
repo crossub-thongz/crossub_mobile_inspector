@@ -18,7 +18,7 @@ import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { jobHistory, jobKeys, jobWorkflow, ROUTES } from '@/constants/routes';
+import { jobDetail, jobHistory, jobKeys, jobWorkflow, ROUTES } from '@/constants/routes';
 import { isPoolJob } from '@/lib/inspector-job-filters';
 import { jobLookupMiss } from '@/lib/job-lookup';
 import {
@@ -70,13 +70,19 @@ export default function JobDetailPage() {
   const keyCollectDone = isKeyCollectComplete(job);
   const keyReturnDone = isKeyReturnComplete(job);
   const inspectionFinished = isInspectionWorkflowFinished(job);
-  const startBlocked = job.keyAccess && !keyCollectDone;
+  const paymentBlocked = Boolean(job.awaitingAgentPayment);
+  const keysBlocked = Boolean(job.keyAccess && !keyCollectDone);
+  const startBlocked = keysBlocked || paymentBlocked;
   const returnPending =
     job.keyAccess && inspectionFinished && !keyReturnDone && job.status !== 'completed';
 
   const handleAccept = () => {
-    acceptJob(id);
-    router.push(workflowHref);
+    void (async () => {
+      const result = await acceptJob(id);
+      // After accept, unpaid Level 1 jobs await agency payment before start.
+      if (result?.awaitingAgentPayment) return;
+      router.push(workflowHref);
+    })();
   };
 
   return (
@@ -89,8 +95,17 @@ export default function JobDetailPage() {
               the {job.type} inspection workflow.
             </p>
             <JobSummaryCard job={job} />
+            {paymentBlocked ? (
+              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                Waiting for the agency to pay the platform fee. You can accept this
+                job, but you cannot start until payment clears.
+              </p>
+            ) : null}
             <div className="space-y-2">
-              <Button className="w-full" onClick={handleAccept}>
+              <Button
+                className="w-full"
+                onClick={handleAccept}
+              >
                 Accept job
               </Button>
               <Button
@@ -172,7 +187,7 @@ export default function JobDetailPage() {
               </Card>
             )}
 
-            {job.status !== 'completed' && (
+            {job.status !== 'completed' && !paymentBlocked && (
               <Card>
                 <CardHeader>
                   <CardTitle>Status</CardTitle>
@@ -192,11 +207,16 @@ export default function JobDetailPage() {
               </Card>
             )}
 
-            {startBlocked && (
+            {paymentBlocked ? (
+              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                Waiting for the agency to pay the platform fee. You cannot start
+                this job until payment clears.
+              </p>
+            ) : keysBlocked ? (
               <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
                 Complete key collection before starting the inspection.
               </p>
-            )}
+            ) : null}
 
             {job.reportDeclineReason && job.status !== 'completed' ? (
               <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -220,17 +240,34 @@ export default function JobDetailPage() {
                 <Button className="w-full">Return keys</Button>
               </Link>
             ) : (
-              <Link href={startBlocked ? jobKeys(job.id, 'collect') : workflowHref}>
+              <Link
+                href={
+                  paymentBlocked
+                    ? jobDetail(job.id)
+                    : keysBlocked
+                      ? jobKeys(job.id, 'collect')
+                      : workflowHref
+                }
+                onClick={(event) => {
+                  if (paymentBlocked) event.preventDefault();
+                }}
+              >
                 <Button
                   className="w-full"
-                  disabled={startBlocked || (!canStartInspection && job.status !== 'accepted')}
+                  disabled={
+                    paymentBlocked ||
+                    startBlocked ||
+                    (!canStartInspection && job.status !== 'accepted')
+                  }
                 >
-                  {workflowStarted ? 'Continue' : 'Start'} inspection
+                  {paymentBlocked
+                    ? 'Waiting for agency payment'
+                    : `${workflowStarted ? 'Continue' : 'Start'} inspection`}
                 </Button>
               </Link>
             )}
 
-            {workflowStarted && job.status !== 'completed' && (
+            {workflowStarted && job.status !== 'completed' && !paymentBlocked && (
               <>
                 <p className="text-muted-foreground text-center text-[10px]">
                   Progress saved — you can continue where you left off.

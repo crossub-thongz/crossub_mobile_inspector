@@ -46,6 +46,7 @@ import {
   sectionsForAvailableArea,
 } from '@/lib/inspection-area-workflow';
 import {
+  useAwaitingAgentPaymentGate,
   useInspectionFinishedGate,
   useInspectionInProgress,
   useKeyCollectGate,
@@ -71,6 +72,7 @@ export default function IngoingInspectionPage() {
   } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
+  const paymentCleared = useAwaitingAgentPaymentGate(job, id);
   const keysCollected = useKeyCollectGate(job, id);
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
@@ -211,6 +213,18 @@ export default function IngoingInspectionPage() {
         state={jobLookupMiss(jobsHydrated)}
         backHref={ROUTES.INSPECTIONS}
       />
+    );
+  }
+
+  // Payment gate redirects to job detail; don't render workflow while unpaid.
+  if (!paymentCleared) {
+    return (
+      <InspectorShell title="Ingoing Inspection" backHref={jobDetail(id)}>
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm text-amber-700 dark:text-amber-300">
+          Waiting for the agency to pay the platform fee before you can start
+          this job.
+        </p>
+      </InspectorShell>
     );
   }
 

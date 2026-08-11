@@ -82,39 +82,60 @@ const POOL_INSPECTION_TYPES = [
 
 async function fetchPoolInspectionsByType(
   type: (typeof POOL_INSPECTION_TYPES)[number],
+  search?: string,
 ): Promise<InspectorInspection[]> {
   const base = process.env.NEXT_PUBLIC_API_URL ?? '/api';
-  const params = new URLSearchParams({
-    page: '1',
-    pageSize: '100',
-    type,
-  });
-  const res = await fetch(`${base}/v1/inspector/inspections/pool?${params}`, {
-    credentials: 'include',
-  });
-  if (!res.ok) {
-    let detail = 'Failed to load job pool';
-    try {
-      const body = (await res.json()) as { message?: string | string[] };
-      const msg = body.message;
-      if (typeof msg === 'string' && msg.trim()) detail = msg;
-      else if (Array.isArray(msg) && msg.length > 0) detail = msg.join(', ');
-    } catch {
-      // Non-JSON error body — keep generic message.
+  const trimmed = search?.trim();
+  const pageSize = 100;
+  const maxPages = 20;
+  const all: InspectorInspection[] = [];
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const params = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+      type,
+    });
+    if (trimmed) params.set('search', trimmed);
+    const res = await fetch(`${base}/v1/inspector/inspections/pool?${params}`, {
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      let detail = 'Failed to load job pool';
+      try {
+        const body = (await res.json()) as { message?: string | string[] };
+        const msg = body.message;
+        if (typeof msg === 'string' && msg.trim()) detail = msg;
+        else if (Array.isArray(msg) && msg.length > 0) detail = msg.join(', ');
+      } catch {
+        // Non-JSON error body — keep generic message.
+      }
+      if (res.status === 403) {
+        detail =
+          'Your account is not linked to an approved inspector roster yet. Complete registration and ask ops to approve it.';
+      } else if (res.status === 401) {
+        detail =
+          'Session expired or invalid — sign out and sign in again with your inspector account.';
+      } else if (res.status === 503) {
+        detail = 'API unavailable — start the backend on port 3001 and try again.';
+      }
+      throw new Error(detail);
     }
-    if (res.status === 403) {
-      detail =
-        'Your account is not linked to an approved inspector roster yet. Complete registration and ask ops to approve it.';
-    } else if (res.status === 401) {
-      detail =
-        'Session expired or invalid — sign out and sign in again with your inspector account.';
-    } else if (res.status === 503) {
-      detail = 'API unavailable — start the backend on port 3001 and try again.';
+    const data = (await res.json()) as {
+      items?: InspectorInspection[];
+      total?: number;
+    };
+    const items = data.items ?? [];
+    all.push(...items);
+    const total = data.total ?? all.length;
+    if (items.length === 0 || all.length >= total || items.length < pageSize) {
+      break;
     }
-    throw new Error(detail);
+    // Property search is already server-filtered — one page is enough when searching.
+    if (trimmed) break;
   }
-  const data = (await res.json()) as { items: InspectorInspection[] };
-  return data.items;
+
+  return all;
 }
 
 function mergePoolInspections(
@@ -127,18 +148,21 @@ function mergePoolInspections(
     }
   }
   return [...byId.values()].sort((a, b) => {
-    if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
     const dateA = a.createdAt ?? a.scheduledDate ?? a.inspectionDate ?? '';
     const dateB = b.createdAt ?? b.scheduledDate ?? b.inspectionDate ?? '';
-    // Newest → oldest
-    return String(dateB).localeCompare(String(dateA));
+    const byCreated = String(dateB).localeCompare(String(dateA));
+    if (byCreated !== 0) return byCreated;
+    if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
+    return 0;
   });
 }
 
 /** Unassigned pool inspections (`GET /api/v1/inspector/inspections/pool`). */
-export async function fetchPoolInspections(): Promise<InspectorInspection[]> {
+export async function fetchPoolInspections(
+  search?: string,
+): Promise<InspectorInspection[]> {
   const batches = await Promise.all(
-    POOL_INSPECTION_TYPES.map((type) => fetchPoolInspectionsByType(type)),
+    POOL_INSPECTION_TYPES.map((type) => fetchPoolInspectionsByType(type, search)),
   );
   return mergePoolInspections(batches);
 }
@@ -250,7 +274,9 @@ export async function claimInspection(
     '/inspector/inspections/{inspectionId}/claim',
     { params: { path: { inspectionId } } },
   );
-  if (error || !data) throw new Error('Failed to claim inspection');
+  if (error || !data) {
+    throw new Error(crossubErrorMessage(error, 'Failed to claim inspection'));
+  }
   return data;
 }
 

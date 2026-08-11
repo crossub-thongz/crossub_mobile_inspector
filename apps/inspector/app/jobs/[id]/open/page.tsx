@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { jobDetail, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import {
+  useAwaitingAgentPaymentGate,
   useInspectionFinishedGate,
   useInspectionInProgress,
   useKeyCollectGate,
@@ -63,6 +64,7 @@ export default function OpenInspectionPage() {
   } = useInspectorData();
   const job = getJob(id);
   const { celebrate, Celebration } = useFinishInspection(id);
+  const paymentCleared = useAwaitingAgentPaymentGate(job, id);
   const keysCollected = useKeyCollectGate(job, id);
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
@@ -205,6 +207,18 @@ export default function OpenInspectionPage() {
     );
   }
 
+  // Payment gate redirects to job detail; don't render workflow while unpaid.
+  if (!paymentCleared) {
+    return (
+      <InspectorShell title="Open inspection" backHref={jobDetail(id)}>
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm text-amber-700 dark:text-amber-300">
+          Waiting for the agency to pay the platform fee before you can start
+          this job.
+        </p>
+      </InspectorShell>
+    );
+  }
+
   // The redirect useKeyCollectGate asks for is asynchronous and can fail; rendering
   // the workflow in the meantime is how a whole field pass gets typed into a screen
   // whose writes the API rejects.
@@ -242,7 +256,12 @@ export default function OpenInspectionPage() {
                   automatically when the window ends.
                 </p>
               ) : null}
-              {viewing?.canStart ? (
+              {viewing?.awaitingAgentPayment ? (
+                <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                  Waiting for the agency to pay the platform fee before you can
+                  start this open inspection.
+                </p>
+              ) : viewing?.canStart ? (
                 <Button
                   type="button"
                   className="w-full"

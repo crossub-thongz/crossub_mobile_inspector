@@ -16,7 +16,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { jobDetail } from '@/constants/routes';
-import { useKeyReturnGate } from '@/hooks/use-key-collect-gate';
+import {
+  useAwaitingAgentPaymentGate,
+  useKeyReturnGate,
+} from '@/hooks/use-key-collect-gate';
 import {
   canAccessKeyReturnTab,
   getKeyWorkflow,
@@ -50,6 +53,7 @@ export default function JobKeysPage() {
     }
   }, [searchParams]);
 
+  const paymentCleared = useAwaitingAgentPaymentGate(job, id);
   const workflow = job ? getKeyWorkflow(job) : undefined;
   const collectDone = job ? isKeyCollectComplete(job) : false;
   const returnDone = job ? isKeyReturnComplete(job) : false;
@@ -87,6 +91,10 @@ export default function JobKeysPage() {
         missingTitle="Key details"
       />
     );
+  }
+
+  if (!paymentCleared) {
+    return null;
   }
 
   if (!job.keyAccess) {
