@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Paperclip, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,6 +22,17 @@ type PendingAttachment = {
   contentBase64: string;
 };
 
+function cleanDisplayName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    const mid = Math.floor(parts.length / 2);
+    const left = parts.slice(0, mid).join(' ');
+    const right = parts.slice(mid).join(' ');
+    if (left.toLowerCase() === right.toLowerCase()) return left;
+  }
+  return name.trim();
+}
+
 export default function MessageThreadPage() {
   const { id } = useParams<{ id: string }>();
   const { messages, getThreadMessages, sendMessage } = useInspectorData();
@@ -30,6 +41,13 @@ export default function MessageThreadPage() {
   const [draft, setDraft] = useState('');
   const [pendingFiles, setPendingFiles] = useState<PendingAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [threadMessages.length, pendingFiles.length]);
 
   if (!thread) {
     return (
@@ -80,98 +98,107 @@ export default function MessageThreadPage() {
 
   return (
     <InspectorShell title={thread.subject} backHref={ROUTES.MESSAGES}>
-      <div className="flex flex-col gap-4">
+      <div className="flex min-h-0 flex-1 flex-col">
         {(thread.propertyAddress || thread.inspectionTrackingNumber) && (
-          <p className="text-muted-foreground text-xs">
+          <p className="text-muted-foreground shrink-0 pb-2 text-xs">
             {[thread.propertyAddress, thread.inspectionTrackingNumber]
               .filter(Boolean)
               .join(' · ')}
           </p>
         )}
 
-        <div className="space-y-3">
-          {threadMessages.map((msg) => {
-            // Real threads carry server-resolved `fromSelf`; demo threads fall back to the
-            // mock inspector's display name.
-            const isSelf = msg.fromSelf ?? msg.from === 'Alex Chen';
-            return (
-              <div
-                key={msg.id}
-                className={`rounded-xl border p-3 text-sm ${
-                  isSelf
-                    ? 'border-primary/30 bg-primary/5 ml-4'
-                    : 'border-border bg-card mr-4'
-                }`}
-              >
-                <p className="text-muted-foreground mb-1 text-[10px] font-medium">
-                  {msg.from} · {formatDateTime(msg.at)}
-                </p>
-                <p>{msg.body}</p>
-                {msg.attachments?.map((a) => (
-                  <a
-                    key={`${a.url}-${a.name}`}
-                    href={a.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-primary mt-2 block text-xs underline"
-                  >
-                    {a.name}
-                  </a>
-                ))}
-              </div>
-            );
-          })}
+        <div
+          ref={scrollerRef}
+          className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-3"
+        >
+          {threadMessages.length === 0 ? (
+            <p className="text-muted-foreground py-8 text-center text-sm">
+              No messages yet — say hello below.
+            </p>
+          ) : (
+            threadMessages.map((msg) => {
+              const isSelf = msg.fromSelf ?? msg.from === 'Alex Chen';
+              return (
+                <div
+                  key={msg.id}
+                  className={`rounded-xl border p-3 text-sm ${
+                    isSelf
+                      ? 'border-primary/30 bg-primary/5 ml-4'
+                      : 'border-border bg-card mr-4'
+                  }`}
+                >
+                  <p className="text-muted-foreground mb-1 text-[10px] font-medium">
+                    {cleanDisplayName(msg.from)} · {formatDateTime(msg.at)}
+                  </p>
+                  <p>{msg.body}</p>
+                  {msg.attachments?.map((a) => (
+                    <a
+                      key={`${a.url}-${a.name}`}
+                      href={a.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary mt-2 block text-xs underline"
+                    >
+                      {a.name}
+                    </a>
+                  ))}
+                </div>
+              );
+            })
+          )}
         </div>
 
-        {pendingFiles.length > 0 ? (
-          <ul className="flex flex-wrap gap-2">
-            {pendingFiles.map((file, index) => (
-              <li
-                key={`${file.fileName}-${index}`}
-                className="bg-muted/50 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px]"
-              >
-                <Paperclip className="size-3" />
-                <span className="max-w-[140px] truncate">{file.fileName}</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPendingFiles((prev) => prev.filter((_, i) => i !== index))
-                  }
-                  aria-label={`Remove ${file.fileName}`}
+        <div className="shrink-0 border-t border-border bg-background pt-3 pb-[env(safe-area-inset-bottom,0px)]">
+          {pendingFiles.length > 0 ? (
+            <ul className="mb-2 flex flex-wrap gap-2">
+              {pendingFiles.map((file, index) => (
+                <li
+                  key={`${file.fileName}-${index}`}
+                  className="bg-muted/50 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px]"
                 >
-                  <X className="size-3" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+                  <Paperclip className="size-3" />
+                  <span className="max-w-[140px] truncate">{file.fileName}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPendingFiles((prev) => prev.filter((_, i) => i !== index))
+                    }
+                    aria-label={`Remove ${file.fileName}`}
+                  >
+                    <X className="size-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
-        <div className="flex gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            multiple
-            accept="image/*,video/*,.pdf,.doc,.docx,.txt,.csv"
-            onChange={(e) => void handlePickFiles(e.target.files)}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={pendingFiles.length >= MAX_ATTACHMENTS}
-            aria-label="Attach file"
-          >
-            <Paperclip className="size-4" />
-          </Button>
-          <Input
-            placeholder="Type a message..."
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          />
-          <Button onClick={handleSend}>Send</Button>
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              accept="image/*,video/*,.pdf,.doc,.docx,.txt,.csv"
+              onChange={(e) => void handlePickFiles(e.target.files)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={pendingFiles.length >= MAX_ATTACHMENTS}
+              aria-label="Attach file"
+            >
+              <Paperclip className="size-4" />
+            </Button>
+            <Input
+              placeholder="Type a message..."
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            />
+            <Button onClick={handleSend}>Send</Button>
+          </div>
         </div>
       </div>
     </InspectorShell>

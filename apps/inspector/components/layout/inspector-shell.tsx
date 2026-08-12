@@ -95,7 +95,9 @@ export function InspectorShell({
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
   const { notifications, messages, poolJobs, todaysJobs } = useInspectorData();
-  const showAvailabilityBubble = Boolean(user) && !isPublicRoute(pathname);
+  const isMessageThread = /^\/messages\/[^/]+\/?$/.test(pathname);
+  const showAvailabilityBubble =
+    Boolean(user) && !isPublicRoute(pathname) && !isMessageThread;
   const hardLeaveFromWorkflow = isInspectionWorkflowPath(pathname);
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const unreadMessages = messages.reduce((s, m) => s + m.unread, 0);
@@ -129,7 +131,12 @@ export function InspectorShell({
   const isHome = variant === 'home';
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col bg-background">
+    <div
+      className={cn(
+        'mx-auto flex max-w-lg flex-col bg-background',
+        isMessageThread ? 'h-dvh overflow-hidden' : 'min-h-screen',
+      )}
+    >
       {!bare && (
       <header
         ref={headerRef}
@@ -305,17 +312,25 @@ export function InspectorShell({
       <main
         className={cn(
           'flex-1 px-4',
-          // Messages + Receiving FABs float over the last ~200px above the nav.
-          showAvailabilityBubble ? 'pb-52' : 'pb-24',
+          isMessageThread
+            ? 'flex min-h-0 flex-col pb-20'
+            : // Messages + Receiving FABs float over the last ~200px above the nav.
+              showAvailabilityBubble
+              ? 'pb-52'
+              : 'pb-24',
         )}
         style={bare ? { paddingTop: 8 } : { paddingTop: headerHeight }}
       >
-        {user && !bare && (
+        {user && !bare && !isMessageThread && (
           <div className="mb-2">
             <ConnectionBanner />
           </div>
         )}
-        {children}
+        {isMessageThread ? (
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+        ) : (
+          children
+        )}
       </main>
 
       <nav className="fixed bottom-0 left-1/2 z-[60] w-full max-w-lg -translate-x-1/2 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
