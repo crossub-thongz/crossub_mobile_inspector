@@ -467,6 +467,12 @@ function toThreadMessage(
     body: m.body,
     at: m.at,
     fromSelf: m.fromSelf,
+    attachments: (m.attachments ?? []).map((a) => ({
+      name: a.fileName,
+      url: a.url,
+      mimeType: a.mimeType,
+      sizeBytes: a.sizeBytes,
+    })),
   };
 }
 
@@ -482,6 +488,9 @@ export function toMessageThread(dto: InspectorMessageThread): MessageThread {
     // A thread tagged to an inspection is an inspection conversation; a general enquiry
     // (no inspectionId) is grouped with the staff/agent bucket.
     category: asString(dto.inspectionId) ? 'inspection' : 'agent',
+    inspectionId: dto.inspectionId,
+    inspectionTrackingNumber: dto.inspectionTrackingNumber,
+    propertyAddress: dto.propertyAddress,
   };
 }
 

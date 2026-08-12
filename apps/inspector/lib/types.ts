@@ -232,6 +232,10 @@ export interface MessageThread {
   lastAt: string;
   unread: number;
   category: 'agent' | 'leasing' | 'inspection' | 'maintenance';
+  /** Linked inspection when the thread is case-scoped. */
+  inspectionId?: string | null;
+  inspectionTrackingNumber?: string | null;
+  propertyAddress?: string | null;
 }
 
 export interface ThreadMessage {
@@ -239,7 +243,7 @@ export interface ThreadMessage {
   from: string;
   body: string;
   at: string;
-  attachments?: { name: string; url: string }[];
+  attachments?: { name: string; url: string; mimeType?: string; sizeBytes?: number }[];
   /** True when the signed-in inspector sent it (server-resolved; absent for demo data). */
   fromSelf?: boolean;
 }

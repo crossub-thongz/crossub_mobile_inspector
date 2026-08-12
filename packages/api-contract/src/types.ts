@@ -5936,6 +5936,12 @@ export interface components {
              * @enum {string}
              */
             channel: "APP" | "EMAIL" | "VOICE" | "INTERNAL_NOTE" | "PUSH";
+            attachments?: {
+                fileName: string;
+                mimeType: string;
+                sizeBytes: number;
+                url: string;
+            }[];
         };
         InspectorMessageThreadResponseDto: {
             /** Format: uuid */
@@ -5979,10 +5985,22 @@ export interface components {
              * @description An assigned inspection the thread is about. Omit for a general enquiry.
              */
             inspectionId?: string;
+            attachments?: {
+                fileName: string;
+                mimeType: string;
+                sizeBytes: number;
+                contentBase64: string;
+            }[];
         };
         SendInspectorMessageDto: {
             /** @example Thanks — I will attend Friday morning. */
             body: string;
+            attachments?: {
+                fileName: string;
+                mimeType: string;
+                sizeBytes: number;
+                contentBase64: string;
+            }[];
         };
         InspectorNotificationResponseDto: {
             /** Format: uuid */

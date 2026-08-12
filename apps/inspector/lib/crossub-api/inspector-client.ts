@@ -569,14 +569,28 @@ export async function fetchInspectorMessages(): Promise<InspectorMessageThread[]
   return data;
 }
 
+export type CreateInspectorMessageThread =
+  components['schemas']['CreateInspectorMessageThreadDto'];
+export type SendInspectorMessage =
+  components['schemas']['SendInspectorMessageDto'];
+
+/** Open a new thread (`POST /api/v1/inspector/messages`). */
+export async function createInspectorMessage(
+  body: CreateInspectorMessageThread,
+): Promise<InspectorMessageThread> {
+  const { data, error } = await crossub.POST('/inspector/messages', { body });
+  if (error || !data) throw new Error('Failed to create message thread');
+  return data;
+}
+
 /** Reply to a thread (`POST /api/v1/inspector/messages/{threadId}/reply`). */
 export async function replyInspectorMessage(
   threadId: string,
-  body: string,
+  body: SendInspectorMessage,
 ): Promise<InspectorMessageThread> {
   const { data, error } = await crossub.POST(
     '/inspector/messages/{threadId}/reply',
-    { params: { path: { threadId } }, body: { body } },
+    { params: { path: { threadId } }, body },
   );
   if (error || !data) throw new Error('Failed to send message');
   return data;

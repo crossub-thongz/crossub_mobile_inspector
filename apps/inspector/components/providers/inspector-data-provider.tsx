@@ -22,6 +22,7 @@ import {
   acceptInspection as apiAcceptInspection,
   claimInspection as apiClaimInspection,
   completeInspection as apiCompleteInspection,
+  createInspectorMessage,
   declineInspection as apiDeclineInspection,
   fetchInspectionDetail,
   fetchInspections,
@@ -262,7 +263,27 @@ interface InspectorDataContextValue {
   ) => void;
   recordTribunalOutcome: (id: string, outcome: TribunalOutcome) => void;
   markNotificationRead: (id: string) => void;
-  sendMessage: (threadId: string, body: string) => void;
+  sendMessage: (
+    threadId: string,
+    body: string,
+    attachments?: Array<{
+      fileName: string;
+      mimeType: string;
+      sizeBytes: number;
+      contentBase64: string;
+    }>,
+  ) => void;
+  createMessageThread: (input: {
+    subject: string;
+    body: string;
+    inspectionId?: string;
+    attachments?: Array<{
+      fileName: string;
+      mimeType: string;
+      sizeBytes: number;
+      contentBase64: string;
+    }>;
+  }) => Promise<string | null>;
 }
 
 const InspectorDataContext = createContext<InspectorDataContextValue | null>(
@@ -1515,13 +1536,28 @@ export function InspectorDataProvider({
   );
 
   const sendMessage = useCallback(
-    (threadId: string, body: string) => {
+    (
+      threadId: string,
+      body: string,
+      attachments?: Array<{
+        fileName: string;
+        mimeType: string;
+        sizeBytes: number;
+        contentBase64: string;
+      }>,
+    ) => {
       const msg: ThreadMessage = {
         id: `tm-${Date.now()}`,
-        from: 'Alex Chen',
-        body,
+        from: 'You',
+        body: body.trim() || (attachments?.[0]?.fileName ?? 'Attachment'),
         at: new Date().toISOString(),
         fromSelf: true,
+        attachments: attachments?.map((a) => ({
+          name: a.fileName,
+          url: '#',
+          mimeType: a.mimeType,
+          sizeBytes: a.sizeBytes,
+        })),
       };
       // Optimistic append on both paths.
       setThreadMessages((prev) => ({
@@ -1531,16 +1567,53 @@ export function InspectorDataProvider({
       setMessages((prev) =>
         prev.map((m) =>
           m.id === threadId
-            ? { ...m, lastMessage: body, lastAt: msg.at, unread: 0 }
+            ? { ...m, lastMessage: msg.body, lastAt: msg.at, unread: 0 }
             : m,
         ),
       );
       // For an API-backed thread, post the real reply then reconcile from the server; an
       // error leaves the optimistic message in place (graceful, like the other writes).
       if (apiThreadIds.current.has(threadId) && apiConnected) {
-        void replyInspectorMessage(threadId, body)
+        void replyInspectorMessage(threadId, {
+          body: body.trim() || ' ',
+          attachments,
+        })
           .then(() => refresh())
           .catch(() => undefined);
+      }
+    },
+    [apiConnected, refresh],
+  );
+
+  const createMessageThread = useCallback(
+    async (input: {
+      subject: string;
+      body: string;
+      inspectionId?: string;
+      attachments?: Array<{
+        fileName: string;
+        mimeType: string;
+        sizeBytes: number;
+        contentBase64: string;
+      }>;
+    }): Promise<string | null> => {
+      if (!apiConnected) {
+        toast.error('Connect to the API to start a new conversation');
+        return null;
+      }
+      try {
+        const thread = await createInspectorMessage({
+          subject: input.subject,
+          body: input.body.trim() || (input.attachments?.[0]?.fileName ?? 'Attachment'),
+          inspectionId: input.inspectionId,
+          attachments: input.attachments,
+        });
+        apiThreadIds.current.add(thread.id);
+        await refresh();
+        return thread.id;
+      } catch {
+        toast.error("Couldn't start the conversation");
+        return null;
       }
     },
     [apiConnected, refresh],
@@ -1842,6 +1915,7 @@ export function InspectorDataProvider({
     recordTribunalOutcome,
     markNotificationRead,
     sendMessage,
+    createMessageThread,
   };
 
   return (
