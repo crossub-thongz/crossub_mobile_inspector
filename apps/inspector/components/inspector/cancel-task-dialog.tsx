@@ -35,9 +35,9 @@ export function CancelTaskDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-4 sm:items-center">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-center">
       <div
-        className="border-border bg-card w-full max-w-md rounded-2xl border p-4 shadow-xl"
+        className="border-border bg-card max-h-[min(85dvh,40rem)] w-full max-w-md overflow-y-auto rounded-2xl border p-4 shadow-xl"
         role="dialog"
         aria-labelledby="cancel-task-title"
       >
