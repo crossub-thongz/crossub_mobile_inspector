@@ -16,7 +16,7 @@ import { jobDetail, jobHistory } from '@/constants/routes';
 import { formatJobRefId } from '@/lib/job-cancellation';
 import { isPoolJob } from '@/lib/inspector-job-filters';
 import type { InspectionJob } from '@/lib/types';
-import { formatDateSlash, formatTime } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 
 export function JobCard({
   job,
@@ -70,7 +70,7 @@ export function JobCard({
       </p>
       <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
         <Clock className="size-3 shrink-0" />
-        {formatDateSlash(job.scheduledDate || job.scheduledTime)} ·{' '}
+        {formatDate(job.scheduledDate || job.scheduledTime)},{' '}
         {formatTime(job.scheduledTime)}
       </p>
 

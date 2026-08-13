@@ -8,7 +8,7 @@ import { JobTypeBadge } from '@/components/inspector/status-badge';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { formatJobRefId } from '@/lib/job-cancellation';
 import type { InspectionJob } from '@/lib/types';
-import { formatDateSlash, formatTime } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 
 export function JobSummaryCard({
   job,
@@ -35,9 +35,9 @@ export function JobSummaryCard({
         </p>
         <p className="text-foreground mt-0.5 flex items-center gap-1.5 text-sm font-medium">
           <Calendar className="text-primary size-3.5 shrink-0" />
-          {formatDateSlash(job.scheduledDate || job.scheduledTime)}
+          {formatDate(job.scheduledDate || job.scheduledTime)}
           <span className="text-muted-foreground font-normal">
-            · {formatTime(job.scheduledTime)}
+            , {formatTime(job.scheduledTime)}
           </span>
         </p>
       </div>

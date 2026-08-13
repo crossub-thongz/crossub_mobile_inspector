@@ -8,7 +8,7 @@ import { jobDetail, jobHistory, jobWorkflow } from '@/constants/routes';
 import { buildMapUrl } from '@/lib/navigation';
 import { formatJobRefId } from '@/lib/job-cancellation';
 import type { InspectionJob } from '@/lib/types';
-import { buildGoogleCalendarUrl, formatDateSlash } from '@/lib/utils';
+import { buildGoogleCalendarUrl, formatDate } from '@/lib/utils';
 
 export function InspectionListCard({
   job,
@@ -47,7 +47,7 @@ export function InspectionListCard({
 
       <p className="text-muted-foreground mt-2 flex items-center gap-1.5 text-xs">
         <Calendar className="text-primary size-3.5 shrink-0" />
-        {formatDateSlash(job.scheduledDate || job.scheduledTime)}
+        {formatDate(job.scheduledDate || job.scheduledTime)}
       </p>
 
       {!completed && paymentBlocked ? (

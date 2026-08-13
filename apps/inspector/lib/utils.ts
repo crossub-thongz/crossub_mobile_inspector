@@ -1,6 +1,26 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+import {
+  dayKey,
+  formatDate,
+  formatDateMedium,
+  formatDateTime,
+  formatDateTimeMedium,
+  formatTime,
+  formatTimeShort,
+} from '@/lib/format-datetime';
+
+export {
+  dayKey,
+  formatDate,
+  formatDateMedium,
+  formatDateTime,
+  formatDateTimeMedium,
+  formatTime,
+  formatTimeShort,
+};
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -14,27 +34,10 @@ export function displayName(user: {
   return name || user.email;
 }
 
-export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-AU', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-AU', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-/** dd/mm/yyyy — matches field app reference layouts */
+/** dd/mm/yyyy — form / calendar input layouts only (not general UI display). */
 export function formatDateSlash(iso: string): string {
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   return `${dd}/${mm}/${d.getFullYear()}`;
@@ -58,13 +61,6 @@ export function buildGoogleCalendarUrl(
     location,
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
-}
-
-export function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-AU', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
 }
 
 export function formatRelative(iso: string): string {

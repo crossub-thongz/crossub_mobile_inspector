@@ -14,14 +14,20 @@ import type {
  * how that bug gets reintroduced.
  */
 
-/** `9:00 am` — Sydney, always. */
+function lowerMeridiem(value: string): string {
+  return value.replace(/\b(am|pm)\b/gi, (m) => m.toLowerCase());
+}
+
+/** `9:00 am` — Sydney, always (CROSSUB en-AU time). */
 export function formatOpenTime(iso: string): string {
-  return new Intl.DateTimeFormat('en-AU', {
-    timeZone: OPEN_BATCH_TIMEZONE,
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  }).format(new Date(iso));
+  return lowerMeridiem(
+    new Intl.DateTimeFormat('en-AU', {
+      timeZone: OPEN_BATCH_TIMEZONE,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(new Date(iso)),
+  );
 }
 
 /** `Sat 15 Aug` — Sydney, always. */
@@ -36,15 +42,17 @@ export function formatOpenDate(iso: string): string {
 
 /** `Wed 12 Aug, 12:00 pm` — for the cutoff lines. */
 export function formatOpenDeadline(iso: string): string {
-  return new Intl.DateTimeFormat('en-AU', {
-    timeZone: OPEN_BATCH_TIMEZONE,
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  }).format(new Date(iso));
+  return lowerMeridiem(
+    new Intl.DateTimeFormat('en-AU', {
+      timeZone: OPEN_BATCH_TIMEZONE,
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(new Date(iso)),
+  );
 }
 
 /**
