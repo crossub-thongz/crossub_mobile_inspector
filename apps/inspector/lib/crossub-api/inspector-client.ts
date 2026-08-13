@@ -42,6 +42,13 @@ export type SubmitInspectorRegistration =
 /** One area of a findings submission (the screens build these from their entries). */
 export type InspectorFindingAreaPayload =
   SaveInspectorFindings['areas'][number];
+// Weekly OPEN batch — the pool screen, the routed plan, and one edited time.
+export type OpenBatchOverview = components['schemas']['OpenBatchOverviewDto'];
+export type OpenBatchPoolItem = components['schemas']['OpenBatchPoolItemDto'];
+export type OpenBatchPlan = components['schemas']['OpenBatchPlanDto'];
+export type OpenBatchPlannedStop = components['schemas']['OpenBatchPlannedStopDto'];
+export type OpenBatchTimeOverride =
+  components['schemas']['OpenBatchTimeOverrideDto'];
 
 function crossubErrorMessage(error: unknown, fallback: string): string {
   if (!error || typeof error !== 'object') return fallback;
@@ -264,6 +271,87 @@ export async function saveInspectorTimetable(
     method: 'PATCH',
     body: JSON.stringify({ from, to, entries }),
   });
+}
+
+// ------------------------- Weekly OPEN batch (Miara's flow) -------------------------
+//
+// Opens are NOT claimed one at a time like the other types. The whole point of the weekly
+// batch is that the inspector picks a SET of properties, the API routes them together, and
+// only then does a time exist for any of them — claiming three opens individually would
+// compute three routes of one stop each and suggest the same 9:00am start for all three.
+//
+// Every date on these payloads is an ISO instant and must be rendered in Australia/Sydney.
+// The handset is often on GMT+8, where a zone-less formatter is silently two hours out in
+// a way that still looks like a plausible open time.
+
+/** The OPEN TASK POOL for the Saturday currently being planned. */
+export async function fetchOpenBatch(): Promise<OpenBatchOverview> {
+  const { data, error } = await crossub.GET('/inspector/inspections/open-batch');
+  if (error || !data) {
+    throw new Error(crossubErrorMessage(error, 'Could not load the open task pool.'));
+  }
+  return data;
+}
+
+/**
+ * The routed Saturday awaiting confirmation, or null when nothing is selected.
+ *
+ * The API returns the PERSISTED plan rather than re-planning on read, so the times shown
+ * here are exactly the ones a confirm will write.
+ */
+export async function fetchOpenBatchPlan(): Promise<OpenBatchPlan | null> {
+  const { data, error } = await crossub.GET('/inspector/inspections/open-batch/plan');
+  if (error) {
+    throw new Error(crossubErrorMessage(error, 'Could not load your open plan.'));
+  }
+  return data ?? null;
+}
+
+/** Submit the selection and get the routed day back (steps 3 + 4). */
+export async function selectOpenBatch(
+  inspectionIds: string[],
+): Promise<OpenBatchPlan> {
+  const { data, error } = await crossub.POST('/inspector/inspections/open-batch/select', {
+    body: { inspectionIds },
+  });
+  if (error || !data) {
+    throw new Error(crossubErrorMessage(error, 'Could not submit your selection.'));
+  }
+  return data;
+}
+
+/**
+ * Confirm the suggested times — or edit them and confirm (step 6).
+ *
+ * Pass only the stops being moved; anything not listed keeps its suggestion. On success
+ * the agent is emailed the confirmed time, which is the first and only moment in this
+ * flow that they hear one.
+ */
+export async function confirmOpenBatch(
+  overrides?: OpenBatchTimeOverride[],
+): Promise<OpenBatchPlan> {
+  const { data, error } = await crossub.POST(
+    '/inspector/inspections/open-batch/confirm',
+    { body: overrides?.length ? { overrides } : {} },
+  );
+  if (error || !data) {
+    throw new Error(crossubErrorMessage(error, 'Could not confirm your open times.'));
+  }
+  return data;
+}
+
+/** Hand selected opens back to the pool and re-plan what is left. */
+export async function releaseOpenBatch(
+  inspectionIds: string[],
+): Promise<OpenBatchPlan | null> {
+  const { data, error } = await crossub.POST(
+    '/inspector/inspections/open-batch/release',
+    { body: { inspectionIds } },
+  );
+  if (error) {
+    throw new Error(crossubErrorMessage(error, 'Could not release those opens.'));
+  }
+  return data ?? null;
 }
 
 /** Claim a pool inspection (`POST /api/v1/inspector/inspections/{inspectionId}/claim`). */

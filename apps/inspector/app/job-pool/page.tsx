@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Briefcase, Search } from 'lucide-react';
+import Link from 'next/link';
+import { Briefcase, ChevronRight, Route, Search } from 'lucide-react';
 
 import { EmptyState } from '@/components/inspector/empty-state';
 import {
@@ -17,6 +18,7 @@ import {
   INSPECTION_TYPE_LABEL,
   type CoreInspectionType,
 } from '@/constants/inspection';
+import { ROUTES } from '@/constants/routes';
 import { fetchPoolInspections } from '@/lib/crossub-api/inspector-client';
 import { mapPoolInspections } from '@/lib/crossub-api/inspector-mappers';
 import type { InspectionJob } from '@/lib/types';
@@ -134,6 +136,29 @@ export default function JobPoolPage() {
           />
           <Search className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
         </div>
+
+        {/*
+          Opens do not live in this list any more, and saying so is the point. They are
+          picked as a set on Wednesday afternoon and routed together — an inspector who
+          came here looking for Saturday work needs to be sent somewhere, not left to
+          conclude the opens have dried up.
+        */}
+        <Link
+          href={ROUTES.OPEN_BATCH}
+          className="border-border bg-card hover:border-primary/40 flex items-center gap-3 rounded-xl border p-3 transition-colors"
+        >
+          <div className="bg-secondary text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
+            <Route className="size-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Open task pool</p>
+            <p className="text-muted-foreground text-[11px]">
+              Saturday opens are picked as a set — select yours and the route sets the
+              times.
+            </p>
+          </div>
+          <ChevronRight className="text-muted-foreground size-4 shrink-0" />
+        </Link>
 
         <JobPoolTypeTags active={filter} onChange={setFilter} counts={counts} />
 

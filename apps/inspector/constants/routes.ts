@@ -1,6 +1,15 @@
 export const ROUTES = {
   DASHBOARD: '/dashboard',
   JOB_POOL: '/job-pool',
+  /**
+   * The weekly OPEN batch — deliberately its own screen, not a filter on JOB_POOL.
+   *
+   * Opens are not claimed one at a time like ingoings and routines. They are selected as a
+   * SET on Wednesday afternoon and routed together, so the screen has to submit a
+   * selection and then confirm times — a different interaction from a list of claim
+   * buttons, and one that would not survive being bolted onto the type tabs.
+   */
+  OPEN_BATCH: '/open-batch',
   INSPECTIONS: '/inspections',
   HISTORY: '/history',
   /** @deprecated Use INSPECTIONS — kept for deep links */

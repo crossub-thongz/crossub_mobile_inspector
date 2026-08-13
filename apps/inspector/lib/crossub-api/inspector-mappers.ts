@@ -467,12 +467,18 @@ function toThreadMessage(
     body: m.body,
     at: m.at,
     fromSelf: m.fromSelf,
-    attachments: (m.attachments ?? []).map((a) => ({
-      name: a.fileName,
-      url: a.url,
-      mimeType: a.mimeType,
-      sizeBytes: a.sizeBytes,
-    })),
+    // `fileName` and `url` are optional on the contract, so an attachment can arrive with
+    // neither. Dropping those rather than rendering a nameless link to nowhere: a chip
+    // labelled "undefined" that 404s is worse than an attachment the message does not
+    // mention. Defaults cover the name-only and url-only cases.
+    attachments: (m.attachments ?? [])
+      .filter((a) => a.fileName || a.url)
+      .map((a) => ({
+        name: a.fileName ?? 'Attachment',
+        url: a.url ?? '',
+        mimeType: a.mimeType,
+        sizeBytes: a.sizeBytes,
+      })),
   };
 }
 

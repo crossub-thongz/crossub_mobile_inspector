@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-08-13
+
+### Added
+- **An Open Task Pool screen — Saturday opens are picked as a set, and the route decides the times.** Follows Miara Li's 13 Aug spec, built against the new `/api/v1/inspector/inspections/open-batch{,/plan,/select,/confirm,/release}` endpoints. Opens do **not** work like the other inspection types, and the old screen was the reason: `POST /{inspectionId}/claim` takes one job at a time, and three opens claimed individually are three routes of one stop each — so the "best" suggested time for every one of them is 9:00am, at three properties that may be forty minutes apart. The new screen submits the whole selection in one call; the API routes the set together and returns a sequenced day with per-stop travel allowances, and the inspector confirms it or nudges a slot and confirms. **Confirming is the moment the agent is emailed the time** — nothing earlier in the flow tells them anything — so it is also the last point at which a mistake is cheap, and the screen shows the full drive before that button rather than after.
+- **The plan shows how much of itself was measured.** Each stop carries a `basis`: geocoded stops show a real distance, stops placed by their suburb's geocoded siblings show "Placed by suburb — travel time is an estimate" and no kilometre figure, and stops with nothing to place them on say "No map position — check the drive yourself". Most production properties have no coordinates (the legacy import never geocoded), so this is the common case, not an edge one — and a travel allowance an inspector reads as measured when it is really a floor is one they will leave too late for. The day's total distance is hidden entirely unless at least one leg was real.
+- **Selection is closed until Wednesday noon, but the list is not hidden.** Before the cutoff the screen renders the batch with a banner saying when picking opens; after 5pm Wednesday it says the batch is late and the office is assigning what is left, and still accepts a confirmation. Showing a greyed-out list with no explanation was the alternative, and an inspector who can see Saturday filling up plans their week around it.
+- **Overflow is surfaced, never swallowed.** Picking more than a day holds returns the excess to the pool; the screen toasts which addresses went back. A silently dropped selection is a property nobody covers on Saturday.
+- Reachable from **More → Open task pool** and from a banner at the top of the Job Pool, which no longer carries Saturday opens. A screen reachable only by typing a URL is indistinguishable from a feature that was never built.
+
+### Fixed
+- **The open-time editor no longer sends a time hours away from the one on screen.** Every instant in this flow is a Sydney wall-clock time, and the handsets are frequently on GMT+8. `toISOString().slice(0, 16)` is the obvious way to fill a `datetime-local` and it yields UTC, so the field would have opened showing a time ten hours from the row above it; `new Date(value)` on the way back anchors the typed digits to the handset's zone, so an inspector typing 2:00pm would have sent 4:00pm Sydney — and the API would have accepted it, because 4:00pm is a perfectly legal time on that Saturday. `toSydneyInputValue`/`fromSydneyInputValue` read and rebuild the parts in `Australia/Sydney` explicitly, and every other formatter on the screen goes through the same module rather than `toLocaleTimeString`.
+- **A message attachment with no filename no longer breaks the type-check, and no longer renders as a dead link.** Re-syncing the vendored contract (which was many revisions behind `crossub_web`) surfaced that `fileName` and `url` on a thread attachment are both optional; `toThreadMessage` mapped them straight onto a `ThreadMessage` requiring both. Attachments carrying neither are now dropped rather than rendered as a chip labelled `undefined` pointing at nothing, and the name-only / url-only cases fall back instead of failing.
+
+### Changed
+- Vendored `@crossub-thongz/api-contract` re-synced from `crossub_web` and rebuilt.
+
 ## 2026-08-11
 
 ### Fixed

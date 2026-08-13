@@ -32,6 +32,10 @@ const PRIMARY_NAV = [
 ] as const;
 
 const MORE_NAV = [
+  // The bottom bar is full at four, so the weekly open batch lives here — and the Job Pool
+  // screen carries a banner into it, because a screen reachable only by typing a URL is
+  // indistinguishable from a feature that was never built.
+  { href: ROUTES.OPEN_BATCH, label: 'Open task pool' },
   { href: ROUTES.HISTORY, label: 'Job history' },
   { href: ROUTES.WEEKLY_AVAILABILITY, label: 'Availability calendar' },
   { href: ROUTES.KEY_MANAGEMENT, label: 'Key management' },
