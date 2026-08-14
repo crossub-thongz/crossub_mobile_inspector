@@ -8,6 +8,8 @@ export interface AuthUser {
   profileCompleted: boolean;
   systemAccessAgreementRequired?: boolean;
   systemAccessAccepted?: boolean;
+  /** True when role SaA or INSPECTOR portal clickwrap is on file. */
+  inspectorPortalAgreementAccepted?: boolean;
   systemAccessAcceptedAt?: string | null;
   systemAccessAgreementVersion?: string | null;
   firstName?: string | null;

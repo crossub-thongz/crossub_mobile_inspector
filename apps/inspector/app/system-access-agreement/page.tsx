@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { ROUTES } from '@/constants/routes';
 import { ApiError, api } from '@/lib/api';
 import {
+  INSPECTOR_SAA_PORTAL_QUERY,
   needsSystemAccessAgreement,
   type SystemAccessAgreementView,
 } from '@/lib/system-access-agreement';
@@ -51,7 +52,9 @@ export default function SystemAccessAgreementPage() {
 
     void (async () => {
       try {
-        const data = await api.get<SystemAccessAgreementView>('/auth/system-access-agreement');
+        const data = await api.get<SystemAccessAgreementView>(
+          `/auth/system-access-agreement?${INSPECTOR_SAA_PORTAL_QUERY}`,
+        );
         setAgreement(data);
       } catch {
         toast.error('Unable to load the system access agreement.');
@@ -76,6 +79,7 @@ export default function SystemAccessAgreementPage() {
       await api.post('/auth/system-access-agreement/accept', {
         signerName: signerName.trim(),
         agreed: true,
+        portal: 'inspector',
       });
       await api.post('/auth/refresh');
       await refresh();
@@ -131,7 +135,7 @@ export default function SystemAccessAgreementPage() {
                   Version {agreement.version} · {agreement.fileName}
                 </p>
                 <a
-                  href="/api/auth/system-access-agreement/document"
+                  href={`/api/auth/system-access-agreement/document?${INSPECTOR_SAA_PORTAL_QUERY}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-3 inline-flex text-sm font-medium text-primary hover:underline"

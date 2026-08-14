@@ -6,17 +6,26 @@ export interface SystemAccessAgreementView {
   documentPath: string;
 }
 
+/** Always request the INSPECTOR clickwrap (name-only) from this app. */
+export const INSPECTOR_SAA_PORTAL_QUERY = 'portal=inspector';
+
 export function needsSystemAccessAgreement(user: {
   systemAccessAgreementRequired?: boolean;
   systemAccessAccepted?: boolean;
+  inspectorPortalAgreementAccepted?: boolean;
 }): boolean {
-  return Boolean(user.systemAccessAgreementRequired && !user.systemAccessAccepted);
+  if (!user.systemAccessAgreementRequired) return false;
+  // Prefer the inspector-specific claim (covers dual-hat staff who signed name-only).
+  if (user.inspectorPortalAgreementAccepted) return false;
+  if (user.systemAccessAccepted) return false;
+  return true;
 }
 
 export function postAuthDestination(
   user: {
     systemAccessAgreementRequired?: boolean;
     systemAccessAccepted?: boolean;
+    inspectorPortalAgreementAccepted?: boolean;
   },
   defaultRoute: string,
   agreementRoute: string,
@@ -29,6 +38,7 @@ export function postRegistrationDestination(
   user: {
     systemAccessAgreementRequired?: boolean;
     systemAccessAccepted?: boolean;
+    inspectorPortalAgreementAccepted?: boolean;
   },
   dashboardRoute: string,
   agreementRoute: string,

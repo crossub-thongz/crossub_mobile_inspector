@@ -2,12 +2,25 @@ import { ROUTES } from '@/constants/routes';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
+function formatApiErrorMessage(status: number, body: unknown): string {
+  if (body && typeof body === 'object' && 'message' in body) {
+    const message = (body as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+    if (Array.isArray(message)) {
+      const joined = message.filter((part) => typeof part === 'string').join(', ');
+      if (joined) return joined;
+    }
+  }
+  if (typeof body === 'string' && body.trim()) return body;
+  return `API ${status}`;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
     public body: unknown,
   ) {
-    super(`API ${status}`);
+    super(formatApiErrorMessage(status, body));
   }
 }
 
