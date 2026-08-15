@@ -1414,7 +1414,20 @@
     "/auth/system-access-agreement/status": {
       "get": {
         "operationId": "SystemAccessAgreementController_status",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "portal",
+            "required": false,
+            "in": "query",
+            "description": "Pass `inspector` from the inspector app so dual-hat staff get the inspector clickwrap status.",
+            "schema": {
+              "enum": [
+                "inspector"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -1444,7 +1457,20 @@
     "/auth/system-access-agreement": {
       "get": {
         "operationId": "SystemAccessAgreementController_agreement",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "portal",
+            "required": false,
+            "in": "query",
+            "description": "Pass `inspector` from the inspector app to load the INSPECTOR agreement (name-only accept).",
+            "schema": {
+              "enum": [
+                "inspector"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -1477,7 +1503,20 @@
     "/auth/system-access-agreement/document": {
       "get": {
         "operationId": "SystemAccessAgreementController_document",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "portal",
+            "required": false,
+            "in": "query",
+            "description": "Pass `inspector` to download the INSPECTOR portal agreement document.",
+            "schema": {
+              "enum": [
+                "inspector"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "401": {
             "description": "Missing/invalid/expired token."
@@ -3151,7 +3190,43 @@
             "bearer": []
           }
         ],
-        "summary": "List CROSSUB platform order bills for Level 2 agencies (accrued/invoiced charges from 10 Aug 2026).",
+        "summary": "List Level 2 platform orders and issued monthly invoices (from 10 Aug 2026).",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/billing/platform-bills/invoices/{invoiceId}": {
+      "get": {
+        "operationId": "StaffPlatformBillsController_getInvoice",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPlatformMonthlyInvoiceDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a Level 2 monthly platform invoice with line items (Accounting Bills).",
         "tags": [
           "billing"
         ]
@@ -3952,6 +4027,55 @@
         ]
       }
     },
+    "/properties/{id}/restore-tenant": {
+      "post": {
+        "description": "The undo for \"Archive tenant\": puts back the tenant details, lease dates, rent-paid-to and bond, un-archives that tenancy's contact rows (creating any the archive predated), sets the property Occupied and removes the snapshot. Deliberately does NOT restore the vacate date (the archive sweep would re-file the tenancy on its next run) or reopen the end-leasing case the archive cancelled. Returns 400 when the property already has a current tenant, or when the row was reconstructed from lease history rather than filed.",
+        "operationId": "PropertiesController_restoreArchivedTenancy",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreArchivedTenancyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "A path parameter is not a valid UUID, the property already has a current tenant, or the row is not restorable."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore a previously archived tenancy back onto the property",
+        "tags": [
+          "Properties"
+        ]
+      }
+    },
     "/properties/{id}/contacts": {
       "get": {
         "description": "Archived (officer-removed) contacts are never returned. An empty list means the legacy backfill never ran for this property — fall back to the Property scalars, do not read it as \"no contacts\".",
@@ -4233,10 +4357,10 @@
         ]
       }
     },
-    "/properties/{id}/tenants/{personId}/name": {
+    "/properties/{id}/tenants/{personId}": {
       "patch": {
-        "description": "Writes the Person, the linked portal User (the copy the tenant reads in their own app), every live tenant contact that is this person, and — only when it can identify exactly one segment to replace — the Property.tenantName statutory-notice string. Returns which of those it touched, and why it left the notice string alone when it did. Name only: email is a login credential and is not changed here.",
-        "operationId": "PropertiesController_correctTenantName",
+        "description": "Writes the Person, the linked portal User (the copy the tenant reads in their own app, and the address they sign in with), every live tenant contact that is this person, and the Property statutory-notice scalars — the name string only when it can identify exactly one segment to replace, the email and phone only when this person already holds them. Omitted fields are left alone, and the response lists the records that actually changed.",
+        "operationId": "PropertiesController_updateTenantDetails",
         "parameters": [
           {
             "name": "id",
@@ -4260,7 +4384,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CorrectTenantNameDto"
+                "$ref": "#/components/schemas/UpdateTenantDetailsDto"
               }
             }
           }
@@ -4284,7 +4408,7 @@
             "bearer": []
           }
         ],
-        "summary": "Correct the spelling of a tenant's name across every record that holds it",
+        "summary": "Edit a tenant's name, email and phone across every record that holds them",
         "tags": [
           "Properties"
         ]
@@ -5125,6 +5249,45 @@
           }
         ],
         "summary": "Close an inspection job case manually",
+        "tags": [
+          "Inspections"
+        ]
+      }
+    },
+    "/inspections/{id}/approve": {
+      "post": {
+        "description": "Officer sign-off on completed work. Distinct from the inspector marking the job COMPLETED — that is their claim that they attended, this is ours that the report is acceptable — and it is the approval, not the completion, that takes the job out of the Task Pool and into the Inspection records. Sends nothing: the report was already distributed when the inspector finished.",
+        "operationId": "InspectionsController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "The job is not completed yet, was cancelled, or has already been approved."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or the inspection is out of scope."
+          },
+          "404": {
+            "description": "The inspection was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve a finished inspection job",
         "tags": [
           "Inspections"
         ]
@@ -8952,6 +9115,55 @@
         ]
       }
     },
+    "/maintenance/requests/{requestId}/withdraw-contractor": {
+      "post": {
+        "description": "The shrinking counterpart to invite-contractors. Refuses a contractor who has already quoted or declined, excludes the removed one from SLA auto-reselect, and re-evaluates whether the job can now move to agent approval.",
+        "operationId": "MaintenanceController_withdrawContractorFromRfq",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawRfqContractorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "The contractor is not on this quote request, has already answered it, or the actor role cannot change it."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The request was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove one contractor from a request-for-quote that has already been sent.",
+        "tags": [
+          "Maintenance"
+        ]
+      }
+    },
     "/maintenance/quotations/create": {
       "post": {
         "operationId": "MaintenanceController_createQuotation",
@@ -10171,6 +10383,100 @@
           }
         ],
         "summary": "Post a reply message to a conversation",
+        "tags": [
+          "CommHub"
+        ]
+      }
+    },
+    "/communication/ai-email-draft/availability": {
+      "get": {
+        "description": "`enabled` reflects the COMM_HUB_AI_EMAIL_DRAFT_ENABLED flag (the compose box hides the draft button when false). `aiConfigured` reflects whether a model is actually reachable — false still works, but every draft comes back as the deterministic editable starter, and the panel says so rather than pretending.",
+        "operationId": "CommHubController_aiEmailDraftAvailability",
+        "parameters": [],
+        "responses": {
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Whether AI email drafting is available on this server.",
+        "tags": [
+          "CommHub"
+        ]
+      }
+    },
+    "/communication/conversations/{id}/ai-email-draft": {
+      "post": {
+        "description": "Returns a subject + plain-text body only — it NEVER sends. The conversation context is loaded server-side from the thread (no context is accepted from the client) and the recipient is resolved from the conversation, never from the request. The instruction may be written in any language; the draft always comes back in Australian English. When the AI provider is unavailable, or answers in the wrong language, this degrades to an editable factual starter rather than failing — and the starter never echoes the instruction back.",
+        "operationId": "CommHubController_generateAiEmailDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateCommDraftDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "A path parameter is not a valid UUID, the body is invalid, or drafting is disabled."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Draft an email for a conversation from a short officer instruction.",
+        "tags": [
+          "CommHub"
+        ]
+      }
+    },
+    "/communication/outbound-sender": {
+      "get": {
+        "description": "What the compose box prints as `From`. Served rather than mirrored because `mail.conversationalFrom` resolves differently per environment — production sets MAIL_REPLY_TO and lands on the support desk, staging sets neither variable and lands on the no-reply address — so a hardcoded value is right in one deployment and wrong in the other. No caller can override the envelope sender; this is a read.",
+        "operationId": "CommHubController_outboundSender",
+        "parameters": [],
+        "responses": {
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The mailbox hub email is sent from on this server.",
         "tags": [
           "CommHub"
         ]
@@ -13000,6 +13306,298 @@
         ]
       }
     },
+    "/leasing/cycles/{id}/listing-description": {
+      "get": {
+        "description": "Returns the saved copy when a person has approved one, otherwise copy built from the property record. Never empty — a listing always has something to read.",
+        "operationId": "LeasingCycleController_getListingDescription",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "A path parameter is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the listing advertising copy for a cycle.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      },
+      "put": {
+        "description": "Stores the copy on the property, where the tenant app reads it. An empty body clears it.",
+        "operationId": "LeasingCycleController_saveListingDescription",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveListingDescriptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "The request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The resource is not in a valid state for this action."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save the approved listing description.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/listing-description/generate": {
+      "post": {
+        "description": "Saves nothing — the officer reads and edits the draft, then PUTs it back. Always returns copy: the deterministic version stands in when the model is unavailable, or when its draft claimed something the property record does not hold.",
+        "operationId": "LeasingCycleController_generateListingDescription",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateListingDescriptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "The request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The resource is not in a valid state for this action."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Write a fresh listing description with AI.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/applications/{applicationId}/documents/check": {
+      "get": {
+        "description": "Deterministic — no model, no flag. Returns one of COMPLETE, INCOMPLETE, UNVERIFIED (documents exist but none say what they are, which is every migrated application) or NONE, plus what to ask the applicant for.",
+        "operationId": "LeasingCycleController_getApplicationDocumentCheck",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applicationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "A path parameter is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check an applicant’s documents against the NSW 100-point checklist.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/applications/{applicationId}/documents/classify": {
+      "post": {
+        "description": "Reads FILE NAMES only and proposes what each unlabelled file looks like. Persists nothing, and cannot change the check — status, missing list and point total are identical with and without it. To make a label count, PATCH it back.",
+        "operationId": "LeasingCycleController_classifyApplicationDocuments",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applicationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "A path parameter is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Identify unlabelled application documents with AI.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/applications/{applicationId}/documents/type": {
+      "patch": {
+        "description": "The only call that changes the check. A person looked at the file and named it, so the label counts toward the 100-point check exactly like one the applicant chose in the wizard.",
+        "operationId": "LeasingCycleController_setApplicationDocumentType",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applicationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetApplicantDocumentTypeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "The request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record what an application document is.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
     "/leasing/cycles/{id}/open-inspection/skip": {
       "patch": {
         "operationId": "LeasingCycleController_skipOpenInspection",
@@ -14529,6 +15127,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordSigningDto"
+              }
+            }
+          }
+        },
         "responses": {
           "400": {
             "description": "A path parameter is not a valid UUID."
@@ -14552,6 +15160,52 @@
           }
         ],
         "summary": "Record the contract as signed.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/let-by": {
+      "patch": {
+        "description": "CROSSUB = we found the tenant, so the letting fee is raised once against the agency. AGENT = the agent let it themselves, so nothing is charged. Safe to call after signing to answer or correct the question — correcting to AGENT voids an unpaid fee.",
+        "operationId": "LeasingCycleController_recordLetBy",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordLetByDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "A path parameter is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record who let the property, and raise or waive the letting fee (CRS-0065).",
         "tags": [
           "LeasingCycle"
         ]
@@ -15291,6 +15945,58 @@
           }
         ],
         "summary": "Agent-approve the AI rent recommendation.",
+        "tags": [
+          "RentReviewWorkflow"
+        ]
+      }
+    },
+    "/leasing/rent-reviews/{id}/recommended-rent": {
+      "patch": {
+        "description": "Send `weekly` to recommend the caller's own figure; omit it or send null to restore the figure market research produced. The research pack, report and notice draft all quote this number, so the change follows through to whatever is sent next. Not the agent decision — that is PATCH /:id/proposed-rent, which also serves the tenant notice.",
+        "operationId": "RentReviewWorkflowController_recommendedRent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRecommendedRentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The review is past agent review, market research has not completed, or there is no stored research to restore the recommendation from."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Override the researched recommended rent, or clear the override.",
         "tags": [
           "RentReviewWorkflow"
         ]
@@ -19069,6 +19775,29 @@
         ]
       }
     },
+    "/sales/salespeople": {
+      "get": {
+        "operationId": "SalesLeadController_salespeople",
+        "parameters": [],
+        "responses": {
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List active Sales-department staff for the assign-salesperson picker.",
+        "tags": [
+          "SalesLead"
+        ]
+      }
+    },
     "/sales/analytics": {
       "get": {
         "operationId": "SalesLeadController_analytics",
@@ -20684,6 +21413,54 @@
         "summary": "Public expert booking form — creates a social-booking lead and meeting request.",
         "tags": [
           "SalesLead"
+        ]
+      }
+    },
+    "/sales/agencies": {
+      "get": {
+        "operationId": "SalesAgenciesController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sales portal agency registry — full set for non-salesperson staff; own portfolio for Sales STAFF",
+        "tags": [
+          "SalesAgencies"
         ]
       }
     },
@@ -23209,6 +23986,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTrainingDto"
+              }
+            }
+          }
+        },
         "responses": {
           "400": {
             "description": "A path parameter is not a valid UUID."
@@ -23231,7 +24018,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark a training program as completed.",
+        "summary": "Mark a training program as completed (pass/fail).",
         "tags": [
           "HrRecruitment"
         ]
@@ -23281,6 +24068,34 @@
         "tags": [
           "HrFeed"
         ]
+      },
+      "post": {
+        "operationId": "HrFeedController_createLibrary",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLibraryItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a training-library item.",
+        "tags": [
+          "HrFeed"
+        ]
       }
     },
     "/hr/kpi": {
@@ -23301,6 +24116,120 @@
           }
         ],
         "summary": "List HR KPI metrics.",
+        "tags": [
+          "HrFeed"
+        ]
+      },
+      "post": {
+        "operationId": "HrFeedController_createKpi",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateKpiMetricDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a KPI metric (AI Performance Engine config).",
+        "tags": [
+          "HrFeed"
+        ]
+      }
+    },
+    "/hr/kpi/{id}": {
+      "patch": {
+        "operationId": "HrFeedController_updateKpi",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateKpiMetricDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a KPI metric (weights / targets).",
+        "tags": [
+          "HrFeed"
+        ]
+      },
+      "delete": {
+        "operationId": "HrFeedController_deleteKpi",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a KPI metric.",
+        "tags": [
+          "HrFeed"
+        ]
+      }
+    },
+    "/hr/compliance/scan": {
+      "post": {
+        "operationId": "HrFeedController_runComplianceScan",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Run the quarterly AI legal & compliance scan.",
         "tags": [
           "HrFeed"
         ]
@@ -23400,6 +24329,131 @@
         "summary": "Run the HR SLA sweep (no-Redis twin of the daily job).",
         "tags": [
           "HrFeed"
+        ]
+      }
+    },
+    "/sales-mailbox/inbox": {
+      "get": {
+        "operationId": "SalesMailboxController_listInbox",
+        "parameters": [
+          {
+            "name": "top",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Missing/invalid token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List messages in the shared sales@ inbox.",
+        "tags": [
+          "SalesMailbox"
+        ]
+      }
+    },
+    "/sales-mailbox/inbox/{messageId}/attachments": {
+      "get": {
+        "operationId": "SalesMailboxController_listAttachments",
+        "parameters": [
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List attachments on a sales@ inbox message.",
+        "tags": [
+          "SalesMailbox"
+        ]
+      }
+    },
+    "/sales-mailbox/inbox/{messageId}/attachments/{attachmentId}": {
+      "get": {
+        "operationId": "SalesMailboxController_downloadAttachment",
+        "parameters": [
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download an attachment from a sales@ inbox message.",
+        "tags": [
+          "SalesMailbox"
+        ]
+      }
+    },
+    "/sales-mailbox/send": {
+      "post": {
+        "operationId": "SalesMailboxController_send",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendSharedInboxEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send or reply from the shared sales@ inbox.",
+        "tags": [
+          "SalesMailbox"
         ]
       }
     },
@@ -34794,6 +35848,53 @@
         ]
       }
     },
+    "/agent/properties/{propertyId}/workflows/open-inspection/{inspectionId}/confirm-schedule": {
+      "post": {
+        "description": "The agent accepts the time CROSSUB scheduled. Only available once an inspector is on the job and a time is set — confirming earlier would promise a viewing nobody has agreed to attend. Until it is confirmed, staff see the job as PENDING.",
+        "operationId": "AgentPortalController_confirmOpenInspectionSchedule",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentOpenInspectionConfirmResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm the scheduled time of an open inspection.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/open-inspection/{inspectionId}/cancel": {
       "post": {
         "operationId": "AgentPortalController_cancelOpenInspection",
@@ -35104,6 +36205,56 @@
           }
         ],
         "summary": "Complete a rent review and sync the new rent to the system.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/recommended-rent": {
+      "patch": {
+        "description": "Send `weekly` to recommend your own figure instead of the researched one; omit it or send null to go back to the research. The landlord pack, the report and the notice draft all quote this rate, so they follow the change.",
+        "operationId": "AgentPortalController_setRentReviewRecommendedRent",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRecommendedRentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Adjust the recommended rent, or clear the adjustment.",
         "tags": [
           "agent"
         ]
@@ -36159,8 +37310,57 @@
         ]
       }
     },
+    "/agent/properties/{propertyId}/workflows/inspection/routine": {
+      "post": {
+        "description": "Puts the property on the routine cadence. The agent names no date: the cadence comes from the property’s state (NSW 3/yr, VIC 2/yr) and each instance date is set by the account manager. Idempotent — a property already on routine returns its existing schedule with the request recorded against it.",
+        "operationId": "AgentPortalController_requestRoutineInspection",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequestRoutineInspectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowCreateResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Request routine inspections for a property.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/inspection/ingoing": {
       "post": {
+        "description": "The agent names no time — CROSSUB confirms it and emails them (CRS-0068). A `scheduledTime` in the body is accepted and ignored, so an older build of the agent app keeps working.",
         "operationId": "AgentPortalController_createIngoingInspection",
         "parameters": [
           {
@@ -36200,7 +37400,7 @@
             "bearer": []
           }
         ],
-        "summary": "Schedule an ingoing (move-in) inspection.",
+        "summary": "Request an ingoing (move-in) inspection.",
         "tags": [
           "agent"
         ]
@@ -36208,6 +37408,7 @@
     },
     "/agent/properties/{propertyId}/workflows/inspection/outgoing": {
       "post": {
+        "description": "The agent names no time and no inspector — CROSSUB confirms both and emails them (CRS-0068). `scheduledTime` and `inspectorName` are accepted and ignored.",
         "operationId": "AgentPortalController_createOutgoingInspection",
         "parameters": [
           {
@@ -36247,7 +37448,7 @@
             "bearer": []
           }
         ],
-        "summary": "Schedule an outgoing (move-out) inspection without an end-leasing case (Level 1 / standalone).",
+        "summary": "Request an outgoing (move-out) inspection without an end-leasing case (Level 1 / standalone).",
         "tags": [
           "agent"
         ]
@@ -37429,6 +38630,43 @@
         ]
       }
     },
+    "/agent/documents/{documentId}/file": {
+      "get": {
+        "description": "Proxies stored media (R2 / object storage) through the API so the browser can preview without cross-origin fetch failures. Accepts `portal:<uuid>`, bare portal uuid, and aggregated ids (`inspection:`, `inspection-report:`, `lease:`, `maintenance:`).",
+        "operationId": "AgentPortalController_streamDocumentFile",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "description": "Document id from list/detail (`portal:<uuid>`, `lease:<uuid>`, …). URL-encode colons.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "Document not found or not within the agent’s assigned book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Stream a managed property document for in-app preview.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/documents/upload-session": {
       "post": {
         "description": "Returns a presigned PUT URL for large files so bytes never pass through the API. Local dev without R2 returns `{ mode: \"inline\" }` — use POST /agent/documents with base64.",
@@ -37914,6 +39152,44 @@
           }
         ],
         "summary": "Send a message to Gii",
+        "tags": [
+          "gii"
+        ]
+      }
+    },
+    "/gii/compose-draft": {
+      "post": {
+        "description": "Returns paste-ready English prose for the Communication Hub compose box. Does not send mail or call chat tools.",
+        "operationId": "GiiController_composeDraft",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiiComposeDraftRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GiiComposeDraftResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Draft a compose-box message from officer instructions",
         "tags": [
           "gii"
         ]
@@ -39075,6 +40351,13 @@
             "type": "boolean",
             "description": "Must be true — confirms the user has read and agrees to the agreement."
           },
+          "portal": {
+            "type": "string",
+            "description": "When `inspector`, accept the INSPECTOR portal clickwrap (name-only). Required for dual-hat staff using the inspector app; admin portal omits this and uses the role agreement.",
+            "enum": [
+              "inspector"
+            ]
+          },
           "firstName": {
             "type": "string",
             "description": "Required for staff/admin portal roles before access. Updates the user profile."
@@ -39375,6 +40658,11 @@
             "type": "boolean",
             "example": false
           },
+          "overdueLockDays": {
+            "type": "number",
+            "example": 7,
+            "description": "Days after an unpaid invoice due date before the agent portal is locked (Level 2)."
+          },
           "outstandingInvoiceAmount": {
             "type": "number",
             "example": 0
@@ -39409,6 +40697,7 @@
           "inspectionsCollectionMode",
           "serviceFeePercent",
           "billingBlocked",
+          "overdueLockDays",
           "outstandingInvoiceAmount",
           "hasDefaultPaymentMethod"
         ]
@@ -39510,6 +40799,12 @@
             "type": "object",
             "nullable": true,
             "description": "Plain-language summary of the service billed and pricing basis."
+          },
+          "monthlyInvoiceId": {
+            "type": "object",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Monthly platform invoice this postpaid charge was rolled into (Level 2)."
           }
         },
         "required": [
@@ -40279,6 +41574,75 @@
           "totalAmount"
         ]
       },
+      "StaffPlatformMonthlyInvoiceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agencyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agencyName": {
+            "type": "string",
+            "example": "Skyline Realty"
+          },
+          "agentName": {
+            "type": "object",
+            "nullable": true,
+            "example": "Jane Chen",
+            "description": "Primary agent contact name for the agency."
+          },
+          "invoiceNumber": {
+            "type": "string",
+            "example": "CSB-2026-07-001"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "example": "sent"
+          },
+          "amountDue": {
+            "type": "number",
+            "example": 450
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lineItemCount": {
+            "type": "number",
+            "example": 4,
+            "description": "Number of platform charge lines linked to this invoice."
+          }
+        },
+        "required": [
+          "id",
+          "agencyId",
+          "agencyName",
+          "invoiceNumber",
+          "periodStart",
+          "periodEnd",
+          "status",
+          "amountDue",
+          "lineItemCount"
+        ]
+      },
       "StaffPlatformBillsLevel2ResponseDto": {
         "type": "object",
         "properties": {
@@ -40286,6 +41650,13 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StaffPlatformBillChargeDto"
+            }
+          },
+          "invoices": {
+            "description": "Issued Level 2 monthly platform invoices (sent / overdue / paid).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffPlatformMonthlyInvoiceDto"
             }
           },
           "totalAmount": {
@@ -40296,7 +41667,142 @@
         },
         "required": [
           "bills",
+          "invoices",
           "totalAmount"
+        ]
+      },
+      "StaffPlatformMonthlyInvoiceLineItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "serviceType": {
+            "type": "string",
+            "example": "routine_inspection"
+          },
+          "description": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "example": 55
+          },
+          "createdByName": {
+            "type": "object",
+            "nullable": true
+          },
+          "calculationDetail": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "serviceType",
+          "description",
+          "amount"
+        ]
+      },
+      "StaffPlatformMonthlyInvoiceDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agencyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agencyName": {
+            "type": "string",
+            "example": "Skyline Realty"
+          },
+          "agentName": {
+            "type": "object",
+            "nullable": true,
+            "example": "Jane Chen",
+            "description": "Primary agent contact name for the agency."
+          },
+          "invoiceNumber": {
+            "type": "string",
+            "example": "CSB-2026-07-001"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "example": "sent"
+          },
+          "amountDue": {
+            "type": "number",
+            "example": 450
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lineItemCount": {
+            "type": "number",
+            "example": 4,
+            "description": "Number of platform charge lines linked to this invoice."
+          },
+          "periodToken": {
+            "type": "object",
+            "nullable": true
+          },
+          "serviceFeePercent": {
+            "type": "object",
+            "nullable": true
+          },
+          "serviceFeeAmount": {
+            "type": "object",
+            "nullable": true
+          },
+          "serviceChargesSubtotal": {
+            "type": "object",
+            "nullable": true
+          },
+          "gstPercent": {
+            "type": "object",
+            "nullable": true
+          },
+          "calculationSummary": {
+            "type": "object",
+            "nullable": true
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffPlatformMonthlyInvoiceLineItemDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "agencyId",
+          "agencyName",
+          "invoiceNumber",
+          "periodStart",
+          "periodEnd",
+          "status",
+          "amountDue",
+          "lineItemCount",
+          "lineItems"
         ]
       },
       "MobileAuthResponseDto": {
@@ -40403,6 +41909,19 @@
           "category"
         ]
       },
+      "RestoreArchivedTenancyDto": {
+        "type": "object",
+        "properties": {
+          "archivedAt": {
+            "type": "string",
+            "description": "The archived tenancy's `archivedAt` timestamp, exactly as the 360° payload returned it.",
+            "example": "2026-08-11T05:35:24.751Z"
+          }
+        },
+        "required": [
+          "archivedAt"
+        ]
+      },
       "CreatePropertyContactDto": {
         "type": "object",
         "properties": {
@@ -40469,7 +41988,7 @@
           }
         }
       },
-      "CorrectTenantNameDto": {
+      "UpdateTenantDetailsDto": {
         "type": "object",
         "properties": {
           "firstName": {
@@ -40483,6 +42002,18 @@
             "maxLength": 80,
             "nullable": true,
             "example": "Buncombe"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 160,
+            "nullable": true,
+            "example": "hayley.buncombe@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 40,
+            "nullable": true,
+            "example": "0412 345 678"
           }
         }
       },
@@ -41159,6 +42690,31 @@
           "bodyText"
         ]
       },
+      "WithdrawRfqContractorDto": {
+        "type": "object",
+        "properties": {
+          "contractorId": {
+            "type": "string",
+            "description": "Workflow contractor key to remove from the quote request — either the verified-network id or `agency-pref-<uuid>`.",
+            "example": "C-1786506113402"
+          },
+          "actorRole": {
+            "type": "string",
+            "description": "Acting workflow role. Only `admin` and `agent` may change a quote request.",
+            "enum": [
+              "admin",
+              "agent",
+              "tenant",
+              "contractor",
+              "strata"
+            ]
+          }
+        },
+        "required": [
+          "contractorId",
+          "actorRole"
+        ]
+      },
       "JobUploadFileDto": {
         "type": "object",
         "properties": {
@@ -41239,6 +42795,10 @@
         "properties": {}
       },
       "SendMessageDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "GenerateCommDraftDto": {
         "type": "object",
         "properties": {}
       },
@@ -41617,6 +43177,73 @@
         "type": "object",
         "properties": {}
       },
+      "GenerateListingDescriptionDto": {
+        "type": "object",
+        "properties": {
+          "instruction": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Lead with the availability date — the landlord wants it let quickly.",
+            "description": "Optional steer on emphasis and tone. It can never introduce a fact: anything it asks for that the property record does not hold is ignored, and the draft is checked against the record either way."
+          }
+        }
+      },
+      "SaveListingDescriptionDto": {
+        "type": "object",
+        "properties": {
+          "headline": {
+            "type": "string",
+            "maxLength": 90
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 900,
+            "description": "The approved copy. An empty body clears the saved description, and the listing falls back to the one built from the property record."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "AI",
+              "SAVED"
+            ],
+            "example": "SAVED"
+          }
+        },
+        "required": [
+          "headline",
+          "body"
+        ]
+      },
+      "SetApplicantDocumentTypeDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The stored document URL being identified."
+          },
+          "documentType": {
+            "type": "string",
+            "enum": [
+              "drivers_licence",
+              "passport",
+              "birth_certificate_photo_id",
+              "pay_advice",
+              "centrelink_statement",
+              "bank_statement",
+              "rental_ledger",
+              "rent_receipts",
+              "written_references",
+              "rates_notice",
+              "vehicle_registration",
+              "utility_bill"
+            ]
+          }
+        },
+        "required": [
+          "url",
+          "documentType"
+        ]
+      },
       "CancelLeasingCycleDto": {
         "type": "object",
         "properties": {}
@@ -41652,6 +43279,24 @@
             "type": "string",
             "maxLength": 255,
             "example": "application-form.pdf"
+          },
+          "documentType": {
+            "type": "string",
+            "enum": [
+              "drivers_licence",
+              "passport",
+              "birth_certificate_photo_id",
+              "pay_advice",
+              "centrelink_statement",
+              "bank_statement",
+              "rental_ledger",
+              "rent_receipts",
+              "written_references",
+              "rates_notice",
+              "vehicle_registration",
+              "utility_bill"
+            ],
+            "description": "NSW checklist item this file is, when the officer knows."
           },
           "mimeType": {
             "type": "string",
@@ -41759,6 +43404,34 @@
         "type": "object",
         "properties": {}
       },
+      "RecordSigningDto": {
+        "type": "object",
+        "properties": {
+          "letBy": {
+            "type": "string",
+            "enum": [
+              "CROSSUB",
+              "AGENT"
+            ],
+            "description": "CROSSUB = we found the tenant, letting fee applies. AGENT = the agent let it themselves, no fee. Omit if not known yet."
+          }
+        }
+      },
+      "RecordLetByDto": {
+        "type": "object",
+        "properties": {
+          "letBy": {
+            "type": "string",
+            "enum": [
+              "CROSSUB",
+              "AGENT"
+            ]
+          }
+        },
+        "required": [
+          "letBy"
+        ]
+      },
       "SetKeyCollectionDto": {
         "type": "object",
         "properties": {}
@@ -41780,6 +43453,10 @@
         "properties": {}
       },
       "CancelReviewDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SetRecommendedRentDto": {
         "type": "object",
         "properties": {}
       },
@@ -42142,7 +43819,27 @@
         "type": "object",
         "properties": {}
       },
+      "CompleteTrainingDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateKpiMetricDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateKpiMetricDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateLibraryItemDto": {
+        "type": "object",
+        "properties": {}
+      },
       "HrSweepDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SendSharedInboxEmailDto": {
         "type": "object",
         "properties": {}
       },
@@ -45614,6 +47311,16 @@
             "items": {
               "type": "string"
             }
+          },
+          "listingHeadline": {
+            "type": "string",
+            "example": "2 bedroom apartment in Chatswood",
+            "description": "One-line listing headline."
+          },
+          "description": {
+            "type": "string",
+            "example": "An apartment at 12 Smith Street, Chatswood NSW 2067. The property has 2 bedrooms and 1 bathroom. Rent is $650 per week. Available from 1 September 2026.",
+            "description": "The listing description. States only what the property record holds — see leasing-listing-description.constants.ts."
           }
         },
         "required": [
@@ -45622,7 +47329,9 @@
           "status",
           "acceptingApplications",
           "propertyType",
-          "features"
+          "features",
+          "listingHeadline",
+          "description"
         ]
       },
       "PublicListingsResponseDto": {
@@ -45693,6 +47402,26 @@
           "contentBase64"
         ]
       },
+      "PublicApplicationCoApplicantDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "Jessica Morris"
+          },
+          "email": {
+            "type": "string",
+            "example": "jessica.m@email.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+61 400 333 444"
+          }
+        },
+        "required": [
+          "fullName"
+        ]
+      },
       "SubmitPublicApplicationDto": {
         "type": "object",
         "properties": {
@@ -45747,6 +47476,13 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PublicApplicationDocumentDto"
+            }
+          },
+          "coApplicants": {
+            "description": "Other adults who will be parties to the lease, named on this same application. They reach the tenancy agreement with the applicant they were named alongside — approve the application and they are on it, decline it and none of them are.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicApplicationCoApplicantDto"
             }
           }
         },
@@ -47986,7 +49722,7 @@
           "awaitingAgentPayment": {
             "type": "boolean",
             "example": false,
-            "description": "Level 1 prepaid: true until the agency pays at order create — inspector cannot claim or accept while this is true."
+            "description": "Level 1 prepaid: true until the agency pays at order create — inspector cannot start while this is true. Always false for Level 2 (postpaid)."
           },
           "assignedByStaff": {
             "type": "boolean",
@@ -48607,7 +50343,7 @@
           "awaitingAgentPayment": {
             "type": "boolean",
             "example": false,
-            "description": "Level 1 prepaid: true until the agent pays — Start stays disabled while awaiting payment."
+            "description": "Level 1 prepaid: true until the agent pays — Start stays disabled while awaiting payment. Always false for Level 2 (postpaid monthly invoice)."
           },
           "canCompleteEarly": {
             "type": "boolean",
@@ -51979,6 +53715,10 @@
         "type": "object",
         "properties": {}
       },
+      "AgentOpenInspectionConfirmResultDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CancelAgentOpenInspectionDto": {
         "type": "object",
         "properties": {}
@@ -52160,6 +53900,24 @@
         "required": [
           "url"
         ]
+      },
+      "AgentRequestRoutineInspectionDto": {
+        "type": "object",
+        "properties": {
+          "flow": {
+            "type": "string",
+            "enum": [
+              "self",
+              "in_person"
+            ],
+            "description": "Self-conducted by the tenant, or attended in person by a CROSSUB inspector. Defaults to in-person."
+          },
+          "note": {
+            "type": "string",
+            "description": "Anything CROSSUB should know when scheduling — access, tenant availability, urgency. Read by a person; never parsed into a date.",
+            "maxLength": 2000
+          }
+        }
       },
       "AgentCreateIngoingInspectionDto": {
         "type": "object",
@@ -54629,6 +56387,27 @@
           "content"
         ]
       },
+      "GiiPendingPropertyCandidateDto": {
+        "type": "object",
+        "properties": {
+          "propertyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string",
+            "example": "1A Lucy Street, Merrylands West NSW 2160"
+          },
+          "tenantName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "propertyId",
+          "label"
+        ]
+      },
       "GiiChatContextDto": {
         "type": "object",
         "properties": {
@@ -54655,6 +56434,13 @@
           "propertyChanged": {
             "type": "boolean",
             "example": true
+          },
+          "pendingPropertyCandidates": {
+            "description": "Echo back `pendingPropertyCandidates` from the previous response when the user is picking from an ambiguous list.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GiiPendingPropertyCandidateDto"
+            }
           }
         }
       },
@@ -54975,6 +56761,41 @@
           "caseRef"
         ]
       },
+      "GiiJobCaseLinkDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "maintenance",
+              "rent_review",
+              "inspection"
+            ],
+            "example": "maintenance"
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true,
+            "example": "Q20227",
+            "description": "Business reference when one exists (order number / tracking)."
+          },
+          "label": {
+            "type": "string",
+            "example": "Q20227 · Entrance hallway window cannot lock",
+            "description": "Short button label for the chat UI."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "reference",
+          "label"
+        ]
+      },
       "GiiChatResponseDto": {
         "type": "object",
         "properties": {
@@ -54999,6 +56820,20 @@
               }
             ]
           },
+          "jobCases": {
+            "description": "Job cases from tools on this turn (maintenance, rent review, inspection) for Open buttons in chat.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GiiJobCaseLinkDto"
+            }
+          },
+          "pendingPropertyCandidates": {
+            "description": "When find_property was ambiguous this turn, echo these back as `context.pendingPropertyCandidates` so the next reply can pick by number or address fragment.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GiiPendingPropertyCandidateDto"
+            }
+          },
           "stoppedOn": {
             "type": "string",
             "enum": [
@@ -55013,6 +56848,8 @@
           "reply",
           "assessment",
           "lodged",
+          "jobCases",
+          "pendingPropertyCandidates",
           "stoppedOn"
         ]
       },
@@ -55076,6 +56913,61 @@
           "text"
         ]
       },
+      "GiiComposeDraftRequestDto": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "message"
+            ],
+            "example": "email"
+          },
+          "instruction": {
+            "type": "string",
+            "example": "Confirm garage light, pest control and AC are fixed — ask tenant if AC works now",
+            "description": "Officer instructions. May be Chinese; the draft body is always English."
+          },
+          "participantName": {
+            "type": "string",
+            "example": "Ellena Jalloul"
+          },
+          "propertyAddress": {
+            "type": "string",
+            "example": "12 Example St, Sydney NSW 2000"
+          },
+          "lastInboundBody": {
+            "type": "string"
+          },
+          "composeMode": {
+            "type": "string",
+            "enum": [
+              "new",
+              "reply",
+              "forward"
+            ]
+          },
+          "subject": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel"
+        ]
+      },
+      "GiiComposeDraftResponseDto": {
+        "type": "object",
+        "properties": {
+          "bodyText": {
+            "type": "string",
+            "example": "Hi Ellena,\n\nJust confirming the garage light, pest control and air conditioning issues have all been resolved. Could you please let us know if the air conditioning is working normally now?\n\nRegards"
+          }
+        },
+        "required": [
+          "bodyText"
+        ]
+      },
       "GiiActionableCaseDto": {
         "type": "object",
         "properties": {
@@ -55087,6 +56979,11 @@
               "inspection_due"
             ],
             "example": "maintenance_approval"
+          },
+          "id": {
+            "type": "string",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "description": "Stable case id for UI deep-links. Never shown in chat prose."
           },
           "propertyLabel": {
             "type": "string",
@@ -55106,6 +57003,7 @@
         },
         "required": [
           "kind",
+          "id",
           "propertyLabel",
           "summary",
           "reference"

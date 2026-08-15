@@ -3352,6 +3352,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent/properties/{propertyId}/workflows/open-inspection/{inspectionId}/confirm-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm the scheduled time of an open inspection.
+         * @description The agent accepts the time CROSSUB scheduled. Only available once an inspector is on the job and a time is set — confirming earlier would promise a viewing nobody has agreed to attend. Until it is confirmed, staff see the job as PENDING.
+         */
+        post: operations["AgentPortalController_confirmOpenInspectionSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent/properties/{propertyId}/workflows/open-inspection/{inspectionId}/cancel": {
         parameters: {
             query?: never;
@@ -3469,6 +3489,26 @@ export interface paths {
         head?: never;
         /** Complete a rent review and sync the new rent to the system. */
         patch: operations["AgentPortalController_completeRentReview"];
+        trace?: never;
+    };
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/recommended-rent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Adjust the recommended rent, or clear the adjustment.
+         * @description Send `weekly` to recommend your own figure instead of the researched one; omit it or send null to go back to the research. The landlord pack, the report and the notice draft all quote this rate, so they follow the change.
+         */
+        patch: operations["AgentPortalController_setRentReviewRecommendedRent"];
         trace?: never;
     };
     "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/proposed-rent": {
@@ -3849,6 +3889,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent/properties/{propertyId}/workflows/inspection/routine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request routine inspections for a property.
+         * @description Puts the property on the routine cadence. The agent names no date: the cadence comes from the property’s state (NSW 3/yr, VIC 2/yr) and each instance date is set by the account manager. Idempotent — a property already on routine returns its existing schedule with the request recorded against it.
+         */
+        post: operations["AgentPortalController_requestRoutineInspection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent/properties/{propertyId}/workflows/inspection/ingoing": {
         parameters: {
             query?: never;
@@ -3858,7 +3918,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Schedule an ingoing (move-in) inspection. */
+        /**
+         * Request an ingoing (move-in) inspection.
+         * @description The agent names no time — CROSSUB confirms it and emails them (CRS-0068). A `scheduledTime` in the body is accepted and ignored, so an older build of the agent app keeps working.
+         */
         post: operations["AgentPortalController_createIngoingInspection"];
         delete?: never;
         options?: never;
@@ -3875,7 +3938,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Schedule an outgoing (move-out) inspection without an end-leasing case (Level 1 / standalone). */
+        /**
+         * Request an outgoing (move-out) inspection without an end-leasing case (Level 1 / standalone).
+         * @description The agent names no time and no inspector — CROSSUB confirms both and emails them (CRS-0068). `scheduledTime` and `inspectorName` are accepted and ignored.
+         */
         post: operations["AgentPortalController_createOutgoingInspection"];
         delete?: never;
         options?: never;
@@ -4332,6 +4398,26 @@ export interface paths {
          * @description Decodes the base64 body, puts it to object storage (R2), and records a PortalDocument. A given propertyId must be within the agent’s assigned book.
          */
         post: operations["AgentPortalController_uploadDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/documents/{documentId}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream a managed property document for in-app preview.
+         * @description Proxies stored media (R2 / object storage) through the API so the browser can preview without cross-origin fetch failures. Accepts `portal:<uuid>`, bare portal uuid, and aggregated ids (`inspection:`, `inspection-report:`, `lease:`, `maintenance:`).
+         */
+        get: operations["AgentPortalController_streamDocumentFile"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6052,6 +6138,16 @@ export interface components {
              *     ]
              */
             features: string[];
+            /**
+             * @description One-line listing headline.
+             * @example 2 bedroom apartment in Chatswood
+             */
+            listingHeadline: string;
+            /**
+             * @description The listing description. States only what the property record holds — see leasing-listing-description.constants.ts.
+             * @example An apartment at 12 Smith Street, Chatswood NSW 2067. The property has 2 bedrooms and 1 bathroom. Rent is $650 per week. Available from 1 September 2026.
+             */
+            description: string;
         };
         PublicListingsResponseDto: {
             items: components["schemas"]["PublicListingResponseDto"][];
@@ -6079,6 +6175,14 @@ export interface components {
             sizeBytes: number;
             /** @description File contents, base64-encoded (no data: URI prefix). */
             contentBase64: string;
+        };
+        PublicApplicationCoApplicantDto: {
+            /** @example Jessica Morris */
+            fullName: string;
+            /** @example jessica.m@email.com */
+            email?: string;
+            /** @example +61 400 333 444 */
+            phone?: string;
         };
         SubmitPublicApplicationDto: {
             /** @example Michael Lee */
@@ -6115,6 +6219,8 @@ export interface components {
             };
             /** @description 100-point check uploads — identity, income, and supporting documentation categories. */
             documents?: components["schemas"]["PublicApplicationDocumentDto"][];
+            /** @description Other adults who will be parties to the lease, named on this same application. They reach the tenancy agreement with the applicant they were named alongside — approve the application and they are on it, decline it and none of them are. */
+            coApplicants?: components["schemas"]["PublicApplicationCoApplicantDto"][];
         };
         PublicApplicationResponseDto: {
             /** Format: uuid */
@@ -7154,7 +7260,7 @@ export interface components {
             /** @description When an agent declined the last submitted report — inspector must redo and resubmit. */
             reportDeclineReason: string | null;
             /**
-             * @description Level 1 prepaid: true until the agency pays at order create — inspector cannot claim or accept while this is true.
+             * @description Level 1 prepaid: true until the agency pays at order create — inspector cannot start while this is true. Always false for Level 2 (postpaid).
              * @example false
              */
             awaitingAgentPayment: boolean;
@@ -7376,7 +7482,7 @@ export interface components {
             /** @description Inspector may POST /open-viewing/start while accepted and not yet live. */
             canStart: boolean;
             /**
-             * @description Level 1 prepaid: true until the agent pays — Start stays disabled while awaiting payment.
+             * @description Level 1 prepaid: true until the agent pays — Start stays disabled while awaiting payment. Always false for Level 2 (postpaid monthly invoice).
              * @example false
              */
             awaitingAgentPayment: boolean;
@@ -8671,12 +8777,14 @@ export interface components {
             force?: boolean;
         };
         RequestAgentOpenInspectionDto: Record<string, never>;
+        AgentOpenInspectionConfirmResultDto: Record<string, never>;
         CancelAgentOpenInspectionDto: Record<string, never>;
         AgentCreateRentReviewDto: Record<string, never>;
         CancelAgentRentReviewDto: {
             /** @example Opened in error — landlord not proceeding with increase */
             reason: string;
         };
+        SetRecommendedRentDto: Record<string, never>;
         SetProposedRentDto: Record<string, never>;
         UpdateNoticePayableFromDto: Record<string, never>;
         UpdateLeaseAgreementTermsDto: Record<string, never>;
@@ -8741,6 +8849,15 @@ export interface components {
         AgentKeyPhotoUploadResponseDto: {
             /** @description Public URL of the stored photo. */
             url: string;
+        };
+        AgentRequestRoutineInspectionDto: {
+            /**
+             * @description Self-conducted by the tenant, or attended in person by a CROSSUB inspector. Defaults to in-person.
+             * @enum {string}
+             */
+            flow?: "self" | "in_person";
+            /** @description Anything CROSSUB should know when scheduling — access, tenant availability, urgency. Read by a person; never parsed into a date. */
+            note?: string;
         };
         AgentCreateIngoingInspectionDto: Record<string, never>;
         AgentCreateOutgoingInspectionDto: Record<string, never>;
@@ -9707,6 +9824,13 @@ export interface components {
             content: string;
             attachments?: components["schemas"]["GiiChatAttachmentDto"][];
         };
+        GiiPendingPropertyCandidateDto: {
+            /** Format: uuid */
+            propertyId: string;
+            /** @example 1A Lucy Street, Merrylands West NSW 2160 */
+            label: string;
+            tenantName?: string | null;
+        };
         GiiChatContextDto: {
             /** Format: uuid */
             propertyId?: string;
@@ -9720,6 +9844,8 @@ export interface components {
             pageLabel?: string;
             /** @example true */
             propertyChanged?: boolean;
+            /** @description Echo back `pendingPropertyCandidates` from the previous response when the user is picking from an ambiguous list. */
+            pendingPropertyCandidates?: components["schemas"]["GiiPendingPropertyCandidateDto"][];
         };
         GiiChatRequestDto: {
             messages: components["schemas"]["GiiChatMessageDto"][];
@@ -9854,12 +9980,35 @@ export interface components {
             /** @example VT-1042 */
             caseRef: string;
         };
+        GiiJobCaseLinkDto: {
+            /** @example a1b2c3d4-e5f6-7890-abcd-ef1234567890 */
+            id: string;
+            /**
+             * @example maintenance
+             * @enum {string}
+             */
+            kind: "maintenance" | "rent_review" | "inspection";
+            /**
+             * @description Business reference when one exists (order number / tracking).
+             * @example Q20227
+             */
+            reference: string | null;
+            /**
+             * @description Short button label for the chat UI.
+             * @example Q20227 · Entrance hallway window cannot lock
+             */
+            label: string;
+        };
         GiiChatResponseDto: {
             /** @example That is a break lease — 243 of 365 days elapsed (66.6%), so a 2-week fee of $2,000.00 applies. */
             reply: string;
             /** @description The deterministic assessment behind the reply, for rendering. Null when the turn produced no assessment. */
             assessment: components["schemas"]["GiiAssessmentDto"] | null;
             lodged: components["schemas"]["GiiLodgedDto"] | null;
+            /** @description Job cases from tools on this turn (maintenance, rent review, inspection) for Open buttons in chat. */
+            jobCases: components["schemas"]["GiiJobCaseLinkDto"][];
+            /** @description When find_property was ambiguous this turn, echo these back as `context.pendingPropertyCandidates` so the next reply can pick by number or address fragment. */
+            pendingPropertyCandidates: components["schemas"]["GiiPendingPropertyCandidateDto"][];
             /**
              * @example end_turn
              * @enum {string}
@@ -18025,6 +18174,28 @@ export interface operations {
             };
         };
     };
+    AgentPortalController_confirmOpenInspectionSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentOpenInspectionConfirmResultDto"];
+                };
+            };
+        };
+    };
     AgentPortalController_cancelOpenInspection: {
         parameters: {
             query?: never;
@@ -18173,6 +18344,30 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_setRentReviewRecommendedRent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetRecommendedRentDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -18746,6 +18941,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    AgentPortalController_requestRoutineInspection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentRequestRoutineInspectionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentWorkflowCreateResultDto"];
+                };
             };
         };
     };
@@ -19777,6 +19997,41 @@ export interface operations {
                 content?: never;
             };
             /** @description propertyId is set but is not within the agent’s assigned book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_streamDocumentFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Document id from list/detail (`portal:<uuid>`, `lease:<uuid>`, …). URL-encode colons. */
+                documentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document not found or not within the agent’s assigned book. */
             404: {
                 headers: {
                     [name: string]: unknown;

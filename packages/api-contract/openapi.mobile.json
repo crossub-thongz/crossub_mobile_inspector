@@ -9443,6 +9443,53 @@
         ]
       }
     },
+    "/agent/properties/{propertyId}/workflows/open-inspection/{inspectionId}/confirm-schedule": {
+      "post": {
+        "description": "The agent accepts the time CROSSUB scheduled. Only available once an inspector is on the job and a time is set — confirming earlier would promise a viewing nobody has agreed to attend. Until it is confirmed, staff see the job as PENDING.",
+        "operationId": "AgentPortalController_confirmOpenInspectionSchedule",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentOpenInspectionConfirmResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm the scheduled time of an open inspection.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/open-inspection/{inspectionId}/cancel": {
       "post": {
         "operationId": "AgentPortalController_cancelOpenInspection",
@@ -9753,6 +9800,56 @@
           }
         ],
         "summary": "Complete a rent review and sync the new rent to the system.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/recommended-rent": {
+      "patch": {
+        "description": "Send `weekly` to recommend your own figure instead of the researched one; omit it or send null to go back to the research. The landlord pack, the report and the notice draft all quote this rate, so they follow the change.",
+        "operationId": "AgentPortalController_setRentReviewRecommendedRent",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRecommendedRentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Adjust the recommended rent, or clear the adjustment.",
         "tags": [
           "agent"
         ]
@@ -10808,8 +10905,57 @@
         ]
       }
     },
+    "/agent/properties/{propertyId}/workflows/inspection/routine": {
+      "post": {
+        "description": "Puts the property on the routine cadence. The agent names no date: the cadence comes from the property’s state (NSW 3/yr, VIC 2/yr) and each instance date is set by the account manager. Idempotent — a property already on routine returns its existing schedule with the request recorded against it.",
+        "operationId": "AgentPortalController_requestRoutineInspection",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequestRoutineInspectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowCreateResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Request routine inspections for a property.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/inspection/ingoing": {
       "post": {
+        "description": "The agent names no time — CROSSUB confirms it and emails them (CRS-0068). A `scheduledTime` in the body is accepted and ignored, so an older build of the agent app keeps working.",
         "operationId": "AgentPortalController_createIngoingInspection",
         "parameters": [
           {
@@ -10849,7 +10995,7 @@
             "bearer": []
           }
         ],
-        "summary": "Schedule an ingoing (move-in) inspection.",
+        "summary": "Request an ingoing (move-in) inspection.",
         "tags": [
           "agent"
         ]
@@ -10857,6 +11003,7 @@
     },
     "/agent/properties/{propertyId}/workflows/inspection/outgoing": {
       "post": {
+        "description": "The agent names no time and no inspector — CROSSUB confirms both and emails them (CRS-0068). `scheduledTime` and `inspectorName` are accepted and ignored.",
         "operationId": "AgentPortalController_createOutgoingInspection",
         "parameters": [
           {
@@ -10896,7 +11043,7 @@
             "bearer": []
           }
         ],
-        "summary": "Schedule an outgoing (move-out) inspection without an end-leasing case (Level 1 / standalone).",
+        "summary": "Request an outgoing (move-out) inspection without an end-leasing case (Level 1 / standalone).",
         "tags": [
           "agent"
         ]
@@ -12073,6 +12220,43 @@
           }
         ],
         "summary": "Upload a document (base64-through-API → object storage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/documents/{documentId}/file": {
+      "get": {
+        "description": "Proxies stored media (R2 / object storage) through the API so the browser can preview without cross-origin fetch failures. Accepts `portal:<uuid>`, bare portal uuid, and aggregated ids (`inspection:`, `inspection-report:`, `lease:`, `maintenance:`).",
+        "operationId": "AgentPortalController_streamDocumentFile",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "description": "Document id from list/detail (`portal:<uuid>`, `lease:<uuid>`, …). URL-encode colons.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "Document not found or not within the agent’s assigned book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Stream a managed property document for in-app preview.",
         "tags": [
           "agent"
         ]
@@ -16092,6 +16276,16 @@
             "items": {
               "type": "string"
             }
+          },
+          "listingHeadline": {
+            "type": "string",
+            "example": "2 bedroom apartment in Chatswood",
+            "description": "One-line listing headline."
+          },
+          "description": {
+            "type": "string",
+            "example": "An apartment at 12 Smith Street, Chatswood NSW 2067. The property has 2 bedrooms and 1 bathroom. Rent is $650 per week. Available from 1 September 2026.",
+            "description": "The listing description. States only what the property record holds — see leasing-listing-description.constants.ts."
           }
         },
         "required": [
@@ -16100,7 +16294,9 @@
           "status",
           "acceptingApplications",
           "propertyType",
-          "features"
+          "features",
+          "listingHeadline",
+          "description"
         ]
       },
       "PublicListingsResponseDto": {
@@ -16171,6 +16367,26 @@
           "contentBase64"
         ]
       },
+      "PublicApplicationCoApplicantDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "Jessica Morris"
+          },
+          "email": {
+            "type": "string",
+            "example": "jessica.m@email.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+61 400 333 444"
+          }
+        },
+        "required": [
+          "fullName"
+        ]
+      },
       "SubmitPublicApplicationDto": {
         "type": "object",
         "properties": {
@@ -16225,6 +16441,13 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PublicApplicationDocumentDto"
+            }
+          },
+          "coApplicants": {
+            "description": "Other adults who will be parties to the lease, named on this same application. They reach the tenancy agreement with the applicant they were named alongside — approve the application and they are on it, decline it and none of them are.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicApplicationCoApplicantDto"
             }
           }
         },
@@ -18455,7 +18678,7 @@
           "awaitingAgentPayment": {
             "type": "boolean",
             "example": false,
-            "description": "Level 1 prepaid: true until the agency pays at order create — inspector cannot claim or accept while this is true."
+            "description": "Level 1 prepaid: true until the agency pays at order create — inspector cannot start while this is true. Always false for Level 2 (postpaid)."
           },
           "assignedByStaff": {
             "type": "boolean",
@@ -19076,7 +19299,7 @@
           "awaitingAgentPayment": {
             "type": "boolean",
             "example": false,
-            "description": "Level 1 prepaid: true until the agent pays — Start stays disabled while awaiting payment."
+            "description": "Level 1 prepaid: true until the agent pays — Start stays disabled while awaiting payment. Always false for Level 2 (postpaid monthly invoice)."
           },
           "canCompleteEarly": {
             "type": "boolean",
@@ -22492,6 +22715,10 @@
         "type": "object",
         "properties": {}
       },
+      "AgentOpenInspectionConfirmResultDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CancelAgentOpenInspectionDto": {
         "type": "object",
         "properties": {}
@@ -22512,6 +22739,10 @@
         "required": [
           "reason"
         ]
+      },
+      "SetRecommendedRentDto": {
+        "type": "object",
+        "properties": {}
       },
       "SetProposedRentDto": {
         "type": "object",
@@ -22709,6 +22940,24 @@
         "required": [
           "url"
         ]
+      },
+      "AgentRequestRoutineInspectionDto": {
+        "type": "object",
+        "properties": {
+          "flow": {
+            "type": "string",
+            "enum": [
+              "self",
+              "in_person"
+            ],
+            "description": "Self-conducted by the tenant, or attended in person by a CROSSUB inspector. Defaults to in-person."
+          },
+          "note": {
+            "type": "string",
+            "description": "Anything CROSSUB should know when scheduling — access, tenant availability, urgency. Read by a person; never parsed into a date.",
+            "maxLength": 2000
+          }
+        }
       },
       "AgentCreateIngoingInspectionDto": {
         "type": "object",
@@ -25178,6 +25427,27 @@
           "content"
         ]
       },
+      "GiiPendingPropertyCandidateDto": {
+        "type": "object",
+        "properties": {
+          "propertyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string",
+            "example": "1A Lucy Street, Merrylands West NSW 2160"
+          },
+          "tenantName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "propertyId",
+          "label"
+        ]
+      },
       "GiiChatContextDto": {
         "type": "object",
         "properties": {
@@ -25204,6 +25474,13 @@
           "propertyChanged": {
             "type": "boolean",
             "example": true
+          },
+          "pendingPropertyCandidates": {
+            "description": "Echo back `pendingPropertyCandidates` from the previous response when the user is picking from an ambiguous list.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GiiPendingPropertyCandidateDto"
+            }
           }
         }
       },
@@ -25524,6 +25801,41 @@
           "caseRef"
         ]
       },
+      "GiiJobCaseLinkDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "maintenance",
+              "rent_review",
+              "inspection"
+            ],
+            "example": "maintenance"
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true,
+            "example": "Q20227",
+            "description": "Business reference when one exists (order number / tracking)."
+          },
+          "label": {
+            "type": "string",
+            "example": "Q20227 · Entrance hallway window cannot lock",
+            "description": "Short button label for the chat UI."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "reference",
+          "label"
+        ]
+      },
       "GiiChatResponseDto": {
         "type": "object",
         "properties": {
@@ -25548,6 +25860,20 @@
               }
             ]
           },
+          "jobCases": {
+            "description": "Job cases from tools on this turn (maintenance, rent review, inspection) for Open buttons in chat.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GiiJobCaseLinkDto"
+            }
+          },
+          "pendingPropertyCandidates": {
+            "description": "When find_property was ambiguous this turn, echo these back as `context.pendingPropertyCandidates` so the next reply can pick by number or address fragment.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GiiPendingPropertyCandidateDto"
+            }
+          },
           "stoppedOn": {
             "type": "string",
             "enum": [
@@ -25562,6 +25888,8 @@
           "reply",
           "assessment",
           "lodged",
+          "jobCases",
+          "pendingPropertyCandidates",
           "stoppedOn"
         ]
       },

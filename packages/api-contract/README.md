@@ -65,3 +65,21 @@ pnpm --filter @crossub-thongz/api-contract build   # → dist (types + client)
 
 Commit the regenerated specs whenever the API surface changes, so consumers can pin to
 a known contract. Browse the live API at `/api/docs` (Swagger UI) / `/api/openapi.json`.
+
+## Agent mailbox linking (Gmail / Yahoo OAuth)
+
+The agent facade exposes `/agent/mailboxes/*` and an updated `/agent/message-center`.
+Configure the API (`apps/api/.env`) with:
+
+- `GOOGLE_MAIL_CLIENT_ID` / `GOOGLE_MAIL_CLIENT_SECRET`
+- `YAHOO_MAIL_CLIENT_ID` / `YAHOO_MAIL_CLIENT_SECRET`
+- `MAILBOX_TOKEN_ENCRYPTION_KEY` (32-byte base64 — `openssl rand -base64 32`)
+- `AGENT_APP_URL` — agent portal origin (OAuth success redirect)
+- `API_PUBLIC_URL` — public API base for provider redirect URI registration
+
+Register these **authorized redirect URIs** in each provider console:
+
+- `{API_PUBLIC_URL}/api/v1/agent/mailboxes/oauth/google/callback`
+- `{API_PUBLIC_URL}/api/v1/agent/mailboxes/oauth/yahoo/callback`
+
+Example (local): `http://localhost:3001/api/v1/agent/mailboxes/oauth/google/callback`

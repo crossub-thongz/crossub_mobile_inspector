@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-15
+
+### Changed
+- **The vendored API contract moved 0.10.0 → 0.14.0.** This repo consumes `@crossub-thongz/api-contract` as `workspace:*` from its own `packages/api-contract`, so a release published from `crossub_web` never reaches it — the copy has to be synced by hand, and nobody had since 0.10.0 landed on 24 July. Four versions of DTOs had accumulated on the API in the meantime.
+
+  **No regression and no fix: type errors are 4 before and 4 after**, and all four are app-internal — a `Timeout` return type, two `Headers.getAll` calls that no longer exist in the DOM lib, and a type declared locally in `inspection-execution-hydration` but never exported. None of them touch a contract DTO, which is the useful finding: this app's typed usage was already compatible with everything the API had added, unlike the tenant app, where the same sync took 92 errors down to 11.
+
+  **The symlink was checked, not assumed.** In `crossub_mobile_tenant` and `crossub_mobile_maintenance` the same `workspace:*` declaration was resolving to a months-old registry *tarball* in the pnpm store, so those apps were type-checked against a package nobody had touched — here `apps/inspector/node_modules/@crossub-thongz/api-contract` correctly pointed at the workspace copy, so only the files needed replacing. `pnpm install --frozen-lockfile` left the lockfile untouched.
+
+  Render is unaffected: `buildCommand` runs `build:inspector`, which already builds the contract package before the app, so the gitignored `dist/` is produced on every deploy.
+
+  **Known and not fixed here: 26 of the 311 schemas in this contract are empty** — `{"type":"object","properties":{}}` — because those DTOs carry `class-validator` decorators but no `@ApiProperty()`, so Swagger sees no fields. `LoginDto` and `SetInspectorTimetableDto` are among them. Any typed client sending those bodies gets `Type 'string' is not assignable to type 'never'`. That is an API-side fix and a re-publish.
+
 ## 2026-08-13
 
 ### Added
