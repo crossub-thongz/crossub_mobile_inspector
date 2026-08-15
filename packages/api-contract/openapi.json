@@ -12901,7 +12901,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/KeyDetail"
                 }
               }
             }
@@ -13127,7 +13127,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/KeyDetail"
                 }
               }
             }
@@ -13180,7 +13180,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/KeyDetail"
                 }
               }
             }
@@ -13232,7 +13232,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/KeyBookingSummary"
                 }
               }
             }
@@ -13287,7 +13287,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/KeyBookingSummary"
                 }
               }
             }
@@ -13339,7 +13339,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/KeyBookingSummary"
                 }
               }
             }
@@ -13391,7 +13391,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/KeyBookingSummary"
                 }
               }
             }
@@ -38483,7 +38483,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -38522,7 +38529,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -38561,7 +38575,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -38600,7 +38621,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -38650,7 +38678,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -38699,7 +38734,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -38748,7 +38790,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -38797,7 +38846,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -38836,7 +38892,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -38924,7 +38987,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -38963,7 +39033,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -42687,14 +42764,21 @@
         "type": "object",
         "properties": {
           "verdict": {
-            "type": "object"
+            "type": "string",
+            "enum": [
+              "ACCEPTED",
+              "MODIFIED",
+              "REJECTED"
+            ]
+          },
+          "finalValue": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Shape differs per action; validated by the action’s own resume handler."
           },
           "note": {
             "type": "string",
             "maxLength": 500
-          },
-          "finalValue": {
-            "type": "object"
           }
         },
         "required": [
@@ -42802,6 +42886,11 @@
       "UpdateAgentConfigDto": {
         "type": "object",
         "properties": {
+          "parameters": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Per-agent tuning values; keys vary by agent."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -42823,9 +42912,6 @@
               "SEMI_AUTO",
               "FULL_AUTO"
             ]
-          },
-          "parameters": {
-            "type": "object"
           }
         }
       },
@@ -43340,12 +43426,31 @@
       "CreateAgencyDto": {
         "type": "object",
         "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ONBOARDING",
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "portalServiceLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_1_INSPECTION_ONLY",
+              "LEVEL_2_FULL_MANAGEMENT"
+            ]
+          },
+          "membershipTier": {
+            "type": "string",
+            "enum": [
+              "PRINCIPAL",
+              "AGENT"
+            ]
+          },
           "name": {
             "type": "string",
             "maxLength": 120
-          },
-          "status": {
-            "type": "object"
           },
           "contactName": {
             "type": "string",
@@ -43379,9 +43484,6 @@
             "type": "string",
             "maxLength": 2000
           },
-          "portalServiceLevel": {
-            "type": "object"
-          },
           "sendPortalCredentials": {
             "type": "boolean"
           },
@@ -43399,9 +43501,6 @@
           "portalContactPhone": {
             "type": "string",
             "maxLength": 40
-          },
-          "membershipTier": {
-            "type": "object"
           }
         },
         "required": [
@@ -43463,12 +43562,24 @@
       "UpdateAgencyDto": {
         "type": "object",
         "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ONBOARDING",
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "portalServiceLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_1_INSPECTION_ONLY",
+              "LEVEL_2_FULL_MANAGEMENT"
+            ]
+          },
           "name": {
             "type": "string",
             "maxLength": 120
-          },
-          "status": {
-            "type": "object"
           },
           "contactName": {
             "type": "string",
@@ -43507,9 +43618,6 @@
             "type": "string",
             "maxLength": 2000
           },
-          "portalServiceLevel": {
-            "type": "object"
-          },
           "suppressRoutineTenantNotice": {
             "type": "boolean"
           }
@@ -43518,11 +43626,15 @@
       "AssignManagerDto": {
         "type": "object",
         "properties": {
+          "tier": {
+            "type": "string",
+            "enum": [
+              "PRINCIPAL",
+              "AGENT"
+            ]
+          },
           "userId": {
             "type": "string"
-          },
-          "tier": {
-            "type": "object"
           }
         },
         "required": [
@@ -43532,6 +43644,13 @@
       "UpdateAgencyMemberDto": {
         "type": "object",
         "properties": {
+          "portalServiceLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_1_INSPECTION_ONLY",
+              "LEVEL_2_FULL_MANAGEMENT"
+            ]
+          },
           "contactName": {
             "type": "string",
             "maxLength": 120
@@ -43553,9 +43672,6 @@
           "phone": {
             "type": "string",
             "pattern": "/^[+\\d][\\d\\s\\-()]{5,30}$/"
-          },
-          "portalServiceLevel": {
-            "type": "object"
           },
           "notes": {
             "type": "string",
@@ -44953,15 +45069,27 @@
       "UpdateUserDto": {
         "type": "object",
         "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_INVITE",
+              "ACTIVE",
+              "DISABLED"
+            ]
+          },
+          "departmentCode": {
+            "type": "string",
+            "enum": [
+              "OPERATIONS",
+              "HR",
+              "ACCOUNTING",
+              "SALES",
+              "MANAGEMENT"
+            ]
+          },
           "role": {
             "type": "string",
             "pattern": "/^[A-Z][A-Z0-9_]{1,48}$/"
-          },
-          "status": {
-            "type": "object"
-          },
-          "departmentCode": {
-            "type": "object"
           },
           "firstName": {
             "type": "string",
@@ -44990,6 +45118,16 @@
       "CreateInviteDto": {
         "type": "object",
         "properties": {
+          "departmentCode": {
+            "type": "string",
+            "enum": [
+              "OPERATIONS",
+              "HR",
+              "ACCOUNTING",
+              "SALES",
+              "MANAGEMENT"
+            ]
+          },
           "email": {
             "type": "string",
             "format": "email"
@@ -44997,9 +45135,6 @@
           "role": {
             "type": "string",
             "pattern": "/^[A-Z][A-Z0-9_]{1,48}$/"
-          },
-          "departmentCode": {
-            "type": "object"
           }
         },
         "required": [
@@ -45293,6 +45428,38 @@
       "CreatePropertyDto": {
         "type": "object",
         "properties": {
+          "propertyType": {
+            "type": "string",
+            "enum": [
+              "APARTMENT",
+              "HOUSE",
+              "TOWNHOUSE",
+              "UNIT",
+              "STUDIO",
+              "COMMERCIAL",
+              "GRANNY_FLAT",
+              "BOARDING_HOUSE",
+              "OTHER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OCCUPIED",
+              "VACANT",
+              "SHOWING",
+              "MAINTENANCE"
+            ]
+          },
+          "rentPeriod": {
+            "type": "string",
+            "enum": [
+              "WEEKLY",
+              "FORTNIGHTLY",
+              "MONTHLY",
+              "YEARLY"
+            ]
+          },
           "agencyId": {
             "type": "string"
           },
@@ -45328,12 +45495,6 @@
           "paymentReference": {
             "type": "string",
             "maxLength": 60
-          },
-          "propertyType": {
-            "type": "object"
-          },
-          "status": {
-            "type": "object"
           },
           "bedrooms": {
             "type": "number",
@@ -45412,9 +45573,6 @@
           "rentWeekly": {
             "type": "number",
             "minimum": 0
-          },
-          "rentPeriod": {
-            "type": "object"
           },
           "bondAmount": {
             "type": "number",
@@ -45513,6 +45671,38 @@
       "UpdatePropertyDto": {
         "type": "object",
         "properties": {
+          "propertyType": {
+            "type": "string",
+            "enum": [
+              "APARTMENT",
+              "HOUSE",
+              "TOWNHOUSE",
+              "UNIT",
+              "STUDIO",
+              "COMMERCIAL",
+              "GRANNY_FLAT",
+              "BOARDING_HOUSE",
+              "OTHER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OCCUPIED",
+              "VACANT",
+              "SHOWING",
+              "MAINTENANCE"
+            ]
+          },
+          "rentPeriod": {
+            "type": "string",
+            "enum": [
+              "WEEKLY",
+              "FORTNIGHTLY",
+              "MONTHLY",
+              "YEARLY"
+            ]
+          },
           "name": {
             "type": "string",
             "maxLength": 160
@@ -45546,12 +45736,6 @@
             "type": "string",
             "nullable": true,
             "maxLength": 60
-          },
-          "propertyType": {
-            "type": "object"
-          },
-          "status": {
-            "type": "object"
           },
           "bedrooms": {
             "type": "number",
@@ -45637,9 +45821,6 @@
           "rentWeekly": {
             "type": "number",
             "minimum": 0
-          },
-          "rentPeriod": {
-            "type": "object"
           },
           "bondAmount": {
             "type": "number",
@@ -46453,6 +46634,25 @@
       "PostDisbursementDto": {
         "type": "object",
         "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "RENT",
+              "SERVICE",
+              "BOND",
+              "PACKAGE",
+              "TOPUP",
+              "CONTRACT",
+              "COMMISSION",
+              "INSPECTION",
+              "OTHER"
+            ]
+          },
+          "bank": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Payee bank details. Write-only — never returned on any response."
+          },
           "sourceModule": {
             "type": "string",
             "maxLength": 40
@@ -46460,9 +46660,6 @@
           "sourceRef": {
             "type": "string",
             "maxLength": 200
-          },
-          "type": {
-            "type": "object"
           },
           "payeePersonId": {
             "type": "string"
@@ -46481,21 +46678,33 @@
           "gst": {
             "type": "number",
             "minimum": 0
-          },
-          "bank": {
-            "type": "object"
           }
         },
         "required": [
+          "type",
           "sourceModule",
           "sourceRef",
-          "type",
           "amount"
         ]
       },
       "PostLedgerEntryDto": {
         "type": "object",
         "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "RENT",
+              "SERVICE",
+              "PACKAGE",
+              "BOND",
+              "WITHDRAW",
+              "TOPUP",
+              "INSPECTION",
+              "COMMISSION",
+              "CONTRACT",
+              "OTHER"
+            ]
+          },
           "sourceModule": {
             "type": "string",
             "maxLength": 40
@@ -46503,9 +46712,6 @@
           "sourceRef": {
             "type": "string",
             "maxLength": 200
-          },
-          "type": {
-            "type": "object"
           },
           "amount": {
             "type": "number",
@@ -46546,9 +46752,9 @@
           }
         },
         "required": [
+          "type",
           "sourceModule",
           "sourceRef",
-          "type",
           "amount"
         ]
       },
@@ -47686,6 +47892,9 @@
           },
           "variables": {
             "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
             "description": "Extra {{variable}} substitutions"
           }
         }
@@ -48020,6 +48229,246 @@
         },
         "required": [
           "tagNumber"
+        ]
+      },
+      "KeyCountsDto": {
+        "type": "object",
+        "properties": {
+          "keys": {
+            "type": "number"
+          },
+          "entryDoor": {
+            "type": "number"
+          },
+          "windowSliding": {
+            "type": "number"
+          },
+          "fobs": {
+            "type": "number"
+          },
+          "remoteControl": {
+            "type": "number"
+          },
+          "mailbox": {
+            "type": "number"
+          },
+          "others": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "keys",
+          "entryDoor",
+          "windowSliding",
+          "fobs",
+          "remoteControl",
+          "mailbox",
+          "others"
+        ]
+      },
+      "KeyBookingSummary": {
+        "type": "object",
+        "properties": {
+          "collectionPhotos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "returnPhotos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "tagNumber": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "borrowerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "borrowerType": {
+            "type": "string"
+          },
+          "borrowerTypeLabel": {
+            "type": "string"
+          },
+          "borrowerMobile": {
+            "type": "string",
+            "nullable": true
+          },
+          "isNewTenantKeys": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "reservedDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "timeSlot": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectionPdfUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "returnedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "expectedReturnDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "returnCheckedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "returnPdfUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "pickupOverdue": {
+            "type": "boolean"
+          },
+          "daysOverdue": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "collectionPhotos",
+          "returnPhotos",
+          "id",
+          "keyId",
+          "tagNumber",
+          "address",
+          "borrowerName",
+          "borrowerType",
+          "borrowerTypeLabel",
+          "borrowerMobile",
+          "isNewTenantKeys",
+          "status",
+          "statusLabel",
+          "reservedDate",
+          "timeSlot",
+          "collectedAt",
+          "collectedByName",
+          "collectionPdfUrl",
+          "returnedAt",
+          "expectedReturnDate",
+          "returnCheckedByName",
+          "returnPdfUrl",
+          "notes",
+          "pickupOverdue",
+          "daysOverdue",
+          "createdAt"
+        ]
+      },
+      "KeyDetail": {
+        "type": "object",
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/KeyCountsDto"
+          },
+          "activeBooking": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/KeyBookingSummary"
+              }
+            ]
+          },
+          "bookings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeyBookingSummary"
+            }
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "tagNumber": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "propertyId": {
+            "type": "string",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "counts",
+          "activeBooking",
+          "bookings",
+          "photoUrl",
+          "id",
+          "tagNumber",
+          "address",
+          "propertyId",
+          "unit",
+          "status",
+          "statusLabel",
+          "notes",
+          "archivedAt",
+          "updatedAt"
         ]
       },
       "UpdateKeyDto": {
@@ -50019,6 +50468,13 @@
       "CreateLeadDto": {
         "type": "object",
         "properties": {
+          "portalServiceLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_1_INSPECTION_ONLY",
+              "LEVEL_2_FULL_MANAGEMENT"
+            ]
+          },
           "companyName": {
             "type": "string",
             "maxLength": 200
@@ -50110,9 +50566,6 @@
             "minimum": 0,
             "maximum": 1
           },
-          "portalServiceLevel": {
-            "type": "object"
-          },
           "sendPortalCredentials": {
             "type": "boolean"
           },
@@ -50128,6 +50581,13 @@
       "SyncPortalAgentLeadDto": {
         "type": "object",
         "properties": {
+          "portalServiceLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_1_INSPECTION_ONLY",
+              "LEVEL_2_FULL_MANAGEMENT"
+            ]
+          },
           "agencyId": {
             "type": "string"
           },
@@ -50150,9 +50610,6 @@
           "notes": {
             "type": "string",
             "maxLength": 2000
-          },
-          "portalServiceLevel": {
-            "type": "object"
           }
         },
         "required": [
@@ -50244,6 +50701,13 @@
       "UpdateLeadDto": {
         "type": "object",
         "properties": {
+          "portalServiceLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_1_INSPECTION_ONLY",
+              "LEVEL_2_FULL_MANAGEMENT"
+            ]
+          },
           "companyName": {
             "type": "string",
             "maxLength": 200
@@ -50322,9 +50786,6 @@
           "notes": {
             "type": "string",
             "maxLength": 2000
-          },
-          "portalServiceLevel": {
-            "type": "object"
           },
           "assignedSalesperson": {
             "type": "string",
@@ -50709,6 +51170,13 @@
       "TestSendSalesEmailTemplateDto": {
         "type": "object",
         "properties": {
+          "variables": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Extra {{variable}} substitutions"
+          },
           "toEmail": {
             "type": "string",
             "format": "email"
@@ -50718,9 +51186,6 @@
           },
           "bodyText": {
             "type": "string"
-          },
-          "variables": {
-            "type": "object"
           }
         }
       },
@@ -51688,6 +52153,14 @@
       "LaunchProposalDto": {
         "type": "object",
         "properties": {
+          "marketAnalysis": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "strategy": {
+            "type": "object",
+            "additionalProperties": true
+          },
           "name": {
             "type": "string",
             "maxLength": 200
@@ -51728,12 +52201,6 @@
               "pending_approval",
               "draft"
             ]
-          },
-          "marketAnalysis": {
-            "type": "object"
-          },
-          "strategy": {
-            "type": "object"
           },
           "channelBudgets": {
             "type": "array",
@@ -62940,6 +63407,455 @@
         },
         "required": [
           "reason"
+        ]
+      },
+      "RentReviewAgentRecipient": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      },
+      "RentPlatformResearch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "nsw_fair_trading",
+              "rp_data",
+              "rea"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "failed",
+              "pending_credentials",
+              "insufficient_data"
+            ]
+          },
+          "medianWeekly": {
+            "type": "number",
+            "nullable": true
+          },
+          "rangeLow": {
+            "type": "number",
+            "nullable": true
+          },
+          "rangeHigh": {
+            "type": "number",
+            "nullable": true
+          },
+          "sampleCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "summary": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "label": {
+            "type": "string"
+          },
+          "researchedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "medianWeekly",
+          "rangeLow",
+          "rangeHigh",
+          "sampleCount",
+          "summary",
+          "sourceUrl",
+          "error",
+          "label",
+          "researchedAt"
+        ]
+      },
+      "RentMarketResearchSnapshot": {
+        "type": "object",
+        "properties": {
+          "platforms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentPlatformResearch"
+            }
+          },
+          "researchedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "platforms",
+          "researchedAt"
+        ]
+      },
+      "RentReviewAi": {
+        "type": "object",
+        "properties": {
+          "suggestedWeekly": {
+            "type": "number",
+            "nullable": true
+          },
+          "increasePercent": {
+            "type": "number",
+            "nullable": true
+          },
+          "rationale": {
+            "type": "string",
+            "nullable": true
+          },
+          "research": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RentMarketResearchSnapshot"
+              }
+            ]
+          }
+        },
+        "required": [
+          "suggestedWeekly",
+          "increasePercent",
+          "rationale",
+          "research"
+        ]
+      },
+      "RentReviewPricingMilestoneView": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "headline": {
+            "type": "string"
+          },
+          "weeklyRent": {
+            "type": "number"
+          },
+          "workflowPhase": {
+            "type": "number"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note",
+          "id",
+          "source",
+          "headline",
+          "weeklyRent",
+          "workflowPhase",
+          "recordedAt"
+        ]
+      },
+      "RentReviewAuditEntryView": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail",
+          "id",
+          "actor",
+          "kind",
+          "message",
+          "at"
+        ]
+      },
+      "RentReviewView": {
+        "type": "object",
+        "properties": {
+          "propertyId": {
+            "type": "string",
+            "nullable": true
+          },
+          "propertyAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "COMPLETED"
+            ]
+          },
+          "agentDecision": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantName": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentWeeklyRent": {
+            "type": "number",
+            "nullable": true
+          },
+          "proposedWeeklyRent": {
+            "type": "number",
+            "nullable": true
+          },
+          "newRent": {
+            "type": "number",
+            "nullable": true
+          },
+          "effectiveDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "rentReviewDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "leaseType": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "periodic"
+            ],
+            "nullable": true
+          },
+          "fixedTermWeeks": {
+            "type": "number",
+            "nullable": true
+          },
+          "initialLeaseStartDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "leaseEndDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "rentNegotiable": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "newAgreementStart": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "newAgreementEnd": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "leaseAdditionalTerms": {
+            "type": "string",
+            "nullable": true
+          },
+          "leaseAdditionalTermsPets": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "managingAgentLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "system"
+            ]
+          },
+          "agentRecipient": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RentReviewAgentRecipient"
+              }
+            ]
+          },
+          "preferredLeaseType": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "periodic"
+            ],
+            "nullable": true
+          },
+          "agentConfirmedDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "completedDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "ai": {
+            "$ref": "#/components/schemas/RentReviewAi"
+          },
+          "tenantCounterWeekly": {
+            "type": "number",
+            "nullable": true
+          },
+          "tenantMoveOutDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "negotiationNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancellationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "decisionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "completeLedgerEntryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "pricingMilestones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewPricingMilestoneView"
+            }
+          },
+          "auditLog": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewAuditEntryView"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "workflowState": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "propertyId",
+          "propertyAddress",
+          "orderNumber",
+          "status",
+          "agentDecision",
+          "tenantName",
+          "currentWeeklyRent",
+          "proposedWeeklyRent",
+          "newRent",
+          "effectiveDate",
+          "rentReviewDate",
+          "leaseType",
+          "fixedTermWeeks",
+          "initialLeaseStartDate",
+          "leaseEndDate",
+          "rentNegotiable",
+          "newAgreementStart",
+          "newAgreementEnd",
+          "leaseAdditionalTerms",
+          "leaseAdditionalTermsPets",
+          "tenantRef",
+          "managingAgentLabel",
+          "createdBy",
+          "agentRecipient",
+          "preferredLeaseType",
+          "agentConfirmedDate",
+          "completedDate",
+          "ai",
+          "tenantCounterWeekly",
+          "tenantMoveOutDate",
+          "negotiationNote",
+          "cancellationReason",
+          "decisionReason",
+          "completeLedgerEntryId",
+          "pricingMilestones",
+          "auditLog",
+          "id",
+          "workflowState",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AgentRentReviewResultDto": {
+        "type": "object",
+        "properties": {
+          "review": {
+            "$ref": "#/components/schemas/RentReviewView"
+          }
+        },
+        "required": [
+          "review"
         ]
       },
       "AgentCreateTerminationCaseDto": {

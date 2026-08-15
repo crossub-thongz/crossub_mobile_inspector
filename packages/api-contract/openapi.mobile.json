@@ -9885,7 +9885,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -9924,7 +9931,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -9963,7 +9977,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -10002,7 +10023,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -10052,7 +10080,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -10101,7 +10136,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -10150,7 +10192,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -10199,7 +10248,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -10238,7 +10294,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -10326,7 +10389,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -10365,7 +10435,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -24130,6 +24207,455 @@
         },
         "required": [
           "reason"
+        ]
+      },
+      "RentReviewAgentRecipient": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      },
+      "RentPlatformResearch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "nsw_fair_trading",
+              "rp_data",
+              "rea"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "failed",
+              "pending_credentials",
+              "insufficient_data"
+            ]
+          },
+          "medianWeekly": {
+            "type": "number",
+            "nullable": true
+          },
+          "rangeLow": {
+            "type": "number",
+            "nullable": true
+          },
+          "rangeHigh": {
+            "type": "number",
+            "nullable": true
+          },
+          "sampleCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "summary": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "label": {
+            "type": "string"
+          },
+          "researchedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "medianWeekly",
+          "rangeLow",
+          "rangeHigh",
+          "sampleCount",
+          "summary",
+          "sourceUrl",
+          "error",
+          "label",
+          "researchedAt"
+        ]
+      },
+      "RentMarketResearchSnapshot": {
+        "type": "object",
+        "properties": {
+          "platforms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentPlatformResearch"
+            }
+          },
+          "researchedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "platforms",
+          "researchedAt"
+        ]
+      },
+      "RentReviewAi": {
+        "type": "object",
+        "properties": {
+          "suggestedWeekly": {
+            "type": "number",
+            "nullable": true
+          },
+          "increasePercent": {
+            "type": "number",
+            "nullable": true
+          },
+          "rationale": {
+            "type": "string",
+            "nullable": true
+          },
+          "research": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RentMarketResearchSnapshot"
+              }
+            ]
+          }
+        },
+        "required": [
+          "suggestedWeekly",
+          "increasePercent",
+          "rationale",
+          "research"
+        ]
+      },
+      "RentReviewPricingMilestoneView": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "headline": {
+            "type": "string"
+          },
+          "weeklyRent": {
+            "type": "number"
+          },
+          "workflowPhase": {
+            "type": "number"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note",
+          "id",
+          "source",
+          "headline",
+          "weeklyRent",
+          "workflowPhase",
+          "recordedAt"
+        ]
+      },
+      "RentReviewAuditEntryView": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail",
+          "id",
+          "actor",
+          "kind",
+          "message",
+          "at"
+        ]
+      },
+      "RentReviewView": {
+        "type": "object",
+        "properties": {
+          "propertyId": {
+            "type": "string",
+            "nullable": true
+          },
+          "propertyAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "COMPLETED"
+            ]
+          },
+          "agentDecision": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantName": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentWeeklyRent": {
+            "type": "number",
+            "nullable": true
+          },
+          "proposedWeeklyRent": {
+            "type": "number",
+            "nullable": true
+          },
+          "newRent": {
+            "type": "number",
+            "nullable": true
+          },
+          "effectiveDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "rentReviewDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "leaseType": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "periodic"
+            ],
+            "nullable": true
+          },
+          "fixedTermWeeks": {
+            "type": "number",
+            "nullable": true
+          },
+          "initialLeaseStartDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "leaseEndDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "rentNegotiable": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "newAgreementStart": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "newAgreementEnd": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "leaseAdditionalTerms": {
+            "type": "string",
+            "nullable": true
+          },
+          "leaseAdditionalTermsPets": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "managingAgentLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "system"
+            ]
+          },
+          "agentRecipient": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RentReviewAgentRecipient"
+              }
+            ]
+          },
+          "preferredLeaseType": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "periodic"
+            ],
+            "nullable": true
+          },
+          "agentConfirmedDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "completedDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "ai": {
+            "$ref": "#/components/schemas/RentReviewAi"
+          },
+          "tenantCounterWeekly": {
+            "type": "number",
+            "nullable": true
+          },
+          "tenantMoveOutDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "negotiationNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancellationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "decisionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "completeLedgerEntryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "pricingMilestones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewPricingMilestoneView"
+            }
+          },
+          "auditLog": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewAuditEntryView"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "workflowState": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "propertyId",
+          "propertyAddress",
+          "orderNumber",
+          "status",
+          "agentDecision",
+          "tenantName",
+          "currentWeeklyRent",
+          "proposedWeeklyRent",
+          "newRent",
+          "effectiveDate",
+          "rentReviewDate",
+          "leaseType",
+          "fixedTermWeeks",
+          "initialLeaseStartDate",
+          "leaseEndDate",
+          "rentNegotiable",
+          "newAgreementStart",
+          "newAgreementEnd",
+          "leaseAdditionalTerms",
+          "leaseAdditionalTermsPets",
+          "tenantRef",
+          "managingAgentLabel",
+          "createdBy",
+          "agentRecipient",
+          "preferredLeaseType",
+          "agentConfirmedDate",
+          "completedDate",
+          "ai",
+          "tenantCounterWeekly",
+          "tenantMoveOutDate",
+          "negotiationNote",
+          "cancellationReason",
+          "decisionReason",
+          "completeLedgerEntryId",
+          "pricingMilestones",
+          "auditLog",
+          "id",
+          "workflowState",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AgentRentReviewResultDto": {
+        "type": "object",
+        "properties": {
+          "review": {
+            "$ref": "#/components/schemas/RentReviewView"
+          }
+        },
+        "required": [
+          "review"
         ]
       },
       "SetRecommendedRentDto": {

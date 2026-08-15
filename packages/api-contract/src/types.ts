@@ -9086,6 +9086,114 @@ export interface components {
             /** @example Opened in error — landlord not proceeding with increase */
             reason: string;
         };
+        RentReviewAgentRecipient: {
+            name: string;
+            email: string;
+        };
+        RentPlatformResearch: {
+            /** @enum {string} */
+            id: "nsw_fair_trading" | "rp_data" | "rea";
+            /** @enum {string} */
+            status: "complete" | "failed" | "pending_credentials" | "insufficient_data";
+            medianWeekly: number | null;
+            rangeLow: number | null;
+            rangeHigh: number | null;
+            sampleCount: number | null;
+            summary: string | null;
+            sourceUrl: string | null;
+            error: string | null;
+            label: string;
+            researchedAt: string;
+        };
+        RentMarketResearchSnapshot: {
+            platforms: components["schemas"]["RentPlatformResearch"][];
+            researchedAt: string;
+        };
+        RentReviewAi: {
+            suggestedWeekly: number | null;
+            increasePercent: number | null;
+            rationale: string | null;
+            research: components["schemas"]["RentMarketResearchSnapshot"] | null;
+        };
+        RentReviewPricingMilestoneView: {
+            note: string | null;
+            id: string;
+            source: string;
+            headline: string;
+            weeklyRent: number;
+            workflowPhase: number;
+            /** Format: date-time */
+            recordedAt: string;
+        };
+        RentReviewAuditEntryView: {
+            detail: string | null;
+            id: string;
+            actor: string;
+            kind: string;
+            message: string;
+            /** Format: date-time */
+            at: string;
+        };
+        RentReviewView: {
+            propertyId: string | null;
+            propertyAddress: string | null;
+            orderNumber: string | null;
+            /** @enum {string} */
+            status: "OPEN" | "COMPLETED";
+            agentDecision: string | null;
+            tenantName: string | null;
+            currentWeeklyRent: number | null;
+            proposedWeeklyRent: number | null;
+            newRent: number | null;
+            /** Format: date-time */
+            effectiveDate: string | null;
+            /** Format: date-time */
+            rentReviewDate: string | null;
+            /** @enum {string|null} */
+            leaseType: "fixed" | "periodic" | null;
+            fixedTermWeeks: number | null;
+            /** Format: date-time */
+            initialLeaseStartDate: string | null;
+            /** Format: date-time */
+            leaseEndDate: string | null;
+            rentNegotiable: boolean | null;
+            /** Format: date-time */
+            newAgreementStart: string | null;
+            /** Format: date-time */
+            newAgreementEnd: string | null;
+            leaseAdditionalTerms: string | null;
+            leaseAdditionalTermsPets: string | null;
+            tenantRef: string | null;
+            managingAgentLabel: string | null;
+            /** @enum {string} */
+            createdBy: "agent" | "system";
+            agentRecipient: components["schemas"]["RentReviewAgentRecipient"] | null;
+            /** @enum {string|null} */
+            preferredLeaseType: "fixed" | "periodic" | null;
+            /** Format: date-time */
+            agentConfirmedDate: string | null;
+            /** Format: date-time */
+            completedDate: string | null;
+            ai: components["schemas"]["RentReviewAi"];
+            tenantCounterWeekly: number | null;
+            /** Format: date-time */
+            tenantMoveOutDate: string | null;
+            negotiationNote: string | null;
+            cancellationReason: string | null;
+            decisionReason: string | null;
+            completeLedgerEntryId: string | null;
+            pricingMilestones: components["schemas"]["RentReviewPricingMilestoneView"][];
+            auditLog: components["schemas"]["RentReviewAuditEntryView"][];
+            id: string;
+            workflowState: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        AgentRentReviewResultDto: {
+            review: components["schemas"]["RentReviewView"];
+        };
         SetRecommendedRentDto: {
             weekly?: number | null;
         };
@@ -18833,7 +18941,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
@@ -18853,7 +18963,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
@@ -18873,7 +18985,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
@@ -18893,7 +19007,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
@@ -18917,7 +19033,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
@@ -18941,7 +19059,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
@@ -18965,7 +19085,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
@@ -18989,7 +19111,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
@@ -19009,7 +19133,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
@@ -19053,7 +19179,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
@@ -19073,7 +19201,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentRentReviewResultDto"];
+                };
             };
         };
     };
