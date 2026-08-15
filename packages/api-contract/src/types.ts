@@ -4644,7 +4644,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        LoginDto: Record<string, never>;
+        LoginDto: {
+            /** Format: email */
+            email: string;
+            password: string;
+        };
         MobileAuthResponseDto: {
             /** @description JWT access token — send as Authorization: Bearer <token>. */
             accessToken: string;
@@ -4691,7 +4695,7 @@ export interface components {
              * @description Human-facing order number assigned to app-created tickets.
              * @example MR-00001
              */
-            orderNumber: Record<string, never> | null;
+            orderNumber: string | null;
             /**
              * Format: uuid
              * @description The property the request was filed against (server-resolved).
@@ -4716,7 +4720,10 @@ export interface components {
              * @example 184321
              */
             sizeBytes: number;
-            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
             contentBase64: string;
         };
         TenantPhotoUploadResponseDto: {
@@ -4823,12 +4830,12 @@ export interface components {
              * @description Building name when recorded on the property.
              * @example Harbour Residences
              */
-            buildingName?: Record<string, never>;
+            buildingName?: string | null;
             /**
              * @description Strata plan number when recorded on the property.
              * @example SP12345
              */
-            strataPlanNumber?: Record<string, never>;
+            strataPlanNumber?: string | null;
             /** @description Building manager contact from the linked property. */
             buildingManager?: components["schemas"]["MaintenancePropertyContactDto"];
             /** @description Strata body contact from the linked property. */
@@ -5599,19 +5606,28 @@ export interface components {
             /** @description Notice and automated reminder emails sent to the tenant. */
             emails: components["schemas"]["TenantRentReviewEmailDto"][];
         };
-        TenantRentReviewRespondDto: Record<string, never>;
-        CreateTenantVacatingCaseDto: Record<string, never>;
+        TenantRentReviewRespondDto: {
+            /** @enum {string} */
+            decision: "accept" | "reject" | "counter";
+            moveOutDate?: string;
+            counterWeekly?: number;
+        };
+        CreateTenantVacatingCaseDto: {
+            expectedVacateDate: string;
+            propertyId?: string;
+            terminationReason?: string;
+        };
         TenantVacatingRepairQuoteItemDto: {
             area: string;
             description: string;
-            quote?: Record<string, never> | null;
+            quote?: string | null;
             /** @description When true, this item may be deducted from the bond. */
             bondDeductible?: boolean;
             /**
              * Format: uuid
              * @description Linked End of Lease maintenance job for this responsibility item, when spawned.
              */
-            maintenanceRequestId?: Record<string, never> | null;
+            maintenanceRequestId?: string | null;
         };
         TenantVacatingSettlementSummaryDto: {
             unpaidRent: number;
@@ -5722,8 +5738,12 @@ export interface components {
             tenantResponsibilityItems: components["schemas"]["TenantVacatingRepairQuoteItemDto"][];
             repairQuoteSettlementSummary: components["schemas"]["TenantVacatingSettlementSummaryDto"] | null;
         };
-        CancelTenantVacatingCaseDto: Record<string, never>;
-        UpdateTenantVacateDateDto: Record<string, never>;
+        CancelTenantVacatingCaseDto: {
+            reason?: string;
+        };
+        UpdateTenantVacateDateDto: {
+            date: string;
+        };
         TenantSetOutgoingAttendanceDto: {
             /**
              * @description Whether the tenant will attend the outgoing inspection.
@@ -5731,9 +5751,16 @@ export interface components {
              */
             attendance: "yes" | "no";
         };
-        TenantDeclineVacatingSettlementDto: Record<string, never>;
-        TenantDeclineVacatingRepairQuoteDto: Record<string, never>;
-        TenantDeclineVacatingResponsibilitiesDto: Record<string, never>;
+        TenantDeclineVacatingSettlementDto: {
+            reason: string;
+        };
+        TenantDeclineVacatingRepairQuoteDto: {
+            reason?: string;
+            acknowledgedPrice?: string;
+        };
+        TenantDeclineVacatingResponsibilitiesDto: {
+            reason: string;
+        };
         TenantSubmitKeyReturnDto: {
             /**
              * @description Public URLs of uploaded key-return proof photos (1–5).
@@ -5911,18 +5938,18 @@ export interface components {
         };
         TenantLeasingAgreementContractDto: {
             /** @example Standard Residential Tenancy Agreement */
-            template: Record<string, never> | null;
+            template: string | null;
             /** @example 26 weeks */
-            leaseTerm: Record<string, never> | null;
+            leaseTerm: string | null;
             /** @example 650 */
-            weeklyRent: Record<string, never> | null;
+            weeklyRent: number | null;
             /** @example CT-00042 · v2 */
             contractRef: string | null;
             /**
              * @description Current revision number.
              * @example 2
              */
-            currentVersion: Record<string, never> | null;
+            currentVersion: number | null;
         };
         TenantLeasingContractRevisionDto: {
             /** @example 1 */
@@ -6016,6 +6043,9 @@ export interface components {
              *     ]
              */
             photoUrls: string[];
+            time: string;
+            timeEnd?: string;
+            location: string;
         };
         UploadTenantPaymentProofDto: {
             /** @example deposit-transfer.pdf */
@@ -6030,7 +6060,10 @@ export interface components {
              * @example 184321
              */
             sizeBytes: number;
-            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
             contentBase64: string;
         };
         BeginTenantPaymentProofUploadDto: {
@@ -6059,6 +6092,7 @@ export interface components {
         };
         TenantSubmitPaymentProofDto: {
             /**
+             * Format: uri
              * @description Public URL returned by the proof upload endpoint.
              * @example https://media.crossub.example/tenant-deposit-proof/…/receipt.pdf
              */
@@ -6076,7 +6110,7 @@ export interface components {
             /** @example 142 Elizabeth St, Melbourne VIC 3000 */
             address: string;
             /** @example Melbourne VIC 3000 */
-            suburb?: Record<string, never>;
+            suburb?: string | null;
             /**
              * @example VACANT
              * @enum {string}
@@ -6090,46 +6124,46 @@ export interface components {
             /** @enum {string} */
             propertyType: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
             /** @example 720 */
-            rentWeekly?: Record<string, never>;
+            rentWeekly?: number | null;
             /**
              * @description Rental bond from the active leasing cycle.
              * @example 2880
              */
-            bondAmount?: Record<string, never>;
+            bondAmount?: number | null;
             /**
              * @description Holding deposit from the active leasing cycle.
              * @example 720
              */
-            depositAmount?: Record<string, never>;
+            depositAmount?: number | null;
             /**
              * Format: date
              * @example 2026-08-01
              */
-            availableFrom?: string;
+            availableFrom?: string | null;
             /**
              * @description Lease term from the active leasing cycle contract draft.
              * @example 26 weeks
              */
-            leaseTerm?: Record<string, never>;
+            leaseTerm?: string | null;
             /** Format: date-time */
-            openInspectionAt?: string;
+            openInspectionAt?: string | null;
             /**
              * Format: date-time
              * @description End of the open inspection window when a viewing session is linked.
              */
-            openInspectionEndAt?: string;
+            openInspectionEndAt?: string | null;
             /**
              * Format: date-time
              * @description When the agent opened the new-leasing case (active cycle createdAt).
              */
-            listedAt?: string;
+            listedAt?: string | null;
             /** @example 3 */
-            bedrooms?: Record<string, never>;
+            bedrooms?: number | null;
             /** @example 2 */
-            bathrooms?: Record<string, never>;
+            bathrooms?: number | null;
             /** @example 1 */
-            parking?: Record<string, never>;
-            imageUrl?: Record<string, never>;
+            parking?: number | null;
+            imageUrl?: string | null;
             /**
              * @example [
              *       "3 bed",
@@ -6179,7 +6213,10 @@ export interface components {
         PublicApplicationCoApplicantDto: {
             /** @example Jessica Morris */
             fullName: string;
-            /** @example jessica.m@email.com */
+            /**
+             * Format: email
+             * @example jessica.m@email.com
+             */
             email?: string;
             /** @example +61 400 333 444 */
             phone?: string;
@@ -6187,7 +6224,10 @@ export interface components {
         SubmitPublicApplicationDto: {
             /** @example Michael Lee */
             fullName: string;
-            /** @example michael.l@email.com */
+            /**
+             * Format: email
+             * @example michael.l@email.com
+             */
             email: string;
             /** @example +61 400 345 678 */
             phone: string;
@@ -6345,7 +6385,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @example M-SEED-002 */
-            orderNumber: Record<string, never> | null;
+            orderNumber: string | null;
             /**
              * @example OPEN
              * @enum {string}
@@ -6358,11 +6398,11 @@ export interface components {
             type: "TENANT_REQUEST" | "PROPERTY_MAINTENANCE" | "STRATA" | "UNKNOWN";
             /** @example false */
             urgent: boolean;
-            description: Record<string, never> | null;
-            categoryName: Record<string, never> | null;
+            description: string | null;
+            categoryName: string | null;
             /** Format: uuid */
-            propertyId: Record<string, never> | null;
-            propertyAddress: Record<string, never> | null;
+            propertyId: string | null;
+            propertyAddress: string | null;
             /** Format: date-time */
             scheduledDate: string | null;
             /** Format: date-time */
@@ -6375,9 +6415,9 @@ export interface components {
              */
             responsibility?: "tenant" | "landlord" | "strata" | null;
             /** @description Building name when recorded on the property. */
-            buildingName?: Record<string, never>;
+            buildingName?: string | null;
             /** @description Strata plan number when recorded on the property. */
-            strataPlanNumber?: Record<string, never>;
+            strataPlanNumber?: string | null;
             /** @description Building manager contact from the linked property. */
             buildingManager?: components["schemas"]["MaintenancePropertyContactDto"];
             /** @description Strata body contact from the linked property. */
@@ -6420,8 +6460,8 @@ export interface components {
              */
             status: "DRAFT" | "IN_PROGRESS" | "FIRST_REVIEW" | "SECOND_REVIEW" | "COMPLETED" | "PUBLISHED" | "CANCELLED";
             /** Format: uuid */
-            propertyId: Record<string, never> | null;
-            propertyAddress: Record<string, never> | null;
+            propertyId: string | null;
+            propertyAddress: string | null;
             /** Format: date-time */
             scheduledDate: string | null;
             /** Format: date-time */
@@ -6429,7 +6469,7 @@ export interface components {
             /** Format: date-time */
             completedDate: string | null;
             /** @description URL of the generated inspection report PDF, when available. */
-            reportUrl: Record<string, never> | null;
+            reportUrl: string | null;
             /** Format: date-time */
             createdAt: string;
         };
@@ -6468,26 +6508,26 @@ export interface components {
              * @description Gross amount (AUD).
              * @example 850
              */
-            amount: Record<string, never> | null;
+            amount: number | null;
             /**
              * @description Management/service charge (AUD).
              * @example 33
              */
-            serviceCharge: Record<string, never> | null;
+            serviceCharge: number | null;
             /** @example 3.3 */
-            gst: Record<string, never> | null;
+            gst: number | null;
             /**
              * @description Net amount paid out to the owner (AUD).
              * @example 813.7
              */
-            netAmount: Record<string, never> | null;
+            netAmount: number | null;
             /**
              * @description Whether the payout has settled.
              * @example true
              */
             isComplete: boolean;
             /** Format: uuid */
-            propertyId: Record<string, never> | null;
+            propertyId: string | null;
             /** Format: date-time */
             createdAt: string;
         };
@@ -6654,7 +6694,10 @@ export interface components {
              * @example 184321
              */
             sizeBytes: number;
-            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
             contentBase64: string;
             /**
              * @example insurance
@@ -6864,7 +6907,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @example M-SEED-001 */
-            orderNumber: Record<string, never> | null;
+            orderNumber: string | null;
             /**
              * @example SCHEDULED
              * @enum {string}
@@ -6878,13 +6921,13 @@ export interface components {
             /** @example false */
             urgent: boolean;
             /** @example Replace leaking hot-water valve. */
-            description: Record<string, never> | null;
+            description: string | null;
             /** @description Trade/category label, if classified. */
-            categoryName: Record<string, never> | null;
+            categoryName: string | null;
             /** @description Site address to attend (from the linked property). */
-            propertyAddress: Record<string, never> | null;
+            propertyAddress: string | null;
             /** @example Sydney */
-            propertySuburb: Record<string, never> | null;
+            propertySuburb: string | null;
             /**
              * Format: date-time
              * @description When the job is scheduled.
@@ -6968,7 +7011,10 @@ export interface components {
              * @example 184321
              */
             sizeBytes: number;
-            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
             contentBase64: string;
         };
         SubmitContractorQuoteDto: {
@@ -7041,7 +7087,10 @@ export interface components {
              * @example 184321
              */
             sizeBytes: number;
-            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
             contentBase64: string;
         };
         ContractorThreadMessageResponseDto: {
@@ -7236,7 +7285,7 @@ export interface components {
              */
             status: "DRAFT" | "IN_PROGRESS" | "FIRST_REVIEW" | "SECOND_REVIEW" | "COMPLETED" | "PUBLISHED" | "CANCELLED";
             /** Format: uuid */
-            propertyId: Record<string, never> | null;
+            propertyId: string | null;
             /** @description Street address of the site. */
             propertyAddress: string | null;
             /** @description Suburb of the site. */
@@ -7473,12 +7522,12 @@ export interface components {
             endTime: string;
             /** @description Viewing session lifecycle (scheduled | staff_en_route | open | closed | cancelled). */
             sessionStatus: string;
-            openedAt?: Record<string, never> | null;
+            openedAt?: string | null;
             /** @description True when the inspector began before the originally scheduled start. */
             startedEarly: boolean;
-            startedEarlyAt?: Record<string, never> | null;
+            startedEarlyAt?: string | null;
             /** @description Original scheduled start before an early inspector start. */
-            originalScheduledStart?: Record<string, never> | null;
+            originalScheduledStart?: string | null;
             /** @description Inspector may POST /open-viewing/start while accepted and not yet live. */
             canStart: boolean;
             /**
@@ -7663,7 +7712,10 @@ export interface components {
              * @example 184321
              */
             sizeBytes: number;
-            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
             contentBase64: string;
             /**
              * @description Attach the photo to this area (find-or-create among the app-authored areas) instead of the inspection level.
@@ -7704,7 +7756,10 @@ export interface components {
              * @example 184321
              */
             sizeBytes: number;
-            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
             contentBase64: string;
         };
         RecordKeyCustodyDto: {
@@ -7787,7 +7842,10 @@ export interface components {
              * @example 184321
              */
             sizeBytes: number;
-            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
             contentBase64: string;
         };
         CreateInspectorMessageThreadDto: {
@@ -8017,7 +8075,16 @@ export interface components {
             /** @description When true the inspector appears in the ops dispatch list and receives pool jobs. */
             receivingPoolJobs: boolean;
         };
-        SetInspectorTimetableDto: Record<string, never>;
+        InspectorDateAvailabilityEntryDto: {
+            date: string;
+            startMinute: number;
+            endMinute: number;
+        };
+        SetInspectorTimetableDto: {
+            from: string;
+            to: string;
+            entries: components["schemas"]["InspectorDateAvailabilityEntryDto"][];
+        };
         SetInspectorLocationDto: {
             /**
              * @description WGS84 latitude.
@@ -8387,6 +8454,30 @@ export interface components {
             hasMore: boolean;
             items: components["schemas"]["AgentAgencyResponseDto"][];
         };
+        AgentInspectionBookableDaysDto: {
+            /**
+             * @description IANA zone the dates are expressed in — inspector timetables are Sydney.
+             * @example Australia/Sydney
+             */
+            timezone: string;
+            /** @description Start of the queried window (ISO). */
+            from: string;
+            /** @description End of the queried window (ISO). */
+            to: string;
+            /**
+             * @description Bookable dates as YYYY-MM-DD, ascending.
+             * @example [
+             *       "2026-08-18",
+             *       "2026-08-19"
+             *     ]
+             */
+            dates: string[];
+            /**
+             * @description How many inspectors published availability in the window. Zero means the calendar is empty because nobody has set a timetable, not because every day is booked.
+             * @example 3
+             */
+            configuredInspectorCount: number;
+        };
         AgentPortalWelcomeStatusDto: {
             /** @description True when at least one assigned agency has completed Sales onboarding, or is an active/onboarding client (including self-registration) without a blocking sales handover. */
             eligible: boolean;
@@ -8460,7 +8551,10 @@ export interface components {
             callerTier: "PRINCIPAL" | "AGENT";
         };
         InviteAgencyAgentDto: {
-            /** @example agent@agency.example */
+            /**
+             * Format: email
+             * @example agent@agency.example
+             */
             email: string;
             /** @example Jordan Lee */
             contactName?: string;
@@ -8528,9 +8622,33 @@ export interface components {
         AgentPreferredContractorsListDto: {
             preferredContractors: components["schemas"]["AgentPreferredContractorResponseDto"][];
         };
-        AddAgencyPreferredContractorDto: Record<string, never>;
+        AddAgencyPreferredContractorDto: {
+            contractorId?: string;
+            name: string;
+            /** Format: email */
+            email?: string;
+            phone?: string;
+            serviceTypes?: string[];
+            sortOrder?: number;
+        };
         AgentPreferredContractorCreatedDto: {
             preferredContractor: components["schemas"]["AgentPreferredContractorResponseDto"];
+        };
+        AgentTenantPortalInviteDto: {
+            /** @enum {string} */
+            status: "sent" | "skipped";
+            /**
+             * @description Present when `status` is `skipped`.
+             * @enum {string}
+             */
+            reason?: "no_email" | "already_active" | "wrong_role" | "send_failed" | "error";
+            /** Format: email */
+            email?: string | null;
+            name?: string | null;
+            /** @description True when the invite also created the tenant login. */
+            createdUser?: boolean;
+            /** @description Free-text detail on a send failure. */
+            detail?: string;
         };
         AgentPropertyResponseDto: {
             /** Format: uuid */
@@ -8680,14 +8798,16 @@ export interface components {
              */
             registryIntakeComplete: boolean;
             /** @description Wizard-only draft payload for resuming incomplete property intake. */
-            registryDraft: Record<string, never> | null;
+            registryDraft: {
+                [key: string]: unknown;
+            } | null;
             /**
              * @description Rent payment reference the tenant quotes on bank transfers (agency initials + property ref).
              * @example DS633468
              */
             paymentReference: string | null;
             /** @description Present on PATCH when a newly saved tenant email triggered an automatic Tenant app invite. */
-            tenantPortalInvite?: Record<string, never>;
+            tenantPortalInvite?: components["schemas"]["AgentTenantPortalInviteDto"];
         };
         PaginatedAgentPropertiesDto: {
             /**
@@ -8734,7 +8854,10 @@ export interface components {
             role: "TENANT" | "LANDLORD";
             /** @example Alex Tenant */
             name?: string;
-            /** @example alex@example.com */
+            /**
+             * Format: email
+             * @example alex@example.com
+             */
             email?: string;
             /** @example +61 400 000 000 */
             phone?: string;
@@ -8744,16 +8867,144 @@ export interface components {
         CreateAgentPropertyContactResponseDto: {
             contacts: components["schemas"]["AgentPropertyContactDto"][];
             /** @description Present when a TENANT contact with an email triggered an automatic Tenant app invite. */
-            tenantPortalInvite?: Record<string, never>;
+            tenantPortalInvite?: components["schemas"]["AgentTenantPortalInviteDto"];
         };
-        CreateAgentPropertyDto: Record<string, never>;
-        UpdateAgentPropertyDto: Record<string, never>;
+        ManagementFeeRowDto: {
+            id?: string;
+            feeType: string;
+            /** @enum {string} */
+            valueMode: "rate" | "amount";
+            amount: string;
+            /** @enum {string} */
+            gst?: "" | "include" | "exclude";
+        };
+        CreateAgentPropertyDto: {
+            name?: string;
+            address: string;
+            suburb?: string;
+            /** @enum {string} */
+            state?: "NSW" | "VIC" | "QLD" | "SA" | "WA" | "TAS" | "ACT" | "NT";
+            postcode?: string;
+            /** @enum {string} */
+            propertyType?: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
+            /** @enum {string} */
+            status?: "OCCUPIED" | "VACANT" | "SHOWING" | "MAINTENANCE";
+            bedrooms?: number;
+            bathrooms?: number;
+            parking?: number;
+            furnished?: boolean;
+            landlordName?: string;
+            /** Format: email */
+            landlordEmail?: string;
+            landlordPhone?: string;
+            tenantName?: string;
+            /** Format: email */
+            tenantEmail?: string;
+            tenantPhone?: string;
+            imageUrl?: string;
+            latitude?: number;
+            longitude?: number;
+            nextInspectionAt?: string;
+            lastInspectionAt?: string;
+            leaseStartDate?: string;
+            leaseEndDate?: string;
+            nextRentReviewAt?: string;
+            rentWeekly?: number;
+            bondAmount?: number;
+            depositAmount?: number;
+            vacateDate?: string;
+            buildingName?: string;
+            strataPlanNumber?: string;
+            buildingManagerName?: string;
+            /** Format: email */
+            buildingManagerEmail?: string;
+            buildingManagerPhone?: string;
+            strataContactName?: string;
+            /** Format: email */
+            strataContactEmail?: string;
+            strataContactPhone?: string;
+            landlordInsuranceExpiry?: string;
+            administrationFee?: number;
+            documentationFee?: number;
+            lettingFee?: number;
+            managementRatePercent?: number;
+            /** @enum {string} */
+            managementRateGst?: "include" | "exclude";
+            managementFees?: components["schemas"]["ManagementFeeRowDto"][];
+            registryIntakeComplete?: boolean;
+            registryDraft?: {
+                [key: string]: unknown;
+            } | null;
+            /** @enum {number} */
+            routineInspectionFrequency?: 2 | 3;
+        };
+        UpdateAgentPropertyDto: {
+            name?: string;
+            address?: string;
+            suburb?: string;
+            /** @enum {string} */
+            state?: "NSW" | "VIC" | "QLD" | "SA" | "WA" | "TAS" | "ACT" | "NT";
+            postcode?: string;
+            /** @enum {string} */
+            propertyType?: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
+            /** @enum {string} */
+            status?: "OCCUPIED" | "VACANT" | "SHOWING" | "MAINTENANCE";
+            bedrooms?: number;
+            bathrooms?: number;
+            parking?: number;
+            furnished?: boolean;
+            latitude?: number;
+            longitude?: number;
+            landlordName?: string;
+            /** Format: email */
+            landlordEmail?: string;
+            landlordPhone?: string;
+            tenantName?: string;
+            /** Format: email */
+            tenantEmail?: string;
+            tenantPhone?: string;
+            leaseStartDate?: string;
+            leaseEndDate?: string;
+            nextRentReviewAt?: string;
+            rentPaidUntil?: string;
+            vacateDate?: string;
+            vacateDateChangeReason?: string;
+            nextInspectionAt?: string;
+            rentWeekly?: number;
+            bondAmount?: number;
+            depositAmount?: number;
+            buildingName?: string;
+            strataPlanNumber?: string;
+            buildingManagerName?: string;
+            /** Format: email */
+            buildingManagerEmail?: string;
+            buildingManagerPhone?: string;
+            strataContactName?: string;
+            /** Format: email */
+            strataContactEmail?: string;
+            strataContactPhone?: string;
+            landlordInsuranceExpiry?: string;
+            administrationFee?: number;
+            documentationFee?: number;
+            lettingFee?: number;
+            managementRatePercent?: number;
+            /** @enum {string} */
+            managementRateGst?: "include" | "exclude";
+            managementFees?: components["schemas"]["ManagementFeeRowDto"][];
+            registryIntakeComplete?: boolean;
+            replaceLandlord?: boolean;
+            registryDraft?: {
+                [key: string]: unknown;
+            } | null;
+            /** @enum {number} */
+            routineInspectionFrequency?: 2 | 3;
+        };
         AssignPropertyAgentDto: {
             /**
              * Format: uuid
              * @description Portal agent user id, or null to clear assignment.
              */
-            assignedAgentUserId: Record<string, never> | null;
+            assignedAgentUserId?: string | null;
         };
         EndAgentPropertyManagementDto: {
             /**
@@ -8768,28 +9019,120 @@ export interface components {
              */
             archiveOnBondRelease?: boolean;
         };
-        AgentCreateLeasingCycleDto: Record<string, never>;
-        AgentWorkflowCreateResultDto: Record<string, never>;
+        AgentCreateLeasingCycleDto: {
+            agentName?: string;
+            agentCompany?: string;
+            /** Format: email */
+            agentEmail?: string;
+            agentPhone?: string;
+            /** @enum {string} */
+            keyCustody?: "crossub" | "agent";
+            rentPerWeek: number;
+            availableFrom: string;
+            deposit?: number;
+            bond?: number;
+            fixedTermWeeks?: number;
+            tenantMovedOut?: boolean;
+            tenantMovedOutDate?: string;
+            notes?: string;
+            skipOpenInspection?: boolean;
+            agentConductsOpenInspection?: boolean;
+            agentInitiated?: boolean;
+        };
+        AgentWorkflowCreateResultDto: {
+            id: string;
+            openInspectionId?: string;
+        };
         CancelAgentLeasingCycleDto: {
             /** @example Landlord decided not to lease anymore */
             reason: string;
             /** @description Skip open-inspection scheduling guards when deleting from the agent portal. */
             force?: boolean;
         };
-        RequestAgentOpenInspectionDto: Record<string, never>;
-        AgentOpenInspectionConfirmResultDto: Record<string, never>;
-        CancelAgentOpenInspectionDto: Record<string, never>;
-        AgentCreateRentReviewDto: Record<string, never>;
+        RequestAgentOpenInspectionDto: {
+            preferredStartTime?: string;
+            preferredEndTime?: string;
+            preferredNotes?: string;
+            keyCollectLocation?: string;
+            startNow?: boolean;
+            platformChargeId?: string;
+        };
+        AgentOpenInspectionConfirmResultDto: {
+            id: string;
+            agentConfirmedAt: string;
+        };
+        CancelAgentOpenInspectionDto: {
+            reason: string;
+        };
+        AgentCreateRentReviewDto: {
+            currentWeeklyRent: number;
+            tenantName?: string;
+            orderNumber?: string;
+            rentReviewDate?: string;
+            /** @enum {string} */
+            leaseType?: "fixed" | "periodic";
+            fixedTermWeeks?: number;
+            initialLeaseStartDate?: string;
+            leaseEndDate?: string;
+            tenantRef?: string;
+            managingAgentLabel?: string;
+            proposedRent?: number;
+            /** @enum {string} */
+            rentPeriod?: "weekly" | "fortnightly" | "monthly";
+            rentNegotiable?: boolean;
+            rentPaidUntil?: string;
+        };
         CancelAgentRentReviewDto: {
             /** @example Opened in error — landlord not proceeding with increase */
             reason: string;
         };
-        SetRecommendedRentDto: Record<string, never>;
-        SetProposedRentDto: Record<string, never>;
-        UpdateNoticePayableFromDto: Record<string, never>;
-        UpdateLeaseAgreementTermsDto: Record<string, never>;
-        SendRentReviewEmailDto: Record<string, never>;
-        AgentCreateTerminationCaseDto: Record<string, never>;
+        SetRecommendedRentDto: {
+            weekly?: number | null;
+        };
+        SetProposedRentDto: {
+            weekly: number | null;
+            effectiveDate: string;
+            rentNegotiable?: boolean;
+            /** @enum {string} */
+            preferredLeaseType?: "fixed" | "periodic";
+            preferredFixedTermEndDate?: string;
+            newLeaseStartDate?: string;
+        };
+        UpdateNoticePayableFromDto: {
+            payableFrom: string;
+        };
+        UpdateLeaseAgreementTermsDto: {
+            additionalTerms?: string | null;
+            additionalTermsPets?: string | null;
+        };
+        SendRentReviewEmailDto: {
+            /** Format: email */
+            toEmail: string;
+            toName?: string;
+            subject: string;
+            body: string;
+            /** @enum {string} */
+            kind: "agent_research_email" | "landlord_research_email" | "comm_reply" | "comm_forward";
+            inReplyToAuditId?: string;
+            /** @enum {string} */
+            channel?: "email" | "message";
+        };
+        AgentCreateTerminationCaseDto: {
+            /** @enum {string} */
+            terminationType?: "termination" | "tenant_initiated";
+            terminationReason?: string;
+            bondHeld?: number;
+            tenancyAgreementId?: string;
+            leasingCycleId?: string;
+            expectedVacateDate?: string;
+            /** @enum {string} */
+            terminationGround?: "actual_sale" | "proposed_sale" | "renovations" | "demolition" | "not_residential" | "landlord_resides" | "breach" | "non_payment" | "employee_caretaker" | "uninhabitable" | "death_sole_tenant";
+            proposedTerminationDate?: string;
+            breachClause?: string;
+            breachConduct?: string;
+            deferNoticeDelivery?: boolean;
+            allowParallel?: boolean;
+        };
         AgentRecordRentReconciliationDto: {
             /** @example 450 */
             amount: number;
@@ -8843,7 +9186,10 @@ export interface components {
              * @example 184321
              */
             sizeBytes: number;
-            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
             contentBase64: string;
         };
         AgentKeyPhotoUploadResponseDto: {
@@ -8859,8 +9205,32 @@ export interface components {
             /** @description Anything CROSSUB should know when scheduling — access, tenant availability, urgency. Read by a person; never parsed into a date. */
             note?: string;
         };
-        AgentCreateIngoingInspectionDto: Record<string, never>;
-        AgentCreateOutgoingInspectionDto: Record<string, never>;
+        AgentCreateIngoingInspectionDto: {
+            scheduledTime?: string;
+            moveInDate?: string;
+            tenantName?: string;
+            /** Format: email */
+            tenantEmail?: string;
+            tenantPhone?: string;
+            /** @enum {string} */
+            priority?: "normal" | "high" | "urgent";
+            accessInstructions?: string;
+            notes?: string;
+            leaseApprovalRef?: string;
+            platformChargeId?: string;
+        };
+        AgentCreateOutgoingInspectionDto: {
+            scheduledTime?: string;
+            vacateDate?: string;
+            tenantName?: string;
+            /** Format: email */
+            tenantEmail?: string;
+            tenantPhone?: string;
+            inspectorName?: string;
+            accessInstructions?: string;
+            notes?: string;
+            platformChargeId?: string;
+        };
         AgentKeyCollectionReportDto: {
             /** Format: date-time */
             submittedAt: string | null;
@@ -9277,12 +9647,12 @@ export interface components {
              * Format: date-time
              * @description When the oldest open arrears case was opened.
              */
-            arrearsOpenedAt?: string;
+            arrearsOpenedAt?: string | null;
             /**
              * Format: date
              * @description Rent paid-to or earliest bill due date for open arrears.
              */
-            arrearsKeyDate?: string;
+            arrearsKeyDate?: string | null;
         };
         AgentTribunalDto: {
             /** Format: uuid */
@@ -9677,7 +10047,10 @@ export interface components {
              * @example 184321
              */
             sizeBytes: number;
-            /** @description The file contents, base64-encoded (no data: URI prefix). */
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
             contentBase64: string;
             /**
              * @example inspection
@@ -11393,6 +11766,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Missing/invalid/expired token, or the user is not active. */
             401: {
                 headers: {
@@ -11427,6 +11806,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Missing/invalid/expired token, or the user is not active. */
             401: {
                 headers: {
@@ -11517,6 +11902,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Missing/invalid/expired token, or the user is not active. */
             401: {
                 headers: {
@@ -11594,6 +11985,14 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantVacatingCaseResponseDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12179,6 +12578,14 @@ export interface operations {
                     "application/json": components["schemas"]["TenantMessageThreadResponseDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantMessageThreadResponseDto"];
+                };
+            };
             /** @description Invalid body (e.g. empty subject/message, bad propertyId). */
             400: {
                 headers: {
@@ -12225,6 +12632,14 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantMessageThreadResponseDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12475,6 +12890,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Missing/invalid/expired token, or the user is not active. */
             401: {
                 headers: {
@@ -12674,6 +13095,14 @@ export interface operations {
                     "application/json": components["schemas"]["TenantPhotoUploadResponseDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantPhotoUploadResponseDto"];
+                };
+            };
         };
     };
     TenantAccountController_submitDepositProof: {
@@ -12808,6 +13237,14 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantPhotoUploadResponseDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13026,6 +13463,14 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantPhotoUploadResponseDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13648,6 +14093,14 @@ export interface operations {
                     "application/json": components["schemas"]["LandlordDocumentResponseDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandlordDocumentResponseDto"];
+                };
+            };
             /** @description The request body is invalid. */
             400: {
                 headers: {
@@ -13732,6 +14185,14 @@ export interface operations {
                     "application/json": components["schemas"]["LandlordMessageThreadResponseDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandlordMessageThreadResponseDto"];
+                };
+            };
             /** @description Invalid body (e.g. empty subject/message, bad propertyId). */
             400: {
                 headers: {
@@ -13778,6 +14239,14 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandlordMessageThreadResponseDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13993,6 +14462,14 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandlordNotificationsReadResultDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14717,6 +15194,14 @@ export interface operations {
                     "application/json": components["schemas"]["ContractorMessageThreadResponseDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractorMessageThreadResponseDto"];
+                };
+            };
             /** @description Invalid body (e.g. empty subject/message, bad jobId). */
             400: {
                 headers: {
@@ -14763,6 +15248,14 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractorMessageThreadResponseDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14892,6 +15385,14 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractorNotificationsReadResultDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16029,6 +16530,12 @@ export interface operations {
             };
         };
         responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Missing/invalid/expired token, or the user is not active. */
             401: {
                 headers: {
@@ -16318,6 +16825,14 @@ export interface operations {
                     "application/json": components["schemas"]["InspectorMessageThreadResponseDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorMessageThreadResponseDto"];
+                };
+            };
             /** @description Invalid body (e.g. empty subject/message, bad inspectionId). */
             400: {
                 headers: {
@@ -16364,6 +16879,14 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorMessageThreadResponseDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16493,6 +17016,14 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorNotificationsReadResultDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16652,6 +17183,14 @@ export interface operations {
                     "application/json": components["schemas"]["InspectorRegistrationStatusDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectorRegistrationStatusDto"];
+                };
+            };
             /** @description The body is invalid. */
             400: {
                 headers: {
@@ -16721,7 +17260,10 @@ export interface operations {
     };
     InspectorAccountController_getTimetable: {
         parameters: {
-            query?: never;
+            query?: {
+                from?: string;
+                to?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -16948,7 +17490,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AgentInspectionBookableDaysDto"];
+                };
             };
         };
     };
@@ -19354,6 +19898,14 @@ export interface operations {
                     "application/json": components["schemas"]["AgentMessageThreadResponseDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMessageThreadResponseDto"];
+                };
+            };
             /** @description Invalid body (e.g. empty subject/message, bad propertyId). */
             400: {
                 headers: {
@@ -19474,6 +20026,14 @@ export interface operations {
                     "application/json": components["schemas"]["AgentMailboxConnectResponseDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMailboxConnectResponseDto"];
+                };
+            };
         };
     };
     AgentPortalController_connectYahoo: {
@@ -19486,6 +20046,14 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMailboxConnectResponseDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -19597,6 +20165,14 @@ export interface operations {
                     "application/json": components["schemas"]["AgentMessageThreadResponseDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMessageThreadResponseDto"];
+                };
+            };
         };
     };
     AgentPortalController_markMessageThreadRead: {
@@ -19664,6 +20240,14 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMessageThreadResponseDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -19800,6 +20384,14 @@ export interface operations {
                     "application/json": components["schemas"]["AgentNotificationsReadResultDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentNotificationsReadResultDto"];
+                };
+            };
             /** @description Missing/invalid/expired token, or the user is not active. */
             401: {
                 headers: {
@@ -19898,6 +20490,14 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentSalesAgreementDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20017,6 +20617,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Missing/invalid/expired token, or the user is not active. */
             401: {
                 headers: {
@@ -20154,6 +20760,14 @@ export interface operations {
                     "application/json": components["schemas"]["AgentMaintenanceDto"];
                 };
             };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDto"];
+                };
+            };
             /** @description requestId is not a valid UUID. */
             400: {
                 headers: {
@@ -20207,6 +20821,14 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDto"];
+                };
+            };
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

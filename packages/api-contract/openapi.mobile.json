@@ -1702,6 +1702,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": ""
+          },
           "401": {
             "description": "Missing/invalid/expired token, or the user is not active."
           },
@@ -1738,6 +1741,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": ""
+          },
           "401": {
             "description": "Missing/invalid/expired token, or the user is not active."
           },
@@ -1828,6 +1834,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": ""
+          },
           "401": {
             "description": "Missing/invalid/expired token, or the user is not active."
           },
@@ -1868,6 +1877,16 @@
         },
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantVacatingCaseResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -2583,6 +2602,16 @@
               }
             }
           },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantMessageThreadResponseDto"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid body (e.g. empty subject/message, bad propertyId)."
           },
@@ -2633,6 +2662,16 @@
         },
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantMessageThreadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -2874,6 +2913,9 @@
         "operationId": "TenantAccountController_getLeasingOnboardingAgreementPdf",
         "parameters": [],
         "responses": {
+          "200": {
+            "description": ""
+          },
           "401": {
             "description": "Missing/invalid/expired token, or the user is not active."
           },
@@ -3103,6 +3145,16 @@
                 }
               }
             }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPhotoUploadResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3273,6 +3325,16 @@
         },
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPhotoUploadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -3528,6 +3590,16 @@
         },
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPhotoUploadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -4278,6 +4350,16 @@
               }
             }
           },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandlordDocumentResponseDto"
+                }
+              }
+            }
+          },
           "400": {
             "description": "The request body is invalid."
           },
@@ -4363,6 +4445,16 @@
               }
             }
           },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandlordMessageThreadResponseDto"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid body (e.g. empty subject/message, bad propertyId)."
           },
@@ -4413,6 +4505,16 @@
         },
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandlordMessageThreadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -4632,6 +4734,16 @@
         "parameters": [],
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandlordNotificationsReadResultDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -5503,6 +5615,16 @@
               }
             }
           },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractorMessageThreadResponseDto"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid body (e.g. empty subject/message, bad jobId)."
           },
@@ -5553,6 +5675,16 @@
         },
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractorMessageThreadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -5677,6 +5809,16 @@
         "parameters": [],
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractorNotificationsReadResultDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -6918,6 +7060,9 @@
           }
         },
         "responses": {
+          "204": {
+            "description": ""
+          },
           "401": {
             "description": "Missing/invalid/expired token, or the user is not active."
           },
@@ -7242,6 +7387,16 @@
               }
             }
           },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorMessageThreadResponseDto"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid body (e.g. empty subject/message, bad inspectionId)."
           },
@@ -7292,6 +7447,16 @@
         },
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorMessageThreadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -7416,6 +7581,16 @@
         "parameters": [],
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorNotificationsReadResultDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -7589,6 +7764,16 @@
               }
             }
           },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorRegistrationStatusDto"
+                }
+              }
+            }
+          },
           "400": {
             "description": "The body is invalid."
           },
@@ -7660,7 +7845,26 @@
     "/inspector/timetable": {
       "get": {
         "operationId": "InspectorAccountController_getTimetable",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "pattern": "/^\\d{4}-\\d{2}-\\d{2}$/",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "pattern": "/^\\d{4}-\\d{2}-\\d{2}$/",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Available calendar dates (Australia/Sydney)."
@@ -7917,7 +8121,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentInspectionBookableDaysDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -11431,6 +11642,16 @@
               }
             }
           },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMessageThreadResponseDto"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid body (e.g. empty subject/message, bad propertyId)."
           },
@@ -11569,6 +11790,16 @@
                 }
               }
             }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMailboxConnectResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -11588,6 +11819,16 @@
         "parameters": [],
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMailboxConnectResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -11777,6 +12018,16 @@
                 }
               }
             }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMessageThreadResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -11865,6 +12116,16 @@
         },
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMessageThreadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -11998,6 +12259,16 @@
               }
             }
           },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentNotificationsReadResultDto"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Missing/invalid/expired token, or the user is not active."
           },
@@ -12113,6 +12384,16 @@
         },
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSalesAgreementDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -12241,6 +12522,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": ""
+          },
           "401": {
             "description": "Missing/invalid/expired token, or the user is not active."
           },
@@ -12413,6 +12697,16 @@
               }
             }
           },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDto"
+                }
+              }
+            }
+          },
           "400": {
             "description": "requestId is not a valid UUID."
           },
@@ -12466,6 +12760,16 @@
         },
         "responses": {
           "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDto"
+                }
+              }
+            }
+          },
+          "201": {
             "description": "",
             "content": {
               "application/json": {
@@ -12847,7 +13151,20 @@
     "schemas": {
       "LoginDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
       },
       "MobileAuthResponseDto": {
         "type": "object",
@@ -12877,6 +13194,7 @@
         "properties": {
           "refreshToken": {
             "type": "string",
+            "minLength": 10,
             "description": "The refresh token returned by POST /api/v1/auth/login or /api/v1/auth/refresh."
           }
         },
@@ -12923,7 +13241,8 @@
             "description": "At least one already-uploaded photo or video URL (the app uploads first).",
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "format": "uri"
             }
           },
           "clientRequestId": {
@@ -12946,7 +13265,7 @@
             "description": "The created maintenance request id."
           },
           "orderNumber": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "example": "MR-00001",
             "description": "Human-facing order number assigned to app-created tickets."
@@ -12980,16 +13299,20 @@
           "mimeType": {
             "type": "string",
             "maxLength": 150,
+            "pattern": "/^(image|video)\\//",
             "example": "image/jpeg",
             "description": "An image/* or video/* MIME type (repair evidence is photo or clip)."
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
             "example": 184321,
             "description": "Decoded byte size (≤ 25 MB)."
           },
           "contentBase64": {
             "type": "string",
+            "format": "base64",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
           }
         },
@@ -13125,8 +13448,8 @@
           },
           "responsibilityAckDeadline": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When responsibilityAckRequired is true, the tenant must respond before this time or the system auto-agrees (48 hours)."
           },
           "photos": {
@@ -13175,12 +13498,14 @@
             "example": false
           },
           "buildingName": {
-            "type": "object",
+            "type": "string",
+            "nullable": true,
             "description": "Building name when recorded on the property.",
             "example": "Harbour Residences"
           },
           "strataPlanNumber": {
-            "type": "object",
+            "type": "string",
+            "nullable": true,
             "description": "Strata plan number when recorded on the property.",
             "example": "SP12345"
           },
@@ -13270,9 +13595,9 @@
           },
           "reason": {
             "type": "string",
-            "description": "Why the tenant disagrees. REQUIRED when `agreed` is false — a disagreement closes the case, and an officer cannot act on \"the tenant disagreed\" with nothing after it. Ignored when `agreed` is true.",
             "minLength": 3,
-            "maxLength": 2000
+            "maxLength": 2000,
+            "description": "Why the tenant disagrees. REQUIRED when `agreed` is false — a disagreement closes the case, and an officer cannot act on \"the tenant disagreed\" with nothing after it. Ignored when `agreed` is true."
           }
         },
         "required": [
@@ -13305,6 +13630,7 @@
           },
           "declineReason": {
             "type": "string",
+            "maxLength": 2000,
             "description": "Required when decision is declined."
           }
         },
@@ -13407,13 +13733,13 @@
           },
           "startDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "endDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "weeklyRent": {
             "type": "number",
@@ -13429,8 +13755,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -13442,8 +13768,8 @@
           },
           "nextRentReviewAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When the managing agent can next open a rent review (set after a completed increase)."
           },
           "routineInspectionFrequency": {
@@ -13460,8 +13786,8 @@
           },
           "nextRoutineInspectionAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Next scheduled routine inspection date for the leased property (from the routine schedule)."
           },
           "paymentCycle": {
@@ -13476,8 +13802,8 @@
           },
           "rentPaidTo": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Rent paid-to date on the property registry."
           },
           "paymentReference": {
@@ -13717,13 +14043,13 @@
           },
           "occurredAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           }
         },
         "required": [
@@ -13809,8 +14135,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -13819,18 +14145,18 @@
           },
           "scheduledDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "inspectionDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "completedDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "reportUrl": {
             "type": "string",
@@ -13976,8 +14302,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -14101,8 +14427,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -14118,8 +14444,8 @@
           },
           "formData": {
             "type": "object",
-            "additionalProperties": true,
             "nullable": true,
+            "additionalProperties": true,
             "description": "NSW tenancy application form data as submitted."
           },
           "documents": {
@@ -14237,8 +14563,8 @@
           },
           "confirmedAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "feedbackComment": {
             "type": "string",
@@ -14288,8 +14614,8 @@
           },
           "scheduledAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "reportUrl": {
             "type": "string",
@@ -14318,8 +14644,8 @@
           },
           "dueBy": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "sectionCount": {
             "type": "number"
@@ -14351,10 +14677,12 @@
         "properties": {
           "area": {
             "type": "string",
+            "maxLength": 200,
             "example": "Bedroom 1"
           },
           "description": {
             "type": "string",
+            "maxLength": 2000,
             "example": "Carpet stain not shown in photos."
           },
           "sectionId": {
@@ -14381,6 +14709,7 @@
           },
           "comment": {
             "type": "string",
+            "maxLength": 2000,
             "example": "Minor mark on the wall not shown in photos.",
             "description": "Optional feedback when confirming; required when disputing the section."
           }
@@ -14394,6 +14723,8 @@
         "properties": {
           "reason": {
             "type": "string",
+            "minLength": 3,
+            "maxLength": 2000,
             "example": "Several rooms do not match the condition shown in the report.",
             "description": "Reason the tenant is rejecting the whole ingoing report."
           }
@@ -14472,8 +14803,8 @@
           },
           "scheduledAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "reportUrl": {
             "type": "string",
@@ -14502,8 +14833,8 @@
           },
           "dueBy": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "sectionCount": {
             "type": "number"
@@ -14534,10 +14865,12 @@
         "properties": {
           "area": {
             "type": "string",
+            "maxLength": 200,
             "example": "Kitchen"
           },
           "description": {
             "type": "string",
+            "maxLength": 2000,
             "example": "Wear was pre-existing at move-in."
           },
           "sectionId": {
@@ -14627,8 +14960,8 @@
           },
           "inspectionId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyId": {
             "type": "string",
@@ -14648,8 +14981,8 @@
           },
           "scheduledAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "reportUrl": {
             "type": "string",
@@ -14725,10 +15058,12 @@
         "properties": {
           "areaId": {
             "type": "string",
+            "maxLength": 64,
             "description": "Inspection area id, or a pre-start placeholder (`template-0`, `template-1`, …) resolved server-side after the checklist is spawned."
           },
           "areaName": {
             "type": "string",
+            "maxLength": 200,
             "example": "Kitchen · Walls / Picture Hooks",
             "description": "Composite room section name (find-or-create). Use instead of areaId for subsection-level self inspections."
           },
@@ -14752,6 +15087,7 @@
         "type": "object",
         "properties": {
           "sections": {
+            "minItems": 1,
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SubmitTenantRoutineSelfInspectionSectionDto"
@@ -14785,14 +15121,14 @@
           },
           "rentIncreaseOn": {
             "type": "string",
-            "format": "date",
             "nullable": true,
+            "format": "date",
             "example": "2027-01-17"
           },
           "newLeaseStart": {
             "type": "string",
-            "format": "date",
             "nullable": true,
+            "format": "date",
             "example": "2027-01-18"
           },
           "noticePdfAvailable": {
@@ -14909,8 +15245,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -14946,8 +15282,8 @@
           },
           "effectiveDate": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When the new rent takes effect (newRentStartsFrom)."
           },
           "explanation": {
@@ -14968,8 +15304,8 @@
           },
           "tenantMoveOutDate": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Intended move-out date when the tenant declined the increase."
           },
           "createdAt": {
@@ -14979,8 +15315,8 @@
           },
           "noticeDispatchedAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When the formal rent increase notice was emailed to the tenant."
           },
           "noticeTerms": {
@@ -14994,8 +15330,8 @@
           },
           "nextRentReviewOpensOn": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When the next rent review can open, based on the accepted increase effective date."
           },
           "emails": {
@@ -15027,11 +15363,44 @@
       },
       "TenantRentReviewRespondDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "reject",
+              "counter"
+            ]
+          },
+          "moveOutDate": {
+            "type": "string"
+          },
+          "counterWeekly": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "decision"
+        ]
       },
       "CreateTenantVacatingCaseDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "expectedVacateDate": {
+            "type": "string"
+          },
+          "propertyId": {
+            "type": "string"
+          },
+          "terminationReason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "expectedVacateDate"
+        ]
       },
       "TenantVacatingRepairQuoteItemDto": {
         "type": "object",
@@ -15043,7 +15412,7 @@
             "type": "string"
           },
           "quote": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "bondDeductible": {
@@ -15051,7 +15420,7 @@
             "description": "When true, this item may be deducted from the bond."
           },
           "maintenanceRequestId": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "format": "uuid",
             "description": "Linked End of Lease maintenance job for this responsibility item, when spawned."
@@ -15102,8 +15471,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -15131,14 +15500,14 @@
           },
           "vacatingDate": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Expected or confirmed vacate date."
           },
           "initialVacatingDate": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Original vacate date when the case was opened (for change detection)."
           },
           "vacateDateChanged": {
@@ -15163,20 +15532,20 @@
           },
           "tenantKeyReturnSubmittedAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When the tenant submitted their key return report in the app."
           },
           "inspectionDate": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Scheduled outgoing inspection date."
           },
           "outgoingInspectionId": {
             "type": "string",
-            "format": "uuid",
             "nullable": true,
+            "format": "uuid",
             "description": "Linked outgoing inspection id, when scheduled."
           },
           "tenantOutgoingAttendance": {
@@ -15203,8 +15572,8 @@
           },
           "tenantConfirmationDueAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Deadline for tenant to accept or decline settlement."
           },
           "refundAmount": {
@@ -15266,8 +15635,8 @@
           },
           "tenantBondAckSentAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When the bond-deduction acknowledgement was sent to the tenant."
           },
           "tenantResponsibilityItems": {
@@ -15321,11 +15690,23 @@
       },
       "CancelTenantVacatingCaseDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
       },
       "UpdateTenantVacateDateDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "date": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "date"
+        ]
       },
       "TenantSetOutgoingAttendanceDto": {
         "type": "object",
@@ -15345,27 +15726,56 @@
       },
       "TenantDeclineVacatingSettlementDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ]
       },
       "TenantDeclineVacatingRepairQuoteDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "acknowledgedPrice": {
+            "type": "string",
+            "maxLength": 40
+          }
+        }
       },
       "TenantDeclineVacatingResponsibilitiesDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ]
       },
       "TenantSubmitKeyReturnDto": {
         "type": "object",
         "properties": {
           "photoUrls": {
+            "minItems": 1,
+            "maxItems": 5,
             "description": "Public URLs of uploaded key-return proof photos (1–5).",
             "example": [
               "https://cdn.example.com/tenant-key-return/uuid/keys.jpg"
             ],
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "format": "uri"
             }
           }
         },
@@ -15429,8 +15839,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -15472,8 +15882,8 @@
           },
           "lastAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "unread": {
             "type": "number",
@@ -15664,8 +16074,8 @@
         "properties": {
           "submittedAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "tagNumber": {
             "type": "string",
@@ -15721,13 +16131,13 @@
           },
           "time": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "timeEnd": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Optional end of the key-collection window."
           },
           "location": {
@@ -15783,19 +16193,19 @@
         "type": "object",
         "properties": {
           "template": {
-            "type": "object",
-            "example": "Standard Residential Tenancy Agreement",
-            "nullable": true
+            "type": "string",
+            "nullable": true,
+            "example": "Standard Residential Tenancy Agreement"
           },
           "leaseTerm": {
-            "type": "object",
-            "example": "26 weeks",
-            "nullable": true
+            "type": "string",
+            "nullable": true,
+            "example": "26 weeks"
           },
           "weeklyRent": {
-            "type": "object",
-            "example": 650,
-            "nullable": true
+            "type": "number",
+            "nullable": true,
+            "example": 650
           },
           "contractRef": {
             "type": "string",
@@ -15803,9 +16213,9 @@
             "example": "CT-00042 · v2"
           },
           "currentVersion": {
-            "type": "object",
-            "example": 2,
+            "type": "number",
             "nullable": true,
+            "example": 2,
             "description": "Current revision number."
           }
         },
@@ -15834,13 +16244,13 @@
           },
           "sentToTenantAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "supersededAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "isCurrent": {
             "type": "boolean"
@@ -15857,13 +16267,13 @@
           },
           "startDate": {
             "type": "string",
-            "format": "date",
-            "nullable": true
+            "nullable": true,
+            "format": "date"
           },
           "endDate": {
             "type": "string",
-            "format": "date",
-            "nullable": true
+            "nullable": true,
+            "format": "date"
           }
         },
         "required": [
@@ -15909,8 +16319,8 @@
           },
           "signedAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "rejectReason": {
             "type": "string",
@@ -16005,8 +16415,8 @@
           },
           "ingoingInspectionId": {
             "type": "string",
-            "format": "uuid",
             "nullable": true,
+            "format": "uuid",
             "description": "Linked ingoing inspection id when the agent has scheduled one."
           },
           "applicationDocuments": {
@@ -16038,18 +16448,33 @@
         "type": "object",
         "properties": {
           "photoUrls": {
+            "minItems": 1,
+            "maxItems": 5,
             "description": "Public URLs of uploaded key-collection proof photos (Handover.photos).",
             "example": [
               "https://cdn.example.com/tenant-key-collection/uuid/keys.jpg"
             ],
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 500
             }
+          },
+          "time": {
+            "type": "string"
+          },
+          "timeEnd": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 240
           }
         },
         "required": [
-          "photoUrls"
+          "photoUrls",
+          "time",
+          "location"
         ]
       },
       "UploadTenantPaymentProofDto": {
@@ -16063,16 +16488,20 @@
           "mimeType": {
             "type": "string",
             "maxLength": 150,
+            "pattern": "/^(image\\/|application\\/pdf)/",
             "example": "application/pdf",
             "description": "image/* or application/pdf"
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
             "example": 184321,
             "description": "Decoded byte size (≤ 25 MB)."
           },
           "contentBase64": {
             "type": "string",
+            "format": "base64",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
           }
         },
@@ -16094,11 +16523,14 @@
           "mimeType": {
             "type": "string",
             "maxLength": 150,
+            "pattern": "/^(image\\/|application\\/pdf)/",
             "example": "application/pdf",
             "description": "image/* or application/pdf"
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 104857600,
             "example": 184321,
             "description": "Raw file size in bytes (≤ 100 MB)."
           }
@@ -16114,6 +16546,7 @@
         "properties": {
           "storageKey": {
             "type": "string",
+            "maxLength": 500,
             "description": "Object key returned from the matching proof/upload-session endpoint."
           },
           "fileName": {
@@ -16124,10 +16557,13 @@
           "mimeType": {
             "type": "string",
             "maxLength": 150,
+            "pattern": "/^(image\\/|application\\/pdf)/",
             "example": "application/pdf"
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 104857600,
             "example": 184321
           }
         },
@@ -16143,6 +16579,7 @@
         "properties": {
           "proofUrl": {
             "type": "string",
+            "format": "uri",
             "description": "Public URL returned by the proof upload endpoint.",
             "example": "https://media.crossub.example/tenant-deposit-proof/…/receipt.pdf"
           },
@@ -16181,7 +16618,8 @@
             "example": "142 Elizabeth St, Melbourne VIC 3000"
           },
           "suburb": {
-            "type": "object",
+            "type": "string",
+            "nullable": true,
             "example": "Melbourne VIC 3000"
           },
           "status": {
@@ -16214,57 +16652,69 @@
             ]
           },
           "rentWeekly": {
-            "type": "object",
+            "type": "number",
+            "nullable": true,
             "example": 720
           },
           "bondAmount": {
-            "type": "object",
+            "type": "number",
+            "nullable": true,
             "example": 2880,
             "description": "Rental bond from the active leasing cycle."
           },
           "depositAmount": {
-            "type": "object",
+            "type": "number",
+            "nullable": true,
             "example": 720,
             "description": "Holding deposit from the active leasing cycle."
           },
           "availableFrom": {
             "type": "string",
+            "nullable": true,
             "format": "date",
             "example": "2026-08-01"
           },
           "leaseTerm": {
-            "type": "object",
+            "type": "string",
+            "nullable": true,
             "example": "26 weeks",
             "description": "Lease term from the active leasing cycle contract draft."
           },
           "openInspectionAt": {
             "type": "string",
+            "nullable": true,
             "format": "date-time"
           },
           "openInspectionEndAt": {
             "type": "string",
+            "nullable": true,
             "format": "date-time",
             "description": "End of the open inspection window when a viewing session is linked."
           },
           "listedAt": {
             "type": "string",
+            "nullable": true,
             "format": "date-time",
             "description": "When the agent opened the new-leasing case (active cycle createdAt)."
           },
           "bedrooms": {
-            "type": "object",
+            "type": "number",
+            "nullable": true,
             "example": 3
           },
           "bathrooms": {
-            "type": "object",
+            "type": "number",
+            "nullable": true,
             "example": 2
           },
           "parking": {
-            "type": "object",
+            "type": "number",
+            "nullable": true,
             "example": 1
           },
           "imageUrl": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "features": {
             "example": [
@@ -16326,15 +16776,19 @@
           },
           "documentType": {
             "type": "string",
+            "maxLength": 80,
             "example": "drivers_licence",
             "description": "Document type slug from the NSW application checklist."
           },
           "label": {
             "type": "string",
+            "maxLength": 200,
             "example": "Driver's licence"
           },
           "points": {
             "type": "number",
+            "minimum": 0,
+            "maximum": 100,
             "example": 30
           },
           "fileName": {
@@ -16349,6 +16803,8 @@
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
             "example": 184321,
             "description": "Decoded byte size (≤ 25 MB)."
           },
@@ -16372,14 +16828,19 @@
         "properties": {
           "fullName": {
             "type": "string",
+            "minLength": 2,
+            "maxLength": 120,
             "example": "Jessica Morris"
           },
           "email": {
             "type": "string",
+            "maxLength": 200,
+            "format": "email",
             "example": "jessica.m@email.com"
           },
           "phone": {
             "type": "string",
+            "maxLength": 40,
             "example": "+61 400 333 444"
           }
         },
@@ -16392,29 +16853,36 @@
         "properties": {
           "fullName": {
             "type": "string",
+            "minLength": 2,
+            "maxLength": 120,
             "example": "Michael Lee"
           },
           "email": {
             "type": "string",
+            "maxLength": 200,
+            "format": "email",
             "example": "michael.l@email.com"
           },
           "phone": {
             "type": "string",
+            "minLength": 6,
+            "maxLength": 40,
             "example": "+61 400 345 678"
           },
           "annualIncome": {
             "type": "number",
+            "minimum": 0,
             "example": 168000
           },
           "employmentStatus": {
             "type": "string",
-            "example": "employed",
             "enum": [
               "employed",
               "self_employed",
               "unemployed",
               "retired"
-            ]
+            ],
+            "example": "employed"
           },
           "moveInDate": {
             "type": "string",
@@ -16619,13 +17087,13 @@
           },
           "leaseStart": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "leaseEnd": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "agencyName": {
             "type": "string",
@@ -16651,14 +17119,14 @@
           },
           "lastInspectionAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When the property was last inspected."
           },
           "nextInspectionAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When the property is next due for inspection."
           }
         },
@@ -16737,7 +17205,7 @@
             "format": "uuid"
           },
           "orderNumber": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "example": "M-SEED-002"
           },
@@ -16769,31 +17237,31 @@
             "example": false
           },
           "description": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "categoryName": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "propertyId": {
-            "type": "object",
-            "format": "uuid",
-            "nullable": true
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "scheduledDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "completedDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "createdAt": {
             "type": "string",
@@ -16810,11 +17278,13 @@
             "description": "Who is responsible for resolving this repair, once classified."
           },
           "buildingName": {
-            "type": "object",
+            "type": "string",
+            "nullable": true,
             "description": "Building name when recorded on the property."
           },
           "strataPlanNumber": {
-            "type": "object",
+            "type": "string",
+            "nullable": true,
             "description": "Strata plan number when recorded on the property."
           },
           "buildingManager": {
@@ -16920,31 +17390,31 @@
             "example": "COMPLETED"
           },
           "propertyId": {
-            "type": "object",
-            "format": "uuid",
-            "nullable": true
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "scheduledDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "inspectionDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "completedDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "reportUrl": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "description": "URL of the generated inspection report PDF, when available."
           },
@@ -17027,24 +17497,24 @@
             "example": "RENT"
           },
           "amount": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "example": 850,
             "description": "Gross amount (AUD)."
           },
           "serviceCharge": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "example": 33,
             "description": "Management/service charge (AUD)."
           },
           "gst": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "example": 3.3
           },
           "netAmount": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "example": 813.7,
             "description": "Net amount paid out to the owner (AUD)."
@@ -17055,9 +17525,9 @@
             "description": "Whether the payout has settled."
           },
           "propertyId": {
-            "type": "object",
-            "format": "uuid",
-            "nullable": true
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
           },
           "createdAt": {
             "type": "string",
@@ -17200,8 +17670,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -17242,8 +17712,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -17350,11 +17820,14 @@
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 104857600,
             "example": 184321,
             "description": "Decoded byte size (≤ 100 MB)."
           },
           "contentBase64": {
             "type": "string",
+            "format": "base64",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
           },
           "category": {
@@ -17435,8 +17908,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -17478,8 +17951,8 @@
           },
           "lastAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "unread": {
             "type": "number",
@@ -17604,8 +18077,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -17855,7 +18328,7 @@
             "format": "uuid"
           },
           "orderNumber": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "example": "M-SEED-001"
           },
@@ -17887,22 +18360,22 @@
             "example": false
           },
           "description": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "example": "Replace leaking hot-water valve."
           },
           "categoryName": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "description": "Trade/category label, if classified."
           },
           "propertyAddress": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "description": "Site address to attend (from the linked property)."
           },
           "propertySuburb": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "example": "Sydney"
           },
@@ -17991,10 +18464,12 @@
         "properties": {
           "reason": {
             "type": "string",
+            "maxLength": 500,
             "description": "Why the contractor is declining this RFQ."
           },
           "clientRequestId": {
             "type": "string",
+            "maxLength": 128,
             "description": "Optional idempotency key for retries."
           }
         },
@@ -18007,10 +18482,12 @@
         "properties": {
           "message": {
             "type": "string",
+            "maxLength": 2000,
             "description": "What additional photos or details the contractor needs before quoting."
           },
           "clientRequestId": {
             "type": "string",
+            "maxLength": 128,
             "description": "Optional idempotency key for retries."
           }
         },
@@ -18023,6 +18500,7 @@
         "properties": {
           "availableTimes": {
             "type": "string",
+            "maxLength": 4000,
             "example": "Mon 10 Mar 9–11am, Tue 11 Mar 2–4pm",
             "description": "Proposed visit windows for tenant approval."
           }
@@ -18051,6 +18529,7 @@
           },
           "invoiceAmount": {
             "type": "number",
+            "minimum": 0,
             "example": 352,
             "description": "Invoiced total, inc-GST (AUD). Defaults to unset if omitted."
           }
@@ -18070,16 +18549,20 @@
           "mimeType": {
             "type": "string",
             "maxLength": 150,
+            "pattern": "/^(application\\/pdf|image\\/)/",
             "example": "application/pdf",
             "description": "PDF or image/* MIME type."
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
             "example": 184321,
             "description": "Decoded byte size (≤ 25 MB)."
           },
           "contentBase64": {
             "type": "string",
+            "format": "base64",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
           }
         },
@@ -18095,31 +18578,37 @@
         "properties": {
           "subtotal": {
             "type": "number",
+            "minimum": 0,
             "example": 320,
             "description": "Quote subtotal, ex-GST (AUD)."
           },
           "gst": {
             "type": "number",
+            "minimum": 0,
             "example": 32,
             "description": "GST component (AUD)."
           },
           "total": {
             "type": "number",
+            "minimum": 0,
             "example": 352,
             "description": "Quote total, inc-GST (AUD)."
           },
           "labourCost": {
             "type": "number",
+            "minimum": 0,
             "example": 200,
             "description": "Labour component (AUD)."
           },
           "materialCost": {
             "type": "number",
+            "minimum": 0,
             "example": 120,
             "description": "Materials component (AUD)."
           },
           "callOutFee": {
             "type": "number",
+            "minimum": 0,
             "example": 0,
             "description": "Call-out fee, if a site visit applies (AUD)."
           },
@@ -18160,6 +18649,7 @@
         "type": "object",
         "properties": {
           "photos": {
+            "minItems": 1,
             "maxItems": 10,
             "example": [
               "https://example.com/photos/after-1.jpg"
@@ -18167,7 +18657,8 @@
             "description": "Up to 10 photo URLs to append to the job result photos.",
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 2000
             }
           }
         },
@@ -18209,16 +18700,20 @@
           "mimeType": {
             "type": "string",
             "maxLength": 150,
+            "pattern": "/^(image|video)\\//",
             "example": "image/jpeg",
             "description": "An image/* or video/* MIME type (completion evidence is photo or clip)."
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
             "example": 184321,
             "description": "Decoded byte size (≤ 25 MB)."
           },
           "contentBase64": {
             "type": "string",
+            "format": "base64",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
           }
         },
@@ -18332,8 +18827,8 @@
           },
           "lastAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "unread": {
             "type": "number",
@@ -18618,9 +19113,9 @@
             "description": "Lifecycle state. An inspector drives DRAFT → IN_PROGRESS (accept) → COMPLETED (complete); the staff review chain is staff-only."
           },
           "propertyId": {
-            "type": "object",
-            "format": "uuid",
-            "nullable": true
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -18644,18 +19139,18 @@
           },
           "scheduledDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "inspectionDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "completedDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "urgent": {
             "type": "boolean",
@@ -18753,8 +19248,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "address": {
             "type": "string",
@@ -18900,8 +19395,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "address": {
             "type": "string"
@@ -19073,6 +19568,7 @@
         "type": "object",
         "properties": {
           "inspectionIds": {
+            "minItems": 1,
             "maxItems": 14,
             "description": "Pool inspection ids to take. Sent together — the route is planned across the whole set, not per property. Ids already held by this inspector are re-planned alongside the new ones rather than rejected.",
             "type": "array",
@@ -19119,6 +19615,7 @@
         "type": "object",
         "properties": {
           "inspectionIds": {
+            "minItems": 1,
             "type": "array",
             "items": {
               "type": "string",
@@ -19135,8 +19632,8 @@
         "properties": {
           "collectedAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "collectPhotos": {
             "description": "R2 proof-photo URLs (keys in hand).",
@@ -19151,8 +19648,8 @@
           },
           "returnedAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "returnPhotos": {
             "description": "R2 proof-photo URLs (keys returned).",
@@ -19276,7 +19773,7 @@
             "description": "Viewing session lifecycle (scheduled | staff_en_route | open | closed | cancelled)."
           },
           "openedAt": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "startedEarly": {
@@ -19284,11 +19781,11 @@
             "description": "True when the inspector began before the originally scheduled start."
           },
           "startedEarlyAt": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "originalScheduledStart": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "description": "Original scheduled start before an early inspector start."
           },
@@ -19375,13 +19872,15 @@
             "description": "Flag the item for attention."
           },
           "conditionTags": {
+            "maxItems": 10,
             "example": [
               "Tenant Responsible"
             ],
             "description": "Free-form condition/responsibility tags.",
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 100
             }
           },
           "reading": {
@@ -19729,6 +20228,7 @@
         "properties": {
           "reportUrl": {
             "type": "string",
+            "minLength": 1,
             "maxLength": 2000,
             "description": "URL of the generated inspection report (PDF)."
           },
@@ -19758,16 +20258,20 @@
           "mimeType": {
             "type": "string",
             "maxLength": 150,
+            "pattern": "/^(image|video)\\//",
             "example": "image/jpeg",
             "description": "An image/* or video/* MIME type (inspection evidence is photo or clip)."
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
             "example": 184321,
             "description": "Decoded byte size (≤ 25 MB)."
           },
           "contentBase64": {
             "type": "string",
+            "format": "base64",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
           },
           "areaName": {
@@ -19806,12 +20310,14 @@
             "example": "Kitchen (Ingoing)"
           },
           "urls": {
+            "maxItems": 40,
             "example": [
               "https://cdn.example.com/inspections/kitchen-1.jpg"
             ],
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 2000
             }
           }
         },
@@ -19840,16 +20346,20 @@
           "mimeType": {
             "type": "string",
             "maxLength": 150,
+            "pattern": "/^(image|video)\\//",
             "example": "image/jpeg",
             "description": "An image/* or video/* MIME type (custody proof is a photo or clip)."
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
             "example": 184321,
             "description": "Decoded byte size (≤ 25 MB)."
           },
           "contentBase64": {
             "type": "string",
+            "format": "base64",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
           }
         },
@@ -19994,8 +20504,8 @@
           },
           "lastAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "unread": {
             "type": "number",
@@ -20037,11 +20547,14 @@
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 10485760,
             "example": 184321,
             "description": "Decoded byte size (≤ 10 MB)."
           },
           "contentBase64": {
             "type": "string",
+            "format": "base64",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
           }
         },
@@ -20727,20 +21240,69 @@
           "receivingPoolJobs"
         ]
       },
+      "InspectorDateAvailabilityEntryDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "/^\\d{4}-\\d{2}-\\d{2}$/"
+          },
+          "startMinute": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "endMinute": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1440
+          }
+        },
+        "required": [
+          "date",
+          "startMinute",
+          "endMinute"
+        ]
+      },
       "SetInspectorTimetableDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "/^\\d{4}-\\d{2}-\\d{2}$/"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "/^\\d{4}-\\d{2}-\\d{2}$/"
+          },
+          "entries": {
+            "maxItems": 366,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InspectorDateAvailabilityEntryDto"
+            }
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "entries"
+        ]
       },
       "SetInspectorLocationDto": {
         "type": "object",
         "properties": {
           "latitude": {
             "type": "number",
+            "minimum": -90,
+            "maximum": 90,
             "example": -33.8688,
             "description": "WGS84 latitude."
           },
           "longitude": {
             "type": "number",
+            "minimum": -180,
+            "maximum": 180,
             "example": 151.2093,
             "description": "WGS84 longitude."
           }
@@ -20795,6 +21357,7 @@
         "properties": {
           "rentAmount": {
             "type": "number",
+            "minimum": 0,
             "description": "Rent amount in the selected payment cycle units."
           },
           "paymentCycle": {
@@ -20816,10 +21379,12 @@
         "properties": {
           "billType": {
             "type": "string",
+            "maxLength": 120,
             "example": "Water"
           },
           "billName": {
             "type": "string",
+            "maxLength": 200,
             "example": "Q3 water rates"
           },
           "dueDate": {
@@ -20828,6 +21393,7 @@
           },
           "amount": {
             "type": "number",
+            "minimum": 0,
             "example": 240.5
           }
         },
@@ -20847,10 +21413,12 @@
             "description": "ISO date — agreement / lease end. Bond days overdue count from this date once the tenant has vacated."
           },
           "bondAmount": {
-            "type": "number"
+            "type": "number",
+            "minimum": 0
           },
           "notes": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 4000
           }
         }
       },
@@ -20921,14 +21489,17 @@
         "properties": {
           "fileName": {
             "type": "string",
+            "maxLength": 255,
             "example": "hearing-notice.pdf"
           },
           "mimeType": {
             "type": "string",
+            "maxLength": 120,
             "example": "application/pdf"
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
             "example": 240000
           },
           "contentBase64": {
@@ -21151,6 +21722,7 @@
         "properties": {
           "agentNotes": {
             "type": "string",
+            "maxLength": 8000,
             "description": "Agent working notes on the case."
           },
           "evictionRequired": {
@@ -21190,6 +21762,7 @@
         "properties": {
           "reason": {
             "type": "string",
+            "maxLength": 2000,
             "description": "Why this tribunal case is being deleted."
           }
         },
@@ -21227,10 +21800,12 @@
           },
           "propertyAddress": {
             "type": "string",
+            "maxLength": 240,
             "example": "8 Crown Street"
           },
           "rent": {
             "type": "number",
+            "minimum": 0,
             "example": 1980
           },
           "pmFeeGst": {
@@ -21242,11 +21817,14 @@
           },
           "serviceRate": {
             "type": "number",
+            "minimum": 0,
+            "maximum": 100,
             "example": 7.5,
             "description": "Service rate percent of rent."
           },
           "amount": {
             "type": "number",
+            "minimum": 0,
             "example": 148.5
           }
         },
@@ -21264,19 +21842,22 @@
         "properties": {
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
+            "maxLength": 240,
             "example": "8 Crown Street"
           },
           "description": {
             "type": "string",
+            "maxLength": 500,
             "example": "Tribunal filing fee"
           },
           "amount": {
             "type": "number",
+            "minimum": 0,
             "example": 120
           }
         },
@@ -21472,6 +22053,7 @@
           },
           "invoiceNumber": {
             "type": "string",
+            "maxLength": 60,
             "example": "INV-T76231"
           },
           "invoiceDate": {
@@ -21491,28 +22073,36 @@
             "description": "ISO date — period end (To)."
           },
           "reference": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "abn": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 40
           },
           "licenceNumber": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 80
           },
           "bankName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           },
           "bankAccountName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           },
           "bankBsb": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 20
           },
           "bankAccountNumber": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 40
           },
           "managementFee": {
             "type": "array",
@@ -21552,6 +22142,7 @@
           },
           "invoiceNumber": {
             "type": "string",
+            "maxLength": 60,
             "example": "INV-T76231"
           },
           "invoiceDate": {
@@ -21571,28 +22162,36 @@
             "description": "ISO date — period end (To)."
           },
           "reference": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "abn": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 40
           },
           "licenceNumber": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 80
           },
           "bankName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           },
           "bankAccountName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           },
           "bankBsb": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 20
           },
           "bankAccountNumber": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 40
           },
           "managementFee": {
             "type": "array",
@@ -21665,8 +22264,8 @@
           },
           "assignedAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When this agency was assigned to the signed-in agent. The earliest assignment is the profile agency."
           },
           "portalServiceLevel": {
@@ -21771,6 +22370,47 @@
           "items"
         ]
       },
+      "AgentInspectionBookableDaysDto": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "IANA zone the dates are expressed in — inspector timetables are Sydney.",
+            "example": "Australia/Sydney"
+          },
+          "from": {
+            "type": "string",
+            "description": "Start of the queried window (ISO)."
+          },
+          "to": {
+            "type": "string",
+            "description": "End of the queried window (ISO)."
+          },
+          "dates": {
+            "description": "Bookable dates as YYYY-MM-DD, ascending.",
+            "example": [
+              "2026-08-18",
+              "2026-08-19"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "configuredInspectorCount": {
+            "type": "number",
+            "description": "How many inspectors published availability in the window. Zero means the calendar is empty because nobody has set a timetable, not because every day is booked.",
+            "example": 3
+          }
+        },
+        "required": [
+          "timezone",
+          "from",
+          "to",
+          "dates",
+          "configuredInspectorCount"
+        ]
+      },
       "AgentPortalWelcomeStatusDto": {
         "type": "object",
         "properties": {
@@ -21816,6 +22456,8 @@
         "properties": {
           "guideId": {
             "type": "string",
+            "maxLength": 64,
+            "pattern": "/^[a-z0-9-]+$/",
             "description": "Section guide identifier (e.g. properties, inspections-open).",
             "example": "properties"
           },
@@ -21837,6 +22479,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "minLength": 1,
             "maxLength": 120,
             "example": "Skyline Realty"
           },
@@ -21942,10 +22585,12 @@
         "properties": {
           "email": {
             "type": "string",
+            "format": "email",
             "example": "agent@agency.example"
           },
           "contactName": {
             "type": "string",
+            "maxLength": 120,
             "example": "Jordan Lee"
           }
         },
@@ -21978,25 +22623,32 @@
         "type": "object",
         "properties": {
           "abn": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 40
           },
           "licenceNumber": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 80
           },
           "contactEmail": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "bankName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           },
           "bankAccountName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           },
           "bankBsb": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 20
           },
           "bankAccountNumber": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 40
           }
         }
       },
@@ -22110,7 +22762,37 @@
       },
       "AddAgencyPreferredContractorDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "contractorId": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "serviceTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sortOrder": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name"
+        ]
       },
       "AgentPreferredContractorCreatedDto": {
         "type": "object",
@@ -22121,6 +22803,49 @@
         },
         "required": [
           "preferredContractor"
+        ]
+      },
+      "AgentTenantPortalInviteDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "skipped"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "no_email",
+              "already_active",
+              "wrong_role",
+              "send_failed",
+              "error"
+            ],
+            "description": "Present when `status` is `skipped`."
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "format": "email"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdUser": {
+            "type": "boolean",
+            "description": "True when the invite also created the tenant login."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Free-text detail on a send failure."
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "AgentPropertyResponseDto": {
@@ -22247,30 +22972,30 @@
           },
           "leaseStart": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "leaseEnd": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "vacateDate": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Expected vacate — from an open end-leasing case or tenant rent-review decline."
           },
           "nextRentReviewAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Earliest date the next rent review may open — updated when the tenant accepts a rent increase."
           },
           "rentPaidUntil": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Rent paid-to date on the property registry."
           },
           "state": {
@@ -22305,8 +23030,8 @@
           },
           "landlordInsuranceExpiry": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "administrationFee": {
             "type": "number",
@@ -22337,8 +23062,8 @@
             ]
           },
           "managementFees": {
-            "type": "array",
             "nullable": true,
+            "type": "array",
             "description": "Full management fee rows from intake / Fees tab.",
             "items": {
               "type": "object",
@@ -22414,14 +23139,14 @@
           },
           "propertyManagerId": {
             "type": "string",
-            "format": "uuid",
             "nullable": true,
+            "format": "uuid",
             "description": "User id of the assigned property manager, when known."
           },
           "endOfManagementDate": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Set when agency management of this property has ended."
           },
           "registryIntakeComplete": {
@@ -22432,6 +23157,7 @@
           "registryDraft": {
             "type": "object",
             "nullable": true,
+            "additionalProperties": true,
             "description": "Wizard-only draft payload for resuming incomplete property intake."
           },
           "paymentReference": {
@@ -22441,8 +23167,12 @@
             "example": "DS633468"
           },
           "tenantPortalInvite": {
-            "type": "object",
-            "description": "Present on PATCH when a newly saved tenant email triggered an automatic Tenant app invite."
+            "description": "Present on PATCH when a newly saved tenant email triggered an automatic Tenant app invite.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentTenantPortalInviteDto"
+              }
+            ]
           }
         },
         "required": [
@@ -22608,14 +23338,18 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 200,
             "example": "Alex Tenant"
           },
           "email": {
             "type": "string",
+            "maxLength": 320,
+            "format": "email",
             "example": "alex@example.com"
           },
           "phone": {
             "type": "string",
+            "maxLength": 40,
             "example": "+61 400 000 000"
           },
           "isPrimary": {
@@ -22637,35 +23371,513 @@
             }
           },
           "tenantPortalInvite": {
-            "type": "object",
-            "description": "Present when a TENANT contact with an email triggered an automatic Tenant app invite."
+            "description": "Present when a TENANT contact with an email triggered an automatic Tenant app invite.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentTenantPortalInviteDto"
+              }
+            ]
           }
         },
         "required": [
           "contacts"
         ]
       },
+      "ManagementFeeRowDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "feeType": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "valueMode": {
+            "type": "string",
+            "enum": [
+              "rate",
+              "amount"
+            ]
+          },
+          "amount": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "gst": {
+            "type": "string",
+            "enum": [
+              "",
+              "include",
+              "exclude"
+            ]
+          }
+        },
+        "required": [
+          "feeType",
+          "valueMode",
+          "amount"
+        ]
+      },
       "CreateAgentPropertyDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "suburb": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "NSW",
+              "VIC",
+              "QLD",
+              "SA",
+              "WA",
+              "TAS",
+              "ACT",
+              "NT"
+            ]
+          },
+          "postcode": {
+            "type": "string",
+            "maxLength": 10
+          },
+          "propertyType": {
+            "type": "string",
+            "enum": [
+              "APARTMENT",
+              "HOUSE",
+              "TOWNHOUSE",
+              "UNIT",
+              "STUDIO",
+              "COMMERCIAL",
+              "GRANNY_FLAT",
+              "BOARDING_HOUSE",
+              "OTHER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OCCUPIED",
+              "VACANT",
+              "SHOWING",
+              "MAINTENANCE"
+            ]
+          },
+          "bedrooms": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "bathrooms": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "parking": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "furnished": {
+            "type": "boolean"
+          },
+          "landlordName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "landlordEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "landlordPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "tenantName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "tenantEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "tenantPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "nextInspectionAt": {
+            "type": "string"
+          },
+          "lastInspectionAt": {
+            "type": "string"
+          },
+          "leaseStartDate": {
+            "type": "string"
+          },
+          "leaseEndDate": {
+            "type": "string"
+          },
+          "nextRentReviewAt": {
+            "type": "string"
+          },
+          "rentWeekly": {
+            "type": "number",
+            "minimum": 0
+          },
+          "bondAmount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "depositAmount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "vacateDate": {
+            "type": "string"
+          },
+          "buildingName": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "strataPlanNumber": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "buildingManagerName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "buildingManagerEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "buildingManagerPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "strataContactName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "strataContactEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "strataContactPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "landlordInsuranceExpiry": {
+            "type": "string"
+          },
+          "administrationFee": {
+            "type": "number",
+            "minimum": 0
+          },
+          "documentationFee": {
+            "type": "number",
+            "minimum": 0
+          },
+          "lettingFee": {
+            "type": "number",
+            "minimum": 0
+          },
+          "managementRatePercent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "managementRateGst": {
+            "type": "string",
+            "enum": [
+              "include",
+              "exclude"
+            ]
+          },
+          "managementFees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagementFeeRowDto"
+            }
+          },
+          "registryIntakeComplete": {
+            "type": "boolean"
+          },
+          "registryDraft": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "routineInspectionFrequency": {
+            "type": "number",
+            "enum": [
+              2,
+              3
+            ]
+          }
+        },
+        "required": [
+          "address"
+        ]
       },
       "UpdateAgentPropertyDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "suburb": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "NSW",
+              "VIC",
+              "QLD",
+              "SA",
+              "WA",
+              "TAS",
+              "ACT",
+              "NT"
+            ]
+          },
+          "postcode": {
+            "type": "string",
+            "maxLength": 10
+          },
+          "propertyType": {
+            "type": "string",
+            "enum": [
+              "APARTMENT",
+              "HOUSE",
+              "TOWNHOUSE",
+              "UNIT",
+              "STUDIO",
+              "COMMERCIAL",
+              "GRANNY_FLAT",
+              "BOARDING_HOUSE",
+              "OTHER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OCCUPIED",
+              "VACANT",
+              "SHOWING",
+              "MAINTENANCE"
+            ]
+          },
+          "bedrooms": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "bathrooms": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "parking": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "furnished": {
+            "type": "boolean"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "landlordName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "landlordEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "landlordPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "tenantName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "tenantEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "tenantPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "leaseStartDate": {
+            "type": "string"
+          },
+          "leaseEndDate": {
+            "type": "string"
+          },
+          "nextRentReviewAt": {
+            "type": "string"
+          },
+          "rentPaidUntil": {
+            "type": "string"
+          },
+          "vacateDate": {
+            "type": "string"
+          },
+          "vacateDateChangeReason": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "nextInspectionAt": {
+            "type": "string"
+          },
+          "rentWeekly": {
+            "type": "number",
+            "minimum": 0
+          },
+          "bondAmount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "depositAmount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "buildingName": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "strataPlanNumber": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "buildingManagerName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "buildingManagerEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "buildingManagerPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "strataContactName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "strataContactEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "strataContactPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "landlordInsuranceExpiry": {
+            "type": "string"
+          },
+          "administrationFee": {
+            "type": "number",
+            "minimum": 0
+          },
+          "documentationFee": {
+            "type": "number",
+            "minimum": 0
+          },
+          "lettingFee": {
+            "type": "number",
+            "minimum": 0
+          },
+          "managementRatePercent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "managementRateGst": {
+            "type": "string",
+            "enum": [
+              "include",
+              "exclude"
+            ]
+          },
+          "managementFees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagementFeeRowDto"
+            }
+          },
+          "registryIntakeComplete": {
+            "type": "boolean"
+          },
+          "replaceLandlord": {
+            "type": "boolean"
+          },
+          "registryDraft": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "routineInspectionFrequency": {
+            "type": "number",
+            "enum": [
+              2,
+              3
+            ]
+          }
+        }
       },
       "AssignPropertyAgentDto": {
         "type": "object",
         "properties": {
           "assignedAgentUserId": {
-            "type": "object",
-            "format": "uuid",
+            "type": "string",
             "nullable": true,
+            "format": "uuid",
             "description": "Portal agent user id, or null to clear assignment."
           }
-        },
-        "required": [
-          "assignedAgentUserId"
-        ]
+        }
       },
       "EndAgentPropertyManagementDto": {
         "type": "object",
@@ -22688,19 +23900,96 @@
       },
       "AgentCreateLeasingCycleDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "agentName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "agentCompany": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "agentEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "agentPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "keyCustody": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agent"
+            ]
+          },
+          "rentPerWeek": {
+            "type": "number",
+            "minimum": 1
+          },
+          "availableFrom": {
+            "type": "string"
+          },
+          "deposit": {
+            "type": "number",
+            "minimum": 0
+          },
+          "bond": {
+            "type": "number",
+            "minimum": 0
+          },
+          "fixedTermWeeks": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 520
+          },
+          "tenantMovedOut": {
+            "type": "boolean"
+          },
+          "tenantMovedOutDate": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "skipOpenInspection": {
+            "type": "boolean"
+          },
+          "agentConductsOpenInspection": {
+            "type": "boolean"
+          },
+          "agentInitiated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rentPerWeek",
+          "availableFrom"
+        ]
       },
       "AgentWorkflowCreateResultDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "openInspectionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
       },
       "CancelAgentLeasingCycleDto": {
         "type": "object",
         "properties": {
           "reason": {
             "type": "string",
-            "example": "Landlord decided not to lease anymore",
-            "maxLength": 500
+            "maxLength": 500,
+            "example": "Landlord decided not to lease anymore"
           },
           "force": {
             "type": "boolean",
@@ -22713,27 +24002,130 @@
       },
       "RequestAgentOpenInspectionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "preferredStartTime": {
+            "type": "string"
+          },
+          "preferredEndTime": {
+            "type": "string"
+          },
+          "preferredNotes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "keyCollectLocation": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "startNow": {
+            "type": "boolean"
+          },
+          "platformChargeId": {
+            "type": "string"
+          }
+        }
       },
       "AgentOpenInspectionConfirmResultDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agentConfirmedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "agentConfirmedAt"
+        ]
       },
       "CancelAgentOpenInspectionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ]
       },
       "AgentCreateRentReviewDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "currentWeeklyRent": {
+            "type": "number",
+            "minimum": 0
+          },
+          "tenantName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "orderNumber": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "rentReviewDate": {
+            "type": "string"
+          },
+          "leaseType": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "periodic"
+            ]
+          },
+          "fixedTermWeeks": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 520
+          },
+          "initialLeaseStartDate": {
+            "type": "string"
+          },
+          "leaseEndDate": {
+            "type": "string"
+          },
+          "tenantRef": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "managingAgentLabel": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "proposedRent": {
+            "type": "number",
+            "minimum": 0
+          },
+          "rentPeriod": {
+            "type": "string",
+            "enum": [
+              "weekly",
+              "fortnightly",
+              "monthly"
+            ]
+          },
+          "rentNegotiable": {
+            "type": "boolean"
+          },
+          "rentPaidUntil": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "currentWeeklyRent"
+        ]
       },
       "CancelAgentRentReviewDto": {
         "type": "object",
         "properties": {
           "reason": {
             "type": "string",
-            "example": "Opened in error — landlord not proceeding with increase",
-            "maxLength": 500
+            "maxLength": 500,
+            "example": "Opened in error — landlord not proceeding with increase"
           }
         },
         "required": [
@@ -22742,33 +24134,186 @@
       },
       "SetRecommendedRentDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "weekly": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1
+          }
+        }
       },
       "SetProposedRentDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "weekly": {
+            "type": "number",
+            "minimum": 0,
+            "nullable": true
+          },
+          "effectiveDate": {
+            "type": "string"
+          },
+          "rentNegotiable": {
+            "type": "boolean"
+          },
+          "preferredLeaseType": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "periodic"
+            ]
+          },
+          "preferredFixedTermEndDate": {
+            "type": "string"
+          },
+          "newLeaseStartDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "weekly",
+          "effectiveDate"
+        ]
       },
       "UpdateNoticePayableFromDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "payableFrom": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "payableFrom"
+        ]
       },
       "UpdateLeaseAgreementTermsDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "additionalTerms": {
+            "type": "string",
+            "nullable": true
+          },
+          "additionalTermsPets": {
+            "type": "string",
+            "nullable": true
+          }
+        }
       },
       "SendRentReviewEmailDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "toEmail": {
+            "type": "string",
+            "maxLength": 200,
+            "format": "email"
+          },
+          "toName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "agent_research_email",
+              "landlord_research_email",
+              "comm_reply",
+              "comm_forward"
+            ]
+          },
+          "inReplyToAuditId": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "toEmail",
+          "subject",
+          "body",
+          "kind"
+        ]
       },
       "AgentCreateTerminationCaseDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "terminationType": {
+            "type": "string",
+            "enum": [
+              "termination",
+              "tenant_initiated"
+            ]
+          },
+          "terminationReason": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "bondHeld": {
+            "type": "number",
+            "minimum": 0
+          },
+          "tenancyAgreementId": {
+            "type": "string"
+          },
+          "leasingCycleId": {
+            "type": "string"
+          },
+          "expectedVacateDate": {
+            "type": "string"
+          },
+          "terminationGround": {
+            "type": "string",
+            "enum": [
+              "actual_sale",
+              "proposed_sale",
+              "renovations",
+              "demolition",
+              "not_residential",
+              "landlord_resides",
+              "breach",
+              "non_payment",
+              "employee_caretaker",
+              "uninhabitable",
+              "death_sole_tenant"
+            ]
+          },
+          "proposedTerminationDate": {
+            "type": "string"
+          },
+          "breachClause": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "breachConduct": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "deferNoticeDelivery": {
+            "type": "boolean"
+          },
+          "allowParallel": {
+            "type": "boolean"
+          }
+        }
       },
       "AgentRecordRentReconciliationDto": {
         "type": "object",
         "properties": {
           "amount": {
             "type": "number",
+            "minimum": 0.01,
             "example": 450
           },
           "paymentDate": {
@@ -22786,20 +24331,25 @@
           },
           "rentAllocation": {
             "type": "number",
+            "minimum": 0,
             "example": 450
           },
           "bondAllocation": {
             "type": "number",
+            "minimum": 0,
             "example": 0
           },
           "rentDescription": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 500
           },
           "bondDescription": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 500
           },
           "note": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 2000
           }
         },
         "required": [
@@ -22813,8 +24363,8 @@
         "properties": {
           "reason": {
             "type": "string",
-            "example": "Tenant decided to stay — case no longer required",
-            "maxLength": 500
+            "maxLength": 500,
+            "example": "Tenant decided to stay — case no longer required"
           }
         },
         "required": [
@@ -22846,6 +24396,7 @@
         "properties": {
           "issueType": {
             "type": "string",
+            "minLength": 1,
             "maxLength": 120,
             "example": "Plumbing"
           },
@@ -22863,6 +24414,7 @@
           },
           "urgentReason": {
             "type": "string",
+            "minLength": 5,
             "maxLength": 500,
             "description": "Required when an agent requests urgent priority for a non-standard issue type (admin review)."
           },
@@ -22875,7 +24427,8 @@
             "description": "At least one already-uploaded photo or video URL (the app uploads each file first).",
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "format": "uri"
             }
           }
         },
@@ -22890,8 +24443,8 @@
         "properties": {
           "reason": {
             "type": "string",
-            "example": "Logged against the wrong property — duplicate case",
-            "maxLength": 500
+            "maxLength": 500,
+            "example": "Logged against the wrong property — duplicate case"
           }
         },
         "required": [
@@ -22909,16 +24462,20 @@
           "mimeType": {
             "type": "string",
             "maxLength": 150,
+            "pattern": "/^(image|video)\\//",
             "example": "image/jpeg",
             "description": "An image/* or video/* MIME type."
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
             "example": 184321,
             "description": "Decoded byte size (≤ 25 MB)."
           },
           "contentBase64": {
             "type": "string",
+            "format": "base64",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
           }
         },
@@ -22954,26 +24511,104 @@
           },
           "note": {
             "type": "string",
-            "description": "Anything CROSSUB should know when scheduling — access, tenant availability, urgency. Read by a person; never parsed into a date.",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "description": "Anything CROSSUB should know when scheduling — access, tenant availability, urgency. Read by a person; never parsed into a date."
           }
         }
       },
       "AgentCreateIngoingInspectionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "scheduledTime": {
+            "type": "string"
+          },
+          "moveInDate": {
+            "type": "string"
+          },
+          "tenantName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "tenantEmail": {
+            "type": "string",
+            "maxLength": 160,
+            "format": "email"
+          },
+          "tenantPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "high",
+              "urgent"
+            ]
+          },
+          "accessInstructions": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "leaseApprovalRef": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "platformChargeId": {
+            "type": "string"
+          }
+        }
       },
       "AgentCreateOutgoingInspectionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "scheduledTime": {
+            "type": "string"
+          },
+          "vacateDate": {
+            "type": "string"
+          },
+          "tenantName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "tenantEmail": {
+            "type": "string",
+            "maxLength": 160,
+            "format": "email"
+          },
+          "tenantPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "inspectorName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "accessInstructions": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "platformChargeId": {
+            "type": "string"
+          }
+        }
       },
       "AgentKeyCollectionReportDto": {
         "type": "object",
         "properties": {
           "submittedAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "tagNumber": {
             "type": "string",
@@ -23025,8 +24660,8 @@
         "properties": {
           "cycleId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyId": {
             "type": "string",
@@ -23054,13 +24689,13 @@
           },
           "time": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "timeEnd": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Optional end of the key-collection window."
           },
           "location": {
@@ -23127,10 +24762,12 @@
         "type": "object",
         "properties": {
           "photos": {
+            "maxItems": 12,
             "description": "Key-collection proof photo URLs (from the photo-upload endpoint).",
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 500
             }
           },
           "tagNumber": {
@@ -23227,23 +24864,23 @@
           },
           "scheduledDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "inspectionDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "completedDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "moveInDate": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Tenant move-in from ingoing workflow meta — used to derive the target schedule when scheduledDate is null."
           },
           "reportUrl": {
@@ -23358,8 +24995,8 @@
           },
           "submittedAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "lineItems": {
             "type": "array",
@@ -23512,13 +25149,13 @@
           },
           "scheduledDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "completedDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "duplicateOfId": {
             "type": "string",
@@ -23621,24 +25258,24 @@
           },
           "reviewDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "completedDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "leaseStart": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Lease period start for this rent review (agreement or initial lease start)."
           },
           "leaseEnd": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "Lease period end for this rent review."
           },
           "agreedRent": {
@@ -23649,8 +25286,8 @@
           },
           "dateStarted": {
             "type": "string",
-            "format": "date-time",
             "nullable": true,
+            "format": "date-time",
             "description": "When the reviewed rent / lease terms take effect."
           },
           "createdAt": {
@@ -23736,8 +25373,8 @@
           },
           "vacateDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "responsibility": {
             "type": "string",
@@ -23822,8 +25459,8 @@
           },
           "moveInDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "documentCount": {
             "type": "number",
@@ -23891,13 +25528,13 @@
           },
           "leaseStart": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "leaseEnd": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           }
         },
         "required": [
@@ -23951,8 +25588,8 @@
           },
           "availableFrom": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "createdAt": {
             "type": "string",
@@ -24009,11 +25646,13 @@
           },
           "arrearsOpenedAt": {
             "type": "string",
+            "nullable": true,
             "format": "date-time",
             "description": "When the oldest open arrears case was opened."
           },
           "arrearsKeyDate": {
             "type": "string",
+            "nullable": true,
             "format": "date",
             "description": "Rent paid-to or earliest bill due date for open arrears."
           }
@@ -24174,8 +25813,8 @@
           },
           "availableFrom": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "cancelReason": {
             "type": "string",
@@ -24206,8 +25845,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -24215,8 +25854,8 @@
           },
           "vacateDate": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "cancelReason": {
             "type": "string",
@@ -24245,8 +25884,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -24254,8 +25893,8 @@
           },
           "reviewDue": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "currentRent": {
             "type": "number",
@@ -24438,8 +26077,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "nullable": true,
+            "format": "uuid"
           },
           "propertyAddress": {
             "type": "string",
@@ -24466,6 +26105,7 @@
           },
           "caseType": {
             "type": "string",
+            "nullable": true,
             "enum": [
               "PROPERTY",
               "MAINTENANCE",
@@ -24475,7 +26115,6 @@
               "TRIBUNAL",
               "ACCOUNTING"
             ],
-            "nullable": true,
             "example": "INSPECTION"
           },
           "caseId": {
@@ -24500,8 +26139,8 @@
           },
           "lastAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "unread": {
             "type": "number",
@@ -24558,8 +26197,8 @@
           },
           "lastSyncAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "lastError": {
             "type": "string",
@@ -24586,8 +26225,8 @@
           },
           "selectedMailboxId": {
             "type": "string",
-            "format": "uuid",
             "nullable": true,
+            "format": "uuid",
             "description": "When set, external threads are filtered to this linked mailbox."
           },
           "threads": {
@@ -24854,13 +26493,13 @@
           },
           "sentAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "agentReturnedAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "documentUrl": {
             "type": "string",
@@ -24886,8 +26525,8 @@
           },
           "salesRejectedAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "format": "date-time"
           },
           "salesRejectionReason": {
             "type": "string",
@@ -24921,14 +26560,17 @@
         "properties": {
           "notes": {
             "type": "string",
+            "maxLength": 2000,
             "description": "Optional note to the salesperson."
           },
           "fileName": {
             "type": "string",
+            "maxLength": 255,
             "description": "Signed agreement file name."
           },
           "mimeType": {
             "type": "string",
+            "maxLength": 120,
             "example": "application/pdf"
           },
           "sizeBytes": {
@@ -25010,6 +26652,8 @@
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 104857600,
             "example": 184321,
             "description": "Raw file size in bytes (≤ 100 MB)."
           },
@@ -25047,6 +26691,7 @@
         "properties": {
           "storageKey": {
             "type": "string",
+            "maxLength": 512,
             "description": "Object key returned from POST /agent/documents/upload-session.",
             "example": "portal-documents/<uuid>/report.pdf"
           },
@@ -25059,7 +26704,9 @@
             "maxLength": 150
           },
           "sizeBytes": {
-            "type": "number"
+            "type": "number",
+            "minimum": 1,
+            "maximum": 104857600
           },
           "category": {
             "type": "string",
@@ -25105,11 +26752,14 @@
           },
           "sizeBytes": {
             "type": "number",
+            "minimum": 1,
+            "maximum": 104857600,
             "example": 184321,
             "description": "Decoded byte size (≤ 100 MB)."
           },
           "contentBase64": {
             "type": "string",
+            "format": "base64",
             "description": "The file contents, base64-encoded (no data: URI prefix)."
           },
           "category": {
@@ -25204,8 +26854,8 @@
           },
           "propertyId": {
             "type": "string",
-            "format": "uuid",
             "nullable": true,
+            "format": "uuid",
             "description": "The property this tenant is linked to (via their application), if any."
           },
           "propertyAddress": {
@@ -25215,12 +26865,13 @@
           },
           "applicationId": {
             "type": "string",
-            "format": "uuid",
             "nullable": true,
+            "format": "uuid",
             "description": "The application that anchored this tenant login."
           },
           "applicationStatus": {
             "type": "string",
+            "nullable": true,
             "enum": [
               "DRAFT",
               "SUBMITTED",
@@ -25228,8 +26879,7 @@
               "DECLINED",
               "LEASED",
               "WITHDRAWN"
-            ],
-            "nullable": true
+            ]
           }
         },
         "required": [
@@ -25301,11 +26951,13 @@
           },
           "firstName": {
             "type": "string",
+            "minLength": 1,
             "maxLength": 80,
             "example": "Jane"
           },
           "lastName": {
             "type": "string",
+            "minLength": 1,
             "maxLength": 80,
             "example": "Tenant"
           },
@@ -25376,21 +27028,23 @@
         "properties": {
           "fileName": {
             "type": "string",
+            "maxLength": 255,
             "example": "lease-break-notice.pdf"
           },
           "mediaType": {
             "type": "string",
-            "example": "application/pdf",
             "enum": [
               "application/pdf",
               "image/png",
               "image/jpeg",
               "image/webp",
               "image/gif"
-            ]
+            ],
+            "example": "application/pdf"
           },
           "base64": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 10485760
           }
         },
         "required": [
@@ -25412,6 +27066,7 @@
           },
           "content": {
             "type": "string",
+            "maxLength": 4000,
             "example": "66 Berry Street — tenant moving out 31 August 2026"
           },
           "attachments": {
@@ -25436,11 +27091,13 @@
           },
           "label": {
             "type": "string",
+            "maxLength": 240,
             "example": "1A Lucy Street, Merrylands West NSW 2160"
           },
           "tenantName": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "maxLength": 160
           }
         },
         "required": [
@@ -25457,18 +27114,22 @@
           },
           "propertyLabel": {
             "type": "string",
+            "maxLength": 240,
             "example": "66 Berry Street, North Sydney NSW 2060"
           },
           "moveOutDate": {
             "type": "string",
+            "pattern": "/^\\d{4}-\\d{2}-\\d{2}$/",
             "example": "2026-08-31"
           },
           "pageModule": {
             "type": "string",
+            "maxLength": 80,
             "example": "properties"
           },
           "pageLabel": {
             "type": "string",
+            "maxLength": 240,
             "example": "Property Portal · 66 Berry Street"
           },
           "propertyChanged": {
@@ -25476,6 +27137,7 @@
             "example": true
           },
           "pendingPropertyCandidates": {
+            "maxItems": 12,
             "description": "Echo back `pendingPropertyCandidates` from the previous response when the user is picking from an ambiguous list.",
             "type": "array",
             "items": {
@@ -25916,14 +27578,17 @@
         "properties": {
           "audioBase64": {
             "type": "string",
+            "maxLength": 7000000,
             "description": "Base64-encoded audio (webm/mp4 from MediaRecorder)"
           },
           "mediaType": {
             "type": "string",
+            "maxLength": 128,
             "example": "audio/webm"
           },
           "languageHint": {
             "type": "string",
+            "maxLength": 16,
             "description": "ISO language hint (`en`, `zh`) — omit to auto-detect."
           }
         },
@@ -25999,8 +27664,8 @@
           },
           "personId": {
             "type": "string",
-            "format": "uuid",
             "nullable": true,
+            "format": "uuid",
             "description": "External-party domain anchor (Person id); null for internal staff."
           }
         },
@@ -26021,6 +27686,7 @@
         "properties": {
           "token": {
             "type": "string",
+            "minLength": 1,
             "maxLength": 512,
             "description": "The opaque provider push token (FCM / APNs / Expo)."
           },
@@ -26071,6 +27737,7 @@
         "properties": {
           "token": {
             "type": "string",
+            "minLength": 1,
             "maxLength": 512,
             "description": "The push token to remove (e.g. on logout)."
           }
