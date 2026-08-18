@@ -1,6 +1,6 @@
 import type { components } from '@crossub-thongz/api-contract';
 
-import { INSPECTION_TYPE } from '@/constants/api-enums';
+import { INSPECTION_STATUS, INSPECTION_TYPE } from '@/constants/api-enums';
 import type { InspectorCalendarAvailability } from '@/lib/inspector-timetable';
 
 import { crossub } from './client';
@@ -72,11 +72,50 @@ export async function fetchJobs(): Promise<InspectorJob[]> {
   return data.items;
 }
 
-/** Assigned inspections (`GET /api/v1/inspector/inspections`). */
+/** What the board lists under “Pending”; every other status reads as finished. */
+const OUTSTANDING_STATUSES: InspectorInspection['status'][] = [
+  INSPECTION_STATUS.DRAFT,
+  INSPECTION_STATUS.IN_PROGRESS,
+];
+
+/**
+ * Assigned inspections (`GET /api/v1/inspector/inspections`) — all the live ones.
+ *
+ * CRS-0103. This one call feeds the whole board: Pending, Completed, the key-access
+ * counts and the “Assigned by CROSSUB” badge all read `jobs`, and `jobs` is built from
+ * nothing else. It used to ask for no page at all and take the server default of twenty,
+ * which is not twenty pieces of *work* — the endpoint returns every non-cancelled
+ * inspection this person has ever been put on. On production that meant one inspector
+ * holding **823 rows, 79 of them outstanding**, receiving twenty finished jobs and none
+ * of the live ones; 77 live jobs were invisible across the roster.
+ *
+ * **Draining the list is not the fix.** Paging to the end would pull all 823 rows every
+ * refresh and hand them to `enrichJobsWithKeyCollection`, which issues a request per
+ * uncached job — the same fan-out that once exhausted the browser's connection pool on a
+ * 113-job pool. The facade now sorts outstanding work first (`status` ascending), so this
+ * takes 100 at a time and **stops as soon as a page ends on finished work**: everything
+ * still open is in hand, and the tail of history stays on the server where it belongs.
+ * In practice that is a single request, and it degrades gracefully — an inspector with
+ * more than a page of live jobs simply gets another page.
+ */
 export async function fetchInspections(): Promise<InspectorInspection[]> {
-  const { data, error } = await crossub.GET('/inspector/inspections');
-  if (error || !data) throw new Error('Failed to load inspections');
-  return data.items;
+  const pageSize = 100; // the facade's ceiling
+  const maxPages = 5; // 500 open jobs would be a different problem entirely
+  const all: InspectorInspection[] = [];
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const { data, error } = await crossub.GET('/inspector/inspections', {
+      params: { query: { page, pageSize } },
+    });
+    if (error || !data) throw new Error('Failed to load inspections');
+    all.push(...data.items);
+
+    const last = data.items[data.items.length - 1];
+    if (!data.hasMore || !last || !OUTSTANDING_STATUSES.includes(last.status)) {
+      break;
+    }
+  }
+  return all;
 }
 
 /** Field inspections claimable from the mobile job pool (excludes CONDITION). */

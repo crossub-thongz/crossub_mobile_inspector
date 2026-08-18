@@ -46,6 +46,15 @@ export const INSPECTION_TYPE_LABEL: Record<CoreInspectionType, string> = {
   routine: 'ROUTINE',
 };
 
+/**
+ * Heading label for any inspection type — the core four by their own name, anything
+ * else (a demo tribunal row, a type added to the contract later) by its key rather
+ * than being silently dropped from a grouped list. CRS-0103.
+ */
+export function inspectionTypeHeading(type: InspectionType): string {
+  return INSPECTION_TYPE_LABEL[type as CoreInspectionType] ?? type.toUpperCase();
+}
+
 export const INSPECTION_TYPE_DESCRIPTION: Record<CoreInspectionType, string> = {
   open: 'Property readiness, QR registration, and open reports',
   ingoing: 'Room-by-room condition at lease start',

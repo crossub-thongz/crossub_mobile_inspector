@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-08-18
+
+### Fixed
+- **The task list only ever asked for the first twenty inspections, and the newest ASSIGNMENT was not among them (CRS-0103).** Daniel: *"after assigned the job to inspector it should go directly in to inspector task list and the system shows assigned to inspector and who."*
+
+  `fetchInspections` called `GET /inspector/inspections` with no query at all and took the server default page of twenty. That one response is the whole board — `jobs` is built from it and nothing else, and Pending, Completed, the key-access counts and the "Assigned by CROSSUB" badge all read `jobs` — while the endpoint returns **every non-cancelled inspection this inspector has ever been put on**, finished ones included. So a long-serving inspector spent all twenty slots on completed work, and a job the office assigned an hour ago arrived nowhere. Nothing errored, nothing said the list was truncated, and there is no "load more" to press.
+
+  **Production, measured:** 77 live jobs invisible across three inspectors — 5 for Daniel Zhou (138 assigned rows), 7 for Jason Guan (616), and **65 for Miara Li, who holds 823 rows of which 79 are outstanding**.
+
+  **Draining the list would have been the wrong fix, and nearly was.** Paging to the end pulls all 823 rows on every fifteen-second refresh and hands them to `enrichJobsWithKeyCollection`, which issues a request per uncached job — the same fan-out that once exhausted the browser's connection pool on a 113-job pool, and the reason pool rows are deliberately left unenriched. The facade now sorts outstanding work first, so this asks for 100 at a time and **stops as soon as a page ends on finished work**: one request in practice, every open job in hand, and the tail of history left on the server. An inspector with more than a page of live work simply gets another page, up to five.
+
+  **`fetchPoolInspections`, immediately below it in the same file, has always paged** — that asymmetry is why the pool board never showed this fault while the assigned list did.
+
+- **A task card would not say what kind of inspection it was.** `InspectionListCard` was the only job surface in the app with no `JobTypeBadge` — the pool card, the compact row, the summary card, the history row and the earnings line all carry one. On **By type** the tab above the card had already answered the question. On **Assigned by CROSSUB** it had not: that tab hides the type strip, because there is no single type to strip by, so a routine, two ingoings and an open sat in one column of addresses and the only way to learn what a job was was to open it.
+
+  The card names its type, and the CROSSUB tab is now grouped by kind — a heading and a count per group, in the same order as the type strip so the two tabs read alike. Grouping is built from the jobs present rather than from a fixed list, so a type outside the strip's order keeps its own group at the end instead of dropping off the screen.
+
+  Type errors are **4 before and 4 after** — the same four this repo has carried through three contract syncs (a `Timeout` return type, two `Headers.getAll` calls, and `OutgoingAreaIssueDraft` declared locally but not exported). None are in the four files touched here.
+
 ## 2026-08-15
 
 ### Changed

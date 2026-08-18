@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Calendar } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { JobTypeBadge } from '@/components/inspector/status-badge';
 import { jobDetail, jobHistory, jobWorkflow } from '@/constants/routes';
 import { buildMapUrl } from '@/lib/navigation';
 import { formatJobRefId } from '@/lib/job-cancellation';
@@ -38,9 +39,20 @@ export function InspectionListCard({
 
   return (
     <article className="rounded-2xl border border-border bg-card p-4">
-      <p className="text-muted-foreground mb-1 font-mono text-[10px]">
-        Job {formatJobRefId(job.id)}
-      </p>
+      {/*
+        CRS-0103 — the card says what kind of inspection it is. The pool card, the
+        history row, the summary card and the earnings line all carry `JobTypeBadge`;
+        this one, the card the Crossub Inspection list is built from, was the only
+        place a job arrived with nothing but an address on it. Under “Assigned by
+        CROSSUB”, where four kinds of work sit in the same list, that left the
+        inspector opening jobs to find out what they were.
+      */}
+      <div className="mb-1.5 flex flex-wrap items-center gap-2">
+        <JobTypeBadge type={job.type} />
+        <span className="text-muted-foreground ml-auto font-mono text-[10px]">
+          Job {formatJobRefId(job.id)}
+        </span>
+      </div>
       <p className="text-foreground line-clamp-2 text-sm font-semibold leading-snug">
         {job.propertyAddress}
       </p>

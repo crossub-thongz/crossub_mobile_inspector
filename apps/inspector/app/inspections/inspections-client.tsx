@@ -17,6 +17,7 @@ import { useInspectorData } from '@/components/providers/inspector-data-provider
 import { ROUTES } from '@/constants/routes';
 import {
   CORE_INSPECTION_TYPES,
+  inspectionTypeHeading,
   type CoreInspectionType,
 } from '@/constants/inspection';
 import { isStaffAssignedJob } from '@/lib/inspector-job-filters';
@@ -81,6 +82,33 @@ export default function InspectionsPageClient() {
       .filter((j) => (section === 'crossub' ? true : j.type === type))
       .filter((j) => matchesQuery(j, q));
   }, [completedJobs, pendingJobs, q, section, statusFilter, type]);
+
+  /**
+   * CRS-0103 — “Assigned by CROSSUB” is split by kind, not one heap.
+   *
+   * The tab hides the type strip (there is no single type to strip by), so everything
+   * the office had dispatched — a routine, two ingoings and an open — arrived as one
+   * undifferentiated list of addresses. Groups follow the strip's order so both tabs
+   * read the same way round; a type the strip does not carry keeps its own group at
+   * the end rather than disappearing from the screen.
+   */
+  const staffAssignedByType = useMemo(() => {
+    type JobType = InspectionJob['type'];
+    const order = INSPECTION_LIST_TAB_ORDER as readonly JobType[];
+    const groups = new Map<JobType, InspectionJob[]>();
+    for (const job of staffAssignedJobs) {
+      const bucket = groups.get(job.type);
+      if (bucket) bucket.push(job);
+      else groups.set(job.type, [job]);
+    }
+    const rank = (type: JobType) => {
+      const index = order.indexOf(type);
+      return index < 0 ? order.length : index;
+    };
+    return [...groups.entries()]
+      .sort(([a], [b]) => rank(a) - rank(b))
+      .map(([type, jobs]) => ({ type, jobs }));
+  }, [staffAssignedJobs]);
 
   const typeJobs = useMemo(() => {
     if (section === 'crossub') return [];
@@ -195,12 +223,22 @@ export default function InspectionsPageClient() {
               ) : null}
 
               {section === 'crossub'
-                ? staffAssignedJobs.map((job) => (
-                    <InspectionListCard
-                      key={job.id}
-                      job={job}
-                      completed={statusFilter === 'completed'}
-                    />
+                ? staffAssignedByType.map(({ type: groupType, jobs: groupJobs }) => (
+                    <section key={groupType} className="space-y-2">
+                      <h2 className="text-muted-foreground flex items-center gap-2 px-0.5 text-[11px] font-semibold tracking-wide uppercase">
+                        {inspectionTypeHeading(groupType)}
+                        <span className="text-muted-foreground/70 tabular-nums">
+                          {groupJobs.length}
+                        </span>
+                      </h2>
+                      {groupJobs.map((job) => (
+                        <InspectionListCard
+                          key={job.id}
+                          job={job}
+                          completed={statusFilter === 'completed'}
+                        />
+                      ))}
+                    </section>
                   ))
                 : typeJobs.map((job) => (
                     <InspectionListCard
