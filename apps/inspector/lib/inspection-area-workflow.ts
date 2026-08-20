@@ -85,3 +85,61 @@ export function sectionsForAvailableArea(
   const def = resolveAreaDefinition(areaName, customAreas);
   return def.defaultSections.length > 0 ? [...def.defaultSections] : [];
 }
+
+type AreaRecordBase = {
+  available: boolean | null;
+  activeSections: string[];
+  photosBySection: Record<string, unknown>;
+};
+
+/**
+ * After the inspector confirms the room list, every selected area is available
+ * with its checklist items already filled in — no per-room Yes/No prompt.
+ */
+export function seedAreasForInspectionStart<T extends AreaRecordBase>(
+  record: Record<string, T>,
+  areaNames: string[],
+  options: {
+    sectionsFor: (name: string) => string[];
+    emptyEntry: (name: string) => T;
+    emptyPhotos: () => T['photosBySection'][string];
+  },
+): { record: Record<string, T>; changed: boolean } {
+  let changed = false;
+  const next = { ...record };
+
+  for (const name of areaNames) {
+    const current = next[name] ?? options.emptyEntry(name);
+    if (current.available === false) {
+      if (!next[name]) {
+        next[name] = current;
+        changed = true;
+      }
+      continue;
+    }
+
+    const needsActivate = current.available !== true;
+    const needsSections = current.activeSections.length === 0;
+    if (!needsActivate && !needsSections && next[name]) continue;
+
+    const activeSections = needsSections
+      ? options.sectionsFor(name)
+      : [...current.activeSections];
+    const photosBySection = { ...current.photosBySection };
+    for (const section of activeSections) {
+      if (photosBySection[section] == null) {
+        photosBySection[section] = options.emptyPhotos();
+      }
+    }
+
+    next[name] = {
+      ...current,
+      available: true,
+      activeSections,
+      photosBySection,
+    };
+    changed = true;
+  }
+
+  return { record: next, changed };
+}

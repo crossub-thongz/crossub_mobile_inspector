@@ -125,19 +125,50 @@ export function inferSelectedAreaNamesFromDraft(
     (a, b) => (order.get(a.toLowerCase()) ?? 999) - (order.get(b.toLowerCase()) ?? 999),
   );
 }
+
+export function effectiveSelectedAreaNames(
+  selected: string[] | undefined,
+  record: Record<string, unknown>,
+  customAreas: CustomAreaDefinition[] = [],
+): string[] {
+  if (selected && selected.length > 0) return selected;
+  return inferSelectedAreaNamesFromDraft(record, customAreas);
+}
+
+export function appendSelectedAreaName(
+  selected: string[] | undefined,
+  name: string,
+  record: Record<string, unknown>,
+  customAreas: CustomAreaDefinition[] = [],
+): string[] {
+  const current = effectiveSelectedAreaNames(selected, record, customAreas);
+  const key = name.trim().toLowerCase();
+  if (current.some((item) => item.trim().toLowerCase() === key)) return current;
+  return [...current, name];
+}
+
+export function classifyAddedAreaName(name: string): {
+  kind: 'catalog' | 'custom';
+  name: string;
+} {
+  const normalized = normalizeCustomAreaName(name);
+  const catalog = INSPECTION_AREA_CATALOG.find(
+    (area) => area.name.toLowerCase() === normalized.toLowerCase(),
+  );
+  if (catalog) return { kind: 'catalog', name: catalog.name };
+  return { kind: 'custom', name: normalized };
+}
+
 export function validateNewCustomAreaName(
   name: string,
-  customAreas: CustomAreaDefinition[] = [],
+  takenNames: readonly string[] = [],
 ): string | null {
   const normalized = normalizeCustomAreaName(name);
   if (normalized.length < 2) {
     return 'Enter an area name (at least 2 characters).';
   }
   const key = normalized.toLowerCase();
-  if (
-    INSPECTION_AREA_CATALOG.some((area) => area.name.toLowerCase() === key) ||
-    customAreas.some((area) => area.name.trim().toLowerCase() === key)
-  ) {
+  if (takenNames.some((item) => item.trim().toLowerCase() === key)) {
     return 'An area with this name already exists.';
   }
   return null;

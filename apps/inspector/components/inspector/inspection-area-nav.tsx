@@ -32,7 +32,7 @@ export function InspectionAreaNav({
       <div className="flex gap-1">
         {areaCatalog.map((item, index) => (
           <button
-            key={item.name}
+            key={`${index}:${item.name}`}
             type="button"
             title={item.name}
             aria-label={`Go to ${item.name}`}
@@ -46,12 +46,13 @@ export function InspectionAreaNav({
         <Label htmlFor="inspection-area-nav">Current area</Label>
         <select
           id="inspection-area-nav"
+          key={areaCatalog.map((item) => item.name).join('|')}
           className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
           value={String(areaIndex)}
           onChange={(event) => onGoToArea(Number(event.target.value))}
         >
           {areaCatalog.map((item, index) => (
-            <option key={item.name} value={String(index)}>
+            <option key={`${index}:${item.name}`} value={String(index)}>
               {index + 1} of {totalAreas}: {item.name}
             </option>
           ))}

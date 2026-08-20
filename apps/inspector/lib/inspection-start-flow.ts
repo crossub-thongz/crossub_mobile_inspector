@@ -34,7 +34,7 @@ const START_COPY: Record<
   },
   routine: {
     title: 'Start routine',
-    body: 'Arrange rooms first. After you start, skip areas that are in order and only photograph exceptions.',
+    body: 'Arrange rooms first. After you start, each room opens with its items ready — skip any area that is in order.',
     startLabel: 'Start routine',
     continueLabel: 'Continue routine',
     sectionsHint: 'Exception-based: skip rooms that are fine, photograph issues only.',

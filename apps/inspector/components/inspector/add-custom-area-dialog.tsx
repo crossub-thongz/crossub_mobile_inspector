@@ -9,19 +9,18 @@ import {
   type CustomAreaSectionMode,
   validateNewCustomAreaName,
 } from '@/lib/custom-inspection-areas';
-import type { CustomAreaDefinition } from '@/lib/custom-inspection-areas';
 import { cn } from '@/lib/utils';
 
 type AddCustomAreaDialogProps = {
   open: boolean;
-  existingCustomAreas: CustomAreaDefinition[];
+  existingNames: readonly string[];
   onClose: () => void;
   onConfirm: (name: string, sectionMode: CustomAreaSectionMode) => void;
 };
 
 export function AddCustomAreaDialog({
   open,
-  existingCustomAreas,
+  existingNames,
   onClose,
   onConfirm,
 }: AddCustomAreaDialogProps) {
@@ -39,7 +38,7 @@ export function AddCustomAreaDialog({
   if (!open) return null;
 
   const handleConfirm = () => {
-    const validationError = validateNewCustomAreaName(name, existingCustomAreas);
+    const validationError = validateNewCustomAreaName(name, existingNames);
     if (validationError) {
       setError(validationError);
       return;

@@ -6,7 +6,6 @@ import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
-import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
 import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
@@ -45,10 +44,11 @@ import {
 import type { OutgoingAreaIssueDraft, OutgoingExecutionDraft } from '@/lib/inspection-execution-draft';
 import { jobLookupMiss } from '@/lib/job-lookup';
 import {
+  appendSelectedAreaName,
   buildEffectiveAreaCatalog,
   buildExecutionAreaCatalog,
-  inferSelectedAreaNamesFromDraft,
-  normalizeCustomAreaName,
+  classifyAddedAreaName,
+  effectiveSelectedAreaNames,
   type CustomAreaSectionMode,
 } from '@/lib/custom-inspection-areas';
 import {
@@ -66,6 +66,7 @@ import {
   isAreaSetupComplete,
   resolveIngoingAreaPlan,
   sectionsForAvailableArea,
+  seedAreasForInspectionStart,
 } from '@/lib/inspection-area-workflow';
 import { findingsAreaFromSections } from '@/lib/inspection-findings-items';
 import {
@@ -182,9 +183,11 @@ export default function OutgoingInspectionPage() {
           const seedNames =
             draftNeedsLayoutSeed(prev) && copied
               ? copied.names
-              : prev.selectedAreaNames && prev.selectedAreaNames.length > 0
-                ? prev.selectedAreaNames
-                : inferSelectedAreaNamesFromDraft(prev.issues, copiedCustom);
+              : effectiveSelectedAreaNames(
+                  prev.selectedAreaNames,
+                  prev.issues,
+                  copiedCustom,
+                );
 
           const catalog = buildEffectiveAreaCatalog(copiedCustom);
           const nextIssues: Record<string, AreaIssue> = { ...prev.issues };
@@ -308,10 +311,11 @@ export default function OutgoingInspectionPage() {
   const customAreas = draft.customAreas ?? [];
   const areaSetupComplete = isAreaSetupComplete(draft);
   const ingoingExistingAreas = existingAreaNamesFromPlan(ingoingAreaPlan);
-  const selectedAreaNames =
-    draft.selectedAreaNames && draft.selectedAreaNames.length > 0
-      ? draft.selectedAreaNames
-      : inferSelectedAreaNamesFromDraft(draft.issues, customAreas);
+  const selectedAreaNames = effectiveSelectedAreaNames(
+    draft.selectedAreaNames,
+    draft.issues,
+    customAreas,
+  );
   const areaCatalog = useMemo(
     () =>
       areaSetupComplete
@@ -325,40 +329,75 @@ export default function OutgoingInspectionPage() {
   );
   const issues = draft.issues;
 
-  const handleAddCustomArea = (name: string, sectionMode: CustomAreaSectionMode) => {
-    const normalized = normalizeCustomAreaName(name);
+  useEffect(() => {
+    if (!isAreaSetupComplete(draft)) return;
     setDraft((prev) => {
-      const nextCustomAreas = [
-        ...(prev.customAreas ?? []),
-        { name: normalized, sectionMode },
-      ];
-      const nextSelected = [...(prev.selectedAreaNames ?? []), normalized];
+      const custom = prev.customAreas ?? [];
+      const selected = effectiveSelectedAreaNames(
+        prev.selectedAreaNames,
+        prev.issues,
+        custom,
+      );
+      if (selected.length === 0) return prev;
+      const { record, changed } = seedAreasForInspectionStart(prev.issues, selected, {
+        sectionsFor: (name) =>
+          sectionsForAvailableArea(name, custom, ingoingAreaPlan, 'outgoing'),
+        emptyEntry: (name) => emptyAreaIssue(name, undefined, custom),
+        emptyPhotos: emptySectionPhotos,
+      });
+      if (!changed) return prev;
+      return { ...prev, selectedAreaNames: selected, issues: record };
+    });
+  }, [draft.areaSetupComplete, ingoingAreaPlan, setDraft]);
+
+  const handleAddCustomArea = (name: string, sectionMode: CustomAreaSectionMode) => {
+    const classified = classifyAddedAreaName(name);
+    setDraft((prev) => {
+      const setupComplete = prev.areaSetupComplete === true;
+      let nextCustom = prev.customAreas ?? [];
+      if (classified.kind === 'custom') {
+        const exists = nextCustom.some(
+          (area) => area.name.trim().toLowerCase() === classified.name.toLowerCase(),
+        );
+        if (!exists) {
+          nextCustom = [...nextCustom, { name: classified.name, sectionMode }];
+        }
+      }
+      const nextSelected = appendSelectedAreaName(
+        prev.selectedAreaNames,
+        classified.name,
+        prev.issues,
+        nextCustom,
+      );
+      let nextIssues = {
+        ...prev.issues,
+        [classified.name]:
+          prev.issues[classified.name] ??
+          emptyAreaIssue(classified.name, undefined, nextCustom),
+      };
+      if (setupComplete) {
+        nextIssues = seedAreasForInspectionStart(nextIssues, [classified.name], {
+          sectionsFor: (areaName) =>
+            sectionsForAvailableArea(areaName, nextCustom, ingoingAreaPlan, 'outgoing'),
+          emptyEntry: (areaName) => emptyAreaIssue(areaName, undefined, nextCustom),
+          emptyPhotos: emptySectionPhotos,
+        }).record;
+      }
       return {
         ...prev,
-        customAreas: nextCustomAreas,
+        customAreas: nextCustom,
         selectedAreaNames: nextSelected,
-        areaIndex: areaSetupComplete ? nextSelected.length - 1 : prev.areaIndex,
-        issues: {
-          ...prev.issues,
-          [normalized]: emptyAreaIssue(normalized, undefined, nextCustomAreas),
-        },
+        areaIndex: setupComplete
+          ? Math.max(0, nextSelected.findIndex((item) => item === classified.name))
+          : prev.areaIndex,
+        issues: nextIssues,
       };
     });
-    toast.success(`Added “${normalized}”`);
+    toast.success(`Added “${classified.name}”`);
   };
 
   const handleAddBuiltInArea = (name: string) => {
-    setDraft((prev) => {
-      const nextSelected = [...(prev.selectedAreaNames ?? []), name];
-      return {
-        ...prev,
-        selectedAreaNames: nextSelected,
-        issues: {
-          ...prev.issues,
-          [name]: emptyAreaIssue(name, undefined, prev.customAreas ?? []),
-        },
-      };
-    });
+    handleAddCustomArea(name, 'standard');
   };
 
   const handleRemoveSetupArea = (name: string) => {
@@ -380,7 +419,15 @@ export default function OutgoingInspectionPage() {
   const handleMoveSetupArea = (from: number, to: number) => {
     setDraft((prev) => ({
       ...prev,
-      selectedAreaNames: moveIndex(prev.selectedAreaNames ?? [], from, to),
+      selectedAreaNames: moveIndex(
+        effectiveSelectedAreaNames(
+          prev.selectedAreaNames,
+          prev.issues,
+          prev.customAreas ?? [],
+        ),
+        from,
+        to,
+      ),
     }));
   };
 
@@ -429,21 +476,30 @@ export default function OutgoingInspectionPage() {
       setIngoingFromReference(true);
     }
     setDraft((prev) => {
-      const selected =
-        prev.selectedAreaNames && prev.selectedAreaNames.length > 0
-          ? prev.selectedAreaNames
-          : inferSelectedAreaNamesFromDraft(prev.issues, prev.customAreas ?? []);
-      const { issues: seededIssues } = seedOutgoingIssuesFromReference(prev.issues, {
+      const custom = prev.customAreas ?? [];
+      const selected = effectiveSelectedAreaNames(
+        prev.selectedAreaNames,
+        prev.issues,
+        custom,
+      );
+      const seeded = seedAreasForInspectionStart(prev.issues, selected, {
+        sectionsFor: (name) =>
+          sectionsForAvailableArea(name, custom, ingoingAreaPlan, 'outgoing'),
+        emptyEntry: (name) => emptyAreaIssue(name, undefined, custom),
+        emptyPhotos: emptySectionPhotos,
+      });
+      const { issues: withReference } = seedOutgoingIssuesFromReference(seeded.record, {
         referenceAreas,
         plan: ingoingAreaPlan,
-        customAreas: prev.customAreas ?? [],
+        customAreas: custom,
         areaNames: selected,
       });
       return {
         ...prev,
+        selectedAreaNames: selected,
         areaSetupComplete: true,
         areaIndex: 0,
-        issues: seededIssues,
+        issues: withReference,
       };
     });
   };
@@ -516,7 +572,16 @@ export default function OutgoingInspectionPage() {
 
   const areaDef = areaCatalog[areaIndex];
   const area = areaDef?.name ?? areaCatalog[0]?.name ?? 'Area';
-  const issue = issues[area] ?? emptyAreaIssue(area, undefined, customAreas);
+  const rawIssue = issues[area] ?? emptyAreaIssue(area, undefined, customAreas);
+  const issue =
+    rawIssue.available != null
+      ? rawIssue
+      : (seedAreasForInspectionStart({ [area]: rawIssue }, [area], {
+          sectionsFor: (name) =>
+            sectionsForAvailableArea(name, customAreas, ingoingAreaPlan, 'outgoing'),
+          emptyEntry: (name) => emptyAreaIssue(name, undefined, customAreas),
+          emptyPhotos: emptySectionPhotos,
+        }).record[area] ?? rawIssue);
   const isLast = areaIndex === areaCatalog.length - 1;
 
   const updateIssue = (patch: Partial<AreaIssue>) => {
@@ -988,8 +1053,8 @@ export default function OutgoingInspectionPage() {
           <JobWorkflowToolbar job={job} />
 
           <p className="text-muted-foreground text-xs">
-            Confirm each area, then photograph sections. Rooms and sections follow
-            the latest ingoing report when available.
+            Photograph each section. Rooms and items follow the latest ingoing
+            report when available.
           </p>
 
           {loadingReference ? (
@@ -1006,16 +1071,7 @@ export default function OutgoingInspectionPage() {
             onAddArea={() => setAddAreaOpen(true)}
           />
 
-          {issue.available == null ? (
-            <AreaAvailablePrompt
-              kind="outgoing"
-              areaName={area}
-              areaIndex={areaIndex}
-              totalAreas={areaCatalog.length}
-              onYes={() => markAvailable(true)}
-              onNo={() => markAvailable(false)}
-            />
-          ) : issue.available === false ? (
+          {issue.available === false ? (
             <Card>
               <CardHeader>
                 <CardTitle>
@@ -1191,7 +1247,7 @@ export default function OutgoingInspectionPage() {
       {Celebration}
       <AddCustomAreaDialog
         open={addAreaOpen}
-        existingCustomAreas={customAreas}
+        existingNames={selectedAreaNames}
         onClose={() => setAddAreaOpen(false)}
         onConfirm={handleAddCustomArea}
       />

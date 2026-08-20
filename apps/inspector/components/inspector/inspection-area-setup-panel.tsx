@@ -195,8 +195,22 @@ export function InspectionAreaSetupPanel({
           <Button
             type="button"
             className="w-full"
-            disabled={busy || selectedAreaNames.length === 0}
-            onClick={onComplete}
+            disabled={busy || (selectedAreaNames.length === 0 && !newName.trim())}
+            onClick={() => {
+              if (newName.trim()) {
+                const error = validateUniqueLabel(
+                  normalizeCustomAreaName(newName),
+                  selectedAreaNames,
+                );
+                if (error) {
+                  setAddError(error);
+                  if (selectedAreaNames.length === 0) return;
+                } else {
+                  submitNewArea();
+                }
+              }
+              onComplete();
+            }}
           >
             {setupStartLabel(kind, continuing)}
           </Button>
