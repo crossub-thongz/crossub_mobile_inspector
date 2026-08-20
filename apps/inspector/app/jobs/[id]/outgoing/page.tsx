@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
+import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
 import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
 import {
@@ -28,7 +29,7 @@ import {
 import { jobDetail, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
-import { inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
+import { inspectionAreaOverallPhotoLabel, inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
 import {
   useAwaitingAgentPaymentGate,
   useInspectionFinishedGate,
@@ -66,6 +67,12 @@ import {
   resolveIngoingAreaPlan,
   sectionsForAvailableArea,
 } from '@/lib/inspection-area-workflow';
+import { findingsAreaFromSections } from '@/lib/inspection-findings-items';
+import {
+  firstIncompleteSection,
+  type ItemConditionMarks,
+} from '@/lib/item-condition-marks';
+import { moveIndex, rekeyRecord, renameCustomArea } from '@/lib/inspection-layout-edit';
 import {
   draftNeedsLayoutSeed,
   layoutFromIngoingPlan,
@@ -370,6 +377,25 @@ export default function OutgoingInspectionPage() {
     });
   };
 
+  const handleMoveSetupArea = (from: number, to: number) => {
+    setDraft((prev) => ({
+      ...prev,
+      selectedAreaNames: moveIndex(prev.selectedAreaNames ?? [], from, to),
+    }));
+  };
+
+  const handleRenameSetupArea = (from: string, to: string) => {
+    if (from === to) return;
+    setDraft((prev) => ({
+      ...prev,
+      selectedAreaNames: (prev.selectedAreaNames ?? []).map((name) =>
+        name === from ? to : name,
+      ),
+      customAreas: renameCustomArea(prev.customAreas ?? [], from, to),
+      issues: rekeyRecord(prev.issues, from, to),
+    }));
+  };
+
   const addAllFromIngoing = () => {
     const names = ingoingExistingAreas.filter(
       (name) =>
@@ -469,6 +495,8 @@ export default function OutgoingInspectionPage() {
               onAddBuiltInArea={handleAddBuiltInArea}
               onAddCustomArea={handleAddCustomArea}
               onRemoveArea={handleRemoveSetupArea}
+              onRenameArea={handleRenameSetupArea}
+              onMoveArea={handleMoveSetupArea}
               onAddAllExisting={ingoingExistingAreas.length > 0 ? addAllFromIngoing : undefined}
               onComplete={completeAreaSetup}
             />
@@ -673,15 +701,14 @@ export default function OutgoingInspectionPage() {
   };
 
   const removeSection = (section: string) => {
-    const planRoomSections = ingoingAreaPlan?.rooms.find(
-      (room) => room.name === area,
-    )?.sections;
-    if (planRoomSections?.includes(section)) return;
-    if (areaDef.defaultSections.includes(section)) return;
     setDraft((prev) => {
       const current = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
       const nextPhotos = { ...current.photosBySection };
       delete nextPhotos[section];
+      const nextMarks = { ...(current.itemMarks ?? {}) };
+      delete nextMarks[section];
+      const nextComments = { ...(current.itemComments ?? {}) };
+      delete nextComments[section];
       return {
         ...prev,
         issues: {
@@ -690,10 +717,111 @@ export default function OutgoingInspectionPage() {
             ...current,
             activeSections: current.activeSections.filter((s) => s !== section),
             photosBySection: nextPhotos,
+            itemMarks: nextMarks,
+            itemComments: nextComments,
           },
         },
       };
     });
+  };
+
+  const renameSection = (from: string, to: string) => {
+    if (from === to) return;
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
+      return {
+        ...prev,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            activeSections: current.activeSections.map((name) =>
+              name === from ? to : name,
+            ),
+            photosBySection: rekeyRecord(current.photosBySection, from, to),
+            itemMarks: rekeyRecord(current.itemMarks ?? {}, from, to),
+            itemComments: rekeyRecord(current.itemComments ?? {}, from, to),
+          },
+        },
+      };
+    });
+  };
+
+  const moveSection = (from: number, to: number) => {
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
+      return {
+        ...prev,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            activeSections: moveIndex(current.activeSections, from, to),
+          },
+        },
+      };
+    });
+  };
+
+  const changeMarks = (section: string, marks: ItemConditionMarks) => {
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
+      return {
+        ...prev,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            itemMarks: { ...(current.itemMarks ?? {}), [section]: marks },
+          },
+        },
+      };
+    });
+  };
+
+  const changeItemComment = (section: string, comment: string) => {
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
+      return {
+        ...prev,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            itemComments: { ...(current.itemComments ?? {}), [section]: comment },
+          },
+        },
+      };
+    });
+  };
+
+  const addAreaPhotos = async (sources: Array<File | string>) => {
+    if (sources.length === 0) return;
+    setBusy(true);
+    try {
+      const uploadedUrls = await uploadInspectionPhotos(
+        id,
+        sources,
+        inspectionAreaOverallPhotoLabel(area),
+      );
+      setDraft((prev) => {
+        const current = prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
+        return {
+          ...prev,
+          issues: {
+            ...prev.issues,
+            [area]: {
+              ...current,
+              areaPhotos: [...(current.areaPhotos ?? []), ...uploadedUrls],
+            },
+          },
+        };
+      });
+    } catch {
+      toast.error('Could not upload photo');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const next = async () => {
@@ -702,19 +830,25 @@ export default function OutgoingInspectionPage() {
       return;
     }
     if (issue.activeSections.length === 0) {
-      toast.error('Add at least one section to photograph, or skip this area');
+      toast.error('Add at least one item, or skip this area');
       return;
     }
-    for (const section of issue.activeSections) {
-      const photos = issue.photosBySection[section] ?? emptySectionPhotos();
-      if (!photos.outgoingPhotoUrls.length) {
-        toast.error(`Add at least one outgoing photo for “${section}”`);
-        return;
-      }
-      if (!photos.ingoingPhotoUrls.length && seedSectionIngoing(section).length === 0) {
-        toast.error(`Add at least one ingoing photo for “${section}”`);
-        return;
-      }
+    const incomplete = firstIncompleteSection(
+      issue.activeSections,
+      issue.itemMarks,
+    );
+    if (incomplete) {
+      toast.error(`Mark Clean, Undamaged and Working for “${incomplete}”`);
+      return;
+    }
+    const hasAreaPhotos = (issue.areaPhotos?.length ?? 0) > 0;
+    const hasOutgoingPhotos = issue.activeSections.some(
+      (section) =>
+        (issue.photosBySection[section]?.outgoingPhotoUrls.length ?? 0) > 0,
+    );
+    if (!hasAreaPhotos && !hasOutgoingPhotos) {
+      toast.error('Snap at least one photo for this area');
+      return;
     }
 
     setBusy(true);
@@ -730,18 +864,27 @@ export default function OutgoingInspectionPage() {
           photos.ingoingPhotoUrls.length > 0
             ? commitInspectionAreaPhotos(id, ingoingAreaName, photos.ingoingPhotoUrls)
             : Promise.resolve([] as string[]),
-          commitInspectionAreaPhotos(id, outgoingAreaName, photos.outgoingPhotoUrls),
+          photos.outgoingPhotoUrls.length > 0
+            ? commitInspectionAreaPhotos(id, outgoingAreaName, photos.outgoingPhotoUrls)
+            : Promise.resolve([] as string[]),
         ]);
         nextPhotos[section] = {
           ingoingPhotoUrls:
             ingoingUrls.length > 0 ? ingoingUrls : photos.ingoingPhotoUrls,
-          outgoingPhotoUrls: outgoingUrls,
+          outgoingPhotoUrls:
+            outgoingUrls.length > 0 ? outgoingUrls : photos.outgoingPhotoUrls,
         };
       }
+      const areaPhotos = await commitInspectionAreaPhotos(
+        id,
+        inspectionAreaOverallPhotoLabel(area),
+        issue.areaPhotos ?? [],
+      );
 
       const committedIssue: AreaIssue = {
         ...issue,
         photosBySection: nextPhotos,
+        areaPhotos,
       };
       const nextIssues = { ...issues, [area]: committedIssue };
       setDraft((prev) => ({
@@ -783,8 +926,15 @@ export default function OutgoingInspectionPage() {
         );
       }).map((def) => {
         const rec = finalIssues[def.name];
-        return {
+        const area = findingsAreaFromSections({
           name: def.name,
+          sections: rec.activeSections,
+          marksBySection: rec.itemMarks,
+          commentsBySection: rec.itemComments,
+          notes: rec.note,
+        });
+        return {
+          ...area,
           items: [
             {
               name: 'Issue',
@@ -792,11 +942,7 @@ export default function OutgoingInspectionPage() {
               flagged: true,
               conditionTags: rec.responsibility ? [rec.responsibility] : [],
             },
-            ...rec.activeSections.map((section) => ({
-              name: section,
-              flagged: true,
-              comment: undefined as string | undefined,
-            })),
+            ...(area.items ?? []),
           ],
         };
       }),
@@ -930,19 +1076,43 @@ export default function OutgoingInspectionPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <InspectionAreaPhotosField
+                  label="Area photos"
+                  photoUrls={issue.areaPhotos ?? []}
+                  uploading={busy || loadingReference}
+                  emptyLabel="Snap several photos of this room, then attach them here."
+                  onAddFiles={(files) => addAreaPhotos(files)}
+                  onAddDataUrl={(dataUrl) => addAreaPhotos([dataUrl])}
+                  onAddDataUrls={(urls) => addAreaPhotos(urls)}
+                  onRemove={(index) =>
+                    updateIssue({
+                      areaPhotos: (issue.areaPhotos ?? []).filter((_, i) => i !== index),
+                    })
+                  }
+                />
+
                 <OutgoingSectionPhotos
                   definition={areaDef}
                   activeSections={issue.activeSections}
                   photosBySection={issue.photosBySection}
+                  itemMarks={issue.itemMarks}
+                  itemComments={issue.itemComments}
                   busy={busy || loadingReference}
                   ingoingReadOnly={ingoingFromReference}
                   onAddSection={addSection}
                   onRemoveSection={removeSection}
+                  onRenameSection={renameSection}
+                  onMoveSection={moveSection}
+                  onChangeMarks={changeMarks}
+                  onChangeComment={changeItemComment}
                   onAddFiles={(section, side, files) =>
                     addLocalPhotos(section, side, files)
                   }
                   onAddDataUrl={(section, side, dataUrl) =>
                     addLocalPhotos(section, side, [dataUrl])
+                  }
+                  onAddDataUrls={(section, side, urls) =>
+                    addLocalPhotos(section, side, urls)
                   }
                   onRemovePhoto={removePhoto}
                 />

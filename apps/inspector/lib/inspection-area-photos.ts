@@ -39,3 +39,7 @@ export function inspectionPhotoAreaLabel(
   if (side === 'outgoing') return `${base} (Outgoing)`;
   return base;
 }
+
+export function inspectionAreaOverallPhotoLabel(room: string): string {
+  return room;
+}

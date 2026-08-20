@@ -17,6 +17,7 @@ type InspectionAreaPhotosFieldProps = {
   emptyLabel?: string;
   onAddFiles: (files: File[]) => void | Promise<void>;
   onAddDataUrl: (dataUrl: string) => void | Promise<void>;
+  onAddDataUrls?: (dataUrls: string[]) => void | Promise<void>;
   onRemove?: (index: number) => void;
 };
 
@@ -28,6 +29,7 @@ export function InspectionAreaPhotosField({
   emptyLabel = 'Add at least one photo for this area.',
   onAddFiles,
   onAddDataUrl,
+  onAddDataUrls,
   onRemove,
 }: InspectionAreaPhotosFieldProps) {
   const uploadId = useId();
@@ -69,7 +71,7 @@ export function InspectionAreaPhotosField({
             onClick={openSnap}
           >
             <Camera className="size-4" />
-            {uploading ? 'Uploading…' : 'Snap photo'}
+            {uploading ? 'Uploading…' : 'Snap photos'}
           </Button>
           <label
             htmlFor={uploadId}
@@ -93,6 +95,7 @@ export function InspectionAreaPhotosField({
         type="file"
         accept="image/*"
         capture="environment"
+        multiple
         className="sr-only"
         tabIndex={-1}
         disabled={blocked}
@@ -117,10 +120,21 @@ export function InspectionAreaPhotosField({
 
       <KeyCameraCapture
         open={cameraOpen}
+        captureMode="burst"
         onClose={() => setCameraOpen(false)}
         onCapture={(dataUrl) => {
           if (blocked) return;
           void onAddDataUrl(dataUrl);
+        }}
+        onBurstComplete={(dataUrls) => {
+          if (blocked || dataUrls.length === 0) return;
+          if (onAddDataUrls) {
+            void onAddDataUrls(dataUrls);
+            return;
+          }
+          void (async () => {
+            for (const url of dataUrls) await onAddDataUrl(url);
+          })();
         }}
         nativeInputId={nativeCameraId}
       />

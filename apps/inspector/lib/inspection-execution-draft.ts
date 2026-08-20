@@ -1,5 +1,6 @@
 import type { InspectionJob } from '@/lib/types';
 import type { CustomAreaDefinition } from '@/lib/custom-inspection-areas';
+import type { ItemConditionMarks } from '@/lib/item-condition-marks';
 import { loadPersistedJobProgress } from '@/lib/job-workflow-persist';
 
 export const INSPECTION_DRAFT_KEY = 'inspectionDraft';
@@ -10,6 +11,9 @@ export type IngoingAreaEntryDraft = {
   comments: string;
   activeSections: string[];
   photosBySection: Record<string, string[]>;
+  areaPhotos?: string[];
+  itemMarks?: Record<string, ItemConditionMarks>;
+  itemComments?: Record<string, string>;
 };
 
 export type IngoingExecutionDraft = {
@@ -31,6 +35,9 @@ export type RoutineAreaIssueDraft = {
   notes: string;
   activeSections: string[];
   photosBySection: Record<string, SectionBeforeAfterDraft>;
+  areaPhotos?: string[];
+  itemMarks?: Record<string, ItemConditionMarks>;
+  itemComments?: Record<string, string>;
 };
 
 export type RoutineExecutionDraft = {
@@ -49,6 +56,9 @@ export type OutgoingAreaIssueDraft = {
   responsibility: string;
   activeSections: string[];
   photosBySection: Record<string, SectionBeforeAfterDraft>;
+  areaPhotos?: string[];
+  itemMarks?: Record<string, ItemConditionMarks>;
+  itemComments?: Record<string, string>;
 };
 
 export type OutgoingExecutionDraft = {

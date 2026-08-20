@@ -9,11 +9,28 @@ export type CustomAreaSectionMode = 'standard' | 'manual';
 export type CustomAreaDefinition = {
   name: string;
   sectionMode: CustomAreaSectionMode;
+  /** Copied from the source area when an inspector renames a catalog room. */
+  defaultSections?: string[];
+  optionalSections?: string[];
 };
 
 export function customAreaToDefinition(
   custom: CustomAreaDefinition,
 ): InspectionAreaDefinition {
+  if (custom.defaultSections || custom.optionalSections) {
+    return {
+      name: custom.name,
+      defaultSections:
+        custom.defaultSections && custom.defaultSections.length > 0
+          ? [...custom.defaultSections]
+          : custom.sectionMode === 'standard'
+            ? [...COMMON_DEFAULT_SECTIONS]
+            : [],
+      optionalSections: custom.optionalSections?.length
+        ? [...custom.optionalSections]
+        : ['Custom / Other'],
+    };
+  }
   if (custom.sectionMode === 'standard') {
     return {
       name: custom.name,
@@ -85,14 +102,12 @@ export function buildExecutionAreaCatalog(
   selectedAreaNames: string[] | undefined,
   customAreas: CustomAreaDefinition[] = [],
 ): InspectionAreaDefinition[] {
-  const full = buildEffectiveAreaCatalog(customAreas);
   if (!selectedAreaNames?.length) {
-    return full;
+    return buildEffectiveAreaCatalog(customAreas);
   }
-  const byName = new Map(full.map((area) => [area.name.toLowerCase(), area]));
-  return selectedAreaNames
-    .map((name) => byName.get(name.trim().toLowerCase()))
-    .filter((area): area is InspectionAreaDefinition => Boolean(area));
+  return selectedAreaNames.map((name) =>
+    resolveAreaDefinition(name, customAreas),
+  );
 }
 
 export function inferSelectedAreaNamesFromDraft(

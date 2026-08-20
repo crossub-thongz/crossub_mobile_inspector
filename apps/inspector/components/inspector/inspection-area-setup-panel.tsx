@@ -1,9 +1,10 @@
 'use client';
 
-import { MessageSquare, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, MessageSquare, Pencil, Trash2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
+import { RenameLabelDialog } from '@/components/inspector/rename-label-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -16,6 +17,7 @@ import {
   type CustomAreaSectionMode,
 } from '@/lib/custom-inspection-areas';
 import type { InspectionAreaKind } from '@/lib/inspection-area-workflow';
+import { validateUniqueLabel } from '@/lib/inspection-layout-edit';
 import {
   inspectionStartCopy,
   layoutSourceLabel,
@@ -37,6 +39,8 @@ type InspectionAreaSetupPanelProps = {
   onAddBuiltInArea: (name: string) => void;
   onAddCustomArea: (name: string, sectionMode: CustomAreaSectionMode) => void;
   onRemoveArea: (name: string) => void;
+  onRenameArea: (from: string, to: string) => void;
+  onMoveArea: (from: number, to: number) => void;
   onAddAllExisting?: () => void;
   onComplete: () => void;
 };
@@ -53,11 +57,14 @@ export function InspectionAreaSetupPanel({
   onAddBuiltInArea,
   onAddCustomArea,
   onRemoveArea,
+  onRenameArea,
+  onMoveArea,
   onAddAllExisting,
   onComplete,
 }: InspectionAreaSetupPanelProps) {
   const [pick, setPick] = useState('');
   const [customOpen, setCustomOpen] = useState(false);
+  const [renameFrom, setRenameFrom] = useState<string | null>(null);
   const copy = inspectionStartCopy(kind);
 
   const selectedSet = new Set(selectedAreaNames.map((name) => name.toLowerCase()));
@@ -114,7 +121,7 @@ export function InspectionAreaSetupPanel({
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="add-area">Add or adjust areas</Label>
+            <Label htmlFor="add-area">Add area</Label>
             <select
               id="add-area"
               className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
@@ -147,19 +154,49 @@ export function InspectionAreaSetupPanel({
 
           {selectedAreaNames.length > 0 ? (
             <ul className="divide-y rounded-lg border">
-              {selectedAreaNames.map((name) => (
+              {selectedAreaNames.map((name, index) => (
                 <li
                   key={name}
-                  className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
+                  className="flex items-center gap-2 px-2 py-2 text-sm"
                 >
-                  <div className="min-w-0">
+                  <div className="flex shrink-0 flex-col">
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground rounded-md p-1 disabled:opacity-30"
+                      aria-label={`Move ${name} up`}
+                      disabled={busy || index === 0}
+                      onClick={() => onMoveArea(index, index - 1)}
+                    >
+                      <ChevronUp className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground rounded-md p-1 disabled:opacity-30"
+                      aria-label={`Move ${name} down`}
+                      disabled={busy || index === selectedAreaNames.length - 1}
+                      onClick={() => onMoveArea(index, index + 1)}
+                    >
+                      <ChevronDown className="size-4" />
+                    </button>
+                  </div>
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium">{name}</p>
                     <p className="text-muted-foreground text-xs">{copy.sectionsHint}</p>
                   </div>
                   <button
                     type="button"
+                    className="text-muted-foreground hover:text-foreground shrink-0 rounded-md p-1"
+                    aria-label={`Rename ${name}`}
+                    disabled={busy}
+                    onClick={() => setRenameFrom(name)}
+                  >
+                    <Pencil className="size-4" />
+                  </button>
+                  <button
+                    type="button"
                     className="text-muted-foreground hover:text-destructive shrink-0 rounded-md p-1"
                     aria-label={`Remove ${name}`}
+                    disabled={busy}
                     onClick={() => onRemoveArea(name)}
                   >
                     <Trash2 className="size-4" />
@@ -169,7 +206,7 @@ export function InspectionAreaSetupPanel({
             </ul>
           ) : (
             <p className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-xs">
-              No areas yet. Add at least one room to begin.
+              No areas yet. Add at least one room, arrange the list, then start.
             </p>
           )}
 
@@ -198,6 +235,20 @@ export function InspectionAreaSetupPanel({
         onConfirm={(name, sectionMode) => {
           onAddCustomArea(normalizeCustomAreaName(name), sectionMode);
           setCustomOpen(false);
+        }}
+      />
+
+      <RenameLabelDialog
+        open={Boolean(renameFrom)}
+        title="Rename area"
+        initialValue={renameFrom ?? ''}
+        onClose={() => setRenameFrom(null)}
+        onConfirm={(value) => {
+          if (!renameFrom) return null;
+          const error = validateUniqueLabel(value, selectedAreaNames, renameFrom);
+          if (error) return error;
+          onRenameArea(renameFrom, normalizeCustomAreaName(value));
+          return null;
         }}
       />
     </>

@@ -1,22 +1,34 @@
 'use client';
 
-import { X } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { AddSectionControl } from '@/components/inspector/add-section-control';
+import { EditableChecklistRow } from '@/components/inspector/editable-checklist-row';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
+import { ItemConditionToggles } from '@/components/inspector/item-condition-toggles';
+import { RenameLabelDialog } from '@/components/inspector/rename-label-dialog';
+import { Input } from '@/components/ui/input';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
+import { emptyItemMarks, type ItemConditionMarks } from '@/lib/item-condition-marks';
+import { validateUniqueLabel } from '@/lib/inspection-layout-edit';
 import { buildSectionPickerOptions } from '@/lib/inspection-section-utils';
 
 type InspectionSectionPhotosProps = {
   definition: InspectionAreaDefinition;
   activeSections: string[];
   photosBySection: Record<string, string[]>;
+  itemMarks?: Record<string, ItemConditionMarks>;
+  itemComments?: Record<string, string>;
   busy?: boolean;
   onAddSection: (section: string) => void;
   onRemoveSection: (section: string) => void;
+  onRenameSection: (from: string, to: string) => void;
+  onMoveSection: (from: number, to: number) => void;
+  onChangeMarks: (section: string, marks: ItemConditionMarks) => void;
+  onChangeComment: (section: string, comment: string) => void;
   onAddFiles: (section: string, files: File[]) => void | Promise<void>;
   onAddDataUrl: (section: string, dataUrl: string) => void | Promise<void>;
+  onAddDataUrls?: (section: string, dataUrls: string[]) => void | Promise<void>;
   onRemovePhoto: (section: string, index: number) => void;
 };
 
@@ -24,17 +36,21 @@ export function InspectionSectionPhotos({
   definition,
   activeSections,
   photosBySection,
+  itemMarks,
+  itemComments,
   busy = false,
   onAddSection,
   onRemoveSection,
+  onRenameSection,
+  onMoveSection,
+  onChangeMarks,
+  onChangeComment,
   onAddFiles,
   onAddDataUrl,
+  onAddDataUrls,
   onRemovePhoto,
 }: InspectionSectionPhotosProps) {
-  const defaultSet = useMemo(
-    () => new Set(definition.defaultSections),
-    [definition.defaultSections],
-  );
+  const [renameFrom, setRenameFrom] = useState<string | null>(null);
 
   const sectionPickerOptions = useMemo(
     () => buildSectionPickerOptions(definition),
@@ -45,40 +61,48 @@ export function InspectionSectionPhotos({
     <div className="space-y-4">
       {activeSections.length === 0 ? (
         <p className="text-muted-foreground text-xs">
-          No sections yet. Add one from the list below to start photographing.
+          No items yet. Add one below, then mark Clean / Undamaged / Working.
         </p>
       ) : (
-        activeSections.map((section) => {
-          const isDefault = defaultSet.has(section);
+        activeSections.map((section, index) => {
           const urls = photosBySection[section] ?? [];
           return (
-            <div
+            <EditableChecklistRow
               key={section}
-              className="space-y-2 rounded-lg border border-border p-3"
+              name={section}
+              index={index}
+              total={activeSections.length}
+              busy={busy}
+              onMove={onMoveSection}
+              onRename={() => setRenameFrom(section)}
+              onRemove={() => onRemoveSection(section)}
             >
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-medium leading-snug">{section}</p>
-                {!isDefault ? (
-                  <button
-                    type="button"
-                    onClick={() => onRemoveSection(section)}
-                    className="text-muted-foreground hover:text-foreground shrink-0 rounded-md p-1"
-                    aria-label={`Remove ${section}`}
-                  >
-                    <X className="size-4" />
-                  </button>
-                ) : null}
-              </div>
+              <ItemConditionToggles
+                marks={itemMarks?.[section] ?? emptyItemMarks()}
+                disabled={busy}
+                onChange={(marks) => onChangeMarks(section, marks)}
+              />
+              <Input
+                placeholder="Comment (optional)"
+                value={itemComments?.[section] ?? ''}
+                disabled={busy}
+                onChange={(event) => onChangeComment(section, event.target.value)}
+              />
               <InspectionAreaPhotosField
-                label="Photos"
+                label="Item photos"
                 photoUrls={urls}
                 uploading={busy}
-                emptyLabel="Snap or upload at least one photo for this section."
+                emptyLabel="Optional close-ups for this item."
                 onAddFiles={(files) => onAddFiles(section, files)}
                 onAddDataUrl={(dataUrl) => onAddDataUrl(section, dataUrl)}
-                onRemove={(index) => onRemovePhoto(section, index)}
+                onAddDataUrls={
+                  onAddDataUrls
+                    ? (urlsToAdd) => onAddDataUrls(section, urlsToAdd)
+                    : undefined
+                }
+                onRemove={(photoIndex) => onRemovePhoto(section, photoIndex)}
               />
-            </div>
+            </EditableChecklistRow>
           );
         })
       )}
@@ -88,6 +112,20 @@ export function InspectionSectionPhotos({
         activeSections={activeSections}
         busy={busy}
         onAddSection={onAddSection}
+      />
+
+      <RenameLabelDialog
+        open={Boolean(renameFrom)}
+        title="Rename item"
+        initialValue={renameFrom ?? ''}
+        onClose={() => setRenameFrom(null)}
+        onConfirm={(value) => {
+          if (!renameFrom) return null;
+          const error = validateUniqueLabel(value, activeSections, renameFrom);
+          if (error) return error;
+          onRenameSection(renameFrom, value.trim().replace(/\s+/g, ' '));
+          return null;
+        }}
       />
     </div>
   );

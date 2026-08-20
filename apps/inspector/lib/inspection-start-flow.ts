@@ -16,7 +16,7 @@ const START_COPY: Record<
 > = {
   ingoing: {
     title: 'Start ingoing',
-    body: 'Condition report at lease start. Rooms are pre-loaded from the property layout — add or remove any that do not match, then walk room by room.',
+    body: 'Arrange the rooms first — add, rename, reorder, or remove. Then start the condition report and walk room by room.',
     startLabel: 'Start ingoing',
     continueLabel: 'Continue ingoing',
     sectionsHint: 'Photograph clockwise from the door. Extra close-ups for damage and safety.',
@@ -25,7 +25,7 @@ const START_COPY: Record<
   },
   outgoing: {
     title: 'Start outgoing',
-    body: 'Exit inspection compared with the move-in report. Rooms and baseline photos copy across so you only record what changed.',
+    body: 'Arrange rooms first. Move-in photos copy across so you only record what changed once you start.',
     startLabel: 'Start outgoing',
     continueLabel: 'Continue outgoing',
     sectionsHint: 'Move-in photos load beside each section for comparison.',
@@ -34,7 +34,7 @@ const START_COPY: Record<
   },
   routine: {
     title: 'Start routine',
-    body: 'Periodic inspection. Rooms copy from the last condition report — skip areas that are in order and only photograph exceptions.',
+    body: 'Arrange rooms first. After you start, skip areas that are in order and only photograph exceptions.',
     startLabel: 'Start routine',
     continueLabel: 'Continue routine',
     sectionsHint: 'Exception-based: skip rooms that are fine, photograph issues only.',

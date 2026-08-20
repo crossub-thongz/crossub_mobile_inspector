@@ -1,10 +1,10 @@
 import {
   buildEffectiveAreaCatalog,
-  resolveAreaDefinition,
   type CustomAreaDefinition,
 } from '@/lib/custom-inspection-areas';
 import { INSPECTION_AREA_CATALOG, parseSectionAreaName } from '@/constants/inspection-areas';
 import type { InspectorInspectionDetail } from '@/lib/crossub-api/inspector-client';
+import { parseItemMarks, type ItemConditionMarks } from '@/lib/item-condition-marks';
 import {
   type IngoingAreaEntryDraft,
   type IngoingExecutionDraft,
@@ -21,6 +21,46 @@ const OUTGOING_SUFFIX = /\s*\(outgoing\)\s*$/i;
 
 function isPersistedPhotoUrl(url: string): boolean {
   return /^https?:\/\//i.test(url.trim());
+}
+
+function mergeMarks(
+  base: Record<string, ItemConditionMarks> | undefined,
+  overlay: Record<string, ItemConditionMarks> | undefined,
+): Record<string, ItemConditionMarks> {
+  return { ...(base ?? {}), ...(overlay ?? {}) };
+}
+
+function mergeComments(
+  base: Record<string, string> | undefined,
+  overlay: Record<string, string> | undefined,
+): Record<string, string> {
+  return { ...(base ?? {}), ...(overlay ?? {}) };
+}
+
+const SKIP_ITEM_NAMES = new Set(['Notes', 'Issue', 'Method']);
+
+function itemsFromDetailArea(
+  area: InspectorInspectionDetail['areas'][number],
+): {
+  sections: string[];
+  itemMarks: Record<string, ItemConditionMarks>;
+  itemComments: Record<string, string>;
+  itemPhotos: Record<string, string[]>;
+} {
+  const sections: string[] = [];
+  const itemMarks: Record<string, ItemConditionMarks> = {};
+  const itemComments: Record<string, string> = {};
+  const itemPhotos: Record<string, string[]> = {};
+  for (const item of area.items) {
+    const name = item.name?.trim();
+    if (!name || SKIP_ITEM_NAMES.has(name)) continue;
+    if (!sections.includes(name)) sections.push(name);
+    itemMarks[name] = parseItemMarks(item.conditionTags);
+    if (item.comment?.trim()) itemComments[name] = item.comment.trim();
+    const photos = item.photos.map((photo) => photo.url).filter(isPersistedPhotoUrl);
+    if (photos.length > 0) itemPhotos[name] = photos;
+  }
+  return { sections, itemMarks, itemComments, itemPhotos };
 }
 
 function areaPhotoUrls(area: InspectorInspectionDetail['areas'][number]): string[] {
@@ -51,41 +91,47 @@ function notesFromArea(area: InspectorInspectionDetail['areas'][number]): string
 }
 
 export function emptyIngoingEntry(
-  areaName: string,
-  customAreas: CustomAreaDefinition[] = [],
+  _areaName: string,
+  _customAreas: CustomAreaDefinition[] = [],
 ): IngoingAreaEntryDraft {
-  const def = resolveAreaDefinition(areaName, customAreas);
   return {
     available: null,
     condition: '',
     comments: '',
     activeSections: [],
     photosBySection: {},
+    areaPhotos: [],
+    itemMarks: {},
+    itemComments: {},
   };
 }
 
-export function emptyRoutineIssue(areaName: string): RoutineAreaIssueDraft {
-  const def = resolveAreaDefinition(areaName);
+export function emptyRoutineIssue(_areaName: string): RoutineAreaIssueDraft {
   return {
     available: null,
     notes: '',
     activeSections: [],
     photosBySection: {},
+    areaPhotos: [],
+    itemMarks: {},
+    itemComments: {},
   };
 }
 
 export function emptyOutgoingIssue(
-  areaName: string,
+  _areaName: string,
   seed?: { available: boolean | null; activeSections: string[] },
-  customAreas: CustomAreaDefinition[] = [],
+  _customAreas: CustomAreaDefinition[] = [],
 ): OutgoingAreaIssueDraft {
-  const def = resolveAreaDefinition(areaName, customAreas);
   return {
     available: seed?.available ?? null,
     note: '',
     responsibility: '',
     activeSections: seed?.activeSections ?? [],
     photosBySection: {},
+    areaPhotos: [],
+    itemMarks: {},
+    itemComments: {},
   };
 }
 
@@ -115,6 +161,9 @@ function mergeIngoingEntry(
         ? overlay.activeSections
         : base.activeSections,
     photosBySection,
+    areaPhotos: mergePhotoUrlLists(base.areaPhotos, overlay.areaPhotos),
+    itemMarks: mergeMarks(base.itemMarks, overlay.itemMarks),
+    itemComments: mergeComments(base.itemComments, overlay.itemComments),
   };
 }
 
@@ -158,6 +207,9 @@ function mergeRoutineIssue(
         ? overlay.activeSections
         : base.activeSections,
     photosBySection,
+    areaPhotos: mergePhotoUrlLists(base.areaPhotos, overlay.areaPhotos),
+    itemMarks: mergeMarks(base.itemMarks, overlay.itemMarks),
+    itemComments: mergeComments(base.itemComments, overlay.itemComments),
   };
 }
 
@@ -185,6 +237,9 @@ function mergeOutgoingIssue(
         ? overlay.activeSections
         : base.activeSections,
     photosBySection,
+    areaPhotos: mergePhotoUrlLists(base.areaPhotos, overlay.areaPhotos),
+    itemMarks: mergeMarks(base.itemMarks, overlay.itemMarks),
+    itemComments: mergeComments(base.itemComments, overlay.itemComments),
   };
 }
 
@@ -231,11 +286,25 @@ export function applyIngoingDetailPhotos(
       Boolean(next[rawName]);
     if (!known) continue;
     const current = next[rawName] ?? emptyIngoingEntry(rawName, customAreas);
+    const fromItems = itemsFromDetailArea(area);
+    const photosBySection = { ...current.photosBySection };
+    for (const [section, urls] of Object.entries(fromItems.itemPhotos)) {
+      photosBySection[section] = mergePhotoUrlLists(photosBySection[section], urls);
+    }
+    const areaPhotos = area.photos.map((photo) => photo.url).filter(isPersistedPhotoUrl);
     next[rawName] = {
       ...current,
       available: current.available ?? true,
       condition: current.condition || conditionFromRating(area),
       comments: current.comments || notesFromArea(area),
+      activeSections:
+        current.activeSections.length > 0
+          ? current.activeSections
+          : fromItems.sections,
+      photosBySection,
+      areaPhotos: mergePhotoUrlLists(current.areaPhotos, areaPhotos),
+      itemMarks: mergeMarks(current.itemMarks, fromItems.itemMarks),
+      itemComments: mergeComments(current.itemComments, fromItems.itemComments),
     };
   }
 
@@ -399,6 +468,10 @@ export function mergeRoutineExecutionDraft(
       baseline.issues[def.name] ?? emptyRoutineIssue(def.name),
       saved.issues?.[def.name],
     );
+  }
+  for (const [name, issue] of Object.entries(saved.issues ?? {})) {
+    if (issues[name]) continue;
+    issues[name] = mergeRoutineIssue(emptyRoutineIssue(name), issue);
   }
   return {
     kind: 'routine',

@@ -9,10 +9,8 @@ import {
   outgoingSectionsForRoom,
   type IngoingAreaPlan,
 } from '@/lib/ingoing-area-plan';
-import {
-  emptyOutgoingIssue,
-  type OutgoingAreaIssueDraft,
-} from '@/lib/inspection-execution-hydration';
+import { emptyOutgoingIssue } from '@/lib/inspection-execution-hydration';
+import type { OutgoingAreaIssueDraft } from '@/lib/inspection-execution-draft';
 
 const INGOING_SUFFIX = /\s*\(ingoing\)\s*$/i;
 const OUTGOING_SUFFIX = /\s*\(outgoing\)\s*$/i;

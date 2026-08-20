@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 import { compressCanvasToDataUrl } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
@@ -10,11 +10,16 @@ export function KeyCameraCapture({
   open,
   onClose,
   onCapture,
+  onBurstComplete,
+  captureMode = 'single',
   nativeInputId,
 }: {
   open: boolean;
   onClose: () => void;
   onCapture: (dataUrl: string) => void;
+  /** Burst mode: inspector snaps several shots, then confirms the set. */
+  onBurstComplete?: (dataUrls: string[]) => void;
+  captureMode?: 'single' | 'burst';
   /** Linked file input for native camera when getUserMedia is blocked */
   nativeInputId?: string;
 }) {
@@ -22,6 +27,7 @@ export function KeyCameraCapture({
   const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [burstShots, setBurstShots] = useState<string[]>([]);
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -46,6 +52,7 @@ export function KeyCameraCapture({
     if (!open) {
       stopStream();
       setError(null);
+      setBurstShots([]);
       return;
     }
 
@@ -103,7 +110,18 @@ export function KeyCameraCapture({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    onCapture(compressCanvasToDataUrl(canvas));
+    const dataUrl = compressCanvasToDataUrl(canvas);
+    if (captureMode === 'burst') {
+      setBurstShots((prev) => [...prev, dataUrl]);
+      return;
+    }
+    onCapture(dataUrl);
+    onClose();
+  };
+
+  const finishBurst = () => {
+    if (burstShots.length === 0) return;
+    onBurstComplete?.(burstShots);
     onClose();
   };
 
@@ -148,7 +166,37 @@ export function KeyCameraCapture({
 
       {!error ? (
         <div className="relative z-20 shrink-0 bg-gradient-to-t from-black via-black/90 to-transparent px-4 pt-4 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
-          <div className="flex justify-center">
+          {captureMode === 'burst' && burstShots.length > 0 ? (
+            <ul className="mb-3 flex gap-2 overflow-x-auto">
+              {burstShots.map((url, index) => (
+                <li
+                  key={`${url.slice(-12)}-${index}`}
+                  className="relative size-14 shrink-0 overflow-hidden rounded-md border border-white/40"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Shot ${index + 1}`} className="size-full object-cover" />
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="flex items-center justify-center gap-6">
+            {captureMode === 'burst' ? (
+              <button
+                type="button"
+                disabled={burstShots.length === 0}
+                onClick={finishBurst}
+                className="flex min-w-20 flex-col items-center gap-1 text-white disabled:opacity-40"
+              >
+                <span className="flex size-12 items-center justify-center rounded-full bg-white/15">
+                  <Check className="size-6" />
+                </span>
+                <span className="text-xs">
+                  {burstShots.length === 0
+                    ? 'Use photos'
+                    : `Use ${burstShots.length} photo${burstShots.length === 1 ? '' : 's'}`}
+                </span>
+              </button>
+            ) : null}
             <button
               type="button"
               disabled={!ready}
@@ -161,7 +209,13 @@ export function KeyCameraCapture({
             >
               <span className="size-[3.25rem] rounded-full bg-[#00d4a4] ring-2 ring-white/50" />
             </button>
+            {captureMode === 'burst' ? <span className="min-w-20" /> : null}
           </div>
+          {captureMode === 'burst' ? (
+            <p className="mt-2 text-center text-xs text-white/70">
+              Snap as many as you need, then use photos to attach them.
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

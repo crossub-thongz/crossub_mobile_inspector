@@ -14,6 +14,7 @@ type BeforeAfterPhotoColumnProps = {
   disabled?: boolean;
   onAddFiles: (files: File[]) => void | Promise<void>;
   onAddDataUrl: (dataUrl: string) => void | Promise<void>;
+  onAddDataUrls?: (dataUrls: string[]) => void | Promise<void>;
   onRemove?: (index: number) => void;
 };
 
@@ -24,6 +25,7 @@ export function BeforeAfterPhotoColumn({
   disabled = false,
   onAddFiles,
   onAddDataUrl,
+  onAddDataUrls,
   onRemove,
 }: BeforeAfterPhotoColumnProps) {
   const uploadId = useId();
@@ -99,7 +101,7 @@ export function BeforeAfterPhotoColumn({
             onClick={openSnap}
           >
             <Camera className="size-4" />
-            {uploading ? 'Uploading…' : 'Snap photo'}
+            {uploading ? 'Uploading…' : 'Snap photos'}
           </Button>
           <label
             htmlFor={uploadId}
@@ -178,10 +180,21 @@ export function BeforeAfterPhotoColumn({
 
       <KeyCameraCapture
         open={cameraOpen}
+        captureMode="burst"
         onClose={() => setCameraOpen(false)}
         onCapture={(dataUrl) => {
           if (blocked) return;
           void onAddDataUrl(dataUrl);
+        }}
+        onBurstComplete={(dataUrls) => {
+          if (blocked || dataUrls.length === 0) return;
+          if (onAddDataUrls) {
+            void onAddDataUrls(dataUrls);
+            return;
+          }
+          void (async () => {
+            for (const url of dataUrls) await onAddDataUrl(url);
+          })();
         }}
         nativeInputId={nativeCameraId}
       />
