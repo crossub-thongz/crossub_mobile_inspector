@@ -70,12 +70,15 @@ export function resolveAreaDefinition(
   areaName: string,
   customAreas: CustomAreaDefinition[] = [],
 ): InspectionAreaDefinition {
-  const builtIn = INSPECTION_AREA_CATALOG.find((area) => area.name === areaName);
-  if (builtIn) return builtIn;
-
   const custom = customAreas.find(
     (area) => area.name.trim().toLowerCase() === areaName.trim().toLowerCase(),
   );
+  if (custom?.defaultSections || custom?.optionalSections) {
+    return customAreaToDefinition(custom);
+  }
+
+  const builtIn = INSPECTION_AREA_CATALOG.find((area) => area.name === areaName);
+  if (builtIn) return builtIn;
   if (custom) return customAreaToDefinition(custom);
 
   return {

@@ -38,15 +38,26 @@ export function mergeCustomAreas(
   existing: CustomAreaDefinition[] = [],
   extras: CustomAreaDefinition[] = [],
 ): CustomAreaDefinition[] {
-  const seen = new Set(
-    existing.map((area) => area.name.trim().toLowerCase()).filter(Boolean),
-  );
   const next = [...existing];
+  const indexByKey = new Map(
+    next.map((area, index) => [area.name.trim().toLowerCase(), index] as const),
+  );
   for (const extra of extras) {
     const key = extra.name.trim().toLowerCase();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    next.push(extra);
+    if (!key) continue;
+    const index = indexByKey.get(key);
+    if (index == null) {
+      indexByKey.set(key, next.length);
+      next.push(extra);
+      continue;
+    }
+    if (extra.defaultSections?.length || extra.optionalSections?.length) {
+      next[index] = {
+        ...next[index],
+        ...extra,
+        name: extra.name.trim() || next[index].name,
+      };
+    }
   }
   return next;
 }
@@ -79,16 +90,26 @@ export function layoutTemplateFromProperty(
   return { names: unique, customAreas: customAreasForRoomNames(unique) };
 }
 
-/** Copy & merge: outgoing / routine inherit the last ingoing room list. */
+/** Copy & merge: outgoing / routine inherit the last ingoing rooms and items. */
 export function layoutFromIngoingPlan(
   plan: IngoingAreaPlan | null | undefined,
 ): InspectionLayout | null {
   if (!plan?.rooms.length) return null;
-  const names = plan.rooms
-    .map((room) => room.name.trim())
-    .filter(Boolean);
+  const names: string[] = [];
+  const customAreas: CustomAreaDefinition[] = [];
+  for (const room of plan.rooms) {
+    const name = room.name.trim();
+    if (!name) continue;
+    names.push(name);
+    customAreas.push({
+      name,
+      sectionMode: room.sections.length > 0 ? 'standard' : 'manual',
+      defaultSections: [...room.sections],
+      optionalSections: ['Custom / Other'],
+    });
+  }
   if (names.length === 0) return null;
-  return { names, customAreas: customAreasForRoomNames(names) };
+  return { names, customAreas };
 }
 
 export function draftNeedsLayoutSeed(draft: {

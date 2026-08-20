@@ -660,7 +660,13 @@ export default function IngoingInspectionPage() {
     const findings: InspectorFindingAreaPayload[] = [];
     for (const def of areaCatalog) {
       const rec = finalEntries[def.name];
-      if (!rec || rec.available !== true) continue;
+      if (!rec || rec.available !== true) {
+        findings.push({
+          name: def.name,
+          items: rec?.activeSections.map((section) => ({ name: section })) ?? [],
+        });
+        continue;
+      }
       findings.push(
         findingsAreaFromSections({
           name: def.name,

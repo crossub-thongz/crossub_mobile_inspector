@@ -65,21 +65,23 @@ export function sectionsForAvailableArea(
   ingoingAreaPlan: IngoingAreaPlan | null,
   kind: InspectionAreaKind,
 ): string[] {
-  if (kind === 'ingoing') {
-    if (isCustomAreaName(areaName, customAreas)) {
-      const custom = customAreas.find(
-        (area) =>
-          area.name.trim().toLowerCase() === areaName.trim().toLowerCase(),
-      );
-      if (custom?.sectionMode === 'manual') return [];
-    }
-    const def = resolveAreaDefinition(areaName, customAreas);
-    return def.defaultSections.length > 0 ? [...def.defaultSections] : [];
+  if (kind !== 'ingoing') {
+    const fromPlan = outgoingSectionsForRoom(ingoingAreaPlan, areaName);
+    if (fromPlan.length > 0) return fromPlan;
+    const copied = resolveAreaDefinition(areaName, customAreas).defaultSections;
+    if (copied.length > 0) return [...copied];
+    return [];
   }
 
   if (isCustomAreaName(areaName, customAreas)) {
-    return [...resolveAreaDefinition(areaName, customAreas).defaultSections];
+    const custom = customAreas.find(
+      (area) =>
+        area.name.trim().toLowerCase() === areaName.trim().toLowerCase(),
+    );
+    if (custom?.sectionMode === 'manual' && !custom.defaultSections?.length) {
+      return [];
+    }
   }
-
-  return outgoingSectionsForRoom(ingoingAreaPlan, areaName);
+  const def = resolveAreaDefinition(areaName, customAreas);
+  return def.defaultSections.length > 0 ? [...def.defaultSections] : [];
 }

@@ -1,16 +1,14 @@
 'use client';
 
-import { ChevronDown, ChevronUp, MessageSquare, Pencil, Trash2 } from 'lucide-react';
+import { MessageSquare, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
-import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
+import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
 import { RenameLabelDialog } from '@/components/inspector/rename-label-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import {
-  INSPECTION_AREA_CATALOG,
-} from '@/constants/inspection-areas';
+import { Input } from '@/components/ui/input';
+import { INSPECTION_AREA_CATALOG } from '@/constants/inspection-areas';
 import {
   normalizeCustomAreaName,
   type CustomAreaDefinition,
@@ -24,8 +22,6 @@ import {
   setupStartLabel,
   type InspectionLayoutSource,
 } from '@/lib/inspection-start-flow';
-
-const OTHER_AREA_VALUE = '__other__';
 
 type InspectionAreaSetupPanelProps = {
   kind: InspectionAreaKind;
@@ -48,7 +44,7 @@ type InspectionAreaSetupPanelProps = {
 export function InspectionAreaSetupPanel({
   kind,
   selectedAreaNames,
-  customAreas,
+  customAreas: _customAreas,
   existingAreaNames = [],
   continuing = false,
   layoutSource = 'manual',
@@ -62,8 +58,8 @@ export function InspectionAreaSetupPanel({
   onAddAllExisting,
   onComplete,
 }: InspectionAreaSetupPanelProps) {
-  const [pick, setPick] = useState('');
-  const [customOpen, setCustomOpen] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [addError, setAddError] = useState<string | null>(null);
   const [renameFrom, setRenameFrom] = useState<string | null>(null);
   const copy = inspectionStartCopy(kind);
 
@@ -71,24 +67,29 @@ export function InspectionAreaSetupPanel({
   const availableExisting = existingAreaNames.filter(
     (name) => !selectedSet.has(name.toLowerCase()),
   );
-  const availableBuiltIn = INSPECTION_AREA_CATALOG.filter(
-    (area) => !selectedSet.has(area.name.toLowerCase()),
-  );
-  const hasMoreAreasToAdd =
-    availableExisting.length > 0 || availableBuiltIn.length > 0;
   const sourceLabel = layoutSourceLabel(layoutSource, selectedAreaNames.length);
 
-  const handlePickChange = (value: string) => {
-    setPick(value);
-    if (value === OTHER_AREA_VALUE) {
-      setCustomOpen(true);
-      setPick('');
+  const submitNewArea = () => {
+    const normalized = normalizeCustomAreaName(newName);
+    const error = validateUniqueLabel(normalized, selectedAreaNames);
+    if (error) {
+      setAddError(error);
       return;
     }
-    if (value) {
-      onAddBuiltInArea(value);
-      setPick('');
+    const fromIngoing = existingAreaNames.find(
+      (name) => name.trim().toLowerCase() === normalized.toLowerCase(),
+    );
+    if (fromIngoing) {
+      onAddBuiltInArea(fromIngoing);
+    } else {
+      const catalog = INSPECTION_AREA_CATALOG.find(
+        (area) => area.name.toLowerCase() === normalized.toLowerCase(),
+      );
+      if (catalog) onAddBuiltInArea(catalog.name);
+      else onAddCustomArea(normalized, 'standard');
     }
+    setNewName('');
+    setAddError(null);
   };
 
   return (
@@ -99,6 +100,7 @@ export function InspectionAreaSetupPanel({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground text-sm">{copy.body}</p>
+          <p className="text-muted-foreground text-xs">{copy.sectionsHint}</p>
 
           {sourceLabel ? (
             <p className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-foreground">
@@ -120,69 +122,14 @@ export function InspectionAreaSetupPanel({
             </Button>
           ) : null}
 
-          <div className="space-y-2">
-            <Label htmlFor="add-area">Add area</Label>
-            <select
-              id="add-area"
-              className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
-              value={pick}
+          <ul className="divide-y rounded-lg border">
+            <DraggableNamedList
+              items={selectedAreaNames}
               disabled={busy}
-              onChange={(event) => handlePickChange(event.target.value)}
-            >
-              <option value="">Add another area…</option>
-              {availableExisting.length > 0 ? (
-                <optgroup label="From last ingoing">
-                  {availableExisting.map((name) => (
-                    <option key={`existing-${name}`} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </optgroup>
-              ) : null}
-              {availableBuiltIn.length > 0 ? (
-                <optgroup label="Standard areas">
-                  {availableBuiltIn.map((area) => (
-                    <option key={area.name} value={area.name}>
-                      {area.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ) : null}
-              <option value={OTHER_AREA_VALUE}>Other — enter a custom name</option>
-            </select>
-          </div>
-
-          {selectedAreaNames.length > 0 ? (
-            <ul className="divide-y rounded-lg border">
-              {selectedAreaNames.map((name, index) => (
-                <li
-                  key={name}
-                  className="flex items-center gap-2 px-2 py-2 text-sm"
-                >
-                  <div className="flex shrink-0 flex-col">
-                    <button
-                      type="button"
-                      className="text-muted-foreground hover:text-foreground rounded-md p-1 disabled:opacity-30"
-                      aria-label={`Move ${name} up`}
-                      disabled={busy || index === 0}
-                      onClick={() => onMoveArea(index, index - 1)}
-                    >
-                      <ChevronUp className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      className="text-muted-foreground hover:text-foreground rounded-md p-1 disabled:opacity-30"
-                      aria-label={`Move ${name} down`}
-                      disabled={busy || index === selectedAreaNames.length - 1}
-                      onClick={() => onMoveArea(index, index + 1)}
-                    >
-                      <ChevronDown className="size-4" />
-                    </button>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{name}</p>
-                    <p className="text-muted-foreground text-xs">{copy.sectionsHint}</p>
-                  </div>
+              onReorder={onMoveArea}
+              renderItem={(name) => (
+                <>
+                  <p className="min-w-0 flex-1 font-medium">{name}</p>
                   <button
                     type="button"
                     className="text-muted-foreground hover:text-foreground shrink-0 rounded-md p-1"
@@ -201,14 +148,46 @@ export function InspectionAreaSetupPanel({
                   >
                     <Trash2 className="size-4" />
                   </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-xs">
-              No areas yet. Add at least one room, arrange the list, then start.
+                </>
+              )}
+            />
+            <li className="flex items-center gap-2 px-2 py-2">
+              <Plus className="text-muted-foreground size-4 shrink-0" />
+              <Input
+                value={newName}
+                placeholder="Type an area name"
+                disabled={busy}
+                className="h-9"
+                onChange={(event) => {
+                  setNewName(event.target.value);
+                  setAddError(null);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    submitNewArea();
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                disabled={busy || !newName.trim()}
+                onClick={submitNewArea}
+              >
+                Add
+              </Button>
+            </li>
+          </ul>
+          {addError ? <p className="text-destructive text-xs">{addError}</p> : null}
+
+          {selectedAreaNames.length === 0 ? (
+            <p className="text-muted-foreground text-center text-xs">
+              Add at least one room, drag to arrange, then start.
             </p>
-          )}
+          ) : null}
 
           <Button
             type="button"
@@ -218,25 +197,8 @@ export function InspectionAreaSetupPanel({
           >
             {setupStartLabel(kind, continuing)}
           </Button>
-
-          {selectedAreaNames.length > 0 && !hasMoreAreasToAdd ? (
-            <p className="text-muted-foreground text-center text-xs">
-              Layout is ready — {setupStartLabel(kind, continuing).toLowerCase()} when you are
-              on site.
-            </p>
-          ) : null}
         </CardContent>
       </Card>
-
-      <AddCustomAreaDialog
-        open={customOpen}
-        existingCustomAreas={customAreas}
-        onClose={() => setCustomOpen(false)}
-        onConfirm={(name, sectionMode) => {
-          onAddCustomArea(normalizeCustomAreaName(name), sectionMode);
-          setCustomOpen(false);
-        }}
-      />
 
       <RenameLabelDialog
         open={Boolean(renameFrom)}
