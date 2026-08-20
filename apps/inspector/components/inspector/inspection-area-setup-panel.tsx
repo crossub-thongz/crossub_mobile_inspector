@@ -100,7 +100,9 @@ export function InspectionAreaSetupPanel({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground text-sm">{copy.body}</p>
-          <p className="text-muted-foreground text-xs">{copy.sectionsHint}</p>
+          <p className="text-muted-foreground text-xs">
+            Hold a row and drag to reorder. Type a name in the last row to add an area.
+          </p>
 
           {sourceLabel ? (
             <p className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-foreground">
@@ -132,6 +134,7 @@ export function InspectionAreaSetupPanel({
                   <p className="min-w-0 flex-1 font-medium">{name}</p>
                   <button
                     type="button"
+                    data-no-drag
                     className="text-muted-foreground hover:text-foreground shrink-0 rounded-md p-1"
                     aria-label={`Rename ${name}`}
                     disabled={busy}
@@ -141,6 +144,7 @@ export function InspectionAreaSetupPanel({
                   </button>
                   <button
                     type="button"
+                    data-no-drag
                     className="text-muted-foreground hover:text-destructive shrink-0 rounded-md p-1"
                     aria-label={`Remove ${name}`}
                     disabled={busy}

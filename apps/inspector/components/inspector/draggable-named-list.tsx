@@ -5,6 +5,8 @@ import { useRef, useState, type ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 
+const DRAG_THRESHOLD_PX = 8;
+
 type DraggableNamedListProps = {
   items: string[];
   disabled?: boolean;
@@ -18,38 +20,75 @@ export function DraggableNamedList({
   onReorder,
   renderItem,
 }: DraggableNamedListProps) {
-  const [dragging, setDragging] = useState<number | null>(null);
-  const [over, setOver] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
   const rowRefs = useRef<Array<HTMLLIElement | null>>([]);
+  const itemsRef = useRef(items);
+  const onReorderRef = useRef(onReorder);
+  itemsRef.current = items;
+  onReorderRef.current = onReorder;
 
-  const onPointerDown = (index: number, event: React.PointerEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDragging(index);
-    setOver(index);
-  };
-
-  const onPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (dragging == null) return;
-    const y = event.clientY;
-    let next = dragging;
-    rowRefs.current.forEach((row, index) => {
-      if (!row) return;
+  const indexFromY = (y: number): number => {
+    const last = itemsRef.current.length - 1;
+    if (last < 0) return 0;
+    for (let i = 0; i <= last; i += 1) {
+      const row = rowRefs.current[i];
+      if (!row) continue;
       const rect = row.getBoundingClientRect();
-      const mid = rect.top + rect.height / 2;
-      if (y < mid && index <= dragging) next = index;
-      if (y >= mid && index >= dragging) next = index;
-    });
-    setOver(next);
+      if (y < rect.top + rect.height / 2) return i;
+    }
+    return last;
   };
 
-  const endDrag = () => {
-    if (dragging != null && over != null && dragging !== over) {
-      onReorder(dragging, over);
-    }
-    setDragging(null);
-    setOver(null);
+  const startDrag = (index: number, event: React.PointerEvent<HTMLLIElement>) => {
+    if (disabled) return;
+    if ((event.target as HTMLElement | null)?.closest('[data-no-drag]')) return;
+    if (event.button !== 0 && event.pointerType === 'mouse') return;
+
+    const from = index;
+    let over = index;
+    let didMove = false;
+    const originY = event.clientY;
+
+    setActiveIndex(from);
+    setOverIndex(from);
+
+    const previousOverflow = document.body.style.overflow;
+    const previousTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
+    const onMove = (moveEvent: PointerEvent) => {
+      if (!didMove) {
+        if (Math.abs(moveEvent.clientY - originY) < DRAG_THRESHOLD_PX) return;
+        didMove = true;
+      }
+      moveEvent.preventDefault();
+      over = indexFromY(moveEvent.clientY);
+      setOverIndex(over);
+    };
+
+    const onTouchMove = (moveEvent: TouchEvent) => {
+      if (!didMove) return;
+      moveEvent.preventDefault();
+    };
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      document.body.style.overflow = previousOverflow;
+      document.body.style.touchAction = previousTouchAction;
+      setActiveIndex(null);
+      setOverIndex(null);
+      if (didMove && from !== over) onReorderRef.current(from, over);
+    };
+
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
   };
 
   return (
@@ -61,23 +100,18 @@ export function DraggableNamedList({
             rowRefs.current[index] = node;
           }}
           className={cn(
-            'flex items-center gap-1 px-2 py-2 text-sm',
-            dragging === index && 'opacity-60',
-            over === index && dragging != null && dragging !== index && 'bg-primary/10',
+            'flex cursor-grab touch-none select-none items-center gap-1 px-2 py-3 text-sm active:cursor-grabbing',
+            activeIndex === index && 'bg-primary/15',
+            overIndex === index &&
+              activeIndex != null &&
+              activeIndex !== index &&
+              'border-primary border-t-2',
           )}
+          onPointerDown={(event) => startDrag(index, event)}
         >
-          <button
-            type="button"
-            className="text-muted-foreground hover:text-foreground touch-none shrink-0 cursor-grab rounded-md p-1 active:cursor-grabbing disabled:opacity-30"
-            aria-label={`Drag ${name}`}
-            disabled={disabled}
-            onPointerDown={(event) => onPointerDown(index, event)}
-            onPointerMove={onPointerMove}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-          >
-            <GripVertical className="size-4" />
-          </button>
+          <span className="text-muted-foreground shrink-0 p-1" aria-hidden>
+            <GripVertical className="size-5" />
+          </span>
           {renderItem(name, index)}
         </li>
       ))}
