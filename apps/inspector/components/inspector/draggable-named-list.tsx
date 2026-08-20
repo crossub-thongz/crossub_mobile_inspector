@@ -40,10 +40,10 @@ export function DraggableNamedList({
     return last;
   };
 
-  const startDrag = (index: number, event: React.PointerEvent<HTMLLIElement>) => {
+  const startDrag = (index: number, event: React.PointerEvent<HTMLButtonElement>) => {
     if (disabled) return;
-    if ((event.target as HTMLElement | null)?.closest('[data-no-drag]')) return;
     if (event.button !== 0 && event.pointerType === 'mouse') return;
+    event.stopPropagation();
 
     const from = index;
     let over = index;
@@ -100,18 +100,23 @@ export function DraggableNamedList({
             rowRefs.current[index] = node;
           }}
           className={cn(
-            'flex cursor-grab touch-none select-none items-center gap-1 px-2 py-3 text-sm active:cursor-grabbing',
+            'flex items-center gap-1 px-1 py-2 text-sm',
             activeIndex === index && 'bg-primary/15',
             overIndex === index &&
               activeIndex != null &&
               activeIndex !== index &&
               'border-primary border-t-2',
           )}
-          onPointerDown={(event) => startDrag(index, event)}
         >
-          <span className="text-muted-foreground shrink-0 p-1" aria-hidden>
+          <button
+            type="button"
+            aria-label={`Drag ${name} to reorder`}
+            disabled={disabled}
+            className="text-muted-foreground hover:text-foreground flex size-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-md active:cursor-grabbing disabled:opacity-30"
+            onPointerDown={(event) => startDrag(index, event)}
+          >
             <GripVertical className="size-5" />
-          </span>
+          </button>
           {renderItem(name, index)}
         </li>
       ))}
