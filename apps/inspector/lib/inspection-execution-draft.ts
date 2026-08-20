@@ -4,6 +4,7 @@ import type { ItemConditionMarks } from '@/lib/item-condition-marks';
 import { loadPersistedJobProgress } from '@/lib/job-workflow-persist';
 
 export const INSPECTION_DRAFT_KEY = 'inspectionDraft';
+export const INSPECTION_DEVICE_ID_KEY = 'crossub-inspector-device-id';
 
 export type IngoingAreaEntryDraft = {
   available: boolean | null;
@@ -23,6 +24,7 @@ export type IngoingExecutionDraft = {
   customAreas?: CustomAreaDefinition[];
   selectedAreaNames?: string[];
   areaSetupComplete?: boolean;
+  updatedAt?: string;
 };
 
 export type SectionBeforeAfterDraft = {
@@ -48,6 +50,7 @@ export type RoutineExecutionDraft = {
   customAreas?: CustomAreaDefinition[];
   selectedAreaNames?: string[];
   areaSetupComplete?: boolean;
+  updatedAt?: string;
 };
 
 export type OutgoingAreaIssueDraft = {
@@ -68,12 +71,20 @@ export type OutgoingExecutionDraft = {
   customAreas?: CustomAreaDefinition[];
   selectedAreaNames?: string[];
   areaSetupComplete?: boolean;
+  updatedAt?: string;
 };
 
 export type InspectionExecutionDraft =
   | IngoingExecutionDraft
   | RoutineExecutionDraft
   | OutgoingExecutionDraft;
+
+export type DeviceDraftOverlay = {
+  deviceId: string;
+  kind: InspectionExecutionDraft['kind'];
+  updatedAt: string;
+  draft: InspectionExecutionDraft;
+};
 
 export function getInspectionExecutionDraft(
   job: InspectionJob | undefined,
@@ -124,6 +135,47 @@ export function mergePhotoUrlLists(...lists: Array<string[] | undefined>): strin
     }
   }
   return out;
+}
+
+export function stampDraftUpdatedAt<T extends InspectionExecutionDraft>(draft: T): T {
+  return { ...draft, updatedAt: new Date().toISOString() };
+}
+
+export function getOrCreateInspectionDeviceId(): string {
+  if (typeof window === 'undefined') return 'server';
+  try {
+    const existing = localStorage.getItem(INSPECTION_DEVICE_ID_KEY);
+    if (existing?.trim()) return existing.trim();
+    const created = `dev-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+    localStorage.setItem(INSPECTION_DEVICE_ID_KEY, created);
+    return created;
+  } catch {
+    return `dev-${Date.now().toString(36)}`;
+  }
+}
+
+export function sanitizeDraftForSync(draft: InspectionExecutionDraft): Record<string, unknown> {
+  return stripDataUrlLeaves(draft) as Record<string, unknown>;
+}
+
+function stripDataUrlLeaves(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return value.startsWith('data:') ? undefined : value;
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => stripDataUrlLeaves(item))
+      .filter((item) => item != null && item !== '');
+  }
+  if (value && typeof value === 'object') {
+    const next: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value)) {
+      const cleaned = stripDataUrlLeaves(nested);
+      if (cleaned !== undefined) next[key] = cleaned;
+    }
+    return next;
+  }
+  return value;
 }
 
 export function computeResumeAreaIndex(

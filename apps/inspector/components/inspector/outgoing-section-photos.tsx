@@ -6,11 +6,16 @@ import { AddSectionControl } from '@/components/inspector/add-section-control';
 import { BeforeAfterPhotoColumn } from '@/components/inspector/before-after-photo-column';
 import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
 import { EditableChecklistRow } from '@/components/inspector/editable-checklist-row';
+import { ItemConditionColumnBar } from '@/components/inspector/item-condition-column-bar';
 import { ItemConditionToggles } from '@/components/inspector/item-condition-toggles';
 import { RenameLabelDialog } from '@/components/inspector/rename-label-dialog';
 import { Input } from '@/components/ui/input';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
-import { emptyItemMarks, type ItemConditionMarks } from '@/lib/item-condition-marks';
+import {
+  emptyItemMarks,
+  type ItemConditionKey,
+  type ItemConditionMarks,
+} from '@/lib/item-condition-marks';
 import { validateUniqueLabel } from '@/lib/inspection-layout-edit';
 import { buildSectionPickerOptions } from '@/lib/inspection-section-utils';
 
@@ -33,6 +38,7 @@ type OutgoingSectionPhotosProps = {
   onRenameSection: (from: string, to: string) => void;
   onMoveSection: (from: number, to: number) => void;
   onChangeMarks: (section: string, marks: ItemConditionMarks) => void;
+  onFillColumn: (key: ItemConditionKey, value: boolean) => void;
   onChangeComment: (section: string, comment: string) => void;
   onAddFiles: (
     section: string,
@@ -70,6 +76,7 @@ export function OutgoingSectionPhotos({
   onRenameSection,
   onMoveSection,
   onChangeMarks,
+  onFillColumn,
   onChangeComment,
   onAddFiles,
   onAddDataUrl,
@@ -93,7 +100,9 @@ export function OutgoingSectionPhotos({
         <>
           <p className="text-muted-foreground text-xs">
             Drag the handle on the left to reorder. Tap edit to rename an item.
+            Hold Yes / No on a mark to fill that column for every item.
           </p>
+          <ItemConditionColumnBar disabled={busy} onFillColumn={onFillColumn} />
           <ul className="space-y-4">
             <DraggableNamedList
               items={activeSections}
@@ -118,6 +127,7 @@ export function OutgoingSectionPhotos({
                     marks={itemMarks?.[section] ?? emptyItemMarks()}
                     disabled={busy}
                     onChange={(marks) => onChangeMarks(section, marks)}
+                    onFillColumn={onFillColumn}
                   />
                   <Input
                     placeholder="Comment (optional)"

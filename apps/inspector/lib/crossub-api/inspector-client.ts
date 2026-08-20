@@ -631,6 +631,45 @@ export async function saveInspectionFindings(
   return data;
 }
 
+export type InspectorDeviceDraftOverlay = {
+  deviceId: string;
+  kind: 'ingoing' | 'routine' | 'outgoing' | string;
+  updatedAt: string;
+  draft: Record<string, unknown>;
+};
+
+export type InspectorInspectionDetailWithDrafts = InspectorInspectionDetail & {
+  executionDrafts?: InspectorDeviceDraftOverlay[];
+};
+
+/** Persist this phone’s in-progress walk (`POST .../execution-draft`). */
+export async function saveInspectionExecutionDraft(
+  inspectionId: string,
+  body: {
+    deviceId: string;
+    kind: 'ingoing' | 'routine' | 'outgoing';
+    updatedAt?: string;
+    draft: Record<string, unknown>;
+  },
+): Promise<InspectorInspectionDetailWithDrafts> {
+  const base = `${process.env.NEXT_PUBLIC_API_URL ?? '/api'}/v1`;
+  const res = await fetch(
+    `${base}/inspector/inspections/${inspectionId}/execution-draft`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(
+      await inspectorFetchErrorMessage(res, 'Failed to sync inspection draft'),
+    );
+  }
+  return (await res.json()) as InspectorInspectionDetailWithDrafts;
+}
+
 /** Decline a pool job (`POST /inspector/inspections/{inspectionId}/decline`). */
 export async function declineInspection(
   inspectionId: string,

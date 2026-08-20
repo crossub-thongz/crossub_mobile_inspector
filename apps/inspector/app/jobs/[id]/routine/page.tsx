@@ -70,7 +70,9 @@ import {
 import { matchReferenceSectionPhotos } from '@/lib/outgoing-reference-photos';
 import { findingsAreaFromSections } from '@/lib/inspection-findings-items';
 import {
+  applyColumnMark,
   firstIncompleteSection,
+  type ItemConditionKey,
   type ItemConditionMarks,
 } from '@/lib/item-condition-marks';
 import { moveIndex, rekeyRecord, renameCustomArea } from '@/lib/inspection-layout-edit';
@@ -867,6 +869,22 @@ export default function RoutineInspectionPage() {
     });
   };
 
+  const fillColumn = (key: ItemConditionKey, value: boolean) => {
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area);
+      return {
+        ...prev,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            itemMarks: applyColumnMark(current.itemMarks, current.activeSections, key, value),
+          },
+        },
+      };
+    });
+  };
+
   const changeItemComment = (section: string, comment: string) => {
     setDraft((prev) => {
       const current = prev.issues[area] ?? emptyAreaIssue(area);
@@ -1175,6 +1193,7 @@ export default function RoutineInspectionPage() {
                   onRenameSection={renameSection}
                   onMoveSection={moveSection}
                   onChangeMarks={changeMarks}
+                  onFillColumn={fillColumn}
                   onChangeComment={changeItemComment}
                   onAddFiles={(section, side, files) =>
                     addLocalPhotos(section, side, files)

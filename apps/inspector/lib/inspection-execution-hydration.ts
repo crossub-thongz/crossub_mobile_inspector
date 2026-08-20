@@ -4,8 +4,9 @@ import {
 } from '@/lib/custom-inspection-areas';
 import { INSPECTION_AREA_CATALOG, parseSectionAreaName } from '@/constants/inspection-areas';
 import type { InspectorInspectionDetail } from '@/lib/crossub-api/inspector-client';
-import { parseItemMarks, type ItemConditionMarks } from '@/lib/item-condition-marks';
+import { parseItemMarks, mergeItemMarks, type ItemConditionMarks } from '@/lib/item-condition-marks';
 import {
+  type InspectionExecutionDraft,
   type IngoingAreaEntryDraft,
   type IngoingExecutionDraft,
   type OutgoingAreaIssueDraft,
@@ -27,7 +28,23 @@ function mergeMarks(
   base: Record<string, ItemConditionMarks> | undefined,
   overlay: Record<string, ItemConditionMarks> | undefined,
 ): Record<string, ItemConditionMarks> {
-  return { ...(base ?? {}), ...(overlay ?? {}) };
+  const next = { ...(base ?? {}) };
+  for (const [section, marks] of Object.entries(overlay ?? {})) {
+    next[section] = mergeItemMarks(next[section], marks);
+  }
+  return next;
+}
+
+function unionNames(base: string[] | undefined, overlay: string[] | undefined): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const name of [...(base ?? []), ...(overlay ?? [])]) {
+    const key = name.trim();
+    if (!key || seen.has(key.toLowerCase())) continue;
+    seen.add(key.toLowerCase());
+    out.push(name);
+  }
+  return out;
 }
 
 function mergeComments(
@@ -156,10 +173,7 @@ function mergeIngoingEntry(
     available: overlay.available ?? base.available,
     condition: overlay.condition || base.condition,
     comments: overlay.comments || base.comments,
-    activeSections:
-      overlay.activeSections && overlay.activeSections.length > 0
-        ? overlay.activeSections
-        : base.activeSections,
+    activeSections: unionNames(base.activeSections, overlay.activeSections),
     photosBySection,
     areaPhotos: mergePhotoUrlLists(base.areaPhotos, overlay.areaPhotos),
     itemMarks: mergeMarks(base.itemMarks, overlay.itemMarks),
@@ -202,10 +216,7 @@ function mergeRoutineIssue(
   return {
     available: overlay.available ?? base.available,
     notes: overlay.notes || base.notes,
-    activeSections:
-      overlay.activeSections && overlay.activeSections.length > 0
-        ? overlay.activeSections
-        : base.activeSections,
+    activeSections: unionNames(base.activeSections, overlay.activeSections),
     photosBySection,
     areaPhotos: mergePhotoUrlLists(base.areaPhotos, overlay.areaPhotos),
     itemMarks: mergeMarks(base.itemMarks, overlay.itemMarks),
@@ -232,10 +243,7 @@ function mergeOutgoingIssue(
     available: overlay.available ?? base.available,
     note: overlay.note || base.note,
     responsibility: overlay.responsibility || base.responsibility,
-    activeSections:
-      overlay.activeSections && overlay.activeSections.length > 0
-        ? overlay.activeSections
-        : base.activeSections,
+    activeSections: unionNames(base.activeSections, overlay.activeSections),
     photosBySection,
     areaPhotos: mergePhotoUrlLists(base.areaPhotos, overlay.areaPhotos),
     itemMarks: mergeMarks(base.itemMarks, overlay.itemMarks),
@@ -452,7 +460,7 @@ export function mergeIngoingExecutionDraft(
       typeof saved.areaIndex === 'number' ? saved.areaIndex : baseline.areaIndex,
     entries,
     customAreas,
-    selectedAreaNames: saved.selectedAreaNames ?? baseline.selectedAreaNames,
+    selectedAreaNames: unionNames(saved.selectedAreaNames, baseline.selectedAreaNames),
     areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
   };
 }
@@ -480,9 +488,24 @@ export function mergeRoutineExecutionDraft(
     method: saved.method ?? baseline.method,
     issues,
     customAreas: saved.customAreas ?? baseline.customAreas,
-    selectedAreaNames: saved.selectedAreaNames ?? baseline.selectedAreaNames,
+    selectedAreaNames: unionNames(saved.selectedAreaNames, baseline.selectedAreaNames),
     areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
   };
+}
+
+export function mergeDeviceExecutionDrafts<T extends InspectionExecutionDraft>(
+  kind: T['kind'],
+  baseline: T,
+  overlays: Array<{ kind: string; updatedAt?: string; draft: unknown }>,
+  merge: (base: T, overlay: Partial<T> | null | undefined) => T,
+): T {
+  const sorted = overlays
+    .filter((overlay) => overlay.kind === kind && overlay.draft && typeof overlay.draft === 'object')
+    .sort((a, b) => (a.updatedAt ?? '').localeCompare(b.updatedAt ?? ''));
+  return sorted.reduce(
+    (current, overlay) => merge(current, overlay.draft as Partial<T>),
+    baseline,
+  );
 }
 
 export function mergeOutgoingExecutionDraft(
@@ -515,7 +538,7 @@ export function mergeOutgoingExecutionDraft(
       typeof saved.areaIndex === 'number' ? saved.areaIndex : baseline.areaIndex,
     issues,
     customAreas,
-    selectedAreaNames: saved.selectedAreaNames ?? baseline.selectedAreaNames,
+    selectedAreaNames: unionNames(saved.selectedAreaNames, baseline.selectedAreaNames),
     areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
   };
 }

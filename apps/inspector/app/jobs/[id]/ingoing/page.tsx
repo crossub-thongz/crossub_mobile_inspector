@@ -49,7 +49,9 @@ import {
 } from '@/lib/inspection-area-workflow';
 import { findingsAreaFromSections } from '@/lib/inspection-findings-items';
 import {
+  applyColumnMark,
   firstIncompleteSection,
+  type ItemConditionKey,
   type ItemConditionMarks,
 } from '@/lib/item-condition-marks';
 import { moveIndex, rekeyRecord, renameCustomArea } from '@/lib/inspection-layout-edit';
@@ -639,6 +641,22 @@ export default function IngoingInspectionPage() {
     });
   };
 
+  const fillColumn = (key: ItemConditionKey, value: boolean) => {
+    setDraft((prev) => {
+      const current = prev.entries[area] ?? emptyEntry(area, prev.customAreas);
+      return {
+        ...prev,
+        entries: {
+          ...prev.entries,
+          [area]: {
+            ...current,
+            itemMarks: applyColumnMark(current.itemMarks, current.activeSections, key, value),
+          },
+        },
+      };
+    });
+  };
+
   const changeItemComment = (section: string, comment: string) => {
     setDraft((prev) => {
       const current = prev.entries[area] ?? emptyEntry(area, prev.customAreas);
@@ -910,6 +928,7 @@ export default function IngoingInspectionPage() {
                   onRenameSection={renameSection}
                   onMoveSection={moveSection}
                   onChangeMarks={changeMarks}
+                  onFillColumn={fillColumn}
                   onChangeComment={changeItemComment}
                   onAddFiles={(section, files) => addLocalPhotos(section, files)}
                   onAddDataUrl={(section, dataUrl) =>

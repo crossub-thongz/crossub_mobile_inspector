@@ -37,6 +37,34 @@ export function emptyItemMarks(): ItemConditionMarks {
   return { clean: null, undamaged: null, working: null };
 }
 
+export function mergeItemMarks(
+  base: ItemConditionMarks | undefined,
+  overlay: ItemConditionMarks | undefined,
+): ItemConditionMarks {
+  const left = base ?? emptyItemMarks();
+  const right = overlay ?? emptyItemMarks();
+  return {
+    clean: right.clean ?? left.clean,
+    undamaged: right.undamaged ?? left.undamaged,
+    working: right.working ?? left.working,
+  };
+}
+
+/** Fill one Clean / Undamaged / Working column across every item in the room. */
+export function applyColumnMark(
+  marksBySection: Record<string, ItemConditionMarks> | undefined,
+  sections: readonly string[],
+  key: ItemConditionKey,
+  value: boolean,
+): Record<string, ItemConditionMarks> {
+  const next = { ...(marksBySection ?? {}) };
+  for (const section of sections) {
+    const current = next[section] ?? emptyItemMarks();
+    next[section] = { ...current, [key]: value };
+  }
+  return next;
+}
+
 export function marksAreComplete(marks: ItemConditionMarks | undefined): boolean {
   if (!marks) return false;
   return ITEM_CONDITION_KEYS.every((key) => typeof marks[key] === 'boolean');
