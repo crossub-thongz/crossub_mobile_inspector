@@ -27,6 +27,7 @@ import {
   isKeyReturnComplete,
 } from '@/lib/key-access-workflow';
 import { hasInspectionExecutionDraft } from '@/lib/inspection-execution-draft';
+import { jobStartCta } from '@/lib/inspection-start-flow';
 
 const STATUS_FLOW = [
   { status: 'accepted' as const, label: 'Accepted' },
@@ -262,7 +263,7 @@ export default function JobDetailPage() {
                 >
                   {paymentBlocked
                     ? 'Waiting for agency payment'
-                    : `${workflowStarted ? 'Continue' : 'Start'} inspection`}
+                    : jobStartCta(job.type, workflowStarted)}
                 </Button>
               </Link>
             )}

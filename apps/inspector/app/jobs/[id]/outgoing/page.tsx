@@ -46,7 +46,6 @@ import { jobLookupMiss } from '@/lib/job-lookup';
 import {
   buildEffectiveAreaCatalog,
   buildExecutionAreaCatalog,
-  customAreaToDefinition,
   inferSelectedAreaNamesFromDraft,
   normalizeCustomAreaName,
   type CustomAreaSectionMode,
@@ -64,8 +63,15 @@ import {
 import {
   existingAreaNamesFromPlan,
   isAreaSetupComplete,
+  resolveIngoingAreaPlan,
   sectionsForAvailableArea,
 } from '@/lib/inspection-area-workflow';
+import {
+  draftNeedsLayoutSeed,
+  layoutFromIngoingPlan,
+  layoutTemplateFromProperty,
+  mergeCustomAreas,
+} from '@/lib/inspection-layout-template';
 
 const RESPONSIBILITY = [
   'Tenant Responsible',
@@ -151,34 +157,58 @@ export default function OutgoingInspectionPage() {
         const reference = detail.referenceIngoing;
         const refAreas = reference?.areas ?? [];
         setReferenceAreas(refAreas);
-        const plan = referenceIngoingAreaPlan(detail);
+        const plan = resolveIngoingAreaPlan(
+          referenceIngoingAreaPlan(detail),
+          refAreas,
+        );
         setIngoingAreaPlan(plan);
         const hasReferencePhotos = referenceIngoingHasPhotos(refAreas);
         setIngoingFromReference(hasReferencePhotos);
         let seededFromReference = false;
+        const copied = layoutFromIngoingPlan(plan);
 
         setDraft((prev) => {
-          const areaNames =
-            prev.selectedAreaNames && prev.selectedAreaNames.length > 0
-              ? prev.selectedAreaNames
-              : inferSelectedAreaNamesFromDraft(prev.issues, prev.customAreas ?? []);
+          const copiedCustom = mergeCustomAreas(
+            prev.customAreas ?? [],
+            copied?.customAreas ?? [],
+          );
+          const seedNames =
+            draftNeedsLayoutSeed(prev) && copied
+              ? copied.names
+              : prev.selectedAreaNames && prev.selectedAreaNames.length > 0
+                ? prev.selectedAreaNames
+                : inferSelectedAreaNamesFromDraft(prev.issues, copiedCustom);
 
-          const catalog = buildEffectiveAreaCatalog(prev.customAreas ?? []);
+          const catalog = buildEffectiveAreaCatalog(copiedCustom);
           const nextIssues: Record<string, AreaIssue> = { ...prev.issues };
 
           for (const def of catalog) {
             if (nextIssues[def.name]) continue;
             const seed = buildOutgoingIssueSeed(def, plan);
-            nextIssues[def.name] = emptyAreaIssue(def.name, seed, prev.customAreas);
+            nextIssues[def.name] = emptyAreaIssue(def.name, seed, copiedCustom);
+          }
+
+          if (copied) {
+            for (const name of copied.names) {
+              if (nextIssues[name]) continue;
+              nextIssues[name] = emptyAreaIssue(
+                name,
+                buildOutgoingIssueSeed(
+                  { name, defaultSections: [], optionalSections: [] },
+                  plan,
+                ),
+                copiedCustom,
+              );
+            }
           }
 
           const seeded = seedOutgoingIssuesFromReference(nextIssues, {
             referenceAreas: refAreas,
             plan,
-            customAreas: prev.customAreas ?? [],
+            customAreas: copiedCustom,
             areaNames:
-              areaNames.length > 0
-                ? areaNames
+              seedNames.length > 0
+                ? seedNames
                 : catalog.map((def) => def.name),
           });
           seededFromReference = seeded.seeded;
@@ -186,17 +216,22 @@ export default function OutgoingInspectionPage() {
           const withServerPhotos = applyOutgoingDetailPhotos(
             seeded.issues,
             detail,
-            prev.customAreas ?? [],
+            copiedCustom,
           );
           const merged = mergeOutgoingExecutionDraft(
             {
               kind: 'outgoing',
               areaIndex: prev.areaIndex,
               issues: withServerPhotos,
-              customAreas: prev.customAreas ?? [],
+              customAreas: copiedCustom,
+              selectedAreaNames: seedNames.length > 0 ? seedNames : prev.selectedAreaNames,
             },
             prev,
           );
+          if (copied && draftNeedsLayoutSeed(prev)) {
+            merged.selectedAreaNames = copied.names;
+            merged.customAreas = copiedCustom;
+          }
           if (plan) {
             const firstAvailable = catalog.findIndex(
               (def) => merged.issues[def.name]?.available === true,
@@ -232,6 +267,36 @@ export default function OutgoingInspectionPage() {
       cancelled = true;
     };
   }, [apiConnected, id, setDraft, localDraftLoaded]);
+
+  useEffect(() => {
+    if (!job || loadingReference || !localDraftLoaded.current) return;
+    setDraft((prev) => {
+      if (!draftNeedsLayoutSeed(prev)) return prev;
+      const layout =
+        layoutFromIngoingPlan(ingoingAreaPlan) ??
+        layoutTemplateFromProperty(job.property);
+      const nextCustom = mergeCustomAreas(prev.customAreas ?? [], layout.customAreas);
+      const nextIssues = { ...prev.issues };
+      for (const name of layout.names) {
+        if (!nextIssues[name]) {
+          nextIssues[name] = emptyAreaIssue(
+            name,
+            buildOutgoingIssueSeed(
+              { name, defaultSections: [], optionalSections: [] },
+              ingoingAreaPlan,
+            ),
+            nextCustom,
+          );
+        }
+      }
+      return {
+        ...prev,
+        selectedAreaNames: layout.names,
+        customAreas: nextCustom,
+        issues: nextIssues,
+      };
+    });
+  }, [job, loadingReference, ingoingAreaPlan, setDraft]);
 
   const customAreas = draft.customAreas ?? [];
   const areaSetupComplete = isAreaSetupComplete(draft);
@@ -314,16 +379,19 @@ export default function OutgoingInspectionPage() {
     );
     if (names.length === 0) return;
     setDraft((prev) => {
+      const extras = layoutFromIngoingPlan(ingoingAreaPlan)?.customAreas ?? [];
+      const nextCustom = mergeCustomAreas(prev.customAreas ?? [], extras);
       const nextSelected = [...(prev.selectedAreaNames ?? []), ...names];
       const nextIssues = { ...prev.issues };
       for (const name of names) {
         if (!nextIssues[name]) {
-          nextIssues[name] = emptyAreaIssue(name, undefined, prev.customAreas ?? []);
+          nextIssues[name] = emptyAreaIssue(name, undefined, nextCustom);
         }
       }
       return {
         ...prev,
         selectedAreaNames: nextSelected,
+        customAreas: nextCustom,
         issues: nextIssues,
       };
     });
@@ -389,10 +457,14 @@ export default function OutgoingInspectionPage() {
           <div className="space-y-4">
             <JobWorkflowToolbar job={job} />
             <InspectionAreaSetupPanel
+              kind="outgoing"
               selectedAreaNames={selectedAreaNames}
               customAreas={customAreas}
               existingAreaNames={ingoingExistingAreas}
               continuing={selectedAreaNames.length > 0 || areaIndex > 0}
+              layoutSource={
+                ingoingExistingAreas.length > 0 ? 'copied' : selectedAreaNames.length > 0 ? 'template' : 'manual'
+              }
               busy={busy || loadingReference}
               onAddBuiltInArea={handleAddBuiltInArea}
               onAddCustomArea={handleAddCustomArea}
@@ -790,6 +862,7 @@ export default function OutgoingInspectionPage() {
 
           {issue.available == null ? (
             <AreaAvailablePrompt
+              kind="outgoing"
               areaName={area}
               areaIndex={areaIndex}
               totalAreas={areaCatalog.length}

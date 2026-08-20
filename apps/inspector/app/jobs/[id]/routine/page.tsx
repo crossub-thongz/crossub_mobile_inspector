@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 import { AreaAvailablePrompt } from '@/components/inspector/area-available-prompt';
 import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
-import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
+import { InspectionAreaSetupPanel, RoutinePreInspectionSmsButton } from '@/components/inspector/inspection-area-setup-panel';
 import {
   OutgoingSectionPhotos,
   type SectionBeforeAfter,
@@ -54,6 +54,13 @@ import {
   resolveIngoingAreaPlan,
   sectionsForAvailableArea,
 } from '@/lib/inspection-area-workflow';
+import {
+  draftNeedsLayoutSeed,
+  layoutFromIngoingPlan,
+  layoutTemplateFromProperty,
+  mergeCustomAreas,
+} from '@/lib/inspection-layout-template';
+import { preInspectionSmsHref } from '@/lib/inspection-start-flow';
 import {
   referenceIngoingAreaPlan,
   type IngoingAreaPlan,
@@ -142,32 +149,48 @@ export default function RoutineInspectionPage() {
         setIngoingAreaPlan(plan);
 
         setDraft((prev) => {
+          const copied = layoutFromIngoingPlan(plan);
           const hasUserProgress =
             prev.areaSetupComplete === true ||
             (prev.selectedAreaNames?.length ?? 0) > 0 ||
             Object.values(prev.issues).some((issue) => issue.available != null);
 
-          if (!hasUserProgress) {
+          if (!hasUserProgress && !copied) {
             return prev;
           }
 
+          const nextCustom = mergeCustomAreas(
+            prev.customAreas ?? [],
+            copied?.customAreas ?? [],
+          );
+          const seedNames =
+            draftNeedsLayoutSeed(prev) && copied
+              ? copied.names
+              : prev.selectedAreaNames ?? [];
+
           const nextIssues: Record<string, AreaIssue> = { ...prev.issues };
-          for (const name of prev.selectedAreaNames ?? []) {
+          for (const name of seedNames) {
             if (nextIssues[name]) continue;
             nextIssues[name] = emptyAreaIssue(name);
           }
 
           const withServerPhotos = applyRoutineDetailPhotos(nextIssues, detail);
-          return mergeRoutineExecutionDraft(
+          const merged = mergeRoutineExecutionDraft(
             {
               kind: 'routine',
               areaIndex: prev.areaIndex,
               method: prev.method,
               issues: withServerPhotos,
-              selectedAreaNames: prev.selectedAreaNames,
+              customAreas: nextCustom,
+              selectedAreaNames: seedNames.length > 0 ? seedNames : prev.selectedAreaNames,
             },
             prev,
           );
+          if (copied && draftNeedsLayoutSeed(prev)) {
+            merged.selectedAreaNames = copied.names;
+            merged.customAreas = nextCustom;
+          }
+          return merged;
         });
 
         setIngoingFromReference(Boolean(reference) || refAreas.length > 0);
@@ -191,6 +214,27 @@ export default function RoutineInspectionPage() {
       cancelled = true;
     };
   }, [apiConnected, id, setDraft, localDraftLoaded]);
+
+  useEffect(() => {
+    if (!job || loadingReference || !localDraftLoaded.current) return;
+    setDraft((prev) => {
+      if (!draftNeedsLayoutSeed(prev)) return prev;
+      const layout =
+        layoutFromIngoingPlan(ingoingAreaPlan) ??
+        layoutTemplateFromProperty(job.property);
+      const nextCustom = mergeCustomAreas(prev.customAreas ?? [], layout.customAreas);
+      const nextIssues = { ...prev.issues };
+      for (const name of layout.names) {
+        if (!nextIssues[name]) nextIssues[name] = emptyAreaIssue(name);
+      }
+      return {
+        ...prev,
+        selectedAreaNames: layout.names,
+        customAreas: nextCustom,
+        issues: nextIssues,
+      };
+    });
+  }, [job, loadingReference, ingoingAreaPlan, setDraft]);
 
   const method = draft.method;
   const customAreas = draft.customAreas ?? [];
@@ -324,6 +368,8 @@ export default function RoutineInspectionPage() {
     );
     if (names.length === 0) return;
     setDraft((prev) => {
+      const extras = layoutFromIngoingPlan(ingoingAreaPlan)?.customAreas ?? [];
+      const nextCustom = mergeCustomAreas(prev.customAreas ?? [], extras);
       const nextSelected = [...(prev.selectedAreaNames ?? []), ...names];
       const nextIssues = { ...prev.issues };
       for (const name of names) {
@@ -332,6 +378,7 @@ export default function RoutineInspectionPage() {
       return {
         ...prev,
         selectedAreaNames: nextSelected,
+        customAreas: nextCustom,
         issues: nextIssues,
       };
     });
@@ -387,11 +434,51 @@ export default function RoutineInspectionPage() {
             <JobWorkflowToolbar job={job} />
             {resetControls}
             <InspectionAreaSetupPanel
+              kind="routine"
               selectedAreaNames={selectedAreaNames}
               customAreas={customAreas}
               existingAreaNames={ingoingExistingAreas}
               continuing={selectedAreaNames.length > 0 || areaIndex > 0}
+              layoutSource={
+                ingoingExistingAreas.length > 0
+                  ? 'copied'
+                  : selectedAreaNames.length > 0
+                    ? 'template'
+                    : 'manual'
+              }
               busy={busy || loadingReference}
+              extraActions={
+                <>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={method === 'physical' ? 'default' : 'outline'}
+                      className="flex-1"
+                      onClick={() =>
+                        setDraft((prev) => ({ ...prev, method: 'physical' }))
+                      }
+                    >
+                      Physical
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={method === 'self' ? 'default' : 'outline'}
+                      className="flex-1"
+                      onClick={() =>
+                        setDraft((prev) => ({ ...prev, method: 'self' }))
+                      }
+                    >
+                      Tenant self-inspect
+                    </Button>
+                  </div>
+                  {job.tenantPhone ? (
+                    <RoutinePreInspectionSmsButton
+                      href={preInspectionSmsHref(job) ?? '#'}
+                      disabled={busy}
+                    />
+                  ) : null}
+                </>
+              }
               onAddBuiltInArea={handleAddBuiltInArea}
               onAddCustomArea={handleAddCustomArea}
               onRemoveArea={handleRemoveSetupArea}
@@ -787,6 +874,7 @@ export default function RoutineInspectionPage() {
 
           {issue.available == null ? (
             <AreaAvailablePrompt
+              kind="routine"
               areaName={area}
               areaIndex={areaIndex}
               totalAreas={areaCatalog.length}

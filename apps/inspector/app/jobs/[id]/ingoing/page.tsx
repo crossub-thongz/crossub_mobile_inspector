@@ -46,6 +46,11 @@ import {
   sectionsForAvailableArea,
 } from '@/lib/inspection-area-workflow';
 import {
+  draftNeedsLayoutSeed,
+  layoutTemplateFromProperty,
+  mergeCustomAreas,
+} from '@/lib/inspection-layout-template';
+import {
   useAwaitingAgentPaymentGate,
   useInspectionFinishedGate,
   useInspectionInProgress,
@@ -127,6 +132,25 @@ export default function IngoingInspectionPage() {
       cancelled = true;
     };
   }, [apiConnected, id, setDraft, localDraftLoaded]);
+
+  useEffect(() => {
+    if (!job || !localDraftLoaded.current) return;
+    setDraft((prev) => {
+      if (!draftNeedsLayoutSeed(prev)) return prev;
+      const layout = layoutTemplateFromProperty(job.property);
+      const nextCustom = mergeCustomAreas(prev.customAreas ?? [], layout.customAreas);
+      const nextEntries = { ...prev.entries };
+      for (const name of layout.names) {
+        if (!nextEntries[name]) nextEntries[name] = emptyEntry(name, nextCustom);
+      }
+      return {
+        ...prev,
+        selectedAreaNames: layout.names,
+        customAreas: nextCustom,
+        entries: nextEntries,
+      };
+    });
+  }, [job, setDraft]);
 
   const customAreas = draft.customAreas ?? [];
   const areaSetupComplete = isAreaSetupComplete(draft);
@@ -242,10 +266,11 @@ export default function IngoingInspectionPage() {
           <div className="space-y-4">
             <JobWorkflowToolbar job={job} />
             <InspectionAreaSetupPanel
+              kind="ingoing"
               selectedAreaNames={selectedAreaNames}
               customAreas={customAreas}
               continuing={selectedAreaNames.length > 0 || areaIndex > 0}
-              sectionsHint="Standard sections load when you reach each area — add more as needed"
+              layoutSource={selectedAreaNames.length > 0 ? 'template' : 'manual'}
               busy={busy}
               onAddBuiltInArea={handleAddBuiltInArea}
               onAddCustomArea={handleAddCustomArea}
@@ -579,6 +604,7 @@ export default function IngoingInspectionPage() {
 
           {entry.available == null ? (
             <AreaAvailablePrompt
+              kind="ingoing"
               areaName={area}
               areaIndex={areaIndex}
               totalAreas={areaCatalog.length}

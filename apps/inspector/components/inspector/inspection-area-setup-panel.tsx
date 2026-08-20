@@ -1,7 +1,7 @@
 'use client';
 
-import { Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { MessageSquare, Trash2 } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { Button } from '@/components/ui/button';
@@ -9,25 +9,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import {
   INSPECTION_AREA_CATALOG,
-  type InspectionAreaDefinition,
 } from '@/constants/inspection-areas';
 import {
-  customAreaToDefinition,
   normalizeCustomAreaName,
   type CustomAreaDefinition,
   type CustomAreaSectionMode,
 } from '@/lib/custom-inspection-areas';
-import { setupStartLabel } from '@/lib/inspection-area-workflow';
+import type { InspectionAreaKind } from '@/lib/inspection-area-workflow';
+import {
+  inspectionStartCopy,
+  layoutSourceLabel,
+  setupStartLabel,
+  type InspectionLayoutSource,
+} from '@/lib/inspection-start-flow';
 
 const OTHER_AREA_VALUE = '__other__';
 
 type InspectionAreaSetupPanelProps = {
+  kind: InspectionAreaKind;
   selectedAreaNames: string[];
   customAreas: CustomAreaDefinition[];
   existingAreaNames?: string[];
   continuing?: boolean;
-  sectionsHint?: string;
+  layoutSource?: InspectionLayoutSource;
   busy?: boolean;
+  extraActions?: ReactNode;
   onAddBuiltInArea: (name: string) => void;
   onAddCustomArea: (name: string, sectionMode: CustomAreaSectionMode) => void;
   onRemoveArea: (name: string) => void;
@@ -36,12 +42,14 @@ type InspectionAreaSetupPanelProps = {
 };
 
 export function InspectionAreaSetupPanel({
+  kind,
   selectedAreaNames,
   customAreas,
   existingAreaNames = [],
   continuing = false,
-  sectionsHint,
+  layoutSource = 'manual',
   busy = false,
+  extraActions,
   onAddBuiltInArea,
   onAddCustomArea,
   onRemoveArea,
@@ -50,6 +58,7 @@ export function InspectionAreaSetupPanel({
 }: InspectionAreaSetupPanelProps) {
   const [pick, setPick] = useState('');
   const [customOpen, setCustomOpen] = useState(false);
+  const copy = inspectionStartCopy(kind);
 
   const selectedSet = new Set(selectedAreaNames.map((name) => name.toLowerCase()));
   const availableExisting = existingAreaNames.filter(
@@ -60,22 +69,7 @@ export function InspectionAreaSetupPanel({
   );
   const hasMoreAreasToAdd =
     availableExisting.length > 0 || availableBuiltIn.length > 0;
-
-  const resolveDefinition = (name: string): InspectionAreaDefinition | undefined => {
-    const builtIn = INSPECTION_AREA_CATALOG.find((area) => area.name === name);
-    if (builtIn) return builtIn;
-    const custom = customAreas.find(
-      (area) => area.name.trim().toLowerCase() === name.trim().toLowerCase(),
-    );
-    if (custom) return customAreaToDefinition(custom);
-    return undefined;
-  };
-
-  const defaultSectionsHint =
-    sectionsHint ??
-    (existingAreaNames.length > 0
-      ? 'Sections from the ingoing report load when you reach each area'
-      : 'Standard sections load when you reach each area — add more as needed');
+  const sourceLabel = layoutSourceLabel(layoutSource, selectedAreaNames.length);
 
   const handlePickChange = (value: string) => {
     setPick(value);
@@ -94,16 +88,18 @@ export function InspectionAreaSetupPanel({
     <>
       <Card>
         <CardHeader>
-          <CardTitle>
-            {continuing ? 'Continue inspection' : 'Start inspection'}
-          </CardTitle>
+          <CardTitle>{continuing ? copy.continueLabel : copy.title}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-muted-foreground text-sm">
-            Add each room or space you will inspect. Choose an existing area from the
-            ingoing report, pick a standard room, or enter a custom name. You will
-            photograph sections inside each area before moving on.
-          </p>
+          <p className="text-muted-foreground text-sm">{copy.body}</p>
+
+          {sourceLabel ? (
+            <p className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-foreground">
+              {sourceLabel}
+            </p>
+          ) : null}
+
+          {extraActions}
 
           {availableExisting.length > 0 && onAddAllExisting ? (
             <Button
@@ -113,12 +109,12 @@ export function InspectionAreaSetupPanel({
               disabled={busy}
               onClick={onAddAllExisting}
             >
-              Add all areas from ingoing report ({availableExisting.length})
+              Add remaining from ingoing report ({availableExisting.length})
             </Button>
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="add-area">Add area</Label>
+            <Label htmlFor="add-area">Add or adjust areas</Label>
             <select
               id="add-area"
               className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
@@ -126,9 +122,9 @@ export function InspectionAreaSetupPanel({
               disabled={busy}
               onChange={(event) => handlePickChange(event.target.value)}
             >
-              <option value="">Select or choose existing area…</option>
+              <option value="">Add another area…</option>
               {availableExisting.length > 0 ? (
-                <optgroup label="From ingoing report">
+                <optgroup label="From last ingoing">
                   {availableExisting.map((name) => (
                     <option key={`existing-${name}`} value={name}>
                       {name}
@@ -158,7 +154,7 @@ export function InspectionAreaSetupPanel({
                 >
                   <div className="min-w-0">
                     <p className="font-medium">{name}</p>
-                    <p className="text-muted-foreground text-xs">{defaultSectionsHint}</p>
+                    <p className="text-muted-foreground text-xs">{copy.sectionsHint}</p>
                   </div>
                   <button
                     type="button"
@@ -173,7 +169,7 @@ export function InspectionAreaSetupPanel({
             </ul>
           ) : (
             <p className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-xs">
-              No areas added yet. Select at least one area to begin.
+              No areas yet. Add at least one room to begin.
             </p>
           )}
 
@@ -183,13 +179,13 @@ export function InspectionAreaSetupPanel({
             disabled={busy || selectedAreaNames.length === 0}
             onClick={onComplete}
           >
-            {setupStartLabel(continuing)}
+            {setupStartLabel(kind, continuing)}
           </Button>
 
           {selectedAreaNames.length > 0 && !hasMoreAreasToAdd ? (
             <p className="text-muted-foreground text-center text-xs">
-              All available areas are added — use {setupStartLabel(continuing).toLowerCase()} when
-              ready.
+              Layout is ready — {setupStartLabel(kind, continuing).toLowerCase()} when you are
+              on site.
             </p>
           ) : null}
         </CardContent>
@@ -205,5 +201,22 @@ export function InspectionAreaSetupPanel({
         }}
       />
     </>
+  );
+}
+
+export function RoutinePreInspectionSmsButton({
+  href,
+  disabled,
+}: {
+  href: string;
+  disabled?: boolean;
+}) {
+  return (
+    <Button type="button" variant="outline" className="w-full" disabled={disabled} asChild>
+      <a href={href}>
+        <MessageSquare className="size-4" />
+        Send pre-inspection SMS
+      </a>
+    </Button>
   );
 }

@@ -83,7 +83,3 @@ export function sectionsForAvailableArea(
 
   return outgoingSectionsForRoom(ingoingAreaPlan, areaName);
 }
-
-export function setupStartLabel(continuing: boolean): string {
-  return continuing ? 'Continue inspection' : 'Start inspection';
-}
