@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { AddSectionControl } from '@/components/inspector/add-section-control';
 import { BeforeAfterPhotoColumn } from '@/components/inspector/before-after-photo-column';
+import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
 import { EditableChecklistRow } from '@/components/inspector/editable-checklist-row';
 import { ItemConditionToggles } from '@/components/inspector/item-condition-toggles';
 import { RenameLabelDialog } from '@/components/inspector/rename-label-dialog';
@@ -89,78 +90,88 @@ export function OutgoingSectionPhotos({
           No items yet. Add one below, then mark Clean / Undamaged / Working.
         </p>
       ) : (
-        activeSections.map((section, index) => {
-          const photos = photosBySection[section] ?? {
-            ingoingPhotoUrls: [],
-            outgoingPhotoUrls: [],
-          };
-          const sectionIngoingLocked =
-            ingoingReadOnly && photos.ingoingPhotoUrls.length > 0;
-          return (
-            <EditableChecklistRow
-              key={section}
-              name={section}
-              index={index}
-              total={activeSections.length}
-              busy={busy}
-              onMove={onMoveSection}
-              onRename={() => setRenameFrom(section)}
-              onRemove={() => onRemoveSection(section)}
-            >
-              <ItemConditionToggles
-                marks={itemMarks?.[section] ?? emptyItemMarks()}
-                disabled={busy}
-                onChange={(marks) => onChangeMarks(section, marks)}
-              />
-              <Input
-                placeholder="Comment (optional)"
-                value={itemComments?.[section] ?? ''}
-                disabled={busy}
-                onChange={(event) => onChangeComment(section, event.target.value)}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <BeforeAfterPhotoColumn
-                  title="Ingoing"
-                  photoUrls={photos.ingoingPhotoUrls}
-                  uploading={busy}
-                  disabled={busy || sectionIngoingLocked}
-                  onAddFiles={(files) => onAddFiles(section, 'ingoing', files)}
-                  onAddDataUrl={(dataUrl) =>
-                    onAddDataUrl(section, 'ingoing', dataUrl)
-                  }
-                  onAddDataUrls={
-                    onAddDataUrls
-                      ? (urls) => onAddDataUrls(section, 'ingoing', urls)
-                      : undefined
-                  }
-                  onRemove={
-                    sectionIngoingLocked
-                      ? undefined
-                      : (photoIndex) => onRemovePhoto(section, 'ingoing', photoIndex)
-                  }
-                />
-                <BeforeAfterPhotoColumn
-                  title={currentLabel}
-                  photoUrls={photos.outgoingPhotoUrls}
-                  uploading={busy}
-                  disabled={busy}
-                  onAddFiles={(files) => onAddFiles(section, 'outgoing', files)}
-                  onAddDataUrl={(dataUrl) =>
-                    onAddDataUrl(section, 'outgoing', dataUrl)
-                  }
-                  onAddDataUrls={
-                    onAddDataUrls
-                      ? (urls) => onAddDataUrls(section, 'outgoing', urls)
-                      : undefined
-                  }
-                  onRemove={(photoIndex) =>
-                    onRemovePhoto(section, 'outgoing', photoIndex)
-                  }
-                />
-              </div>
-            </EditableChecklistRow>
-          );
-        })
+        <>
+          <p className="text-muted-foreground text-xs">
+            Drag the handle on the left to reorder. Tap edit to rename an item.
+          </p>
+          <ul className="space-y-4">
+            <DraggableNamedList
+              items={activeSections}
+              variant="card"
+              disabled={busy}
+              onReorder={onMoveSection}
+              renderItem={(section) => {
+              const photos = photosBySection[section] ?? {
+                ingoingPhotoUrls: [],
+                outgoingPhotoUrls: [],
+              };
+              const sectionIngoingLocked =
+                ingoingReadOnly && photos.ingoingPhotoUrls.length > 0;
+              return (
+                <EditableChecklistRow
+                  name={section}
+                  busy={busy}
+                  onRename={() => setRenameFrom(section)}
+                  onRemove={() => onRemoveSection(section)}
+                >
+                  <ItemConditionToggles
+                    marks={itemMarks?.[section] ?? emptyItemMarks()}
+                    disabled={busy}
+                    onChange={(marks) => onChangeMarks(section, marks)}
+                  />
+                  <Input
+                    placeholder="Comment (optional)"
+                    value={itemComments?.[section] ?? ''}
+                    disabled={busy}
+                    onChange={(event) => onChangeComment(section, event.target.value)}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <BeforeAfterPhotoColumn
+                      title="Ingoing"
+                      photoUrls={photos.ingoingPhotoUrls}
+                      uploading={busy}
+                      disabled={busy || sectionIngoingLocked}
+                      onAddFiles={(files) => onAddFiles(section, 'ingoing', files)}
+                      onAddDataUrl={(dataUrl) =>
+                        onAddDataUrl(section, 'ingoing', dataUrl)
+                      }
+                      onAddDataUrls={
+                        onAddDataUrls
+                          ? (urls) => onAddDataUrls(section, 'ingoing', urls)
+                          : undefined
+                      }
+                      onRemove={
+                        sectionIngoingLocked
+                          ? undefined
+                          : (photoIndex) =>
+                              onRemovePhoto(section, 'ingoing', photoIndex)
+                      }
+                    />
+                    <BeforeAfterPhotoColumn
+                      title={currentLabel}
+                      photoUrls={photos.outgoingPhotoUrls}
+                      uploading={busy}
+                      disabled={busy}
+                      onAddFiles={(files) => onAddFiles(section, 'outgoing', files)}
+                      onAddDataUrl={(dataUrl) =>
+                        onAddDataUrl(section, 'outgoing', dataUrl)
+                      }
+                      onAddDataUrls={
+                        onAddDataUrls
+                          ? (urls) => onAddDataUrls(section, 'outgoing', urls)
+                          : undefined
+                      }
+                      onRemove={(photoIndex) =>
+                        onRemovePhoto(section, 'outgoing', photoIndex)
+                      }
+                    />
+                  </div>
+                </EditableChecklistRow>
+              );
+            }}
+            />
+          </ul>
+        </>
       )}
 
       <AddSectionControl

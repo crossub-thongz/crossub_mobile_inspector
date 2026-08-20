@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 
 import { AddSectionControl } from '@/components/inspector/add-section-control';
+import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
 import { EditableChecklistRow } from '@/components/inspector/editable-checklist-row';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
 import { ItemConditionToggles } from '@/components/inspector/item-condition-toggles';
@@ -64,47 +65,56 @@ export function InspectionSectionPhotos({
           No items yet. Add one below, then mark Clean / Undamaged / Working.
         </p>
       ) : (
-        activeSections.map((section, index) => {
-          const urls = photosBySection[section] ?? [];
-          return (
-            <EditableChecklistRow
-              key={section}
-              name={section}
-              index={index}
-              total={activeSections.length}
-              busy={busy}
-              onMove={onMoveSection}
-              onRename={() => setRenameFrom(section)}
-              onRemove={() => onRemoveSection(section)}
-            >
-              <ItemConditionToggles
-                marks={itemMarks?.[section] ?? emptyItemMarks()}
-                disabled={busy}
-                onChange={(marks) => onChangeMarks(section, marks)}
-              />
-              <Input
-                placeholder="Comment (optional)"
-                value={itemComments?.[section] ?? ''}
-                disabled={busy}
-                onChange={(event) => onChangeComment(section, event.target.value)}
-              />
-              <InspectionAreaPhotosField
-                label="Item photos"
-                photoUrls={urls}
-                uploading={busy}
-                emptyLabel="Optional close-ups for this item."
-                onAddFiles={(files) => onAddFiles(section, files)}
-                onAddDataUrl={(dataUrl) => onAddDataUrl(section, dataUrl)}
-                onAddDataUrls={
-                  onAddDataUrls
-                    ? (urlsToAdd) => onAddDataUrls(section, urlsToAdd)
-                    : undefined
-                }
-                onRemove={(photoIndex) => onRemovePhoto(section, photoIndex)}
-              />
-            </EditableChecklistRow>
-          );
-        })
+        <>
+          <p className="text-muted-foreground text-xs">
+            Drag the handle on the left to reorder. Tap edit to rename an item.
+          </p>
+          <ul className="space-y-4">
+            <DraggableNamedList
+              items={activeSections}
+              variant="card"
+              disabled={busy}
+              onReorder={onMoveSection}
+              renderItem={(section) => {
+              const urls = photosBySection[section] ?? [];
+              return (
+                <EditableChecklistRow
+                  name={section}
+                  busy={busy}
+                  onRename={() => setRenameFrom(section)}
+                  onRemove={() => onRemoveSection(section)}
+                >
+                  <ItemConditionToggles
+                    marks={itemMarks?.[section] ?? emptyItemMarks()}
+                    disabled={busy}
+                    onChange={(marks) => onChangeMarks(section, marks)}
+                  />
+                  <Input
+                    placeholder="Comment (optional)"
+                    value={itemComments?.[section] ?? ''}
+                    disabled={busy}
+                    onChange={(event) => onChangeComment(section, event.target.value)}
+                  />
+                  <InspectionAreaPhotosField
+                    label="Item photos"
+                    photoUrls={urls}
+                    uploading={busy}
+                    emptyLabel="Optional close-ups for this item."
+                    onAddFiles={(files) => onAddFiles(section, files)}
+                    onAddDataUrl={(dataUrl) => onAddDataUrl(section, dataUrl)}
+                    onAddDataUrls={
+                      onAddDataUrls
+                        ? (urlsToAdd) => onAddDataUrls(section, urlsToAdd)
+                        : undefined
+                    }
+                    onRemove={(photoIndex) => onRemovePhoto(section, photoIndex)}
+                  />
+                </EditableChecklistRow>
+              );
+            }}
+            />
+          </ul>
+        </>
       )}
 
       <AddSectionControl

@@ -10,6 +10,8 @@ const DRAG_THRESHOLD_PX = 8;
 type DraggableNamedListProps = {
   items: string[];
   disabled?: boolean;
+  /** Compact area rows, or tall item cards with the grip at the top. */
+  variant?: 'row' | 'card';
   onReorder: (from: number, to: number) => void;
   renderItem: (name: string, index: number) => ReactNode;
 };
@@ -17,6 +19,7 @@ type DraggableNamedListProps = {
 export function DraggableNamedList({
   items,
   disabled = false,
+  variant = 'row',
   onReorder,
   renderItem,
 }: DraggableNamedListProps) {
@@ -100,7 +103,10 @@ export function DraggableNamedList({
             rowRefs.current[index] = node;
           }}
           className={cn(
-            'flex items-center gap-1 px-1 py-2 text-sm',
+            'flex gap-1',
+            variant === 'card'
+              ? 'items-start rounded-lg border border-border p-3'
+              : 'items-center px-1 py-2 text-sm',
             activeIndex === index && 'bg-primary/15',
             overIndex === index &&
               activeIndex != null &&
