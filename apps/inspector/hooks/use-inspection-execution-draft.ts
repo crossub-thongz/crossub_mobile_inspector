@@ -70,6 +70,7 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const deviceIdRef = useRef(getOrCreateInspectionDeviceId());
+  const [hydrateTick, setHydrateTick] = useState(0);
 
   const createEmptyRef = useRef(createEmpty);
   createEmptyRef.current = createEmpty;
@@ -88,6 +89,10 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
   }, [job, kind]);
 
   useEffect(() => {
+    if (!apiConnected) remoteMerged.current = false;
+  }, [apiConnected]);
+
+  useEffect(() => {
     if (!apiConnected || !jobId || !localDraftLoaded.current || remoteMerged.current) {
       return;
     }
@@ -99,22 +104,24 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
         const overlays =
           ((detail as { executionDrafts?: InspectorDeviceDraftOverlay[] })
             .executionDrafts ?? []) as InspectorDeviceDraftOverlay[];
-        const others = overlays.filter(
-          (overlay) => overlay.deviceId !== deviceIdRef.current,
-        );
-        if (others.length === 0) {
+        if (overlays.length === 0) {
           remoteMerged.current = true;
           return;
         }
+        const others = overlays.filter(
+          (overlay) => overlay.deviceId !== deviceIdRef.current,
+        );
         setDraftState((prev) => {
-          const merged = mergeByKind(kind, prev, others);
+          const merged = mergeByKind(kind, prev, overlays);
           return { ...merged, kind, updatedAt: prev.updatedAt ?? merged.updatedAt };
         });
-        toast.message(
-          others.length === 1
-            ? 'Merged progress from another device'
-            : `Merged progress from ${others.length} other devices`,
-        );
+        if (others.length > 0) {
+          toast.message(
+            others.length === 1
+              ? 'Merged progress from another device'
+              : `Merged progress from ${others.length} other devices`,
+          );
+        }
       } catch {
         // Offline / unassigned — keep the local draft.
       } finally {
@@ -124,7 +131,7 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
     return () => {
       cancelled = true;
     };
-  }, [apiConnected, jobId, kind]);
+  }, [apiConnected, jobId, kind, hydrateTick]);
 
   const persistDraft = useCallback(
     (next: T) => {
@@ -208,9 +215,16 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
     };
     window.addEventListener('pagehide', flush);
     document.addEventListener('visibilitychange', onVisibility);
+    const onOnline = () => {
+      remoteMerged.current = false;
+      flush();
+      setHydrateTick((tick) => tick + 1);
+    };
+    window.addEventListener('online', onOnline);
     return () => {
       window.removeEventListener('pagehide', flush);
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('online', onOnline);
     };
   }, [job, persistDraft]);
 

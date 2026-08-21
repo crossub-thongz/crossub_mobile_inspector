@@ -108,6 +108,10 @@ export default function IngoingInspectionPage() {
   const serverHydrated = useRef(false);
 
   useEffect(() => {
+    if (!apiConnected) serverHydrated.current = false;
+  }, [apiConnected]);
+
+  useEffect(() => {
     if (!apiConnected || !id || !localDraftLoaded.current || serverHydrated.current) {
       return;
     }

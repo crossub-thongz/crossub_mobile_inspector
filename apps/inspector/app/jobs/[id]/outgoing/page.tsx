@@ -144,6 +144,10 @@ export default function OutgoingInspectionPage() {
   const serverHydrated = useRef(false);
 
   useEffect(() => {
+    if (!apiConnected) serverHydrated.current = false;
+  }, [apiConnected]);
+
+  useEffect(() => {
     if (!apiConnected || !id) {
       setLoadingReference(false);
       return;

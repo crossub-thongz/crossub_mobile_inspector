@@ -130,6 +130,10 @@ export default function RoutineInspectionPage() {
   const serverHydrated = useRef(false);
 
   useEffect(() => {
+    if (!apiConnected) serverHydrated.current = false;
+  }, [apiConnected]);
+
+  useEffect(() => {
     if (!apiConnected || !id) {
       setLoadingReference(false);
       return;

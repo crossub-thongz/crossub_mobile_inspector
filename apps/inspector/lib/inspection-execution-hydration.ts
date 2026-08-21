@@ -326,25 +326,64 @@ export function applyRoutineDetailPhotos(
   const next = { ...issues };
   for (const area of detail.areas) {
     const rawName = area.name?.trim() ?? '';
-    if (INGOING_SUFFIX.test(rawName) || OUTGOING_SUFFIX.test(rawName)) continue;
     const photos = areaPhotoUrls(area);
     if (photos.length === 0) continue;
 
-    const parsed = parseSectionAreaName(rawName);
-    if (!parsed) continue;
+    if (INGOING_SUFFIX.test(rawName) || OUTGOING_SUFFIX.test(rawName)) {
+      const stripped = rawName
+        .replace(INGOING_SUFFIX, '')
+        .replace(OUTGOING_SUFFIX, '')
+        .trim();
+      const parsed = parseSectionAreaName(stripped);
+      const room = parsed?.area ?? stripped;
+      const section = parsed?.section;
+      if (!room) continue;
 
-    const current = next[parsed.area] ?? emptyRoutineIssue(parsed.area);
-    const photosBySection = { ...current.photosBySection };
-    const sectionPhotos = photosBySection[parsed.section] ?? emptySectionPhotos();
-    photosBySection[parsed.section] = {
-      ...sectionPhotos,
-      outgoingPhotoUrls: mergePhotoUrlLists(sectionPhotos.outgoingPhotoUrls, photos),
-    };
-    next[parsed.area] = {
+      const current = next[room] ?? emptyRoutineIssue(room);
+      const photosBySection = { ...current.photosBySection };
+      const sectionKey = section ?? current.activeSections[0] ?? 'General';
+      const sectionPhotos = photosBySection[sectionKey] ?? emptySectionPhotos();
+      const key = INGOING_SUFFIX.test(rawName)
+        ? 'ingoingPhotoUrls'
+        : 'outgoingPhotoUrls';
+      photosBySection[sectionKey] = {
+        ...sectionPhotos,
+        [key]: mergePhotoUrlLists(sectionPhotos[key], photos),
+      };
+      next[room] = {
+        ...current,
+        available: current.available ?? true,
+        activeSections: section
+          ? [...new Set([...current.activeSections, section])]
+          : current.activeSections,
+        photosBySection,
+      };
+      continue;
+    }
+
+    const parsed = parseSectionAreaName(rawName);
+    if (parsed) {
+      const current = next[parsed.area] ?? emptyRoutineIssue(parsed.area);
+      const photosBySection = { ...current.photosBySection };
+      const sectionPhotos = photosBySection[parsed.section] ?? emptySectionPhotos();
+      photosBySection[parsed.section] = {
+        ...sectionPhotos,
+        outgoingPhotoUrls: mergePhotoUrlLists(sectionPhotos.outgoingPhotoUrls, photos),
+      };
+      next[parsed.area] = {
+        ...current,
+        available: current.available ?? true,
+        activeSections: [...new Set([...current.activeSections, parsed.section])],
+        photosBySection,
+      };
+      continue;
+    }
+
+    const current = next[rawName] ?? emptyRoutineIssue(rawName);
+    next[rawName] = {
       ...current,
       available: current.available ?? true,
-      activeSections: [...new Set([...current.activeSections, parsed.section])],
-      photosBySection,
+      areaPhotos: mergePhotoUrlLists(current.areaPhotos, photos),
     };
   }
   return next;
