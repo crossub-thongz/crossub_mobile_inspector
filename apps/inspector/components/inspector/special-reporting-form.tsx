@@ -122,8 +122,8 @@ function DateField({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="space-y-1 py-1.5">
-      <Label htmlFor={id} className="text-sm font-normal">
+    <div className="space-y-1.5 py-1.5">
+      <Label htmlFor={id} className="text-sm leading-snug font-normal">
         {label}
         {required ? <RequiredMark /> : null}
       </Label>
@@ -133,6 +133,55 @@ function DateField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
+    </div>
+  );
+}
+
+function MeterReadingRow({
+  readingId,
+  readingLabel,
+  reading,
+  onReadingChange,
+  dateId,
+  date,
+  onDateChange,
+  required,
+}: {
+  readingId: string;
+  readingLabel: string;
+  reading: string;
+  onReadingChange: (value: string) => void;
+  dateId: string;
+  date: string;
+  onDateChange: (value: string) => void;
+  required?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-2 items-end gap-3 py-2">
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <Label htmlFor={readingId} className="text-sm leading-snug font-normal">
+          {readingLabel}
+          {required ? <RequiredMark /> : null}
+        </Label>
+        <Input
+          id={readingId}
+          inputMode="decimal"
+          value={reading}
+          onChange={(event) => onReadingChange(event.target.value)}
+        />
+      </div>
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <Label htmlFor={dateId} className="text-sm leading-snug font-normal">
+          Date of reading:
+          {required ? <RequiredMark /> : null}
+        </Label>
+        <Input
+          id={dateId}
+          type="date"
+          value={date}
+          onChange={(event) => onDateChange(event.target.value)}
+        />
+      </div>
     </div>
   );
 }
@@ -153,46 +202,21 @@ export function SpecialReportingForm({
   const patch = (partial: Partial<SpecialReportingDraft>) =>
     onChange({ ...value, ...partial });
 
+  const handleFinalise = () => {
+    const missing = specialReportingMissing(value);
+    if (missing) {
+      toast.error(missing);
+      return;
+    }
+    onFinalise();
+  };
+
   return (
-    <div className="space-y-5 pb-4">
-      <div className="space-y-3 px-1 py-4">
-        <h2 className="text-foreground text-center text-sm font-semibold">
+    <>
+      <div className="space-y-5 pb-6">
+        <h2 className="text-foreground px-1 pt-3 text-center text-sm font-semibold">
           NSW Special Reporting
         </h2>
-        <div className="flex items-center justify-between gap-3">
-          <Button type="button" variant="outline" size="sm" onClick={onBack}>
-            <X className="size-3.5" />
-            Cancel
-          </Button>
-          <div className="flex gap-2.5">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => toast.success('Special reporting saved')}
-            >
-              <Save className="size-3.5" />
-              Save
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={submitting}
-              onClick={() => {
-                const missing = specialReportingMissing(value);
-                if (missing) {
-                  toast.error(missing);
-                  return;
-                }
-                onFinalise();
-              }}
-            >
-              <FileCheck className="size-3.5" />
-              {submitting ? 'Submitting…' : 'Finalise'}
-            </Button>
-          </div>
-        </div>
-      </div>
 
       <section className="border-border space-y-1 rounded-xl border bg-card px-3 py-2">
         <h3 className="text-foreground pt-1 text-xs font-bold tracking-wide uppercase">
@@ -543,44 +567,25 @@ export function SpecialReportingForm({
             patch({ waterEfficiencyLastChecked })
           }
         />
-        <div className="grid grid-cols-2 gap-2 py-1.5">
-          <div className="space-y-1">
-            <Label htmlFor="water-start" className="text-sm font-normal">
-              Water meter reading at START of tenancy:
-              <RequiredMark />
-            </Label>
-            <Input
-              id="water-start"
-              value={value.waterMeterStart}
-              onChange={(event) => patch({ waterMeterStart: event.target.value })}
-            />
-          </div>
-          <DateField
-            id="water-start-date"
-            label="Date of reading:"
-            required
-            value={value.waterMeterStartDate}
-            onChange={(waterMeterStartDate) => patch({ waterMeterStartDate })}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-2 py-1.5">
-          <div className="space-y-1">
-            <Label htmlFor="water-end" className="text-sm font-normal">
-              Water meter reading at END of tenancy:
-            </Label>
-            <Input
-              id="water-end"
-              value={value.waterMeterEnd}
-              onChange={(event) => patch({ waterMeterEnd: event.target.value })}
-            />
-          </div>
-          <DateField
-            id="water-end-date"
-            label="Date of reading:"
-            value={value.waterMeterEndDate}
-            onChange={(waterMeterEndDate) => patch({ waterMeterEndDate })}
-          />
-        </div>
+        <MeterReadingRow
+          readingId="water-start"
+          readingLabel="Water meter reading at START of tenancy:"
+          reading={value.waterMeterStart}
+          onReadingChange={(waterMeterStart) => patch({ waterMeterStart })}
+          dateId="water-start-date"
+          date={value.waterMeterStartDate}
+          onDateChange={(waterMeterStartDate) => patch({ waterMeterStartDate })}
+          required
+        />
+        <MeterReadingRow
+          readingId="water-end"
+          readingLabel="Water meter reading at END of tenancy:"
+          reading={value.waterMeterEnd}
+          onReadingChange={(waterMeterEnd) => patch({ waterMeterEnd })}
+          dateId="water-end-date"
+          date={value.waterMeterEndDate}
+          onDateChange={(waterMeterEndDate) => patch({ waterMeterEndDate })}
+        />
       </section>
 
       <section className="border-border space-y-2 rounded-xl border bg-card px-3 py-3">
@@ -676,6 +681,39 @@ export function SpecialReportingForm({
           onChange={(landlordSignedDate) => patch({ landlordSignedDate })}
         />
       </section>
-    </div>
+      </div>
+
+      <div
+        className="fixed left-1/2 z-50 w-full max-w-lg -translate-x-1/2 border-t border-border bg-background px-4 py-3"
+        style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <Button type="button" variant="outline" size="sm" onClick={onBack}>
+            <X className="size-3.5" />
+            Cancel
+          </Button>
+          <div className="flex gap-2.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => toast.success('Special reporting saved')}
+            >
+              <Save className="size-3.5" />
+              Save
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={submitting}
+              onClick={handleFinalise}
+            >
+              <FileCheck className="size-3.5" />
+              {submitting ? 'Submitting…' : 'Finalise'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
