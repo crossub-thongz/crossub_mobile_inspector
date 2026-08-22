@@ -168,7 +168,7 @@ export default function JobKeysPage() {
       setSubmitting(false);
     }
 
-    toast.success('Key return recorded');
+    toast.success('Handover recorded · keys returned');
     setTimeout(() => {
       completeJob(id);
       router.replace(jobDetail(id));
@@ -185,34 +185,44 @@ export default function JobKeysPage() {
     >
       <JobWorkspaceNav job={job} active="handover" />
       <div className="space-y-5">
-        <div className="flex gap-1 rounded-lg border bg-secondary/30 p-1">
+        <div className="mt-4 mb-1 flex gap-1.5 rounded-xl border bg-secondary/30 p-1.5">
           <button
             type="button"
             onClick={() => switchTab('collect')}
             className={cn(
-              'flex-1 rounded-md px-3 py-2 text-xs font-medium transition',
+              'flex flex-1 flex-col items-center gap-0.5 rounded-lg px-2 py-2.5 text-center transition',
               tab === 'collect'
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground',
             )}
           >
-            Handover
-            {collectDone && <CheckCircle2 className="ml-1 inline size-3" />}
+            <span className="flex items-center gap-1 text-xs font-semibold">
+              Handover
+              {collectDone ? <CheckCircle2 className="size-3.5" /> : null}
+            </span>
+            <span className="text-[10px] leading-tight font-medium">
+              Collecting keys
+            </span>
           </button>
           <button
             type="button"
             onClick={() => switchTab('return')}
             disabled={!returnUnlocked}
             className={cn(
-              'flex-1 rounded-md px-3 py-2 text-xs font-medium transition',
+              'flex flex-1 flex-col items-center gap-0.5 rounded-lg px-2 py-2.5 text-center transition',
               tab === 'return'
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground',
               !returnUnlocked && 'cursor-not-allowed opacity-40',
             )}
           >
-            Return
-            {returnDone && <CheckCircle2 className="ml-1 inline size-3" />}
+            <span className="flex items-center gap-1 text-xs font-semibold">
+              Handover
+              {returnDone ? <CheckCircle2 className="size-3.5" /> : null}
+            </span>
+            <span className="text-[10px] leading-tight font-medium">
+              Returning keys
+            </span>
           </button>
         </div>
 
@@ -228,7 +238,7 @@ export default function JobKeysPage() {
                 <div className="flex items-center gap-2 text-xs text-emerald-400">
                   <CheckCircle2 className="size-4 shrink-0" />
                   <span>
-                    Handover completed
+                    Handover completed · Collecting keys
                     {phaseRecord?.completedAt
                       ? ` · ${formatDateTime(phaseRecord.completedAt)}`
                       : ''}
@@ -284,7 +294,7 @@ export default function JobKeysPage() {
             <div className="flex items-center gap-2 text-xs text-emerald-400">
               <CheckCircle2 className="size-4 shrink-0" />
               <span>
-                Return completed
+                Handover completed · Returning keys
                 {phaseRecord?.completedAt
                   ? ` · ${formatDateTime(phaseRecord.completedAt)}`
                   : ''}
@@ -314,7 +324,7 @@ export default function JobKeysPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-sm">
                   <KeyRound className="text-primary size-4" />
-                  Key return
+                  Handover (returning keys)
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
@@ -366,7 +376,7 @@ export default function JobKeysPage() {
                 disabled={submitting}
                 onClick={() => void submitReturn()}
               >
-                {submitting ? 'Uploading proof…' : 'Confirm return'}
+                {submitting ? 'Uploading proof…' : 'Handover completed'}
               </Button>
             </div>
           </>
