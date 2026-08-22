@@ -292,7 +292,18 @@ function isPersistedPhotoUrl(url: string): boolean {
 
 function areaComments(area: InspectorInspectionDetail['areas'][number]): string {
   return area.items
-    .map((item) => asString(item.comment))
+    .map((item) => {
+      const name = asString(item.name);
+      const tags = (item.conditionTags ?? [])
+        .map((tag) => asString(tag))
+        .filter((tag): tag is string => Boolean(tag));
+      const detail = asString(item.comment) || tags.join(' · ');
+      if (!detail) return null;
+      if (name && name.toLowerCase() !== 'notes' && name.toLowerCase() !== 'issue') {
+        return `${name}: ${detail}`;
+      }
+      return detail;
+    })
     .filter((c): c is string => c !== null)
     .join(' · ');
 }

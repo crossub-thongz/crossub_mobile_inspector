@@ -1,11 +1,12 @@
 'use client';
 
-import { Check, ChevronDown, ChevronUp, CircleAlert, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, CircleAlert, Info, Trash2 } from 'lucide-react';
 import { type ReactNode } from 'react';
 
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
 import { inspectionItemIcon } from '@/lib/inspection-item-icon';
 import {
+  ISSUE_DETAIL_LABEL,
   ITEM_CONDITION_KEYS,
   ITEM_CONDITION_LABEL,
   marksAreAllGood,
@@ -15,12 +16,6 @@ import {
   emptyItemMarks,
 } from '@/lib/item-condition-marks';
 import { cn } from '@/lib/utils';
-
-const ISSUE_DETAIL: { key: ItemConditionKey; label: string }[] = [
-  { key: 'clean', label: 'Dirty / Needs cleaning' },
-  { key: 'undamaged', label: 'Damaged / Broken' },
-  { key: 'working', label: 'Not working' },
-];
 
 const COMMENT_MAX = 200;
 
@@ -136,8 +131,12 @@ export function InspectionItemAccordion({
           </div>
 
           <div>
-            <p className="text-muted-foreground mb-1.5 text-[11px] font-medium uppercase">
+            <p className="text-foreground mb-1.5 flex items-center gap-1.5 text-sm font-medium">
               Condition
+              <Info
+                className="text-muted-foreground size-3.5"
+                aria-label="Mark Clean, Undamaged and Working. Use Details if something failed."
+              />
             </p>
             <div className="grid grid-cols-3 gap-1.5">
               {ITEM_CONDITION_KEYS.map((key) => {
@@ -150,7 +149,7 @@ export function InspectionItemAccordion({
                     onClick={() => toggleChip(key)}
                     className={cn(
                       'rounded-lg px-2 py-2 text-[11px] font-semibold',
-                      value === true && 'bg-emerald-600 text-white',
+                      value === true && 'bg-emerald-700 text-white',
                       value === false && 'bg-destructive text-white',
                       value !== true && value !== false && 'bg-secondary text-muted-foreground',
                     )}
@@ -163,38 +162,40 @@ export function InspectionItemAccordion({
             </div>
           </div>
 
-          {hasIssue ? (
-            <div>
-              <p className="text-muted-foreground mb-1.5 text-[11px] font-medium uppercase">
-                Details
-              </p>
-              <div className="space-y-1.5">
-                {ISSUE_DETAIL.map((row) => (
-                  <label
-                    key={row.key}
-                    className="flex items-center gap-2 text-sm"
+          <div>
+            <p className="text-foreground mb-1.5 text-sm font-medium">Details</p>
+            <div className="space-y-2">
+              {ITEM_CONDITION_KEYS.map((key) => {
+                const selected = current[key] === false;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      onChangeMarks({
+                        ...current,
+                        [key]: selected ? true : false,
+                      })
+                    }
+                    className="flex w-full items-center gap-2.5 text-left text-sm"
                   >
-                    <input
-                      type="radio"
-                      name={`issue-${name}`}
-                      checked={current[row.key] === false}
-                      disabled={busy}
-                      onChange={() =>
-                        onChangeMarks({
-                          clean: true,
-                          undamaged: true,
-                          working: true,
-                          [row.key]: false,
-                        })
-                      }
-                      className="accent-destructive"
+                    <span
+                      className={cn(
+                        'flex size-4 shrink-0 items-center justify-center rounded-full border-2',
+                        selected
+                          ? 'border-destructive bg-destructive'
+                          : 'border-muted-foreground/50',
+                      )}
                     />
-                    {row.label}
-                  </label>
-                ))}
-              </div>
+                    <span className={selected ? 'text-foreground' : 'text-muted-foreground'}>
+                      {ISSUE_DETAIL_LABEL[key]}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          ) : null}
+          </div>
 
           <div>
             <p className="text-muted-foreground mb-1.5 text-[11px] font-medium uppercase">

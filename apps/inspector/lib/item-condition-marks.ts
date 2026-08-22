@@ -14,6 +14,12 @@ export const ITEM_CONDITION_LABEL: Record<ItemConditionKey, string> = {
   working: 'Working',
 };
 
+export const ISSUE_DETAIL_LABEL: Record<ItemConditionKey, string> = {
+  clean: 'Dirty / Needs cleaning',
+  undamaged: 'Damaged / Broken',
+  working: 'Not working',
+};
+
 const YES_TAG: Record<ItemConditionKey, string> = {
   clean: 'Clean',
   undamaged: 'Undamaged',
@@ -21,17 +27,19 @@ const YES_TAG: Record<ItemConditionKey, string> = {
 };
 
 const NO_TAG: Record<ItemConditionKey, string> = {
-  clean: 'Not clean',
-  undamaged: 'Damaged',
-  working: 'Not working',
+  clean: ISSUE_DETAIL_LABEL.clean,
+  undamaged: ISSUE_DETAIL_LABEL.undamaged,
+  working: ISSUE_DETAIL_LABEL.working,
 };
 
 const YES_LOOKUP = new Map(
   ITEM_CONDITION_KEYS.map((key) => [YES_TAG[key].toLowerCase(), key] as const),
 );
-const NO_LOOKUP = new Map(
-  ITEM_CONDITION_KEYS.map((key) => [NO_TAG[key].toLowerCase(), key] as const),
-);
+const NO_LOOKUP = new Map<string, ItemConditionKey>([
+  ...ITEM_CONDITION_KEYS.map((key) => [NO_TAG[key].toLowerCase(), key] as const),
+  ['not clean', 'clean'],
+  ['damaged', 'undamaged'],
+]);
 
 export function emptyItemMarks(): ItemConditionMarks {
   return { clean: null, undamaged: null, working: null };
@@ -92,6 +100,38 @@ export function serializeItemMarks(marks: ItemConditionMarks | undefined): strin
     if (marks[key] === false) tags.push(NO_TAG[key]);
   }
   return tags;
+}
+
+/** One-line summary for reports: "Dirty / Needs cleaning · Undamaged · Working". */
+export function formatItemMarksSummary(marks: ItemConditionMarks | undefined): string {
+  return serializeItemMarks(marks).join(' · ');
+}
+
+export function itemReportComment(
+  marks: ItemConditionMarks | undefined,
+  note: string | undefined,
+): string | undefined {
+  const summary = formatItemMarksSummary(marks);
+  const trimmed = note?.trim();
+  if (summary && trimmed) return `${summary}. ${trimmed}`;
+  if (summary) return summary;
+  if (trimmed) return trimmed;
+  return undefined;
+}
+
+/** Undo {@link itemReportComment} so the inspector's typed note is restored on reopen. */
+export function stripItemMarksSummaryFromComment(
+  comment: string | undefined,
+  marks: ItemConditionMarks | undefined,
+): string {
+  const trimmed = comment?.trim() ?? '';
+  if (!trimmed) return '';
+  const summary = formatItemMarksSummary(marks);
+  if (!summary) return trimmed;
+  if (trimmed === summary) return '';
+  const prefix = `${summary}. `;
+  if (trimmed.startsWith(prefix)) return trimmed.slice(prefix.length);
+  return trimmed;
 }
 
 export function parseItemMarks(tags: readonly string[] | undefined): ItemConditionMarks {

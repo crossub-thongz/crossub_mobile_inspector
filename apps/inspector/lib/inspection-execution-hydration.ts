@@ -4,7 +4,7 @@ import {
 } from '@/lib/custom-inspection-areas';
 import { INSPECTION_AREA_CATALOG, parseSectionAreaName } from '@/constants/inspection-areas';
 import type { InspectorInspectionDetail } from '@/lib/crossub-api/inspector-client';
-import { parseItemMarks, mergeItemMarks, type ItemConditionMarks } from '@/lib/item-condition-marks';
+import { parseItemMarks, mergeItemMarks, stripItemMarksSummaryFromComment, type ItemConditionMarks } from '@/lib/item-condition-marks';
 import {
   type InspectionExecutionDraft,
   type IngoingAreaEntryDraft,
@@ -73,7 +73,8 @@ function itemsFromDetailArea(
     if (!name || SKIP_ITEM_NAMES.has(name)) continue;
     if (!sections.includes(name)) sections.push(name);
     itemMarks[name] = parseItemMarks(item.conditionTags);
-    if (item.comment?.trim()) itemComments[name] = item.comment.trim();
+    const note = stripItemMarksSummaryFromComment(item.comment, itemMarks[name]);
+    if (note) itemComments[name] = note;
     const photos = item.photos.map((photo) => photo.url).filter(isPersistedPhotoUrl);
     if (photos.length > 0) itemPhotos[name] = photos;
   }

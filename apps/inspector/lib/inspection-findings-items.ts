@@ -1,6 +1,7 @@
 import type { InspectorFindingAreaPayload } from '@/lib/crossub-api/inspector-client';
 import {
   areaRatingFromMarks,
+  itemReportComment,
   marksHaveNo,
   serializeItemMarks,
   type ItemConditionMarks,
@@ -22,7 +23,7 @@ export function findingsItemsFromSections(input: {
     const marks = input.marksBySection?.[section];
     items.push({
       name: section,
-      comment: input.commentsBySection?.[section]?.trim() || undefined,
+      comment: itemReportComment(marks, input.commentsBySection?.[section]),
       flagged: marksHaveNo(marks),
       conditionTags: serializeItemMarks(marks),
     });
