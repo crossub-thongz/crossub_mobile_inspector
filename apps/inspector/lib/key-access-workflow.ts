@@ -53,10 +53,17 @@ export function isKeyCollectComplete(job: InspectionJob): boolean {
 }
 
 /** Persist handover extras in the notes field the key-custody API already stores. */
-export function formatHandoverNotes(record: KeyPhaseRecord): string | undefined {
+export function formatHandoverNotes(
+  record: KeyPhaseRecord,
+  phase: 'collect' | 'return' = 'collect',
+): string | undefined {
   const lines: string[] = [];
   if (record.handoverParty) {
-    lines.push(`Handover with ${record.handoverParty}`);
+    const label =
+      phase === 'return'
+        ? 'Handover (returning keys)'
+        : 'Handover (collecting keys)';
+    lines.push(`${label} with ${record.handoverParty}`);
   }
   if (record.contactName) lines.push(`Contact: ${record.contactName}`);
   if (record.agencyName) lines.push(`Agency: ${record.agencyName}`);
@@ -68,6 +75,16 @@ export function formatHandoverNotes(record: KeyPhaseRecord): string | undefined 
   }
   if (record.notes?.trim()) lines.push(record.notes.trim());
   return lines.length ? lines.join('\n') : undefined;
+}
+
+const HANDOVER_PARTY_RE = /Handover(?: \([^)]+\))? with (tenant|agent)/i;
+
+export function parseHandoverPartyFromNotes(
+  notes: string | null | undefined,
+): HandoverParty | undefined {
+  if (!notes) return undefined;
+  const match = notes.match(HANDOVER_PARTY_RE);
+  return match ? (match[1].toLowerCase() as HandoverParty) : undefined;
 }
 
 /** Keep structured handover fields after the server round-trip overwrites photo URLs. */
@@ -93,10 +110,9 @@ export function isKeyReturnComplete(job: InspectionJob): boolean {
   if (!job.keyAccess) return true;
   const ret = getKeyWorkflow(job)?.return;
   if (!ret?.stepsConfirmed) return false;
-  if (job.keyAccess.photoRequired) {
-    if (!ret.photoUrls?.length) return false;
-    if (job.source === 'assigned' && !hasServerKeyProof(ret)) return false;
-  }
+  // Returning keys uses the same handover form as collecting — photos always required.
+  if (!ret.photoUrls?.length) return false;
+  if (job.source === 'assigned' && !hasServerKeyProof(ret)) return false;
   return true;
 }
 

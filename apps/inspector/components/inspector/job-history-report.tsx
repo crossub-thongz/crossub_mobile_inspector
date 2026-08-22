@@ -48,9 +48,15 @@ function KeyPhaseSection({
             <p className="text-muted-foreground text-xs">
               Completed {formatDateTime(record.completedAt)}
             </p>
+            {record.handoverParty ? (
+              <p className="text-xs">
+                With {record.handoverParty}
+                {record.contactName ? ` · ${record.contactName}` : ''}
+              </p>
+            ) : null}
             {record.notes && (
-              <p className="rounded-lg border bg-secondary/30 px-3 py-2 text-xs">
-                Notes: {record.notes}
+              <p className="rounded-lg border bg-secondary/30 px-3 py-2 text-xs whitespace-pre-wrap">
+                {record.notes}
               </p>
             )}
             <ProofPhotoGallery photos={photos} emptyLabel="No key proof photos" />
@@ -110,12 +116,12 @@ export function JobHistoryReport({ job }: { job: InspectionJob }) {
       {job.keyAccess && (
         <>
           <KeyPhaseSection
-            title="Key collection"
+            title="Handover (collecting keys)"
             record={report.keyCollect}
             location={job.keyAccess.location}
           />
           <KeyPhaseSection
-            title="Key return"
+            title="Handover (returning keys)"
             record={report.keyReturn}
             location={job.keyAccess.location}
           />

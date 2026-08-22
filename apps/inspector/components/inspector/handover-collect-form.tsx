@@ -31,6 +31,34 @@ import { cn } from '@/lib/utils';
 
 const NOTES_MAX = 200;
 
+export type HandoverFormMode = 'collect' | 'return';
+
+const COPY: Record<
+  HandoverFormMode,
+  {
+    selectWho: string;
+    tenantHint: string;
+    agentHint: string;
+    keysHeading: (party: 'tenant' | 'agent') => string;
+    keySets: string;
+  }
+> = {
+  collect: {
+    selectWho: 'Select who you are receiving the keys from.',
+    tenantHint: 'You have met the tenant and received the keys.',
+    agentHint: 'You have received the keys from the agent.',
+    keysHeading: (party) => `Keys received from ${party}`,
+    keySets: 'Number of key sets received',
+  },
+  return: {
+    selectWho: 'Select who you are handing the keys back to.',
+    tenantHint: 'You have returned the keys to the tenant.',
+    agentHint: 'You have returned the keys to the agent.',
+    keysHeading: (party) => `Keys returned to ${party}`,
+    keySets: 'Number of key sets returned',
+  },
+};
+
 function ContactAction({
   href,
   accent,
@@ -57,6 +85,7 @@ function ContactAction({
 
 export function HandoverCollectForm({
   job,
+  mode = 'collect',
   inspectorName,
   deviceLocation,
   submitting,
@@ -64,12 +93,14 @@ export function HandoverCollectForm({
   onSubmit,
 }: {
   job: InspectionJob;
+  mode?: HandoverFormMode;
   inspectorName?: string | null;
   deviceLocation?: GeoPoint | null;
   submitting?: boolean;
   initial?: KeyPhaseRecord;
   onSubmit: (record: KeyPhaseRecord) => Promise<void>;
 }) {
+  const copy = COPY[mode];
   const [party, setParty] = useState<HandoverParty>(
     initial?.handoverParty ?? 'tenant',
   );
@@ -146,7 +177,7 @@ export function HandoverCollectForm({
       agencyName: party === 'agent' ? agencyName.trim() || undefined : undefined,
       notes: notes.trim() || undefined,
     };
-    record.notes = formatHandoverNotes(record);
+    record.notes = formatHandoverNotes(record, mode);
     await onSubmit(record);
   };
 
@@ -161,9 +192,7 @@ export function HandoverCollectForm({
         <p className="text-muted-foreground text-xs">{job.keyAccess.location}</p>
       ) : null}
 
-      <p className="text-muted-foreground text-xs">
-        Select who you are handing over the keys to.
-      </p>
+      <p className="text-muted-foreground text-xs">{copy.selectWho}</p>
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
@@ -181,7 +210,7 @@ export function HandoverCollectForm({
           <Users className="size-5 text-emerald-400" />
           <p className="mt-2 text-xs font-semibold">Handover with tenant</p>
           <p className="text-muted-foreground mt-1 text-[10px] leading-snug">
-            You have met the tenant and received the keys.
+            {copy.tenantHint}
           </p>
         </button>
         <button
@@ -200,7 +229,7 @@ export function HandoverCollectForm({
           <Building2 className="size-5 text-sky-400" />
           <p className="mt-2 text-xs font-semibold">Handover with agent</p>
           <p className="text-muted-foreground mt-1 text-[10px] leading-snug">
-            You have received the keys from the agent.
+            {copy.agentHint}
           </p>
         </button>
       </div>
@@ -272,11 +301,11 @@ export function HandoverCollectForm({
 
           <section className="space-y-3 rounded-xl border border-border bg-card p-3">
             <p className="text-xs font-semibold">
-              Keys received from {party === 'tenant' ? 'tenant' : 'agent'}
+              {copy.keysHeading(party)}
             </p>
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground text-xs">
-                Number of key sets received
+                {copy.keySets}
               </span>
               <div className="flex items-center gap-2">
                 <button

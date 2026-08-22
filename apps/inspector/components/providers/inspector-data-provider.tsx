@@ -1395,6 +1395,7 @@ export function InspectorDataProvider({
           pendingReturnCustody.current.delete(id);
           apiInspectionIds.current.add(id);
           const serverWorkflow = keyWorkflowFromCustody(custody);
+          const keyWorkflow = mergeKeyPhaseExtras(serverWorkflow, record, 'return');
           setJobs((prev) => {
             const next = prev.map((j) => {
               if (j.id !== id) return j;
@@ -1403,7 +1404,7 @@ export function InspectorDataProvider({
                 status: 'completed' as const,
                 workflowData: {
                   ...j.workflowData,
-                  ...(serverWorkflow ? { keyWorkflow: serverWorkflow } : {}),
+                  keyWorkflow,
                 },
               };
             });

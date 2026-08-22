@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import {
   hasKeyCollectionPhotos,
   hasTenantKeyReport,
-  KEY_CUSTODY_LABEL,
 } from '@/lib/leasing-key-collection';
 import type {
   InspectorLeasingKeyContext,
@@ -58,7 +57,7 @@ export function LeasingKeyCollectionPanel({
 }: {
   context: InspectorLeasingKeyContext;
 }) {
-  const { keyCollection, keyCustody, propertyAddress } = context;
+  const { keyCollection, propertyAddress } = context;
   const photos = keyCollection.photos ?? [];
   const report = keyCollection.tenantReport;
   const photoReady = hasKeyCollectionPhotos(keyCollection);
@@ -71,6 +70,7 @@ export function LeasingKeyCollectionPanel({
 
   return (
     <div className="space-y-3 rounded-lg border border-border/80 bg-secondary/10 p-3">
+      {/* Pickup arrangement — commented out; handover tenant/agent is recorded on Collecting / Returning keys.
       <div className="space-y-0.5">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Pickup arrangement
@@ -100,8 +100,9 @@ export function LeasingKeyCollectionPanel({
       <p className="inline-flex rounded-full border border-border/60 bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
         {KEY_CUSTODY_LABEL[keyCustody]}
       </p>
+      */}
 
-      <div className="space-y-2 border-t border-border/50 pt-3">
+      <div className="space-y-2">
         {!hasTenantEvidence ? (
           <p className="text-[11px] text-muted-foreground">
             No tenant key handover evidence on this case yet.

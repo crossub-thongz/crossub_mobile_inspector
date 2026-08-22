@@ -7,6 +7,7 @@ import type {
 } from '@/lib/types';
 import {
   getKeyWorkflow,
+  parseHandoverPartyFromNotes,
   type KeyPhaseRecord,
   type KeyWorkflowData,
 } from '@/lib/key-access-workflow';
@@ -111,6 +112,7 @@ export function keyWorkflowFromCustody(
       photoConfirmed: custody.collectPhotos.length > 0 || undefined,
       photoUrls: custody.collectPhotos.length ? custody.collectPhotos : undefined,
       notes: custody.collectNotes ?? undefined,
+      handoverParty: parseHandoverPartyFromNotes(custody.collectNotes),
     };
   }
   if (custody.returnComplete && custody.returnedAt) {
@@ -120,6 +122,7 @@ export function keyWorkflowFromCustody(
       photoConfirmed: custody.returnPhotos.length > 0 || undefined,
       photoUrls: custody.returnPhotos.length ? custody.returnPhotos : undefined,
       notes: custody.returnNotes ?? undefined,
+      handoverParty: parseHandoverPartyFromNotes(custody.returnNotes),
     };
   }
   return workflow.collect || workflow.return ? workflow : undefined;
