@@ -16,6 +16,7 @@ import {
   type SectionBeforeAfterDraft,
   mergePhotoUrlLists,
 } from '@/lib/inspection-execution-draft';
+import { mergeSpecialReporting } from '@/lib/special-reporting';
 
 const INGOING_SUFFIX = /\s*\(ingoing\)\s*$/i;
 const OUTGOING_SUFFIX = /\s*\(outgoing\)\s*$/i;
@@ -502,7 +503,9 @@ export function mergeIngoingExecutionDraft(
     customAreas,
     selectedAreaNames: unionNames(saved.selectedAreaNames, baseline.selectedAreaNames),
     areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
-    specialReporting: saved.specialReporting ?? baseline.specialReporting,
+    specialReporting: mergeSpecialReporting(
+      saved.specialReporting ?? baseline.specialReporting,
+    ),
     workflowStep: saved.workflowStep ?? baseline.workflowStep,
   };
 }
@@ -582,7 +585,9 @@ export function mergeOutgoingExecutionDraft(
     customAreas,
     selectedAreaNames: unionNames(saved.selectedAreaNames, baseline.selectedAreaNames),
     areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
-    specialReporting: saved.specialReporting ?? baseline.specialReporting,
+    specialReporting: mergeSpecialReporting(
+      saved.specialReporting ?? baseline.specialReporting,
+    ),
     workflowStep: saved.workflowStep ?? baseline.workflowStep,
   };
 }

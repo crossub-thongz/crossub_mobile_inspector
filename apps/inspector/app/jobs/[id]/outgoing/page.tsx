@@ -48,7 +48,7 @@ import type { OutgoingAreaIssueDraft, OutgoingExecutionDraft } from '@/lib/inspe
 import { jobLookupMiss } from '@/lib/job-lookup';
 import { parseJobWorkspaceView } from '@/lib/job-workspace-view';
 import {
-  defaultSpecialReporting,
+  mergeSpecialReporting,
   specialReportingAsFindings,
 } from '@/lib/special-reporting';
 import {
@@ -1039,7 +1039,7 @@ export default function OutgoingInspectionPage() {
           ? {
               workflowStep: 'special' as const,
               specialReporting:
-                prev.specialReporting ?? defaultSpecialReporting(),
+                mergeSpecialReporting(prev.specialReporting),
             }
           : {}),
       }));
@@ -1093,7 +1093,7 @@ export default function OutgoingInspectionPage() {
       });
     areas.push(
       specialReportingAsFindings(
-        draft.specialReporting ?? defaultSpecialReporting(),
+        mergeSpecialReporting(draft.specialReporting),
       ),
     );
     const saved = await saveInspectionFindings(id, areas);
@@ -1108,14 +1108,17 @@ export default function OutgoingInspectionPage() {
       return;
     }
     clearDraft();
-    submitInspection('Outgoing report sent for account manager review');
+    submitInspection(
+      'Outgoing report sent for account manager review',
+      'Awaiting approval',
+    );
   };
 
   const goToSpecialReporting = () => {
     setDraft((prev) => ({
       ...prev,
       workflowStep: 'special',
-      specialReporting: prev.specialReporting ?? defaultSpecialReporting(),
+      specialReporting: mergeSpecialReporting(prev.specialReporting),
     }));
   };
 
@@ -1161,10 +1164,8 @@ export default function OutgoingInspectionPage() {
       <>
         <JobWorkspaceShell job={job} active="start">
           <div className="space-y-4">
-            <JobWorkflowToolbar job={job} />
-            <InspectionWorkspaceHeader job={job} />
             <SpecialReportingForm
-              value={draft.specialReporting ?? defaultSpecialReporting()}
+              value={mergeSpecialReporting(draft.specialReporting)}
               onChange={(specialReporting) =>
                 setDraft((prev) => ({ ...prev, specialReporting }))
               }

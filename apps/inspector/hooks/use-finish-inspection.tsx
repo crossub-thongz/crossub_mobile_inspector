@@ -82,7 +82,7 @@ export function useFinishInspection(jobId: string) {
   );
 
   const finish = useCallback(
-    (successMessage: string) => {
+    (successMessage: string, title = 'Inspection complete') => {
       const outcome = finishInspectionWorkflow(jobId);
 
       if (outcome === 'needs_key_return') {
@@ -94,7 +94,7 @@ export function useFinishInspection(jobId: string) {
         return;
       }
 
-      celebrate(successMessage);
+      celebrate(successMessage, 'home', title);
     },
     [jobId, finishInspectionWorkflow, celebrate],
   );

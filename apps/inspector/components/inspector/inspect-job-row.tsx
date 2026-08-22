@@ -87,13 +87,25 @@ export function InspectJobRow({
         </div>
       </Link>
 
-      {!completed && !action.disabled ? (
-        <Button size="sm" className="h-7 self-center px-2.5 text-[11px]" asChild>
-          <Link href={action.href} onClick={rememberType}>
-            <Play className="size-3 fill-current" />
-            Start
-          </Link>
-        </Button>
+      {!completed ? (
+        action.disabled ? (
+          <Button
+            size="sm"
+            disabled
+            className="h-7 self-center px-2.5 text-[11px]"
+          >
+            {action.label}
+          </Button>
+        ) : (
+          <Button size="sm" className="h-7 self-center px-2.5 text-[11px]" asChild>
+            <Link href={action.href} onClick={rememberType}>
+              {action.label === 'Re-Open' ? null : (
+                <Play className="size-3 fill-current" />
+              )}
+              {action.label === 'Re-Open' ? 'Re-Open' : 'Start'}
+            </Link>
+          </Button>
+        )
       ) : null}
 
       <Link

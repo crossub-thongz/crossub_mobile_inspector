@@ -76,7 +76,7 @@ import {
   useKeyCollectGate,
 } from '@/hooks/use-key-collect-gate';
 import {
-  defaultSpecialReporting,
+  mergeSpecialReporting,
   specialReportingAsFindings,
 } from '@/lib/special-reporting';
 
@@ -782,7 +782,7 @@ export default function IngoingInspectionPage() {
           ? {
               workflowStep: 'special' as const,
               specialReporting:
-                prev.specialReporting ?? defaultSpecialReporting(),
+                mergeSpecialReporting(prev.specialReporting),
             }
           : {}),
       }));
@@ -819,7 +819,7 @@ export default function IngoingInspectionPage() {
 
     findings.push(
       specialReportingAsFindings(
-        draft.specialReporting ?? defaultSpecialReporting(),
+        mergeSpecialReporting(draft.specialReporting),
       ),
     );
 
@@ -862,14 +862,17 @@ export default function IngoingInspectionPage() {
       return;
     }
     clearDraft();
-    submitInspection('Ingoing report sent for account manager review');
+    submitInspection(
+      'Ingoing report sent for account manager review',
+      'Awaiting approval',
+    );
   };
 
   const goToSpecialReporting = () => {
     setDraft((prev) => ({
       ...prev,
       workflowStep: 'special',
-      specialReporting: prev.specialReporting ?? defaultSpecialReporting(),
+      specialReporting: mergeSpecialReporting(prev.specialReporting),
     }));
   };
 
@@ -916,10 +919,8 @@ export default function IngoingInspectionPage() {
       <>
         <JobWorkspaceShell job={job} active="start">
           <div className="space-y-4">
-            <JobWorkflowToolbar job={job} />
-            <InspectionWorkspaceHeader job={job} />
             <SpecialReportingForm
-              value={draft.specialReporting ?? defaultSpecialReporting()}
+              value={mergeSpecialReporting(draft.specialReporting)}
               onChange={(specialReporting) =>
                 setDraft((prev) => ({ ...prev, specialReporting }))
               }

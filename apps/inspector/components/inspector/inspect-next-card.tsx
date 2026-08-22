@@ -94,22 +94,22 @@ export function InspectNextCard({
         </div>
         <ChevronRight className="text-muted-foreground mt-1 size-5 shrink-0" />
       </Link>
-      {action.disabled ? (
-        <div className="px-4 pb-4">
+      <div className="px-4 pb-4">
+        {action.disabled ? (
           <Button className="w-full" disabled>
             {action.label}
           </Button>
-        </div>
-      ) : (
-        <div className="px-4 pb-4">
+        ) : (
           <Button className="w-full" asChild>
             <Link href={action.href} onClick={rememberType}>
-              <Play className="size-4 fill-current" />
-              Start Inspection
+              {action.label === 'Re-Open' ? null : (
+                <Play className="size-4 fill-current" />
+              )}
+              {action.label === 'Re-Open' ? 'Re-Open' : 'Start Inspection'}
             </Link>
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </article>
   );
 }
