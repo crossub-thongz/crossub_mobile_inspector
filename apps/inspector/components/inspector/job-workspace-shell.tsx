@@ -1,7 +1,5 @@
 'use client';
 
-import { FileText, KeyRound, LayoutGrid, Play } from 'lucide-react';
-
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobWorkspaceNav } from '@/components/inspector/job-workspace-nav';
 import { INSPECTION_PAY_LABEL } from '@/constants/inspection';
@@ -22,8 +20,14 @@ export function JobWorkspaceShell({
       title={`${INSPECTION_PAY_LABEL[job.type] ?? job.type} Inspection`}
       backHref={jobDetail(job.id)}
       variant="workspace"
+      hideAvailability={active === 'start'}
     >
-      <JobWorkspaceNav job={job} active={active} />
+      <div
+        className="sticky z-30 bg-background"
+        style={{ top: 'var(--inspector-header-height, 3.5rem)' }}
+      >
+        <JobWorkspaceNav job={job} active={active} />
+      </div>
       {children}
     </InspectorShell>
   );

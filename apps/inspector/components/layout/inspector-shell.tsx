@@ -84,6 +84,7 @@ export function InspectorShell({
   backHref,
   variant = 'default',
   bare = false,
+  hideAvailability = false,
 }: {
   children: React.ReactNode;
   title?: string;
@@ -91,6 +92,8 @@ export function InspectorShell({
   variant?: 'default' | 'home' | 'workspace';
   /** No app header — page supplies its own top bar (e.g. Crossub Inspection list). */
   bare?: boolean;
+  /** Hide Messages / Receiving FABs so a sticky inspect footer can sit above the tab bar. */
+  hideAvailability?: boolean;
 }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -106,7 +109,10 @@ export function InspectorShell({
   );
   const isMessageThread = /^\/messages\/[^/]+\/?$/.test(pathname);
   const showAvailabilityBubble =
-    Boolean(user) && !isPublicRoute(pathname) && !isMessageThread;
+    Boolean(user) &&
+    !isPublicRoute(pathname) &&
+    !isMessageThread &&
+    !hideAvailability;
   const hardLeaveFromWorkflow = isInspectionWorkflowPath(pathname);
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const unreadMessages = messages.reduce((s, m) => s + m.unread, 0);
@@ -151,6 +157,11 @@ export function InspectorShell({
         'mx-auto flex max-w-lg flex-col bg-background',
         isMessageThread ? 'h-dvh overflow-hidden' : 'min-h-screen',
       )}
+      style={
+        {
+          '--inspector-header-height': `${headerHeight}px`,
+        } as React.CSSProperties
+      }
     >
       {!bare && (
       <header
@@ -415,7 +426,9 @@ export function InspectorShell({
             : // Messages + Receiving FABs float over the last ~200px above the nav.
               showAvailabilityBubble
               ? 'pb-52'
-              : 'pb-24',
+              : hideAvailability
+                ? 'pb-40'
+                : 'pb-24',
         )}
         style={bare ? { paddingTop: 8 } : { paddingTop: headerHeight }}
       >

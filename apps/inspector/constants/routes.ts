@@ -55,6 +55,10 @@ export const jobHistory = (id: string) => `/jobs/${id}/history`;
 export const jobKeys = (id: string, tab?: 'collect' | 'return') =>
   tab ? `/jobs/${id}/keys?tab=${tab}` : `/jobs/${id}/keys`;
 export const jobWorkflow = (id: string, type: string) => `/jobs/${id}/${type}`;
+export const jobAreas = (id: string, type: string) =>
+  `/jobs/${id}/${type}?view=areas`;
+export const jobInspect = (id: string, type: string) =>
+  `/jobs/${id}/${type}?view=inspect`;
 export const inspectionsByType = (type: string) => `/inspections?type=${type}`;
 export const inspectionsAssignedByCrossub = () =>
   '/inspections?section=crossub';

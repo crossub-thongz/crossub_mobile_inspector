@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, ListFilter } from 'lucide-react';
 
 import { AddSectionControl } from '@/components/inspector/add-section-control';
 import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
@@ -12,11 +12,15 @@ import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
 import {
   allGoodMarks,
   emptyItemMarks,
+  marksAreAllGood,
+  marksHaveNo,
   type ItemConditionKey,
   type ItemConditionMarks,
 } from '@/lib/item-condition-marks';
 import { validateUniqueLabel } from '@/lib/inspection-layout-edit';
 import { buildSectionPickerOptions } from '@/lib/inspection-section-utils';
+
+type ItemFilter = 'all' | 'issues' | 'unmarked';
 
 type InspectionSectionPhotosProps = {
   definition: InspectionAreaDefinition;
@@ -62,14 +66,51 @@ export function InspectionSectionPhotos({
   onRemovePhoto,
 }: InspectionSectionPhotosProps) {
   const [renameFrom, setRenameFrom] = useState<string | null>(null);
+  const [openName, setOpenName] = useState<string | null>(null);
+  const [filter, setFilter] = useState<ItemFilter>('all');
 
   const sectionPickerOptions = useMemo(
     () => buildSectionPickerOptions(definition),
     [definition],
   );
 
+  const visibleSections = activeSections.filter((section) => {
+    const marks = itemMarks?.[section];
+    if (filter === 'issues') return marksHaveNo(marks);
+    if (filter === 'unmarked') return !marksAreAllGood(marks) && !marksHaveNo(marks);
+    return true;
+  });
+
+  const cycleFilter = () => {
+    setFilter((current) =>
+      current === 'all' ? 'issues' : current === 'issues' ? 'unmarked' : 'all',
+    );
+  };
+
   return (
     <div className="space-y-4">
+      {onMarkAllGood && activeSections.length > 0 ? (
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Mark all items</p>
+            <p className="text-muted-foreground text-[11px]">
+              Quickly mark all items in this room.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-emerald-400 h-8 px-2 text-xs"
+            disabled={busy}
+            onClick={onMarkAllGood}
+          >
+            <Check className="size-3.5" />
+            All good
+          </Button>
+        </div>
+      ) : null}
+
       {activeSections.length === 0 ? (
         <p className="text-muted-foreground text-xs">
           No items yet. Add one below, then mark Clean / Undamaged / Working.
@@ -77,61 +118,69 @@ export function InspectionSectionPhotos({
       ) : (
         <>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">
+            <p className="text-sm font-semibold">
               Items in this area
-              <span className="bg-primary/20 text-primary ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold">
+              <span className="bg-primary text-primary-foreground ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold">
                 {activeSections.length}
               </span>
             </p>
-            {onMarkAllGood ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-emerald-400 h-8 px-2 text-xs"
-                disabled={busy}
-                onClick={onMarkAllGood}
-              >
-                <Check className="size-3.5" />
-                All good
-              </Button>
-            ) : null}
+            <button
+              type="button"
+              className="text-muted-foreground inline-flex items-center gap-1 text-xs font-medium"
+              onClick={cycleFilter}
+            >
+              <ListFilter className="size-3.5" />
+              {filter === 'all' ? 'Filters' : filter === 'issues' ? 'Issues' : 'Unmarked'}
+            </button>
           </div>
-          <p className="text-muted-foreground text-[11px]">
-            Drag a row to reorder. Tap an item to expand. Delete removes it.
-          </p>
           <ul className="space-y-2">
-            <DraggableNamedList
-              items={activeSections}
-              variant="card"
-              disabled={busy}
-              onReorder={onMoveSection}
-              renderItem={(section) => {
-                const urls = photosBySection[section] ?? [];
-                return (
-                  <InspectionItemAccordion
-                    name={section}
-                    marks={itemMarks?.[section] ?? emptyItemMarks()}
-                    comment={itemComments?.[section] ?? ''}
-                    photoUrls={urls}
-                    busy={busy}
-                    photoUploading={photoUploading}
-                    onRename={() => setRenameFrom(section)}
-                    onRemove={() => onRemoveSection(section)}
-                    onChangeMarks={(marks) => onChangeMarks(section, marks)}
-                    onChangeComment={(comment) => onChangeComment(section, comment)}
-                    onAddFiles={(files) => onAddFiles(section, files)}
-                    onAddDataUrl={(dataUrl) => onAddDataUrl(section, dataUrl)}
-                    onAddDataUrls={
-                      onAddDataUrls
-                        ? (urlsToAdd) => onAddDataUrls(section, urlsToAdd)
-                        : undefined
-                    }
-                    onRemovePhoto={(photoIndex) => onRemovePhoto(section, photoIndex)}
-                  />
-                );
-              }}
-            />
+            {visibleSections.length === 0 ? (
+              <li className="text-muted-foreground rounded-xl border border-border px-3 py-4 text-center text-xs">
+                No items match this filter.
+              </li>
+            ) : (
+              <DraggableNamedList
+                items={visibleSections}
+                variant="card"
+                disabled={busy}
+                onReorder={(from, to) => {
+                  const fromName = visibleSections[from];
+                  const toName = visibleSections[to];
+                  if (!fromName || !toName) return;
+                  onMoveSection(
+                    activeSections.indexOf(fromName),
+                    activeSections.indexOf(toName),
+                  );
+                }}
+                renderItem={(section) => {
+                  const urls = photosBySection[section] ?? [];
+                  return (
+                    <InspectionItemAccordion
+                      name={section}
+                      marks={itemMarks?.[section] ?? emptyItemMarks()}
+                      comment={itemComments?.[section] ?? ''}
+                      photoUrls={urls}
+                      busy={busy}
+                      photoUploading={photoUploading}
+                      open={openName === section}
+                      onOpenChange={(next) => setOpenName(next ? section : null)}
+                      onRename={() => setRenameFrom(section)}
+                      onRemove={() => onRemoveSection(section)}
+                      onChangeMarks={(marks) => onChangeMarks(section, marks)}
+                      onChangeComment={(comment) => onChangeComment(section, comment)}
+                      onAddFiles={(files) => onAddFiles(section, files)}
+                      onAddDataUrl={(dataUrl) => onAddDataUrl(section, dataUrl)}
+                      onAddDataUrls={
+                        onAddDataUrls
+                          ? (urlsToAdd) => onAddDataUrls(section, urlsToAdd)
+                          : undefined
+                      }
+                      onRemovePhoto={(photoIndex) => onRemovePhoto(section, photoIndex)}
+                    />
+                  );
+                }}
+              />
+            )}
           </ul>
         </>
       )}

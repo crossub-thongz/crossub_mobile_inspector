@@ -1,6 +1,6 @@
 'use client';
 
-import { Check } from 'lucide-react';
+import { Check, ListFilter } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { AddSectionControl } from '@/components/inspector/add-section-control';
@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
 import {
   emptyItemMarks,
+  marksAreAllGood,
+  marksHaveNo,
   type ItemConditionKey,
   type ItemConditionMarks,
 } from '@/lib/item-condition-marks';
@@ -88,14 +90,45 @@ export function OutgoingSectionPhotos({
   onRemovePhoto,
 }: OutgoingSectionPhotosProps) {
   const [renameFrom, setRenameFrom] = useState<string | null>(null);
+  const [openName, setOpenName] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'issues' | 'unmarked'>('all');
 
   const sectionPickerOptions = useMemo(
     () => buildSectionPickerOptions(definition),
     [definition],
   );
 
+  const visibleSections = activeSections.filter((section) => {
+    const marks = itemMarks?.[section];
+    if (filter === 'issues') return marksHaveNo(marks);
+    if (filter === 'unmarked') return !marksAreAllGood(marks) && !marksHaveNo(marks);
+    return true;
+  });
+
   return (
     <div className="space-y-4">
+      {onMarkAllGood && activeSections.length > 0 ? (
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Mark all items</p>
+            <p className="text-muted-foreground text-[11px]">
+              Quickly mark all items in this room.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-emerald-400 h-8 px-2 text-xs"
+            disabled={busy}
+            onClick={onMarkAllGood}
+          >
+            <Check className="size-3.5" />
+            All good
+          </Button>
+        </div>
+      ) : null}
+
       {activeSections.length === 0 ? (
         <p className="text-muted-foreground text-xs">
           No items yet. Add one below, then mark Clean / Undamaged / Working.
@@ -103,104 +136,116 @@ export function OutgoingSectionPhotos({
       ) : (
         <>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">
+            <p className="text-sm font-semibold">
               Items in this area
-              <span className="bg-primary/20 text-primary ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold">
+              <span className="bg-primary text-primary-foreground ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold">
                 {activeSections.length}
               </span>
             </p>
-            {onMarkAllGood ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-emerald-400 h-8 px-2 text-xs"
-                disabled={busy}
-                onClick={onMarkAllGood}
-              >
-                <Check className="size-3.5" />
-                All good
-              </Button>
-            ) : null}
+            <button
+              type="button"
+              className="text-muted-foreground inline-flex items-center gap-1 text-xs font-medium"
+              onClick={() =>
+                setFilter((current) =>
+                  current === 'all' ? 'issues' : current === 'issues' ? 'unmarked' : 'all',
+                )
+              }
+            >
+              <ListFilter className="size-3.5" />
+              {filter === 'all' ? 'Filters' : filter === 'issues' ? 'Issues' : 'Unmarked'}
+            </button>
           </div>
-          <p className="text-muted-foreground text-[11px]">
-            Drag a row to reorder. Tap an item to expand. Delete removes it.
-          </p>
           <ul className="space-y-2">
-            <DraggableNamedList
-              items={activeSections}
-              variant="card"
-              disabled={busy}
-              onReorder={onMoveSection}
-              renderItem={(section) => {
-                const photos = photosBySection[section] ?? {
-                  ingoingPhotoUrls: [],
-                  outgoingPhotoUrls: [],
-                };
-                const sectionIngoingLocked =
-                  ingoingReadOnly && photos.ingoingPhotoUrls.length > 0;
-                return (
-                  <InspectionItemAccordion
-                    name={section}
-                    marks={itemMarks?.[section] ?? emptyItemMarks()}
-                    comment={itemComments?.[section] ?? ''}
-                    photoUrls={[]}
-                    busy={busy}
-                    photoUploading={photoUploading}
-                    showItemPhotos={false}
-                    onRename={() => setRenameFrom(section)}
-                    onRemove={() => onRemoveSection(section)}
-                    onChangeMarks={(marks) => onChangeMarks(section, marks)}
-                    onChangeComment={(comment) => onChangeComment(section, comment)}
-                    extra={
-                      <div className="grid grid-cols-2 gap-3">
-                        <BeforeAfterPhotoColumn
-                          title="Ingoing"
-                          photoUrls={photos.ingoingPhotoUrls}
-                          uploading={photoUploading}
-                          disabled={busy || sectionIngoingLocked}
-                          sessionKey={`${section}-ingoing`}
-                          onAddFiles={(files) => onAddFiles(section, 'ingoing', files)}
-                          onAddDataUrl={(dataUrl) =>
-                            onAddDataUrl(section, 'ingoing', dataUrl)
-                          }
-                          onAddDataUrls={
-                            onAddDataUrls
-                              ? (urls) => onAddDataUrls(section, 'ingoing', urls)
-                              : undefined
-                          }
-                          onRemove={
-                            sectionIngoingLocked
-                              ? undefined
-                              : (photoIndex) =>
-                                  onRemovePhoto(section, 'ingoing', photoIndex)
-                          }
-                        />
-                        <BeforeAfterPhotoColumn
-                          title={currentLabel}
-                          photoUrls={photos.outgoingPhotoUrls}
-                          uploading={photoUploading}
-                          disabled={busy}
-                          sessionKey={`${section}-outgoing`}
-                          onAddFiles={(files) => onAddFiles(section, 'outgoing', files)}
-                          onAddDataUrl={(dataUrl) =>
-                            onAddDataUrl(section, 'outgoing', dataUrl)
-                          }
-                          onAddDataUrls={
-                            onAddDataUrls
-                              ? (urls) => onAddDataUrls(section, 'outgoing', urls)
-                              : undefined
-                          }
-                          onRemove={(photoIndex) =>
-                            onRemovePhoto(section, 'outgoing', photoIndex)
-                          }
-                        />
-                      </div>
-                    }
-                  />
-                );
-              }}
-            />
+            {visibleSections.length === 0 ? (
+              <li className="text-muted-foreground rounded-xl border border-border px-3 py-4 text-center text-xs">
+                No items match this filter.
+              </li>
+            ) : (
+              <DraggableNamedList
+                items={visibleSections}
+                variant="card"
+                disabled={busy}
+                onReorder={(from, to) => {
+                  const fromName = visibleSections[from];
+                  const toName = visibleSections[to];
+                  if (!fromName || !toName) return;
+                  onMoveSection(
+                    activeSections.indexOf(fromName),
+                    activeSections.indexOf(toName),
+                  );
+                }}
+                renderItem={(section) => {
+                  const photos = photosBySection[section] ?? {
+                    ingoingPhotoUrls: [],
+                    outgoingPhotoUrls: [],
+                  };
+                  const sectionIngoingLocked =
+                    ingoingReadOnly && photos.ingoingPhotoUrls.length > 0;
+                  return (
+                    <InspectionItemAccordion
+                      name={section}
+                      marks={itemMarks?.[section] ?? emptyItemMarks()}
+                      comment={itemComments?.[section] ?? ''}
+                      photoUrls={[]}
+                      busy={busy}
+                      photoUploading={photoUploading}
+                      showItemPhotos={false}
+                      open={openName === section}
+                      onOpenChange={(next) => setOpenName(next ? section : null)}
+                      onRename={() => setRenameFrom(section)}
+                      onRemove={() => onRemoveSection(section)}
+                      onChangeMarks={(marks) => onChangeMarks(section, marks)}
+                      onChangeComment={(comment) => onChangeComment(section, comment)}
+                      extra={
+                        <div className="grid grid-cols-2 gap-3">
+                          <BeforeAfterPhotoColumn
+                            title="Ingoing"
+                            photoUrls={photos.ingoingPhotoUrls}
+                            uploading={photoUploading}
+                            disabled={busy || sectionIngoingLocked}
+                            sessionKey={`${section}-ingoing`}
+                            onAddFiles={(files) => onAddFiles(section, 'ingoing', files)}
+                            onAddDataUrl={(dataUrl) =>
+                              onAddDataUrl(section, 'ingoing', dataUrl)
+                            }
+                            onAddDataUrls={
+                              onAddDataUrls
+                                ? (urls) => onAddDataUrls(section, 'ingoing', urls)
+                                : undefined
+                            }
+                            onRemove={
+                              sectionIngoingLocked
+                                ? undefined
+                                : (photoIndex) =>
+                                    onRemovePhoto(section, 'ingoing', photoIndex)
+                            }
+                          />
+                          <BeforeAfterPhotoColumn
+                            title={currentLabel}
+                            photoUrls={photos.outgoingPhotoUrls}
+                            uploading={photoUploading}
+                            disabled={busy}
+                            sessionKey={`${section}-outgoing`}
+                            onAddFiles={(files) => onAddFiles(section, 'outgoing', files)}
+                            onAddDataUrl={(dataUrl) =>
+                              onAddDataUrl(section, 'outgoing', dataUrl)
+                            }
+                            onAddDataUrls={
+                              onAddDataUrls
+                                ? (urls) => onAddDataUrls(section, 'outgoing', urls)
+                                : undefined
+                            }
+                            onRemove={(photoIndex) =>
+                              onRemovePhoto(section, 'outgoing', photoIndex)
+                            }
+                          />
+                        </div>
+                      }
+                    />
+                  );
+                }}
+              />
+            )}
           </ul>
         </>
       )}

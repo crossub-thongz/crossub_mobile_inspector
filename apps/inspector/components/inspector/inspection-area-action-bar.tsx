@@ -1,8 +1,9 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export function InspectionAreaActionBar({
   checked,
@@ -10,7 +11,6 @@ export function InspectionAreaActionBar({
   issues,
   busy,
   isLast,
-  onBack,
   onNext,
 }: {
   checked: number;
@@ -18,32 +18,50 @@ export function InspectionAreaActionBar({
   issues: number;
   busy?: boolean;
   isLast: boolean;
-  onBack: () => void;
+  onBack?: () => void;
   onNext: () => void;
 }) {
+  const ratio = total === 0 ? 0 : Math.min(checked / total, 1);
+  const size = 44;
+  const stroke = 4;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+
   return (
     <div className="flex items-center gap-3">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        className="size-10 shrink-0"
-        disabled={busy}
-        onClick={onBack}
-        aria-label="Back"
-      >
-        <ChevronLeft className="size-4" />
-      </Button>
+      <div className="relative size-11 shrink-0">
+        <svg width={size} height={size} className="-rotate-90">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            className="stroke-secondary"
+            strokeWidth={stroke}
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            className="stroke-primary"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - ratio)}
+          />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold tabular-nums">
+          {checked}/{total}
+        </span>
+      </div>
       <div className="min-w-0 flex-1">
-        <p className="text-foreground text-xs font-semibold">
-          {checked}/{total} Items checked
-        </p>
+        <p className="text-foreground text-xs font-semibold">Items checked</p>
         <p
-          className={
-            issues > 0
-              ? 'text-destructive text-[11px]'
-              : 'text-muted-foreground text-[11px]'
-          }
+          className={cn(
+            'text-[11px]',
+            issues > 0 ? 'text-destructive' : 'text-muted-foreground',
+          )}
         >
           {issues > 0
             ? `${issues} issue${issues === 1 ? '' : 's'} found`
@@ -52,7 +70,7 @@ export function InspectionAreaActionBar({
       </div>
       <Button
         type="button"
-        className="h-11 min-w-[8.5rem] flex-[1.2]"
+        className="h-11 min-w-[8.5rem] flex-[1.1]"
         disabled={busy}
         onClick={onNext}
       >

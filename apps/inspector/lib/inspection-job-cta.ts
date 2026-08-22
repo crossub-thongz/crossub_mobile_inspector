@@ -1,4 +1,4 @@
-import { jobDetail, jobHistory, jobWorkflow } from '@/constants/routes';
+import { jobAreas, jobInspect, jobDetail, jobHistory } from '@/constants/routes';
 import { jobStartCta } from '@/lib/inspection-start-flow';
 import type { InspectionJob } from '@/lib/types';
 
@@ -37,7 +37,7 @@ export function jobPrimaryAction(
     };
   }
   if (canReopenInspection(job)) {
-    return { label: 'Re-Open', href: jobWorkflow(job.id, job.type), disabled: false };
+    return { label: 'Re-Open', href: jobInspect(job.id, job.type), disabled: false };
   }
   if (job.awaitingAgentPayment) {
     return {
@@ -49,7 +49,7 @@ export function jobPrimaryAction(
   }
   return {
     label: started ? 'View' : jobStartCta(job.type, started),
-    href: jobWorkflow(job.id, job.type),
+    href: started ? jobInspect(job.id, job.type) : jobAreas(job.id, job.type),
     disabled: false,
   };
 }

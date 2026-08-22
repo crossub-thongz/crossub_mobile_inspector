@@ -17,7 +17,6 @@ import {
   jobDetail,
   jobHistory,
   jobKeys,
-  jobWorkflow,
   ROUTES,
 } from '@/constants/routes';
 import { isPoolJob } from '@/lib/inspector-job-filters';
@@ -47,11 +46,12 @@ export default function JobDetailPage() {
 
   const poolPreview = isPoolJob(job);
   const backHref = poolPreview ? ROUTES.JOB_POOL : ROUTES.INSPECTIONS;
-  const workflowHref = jobWorkflow(job.id, job.type);
   const workflowStarted =
     (job.workflowStep ?? 0) > 0 ||
     hasInspectionExecutionDraft(job) ||
     job.status === 'in_progress';
+  const primaryAction = jobPrimaryAction(job, workflowStarted);
+  const workflowHref = primaryAction.href;
   const keyCollectDone = isKeyCollectComplete(job);
   const keyReturnDone = isKeyReturnComplete(job);
   const inspectionFinished = isInspectionWorkflowFinished(job);
@@ -122,7 +122,7 @@ export default function JobDetailPage() {
           ? 'Return keys'
           : handoverNext
             ? 'Continue to Handover'
-            : jobPrimaryAction(job, workflowStarted).label;
+            : primaryAction.label;
   const ctaDisabled =
     paymentBlocked ||
     job.status === 'awaiting_approval' ||

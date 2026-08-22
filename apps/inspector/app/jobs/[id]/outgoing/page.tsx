@@ -1,14 +1,14 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { InspectionAreaActionBar } from '@/components/inspector/inspection-area-action-bar';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
 import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
+import { InspectionInspectChrome } from '@/components/inspector/inspection-inspect-chrome';
 import { InspectionWorkspaceHeader } from '@/components/inspector/inspection-workspace-header';
 import {
   OutgoingSectionPhotos,
@@ -22,13 +22,12 @@ import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar'
 import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   sectionAreaName,
 } from '@/constants/inspection-areas';
-import { jobDetail, ROUTES } from '@/constants/routes';
+import { jobDetail, jobInspect, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
 import { inspectionAreaOverallPhotoLabel, inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
@@ -47,6 +46,7 @@ import {
 } from '@/lib/inspection-execution-hydration';
 import type { OutgoingAreaIssueDraft, OutgoingExecutionDraft } from '@/lib/inspection-execution-draft';
 import { jobLookupMiss } from '@/lib/job-lookup';
+import { parseJobWorkspaceView } from '@/lib/job-workspace-view';
 import {
   defaultSpecialReporting,
   specialReportingAsFindings,
@@ -117,6 +117,8 @@ function emptyAreaIssue(
 
 export default function OutgoingInspectionPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     getJob,
     commitInspectionAreaPhotos,
@@ -156,7 +158,6 @@ export default function OutgoingInspectionPage() {
     photoInflight.current = Math.max(0, photoInflight.current - 1);
     if (photoInflight.current === 0) setPhotoBusy(false);
   };
-  const [addAreaOpen, setAddAreaOpen] = useState(false);
   const [loadingReference, setLoadingReference] = useState(apiConnected);
   const [ingoingFromReference, setIngoingFromReference] = useState(false);
   const [referenceAreas, setReferenceAreas] = useState<
@@ -346,12 +347,17 @@ export default function OutgoingInspectionPage() {
     draft.issues,
     customAreas,
   );
+  const workspaceView = parseJobWorkspaceView(
+    searchParams.get('view'),
+    areaSetupComplete,
+  );
+  const inspectRequested = searchParams.get('view') === 'inspect';
+  const canInspect =
+    areaSetupComplete || (inspectRequested && selectedAreaNames.length > 0);
   const areaCatalog = useMemo(
     () =>
-      areaSetupComplete
-        ? buildExecutionAreaCatalog(selectedAreaNames, customAreas)
-        : [],
-    [areaSetupComplete, selectedAreaNames, customAreas],
+      canInspect ? buildExecutionAreaCatalog(selectedAreaNames, customAreas) : [],
+    [canInspect, selectedAreaNames, customAreas],
   );
   const areaIndex = Math.min(
     Math.max(draft.areaIndex, 0),
@@ -379,6 +385,38 @@ export default function OutgoingInspectionPage() {
       return { ...prev, selectedAreaNames: selected, issues: record };
     });
   }, [draft.areaSetupComplete, ingoingAreaPlan, setDraft]);
+
+  useEffect(() => {
+    if (searchParams.get('view') !== 'inspect') return;
+    setDraft((prev) => {
+      if (prev.areaSetupComplete) return prev;
+      const custom = prev.customAreas ?? [];
+      const selected = effectiveSelectedAreaNames(
+        prev.selectedAreaNames,
+        prev.issues,
+        custom,
+      );
+      if (selected.length === 0) return prev;
+      const seeded = seedAreasForInspectionStart(prev.issues, selected, {
+        sectionsFor: (name) =>
+          sectionsForAvailableArea(name, custom, ingoingAreaPlan, 'outgoing'),
+        emptyEntry: (name) => emptyAreaIssue(name, undefined, custom),
+        emptyPhotos: emptySectionPhotos,
+      });
+      const { issues: withReference } = seedOutgoingIssuesFromReference(seeded.record, {
+        referenceAreas,
+        plan: ingoingAreaPlan,
+        customAreas: custom,
+        areaNames: selected,
+      });
+      return {
+        ...prev,
+        selectedAreaNames: selected,
+        areaSetupComplete: true,
+        issues: withReference,
+      };
+    });
+  }, [searchParams, setDraft, ingoingAreaPlan, referenceAreas]);
 
   const handleAddCustomArea = (name: string, sectionMode: CustomAreaSectionMode) => {
     const classified = classifyAddedAreaName(name);
@@ -528,7 +566,7 @@ export default function OutgoingInspectionPage() {
         ...prev,
         selectedAreaNames: selected,
         areaSetupComplete: true,
-        areaIndex: 0,
+        areaIndex: prev.areaSetupComplete ? prev.areaIndex : 0,
         issues: withReference,
       };
     });
@@ -562,7 +600,7 @@ export default function OutgoingInspectionPage() {
     return <KeyCollectionRequired jobId={id} />;
   }
 
-  if (!areaSetupComplete) {
+  if (workspaceView === 'areas' || !canInspect) {
     return (
       <JobWorkspaceShell job={job} active="areas">
         <InspectionAreaSetupPanel
@@ -571,7 +609,7 @@ export default function OutgoingInspectionPage() {
           selectedAreaNames={selectedAreaNames}
           customAreas={customAreas}
           existingAreaNames={ingoingExistingAreas}
-          continuing={selectedAreaNames.length > 0 || areaIndex > 0}
+          continuing={areaSetupComplete || selectedAreaNames.length > 0 || areaIndex > 0}
           layoutSource={
             ingoingExistingAreas.length > 0 ? 'copied' : selectedAreaNames.length > 0 ? 'template' : 'manual'
           }
@@ -582,7 +620,10 @@ export default function OutgoingInspectionPage() {
           onRenameArea={handleRenameSetupArea}
           onMoveArea={handleMoveSetupArea}
           onAddAllExisting={ingoingExistingAreas.length > 0 ? addAllFromIngoing : undefined}
-          onComplete={completeAreaSetup}
+          onComplete={() => {
+            completeAreaSetup();
+            router.replace(jobInspect(id, job.type));
+          }}
         />
       </JobWorkspaceShell>
     );
@@ -623,14 +664,6 @@ export default function OutgoingInspectionPage() {
   const goToArea = (index: number) => {
     if (index < 0 || index >= areaCatalog.length) return;
     setDraft((prev) => ({ ...prev, areaIndex: index }));
-  };
-
-  const goBackArea = () => {
-    if (areaIndex > 0) {
-      goToArea(areaIndex - 1);
-      return;
-    }
-    setDraft((prev) => ({ ...prev, areaSetupComplete: false }));
   };
 
   const seedSectionIngoing = (section: string): string[] => {
@@ -1126,7 +1159,7 @@ export default function OutgoingInspectionPage() {
   if (draft.workflowStep === 'special') {
     return (
       <>
-        <JobWorkspaceShell job={job} active="areas">
+        <JobWorkspaceShell job={job} active="start">
           <div className="space-y-4">
             <JobWorkflowToolbar job={job} />
             <InspectionWorkspaceHeader job={job} />
@@ -1151,167 +1184,150 @@ export default function OutgoingInspectionPage() {
 
   return (
     <>
-      <JobWorkspaceShell job={job} active="areas">
-        <div className="space-y-4">
-          <JobWorkflowToolbar job={job} />
-          <InspectionWorkspaceHeader job={job} />
-
+      <JobWorkspaceShell job={job} active="start">
+        <InspectionInspectChrome
+          nav={
+            <InspectionAreaNav
+              areaCatalog={areaCatalog}
+              areaIndex={areaIndex}
+              progressTone={progressTone}
+              onGoToArea={goToArea}
+            />
+          }
+          footer={
+            <InspectionAreaActionBar
+              checked={issue.available === false ? 0 : checkedCount}
+              total={issue.available === false ? 0 : issue.activeSections.length}
+              issues={issue.available === false ? 0 : issueCount}
+              busy={busy || loadingReference}
+              isLast={isLast}
+              onNext={() =>
+                issue.available === false
+                  ? isLast
+                    ? completeFromSkippedLast()
+                    : goToArea(areaIndex + 1)
+                  : void next()
+              }
+            />
+          }
+        >
           {loadingReference ? (
             <p className="text-muted-foreground text-xs">
               Loading ingoing reference photos…
             </p>
           ) : null}
 
-          <InspectionAreaNav
-            areaCatalog={areaCatalog}
-            areaIndex={areaIndex}
-            progressTone={progressTone}
-            onGoToArea={goToArea}
-            onAddArea={() => setAddAreaOpen(true)}
-          />
-
           {issue.available === false ? (
-            <Card>
-              <CardContent className="space-y-3 pt-6">
-                <p className="text-muted-foreground text-sm">
-                  This area was marked unavailable. You can change that and photograph
-                  it, or continue.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={loadingReference}
-                  onClick={() => markAvailable(true)}
-                >
-                  Mark available & photograph
-                </Button>
-                <InspectionAreaActionBar
-                  checked={0}
-                  total={0}
-                  issues={0}
-                  busy={busy || loadingReference}
-                  isLast={isLast}
-                  onBack={goBackArea}
-                  onNext={() =>
-                    isLast ? completeFromSkippedLast() : goToArea(areaIndex + 1)
-                  }
-                />
-              </CardContent>
-            </Card>
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-sm">
+                This area was marked unavailable. You can change that and photograph
+                it, or continue.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={loadingReference}
+                onClick={() => markAvailable(true)}
+              >
+                Mark available & photograph
+              </Button>
+            </div>
           ) : (
-            <Card>
-              <CardContent className="space-y-4 pt-6">
-                <InspectionAreaPhotosField
-                  label="Area photos"
-                  photoUrls={issue.areaPhotos ?? []}
-                  uploading={photoBusy || loadingReference}
-                  disabled={formBusy || loadingReference}
-                  sessionKey={area}
-                  emptyLabel="Snap several photos of this room, then attach them here."
-                  onAddFiles={(files) => addAreaPhotos(files)}
-                  onAddDataUrl={(dataUrl) => addAreaPhotos([dataUrl])}
-                  onAddDataUrls={(urls) => addAreaPhotos(urls)}
-                  onRemove={(index) =>
-                    updateIssue({
-                      areaPhotos: (issue.areaPhotos ?? []).filter((_, i) => i !== index),
-                    })
-                  }
+            <>
+              <InspectionAreaPhotosField
+                label="Area photos"
+                photoUrls={issue.areaPhotos ?? []}
+                uploading={photoBusy || loadingReference}
+                disabled={formBusy || loadingReference}
+                sessionKey={area}
+                emptyLabel="Snap several photos of this room, then attach them here."
+                onAddFiles={(files) => addAreaPhotos(files)}
+                onAddDataUrl={(dataUrl) => addAreaPhotos([dataUrl])}
+                onAddDataUrls={(urls) => addAreaPhotos(urls)}
+                onRemove={(index) =>
+                  updateIssue({
+                    areaPhotos: (issue.areaPhotos ?? []).filter((_, i) => i !== index),
+                  })
+                }
+              />
+
+              <OutgoingSectionPhotos
+                definition={areaDef}
+                activeSections={issue.activeSections}
+                photosBySection={issue.photosBySection}
+                itemMarks={issue.itemMarks}
+                itemComments={issue.itemComments}
+                busy={formBusy || loadingReference}
+                photoUploading={photoBusy}
+                ingoingReadOnly={ingoingFromReference}
+                onAddSection={addSection}
+                onRemoveSection={removeSection}
+                onRenameSection={renameSection}
+                onMoveSection={moveSection}
+                onChangeMarks={changeMarks}
+                onFillColumn={fillColumn}
+                onMarkAllGood={markAllGood}
+                onChangeComment={changeItemComment}
+                onAddFiles={(section, side, files) =>
+                  addLocalPhotos(section, side, files)
+                }
+                onAddDataUrl={(section, side, dataUrl) =>
+                  addLocalPhotos(section, side, [dataUrl])
+                }
+                onAddDataUrls={(section, side, urls) =>
+                  addLocalPhotos(section, side, urls)
+                }
+                onRemovePhoto={removePhoto}
+              />
+
+              {ingoingFromReference ? (
+                <p className="text-muted-foreground text-[11px]">
+                  Ingoing photos are from the property&apos;s latest ingoing report
+                  and can&apos;t be replaced here.
+                </p>
+              ) : null}
+
+              <div className="space-y-2">
+                <Label>Issue notes</Label>
+                <Input
+                  value={issue.note}
+                  onChange={(e) => updateIssue({ note: e.target.value })}
+                  placeholder="Damage, cleaning, missing items..."
                 />
+              </div>
 
-                <OutgoingSectionPhotos
-                  definition={areaDef}
-                  activeSections={issue.activeSections}
-                  photosBySection={issue.photosBySection}
-                  itemMarks={issue.itemMarks}
-                  itemComments={issue.itemComments}
-                  busy={formBusy || loadingReference}
-                  photoUploading={photoBusy}
-                  ingoingReadOnly={ingoingFromReference}
-                  onAddSection={addSection}
-                  onRemoveSection={removeSection}
-                  onRenameSection={renameSection}
-                  onMoveSection={moveSection}
-                  onChangeMarks={changeMarks}
-                  onFillColumn={fillColumn}
-                  onMarkAllGood={markAllGood}
-                  onChangeComment={changeItemComment}
-                  onAddFiles={(section, side, files) =>
-                    addLocalPhotos(section, side, files)
-                  }
-                  onAddDataUrl={(section, side, dataUrl) =>
-                    addLocalPhotos(section, side, [dataUrl])
-                  }
-                  onAddDataUrls={(section, side, urls) =>
-                    addLocalPhotos(section, side, urls)
-                  }
-                  onRemovePhoto={removePhoto}
-                />
-
-                {ingoingFromReference ? (
-                  <p className="text-muted-foreground text-[11px]">
-                    Ingoing photos are from the property&apos;s latest ingoing report
-                    and can&apos;t be replaced here.
-                  </p>
-                ) : null}
-
-                <div className="space-y-2">
-                  <Label>Issue notes</Label>
-                  <Input
-                    value={issue.note}
-                    onChange={(e) => updateIssue({ note: e.target.value })}
-                    placeholder="Damage, cleaning, missing items..."
-                  />
+              <div className="space-y-2">
+                <Label>Responsibility</Label>
+                <div className="flex flex-wrap gap-2">
+                  {RESPONSIBILITY.map((r) => (
+                    <Button
+                      key={r}
+                      size="sm"
+                      variant={issue.responsibility === r ? 'default' : 'outline'}
+                      onClick={() => updateIssue({ responsibility: r })}
+                    >
+                      {r}
+                    </Button>
+                  ))}
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label>Responsibility</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {RESPONSIBILITY.map((r) => (
-                      <Button
-                        key={r}
-                        size="sm"
-                        variant={issue.responsibility === r ? 'default' : 'outline'}
-                        onClick={() => updateIssue({ responsibility: r })}
-                      >
-                        {r}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <InspectionAreaActionBar
-                  checked={checkedCount}
-                  total={issue.activeSections.length}
-                  issues={issueCount}
-                  busy={busy || loadingReference}
-                  isLast={isLast}
-                  onBack={goBackArea}
-                  onNext={() => void next()}
-                />
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-muted-foreground"
-                  disabled={busy}
-                  onClick={() => markAvailable(false)}
-                >
-                  Skip this area instead
-                </Button>
-              </CardContent>
-            </Card>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground"
+                disabled={busy}
+                onClick={() => markAvailable(false)}
+              >
+                Skip this area instead
+              </Button>
+            </>
           )}
-        </div>
+        </InspectionInspectChrome>
       </JobWorkspaceShell>
       {Celebration}
-      <AddCustomAreaDialog
-        open={addAreaOpen}
-        existingNames={selectedAreaNames}
-        onClose={() => setAddAreaOpen(false)}
-        onConfirm={handleAddCustomArea}
-      />
     </>
   );
 }

@@ -6,7 +6,6 @@ import { useId, useRef, useState } from 'react';
 import { NativeCameraSnapButton } from '@/components/inspector/native-camera-snap-button';
 import { Button } from '@/components/ui/button';
 import { IMAGE_UPLOAD_ACCEPT } from '@/lib/compress-image';
-import { cn } from '@/lib/utils';
 
 type InspectionAreaPhotosFieldProps = {
   label?: string;
@@ -29,7 +28,6 @@ export function InspectionAreaPhotosField({
   disabled = false,
   emptyLabel = 'Add at least one photo for this area.',
   sessionKey,
-  compact = false,
   onAddFiles,
   onAddDataUrls,
   onRemove,
@@ -108,11 +106,11 @@ export function InspectionAreaPhotosField({
           {emptyLabel}
         </button>
       ) : (
-        <ul className={cn('flex gap-2 overflow-x-auto pb-1', compact && 'grid grid-cols-3 overflow-visible')}>
+        <ul className="grid w-full grid-cols-3 gap-2">
           {photoUrls.map((url, index) => (
             <li
               key={`${url.slice(0, 32)}-${index}`}
-              className="relative size-20 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary/30"
+              className="relative aspect-square min-w-0 overflow-hidden rounded-lg border border-border bg-secondary/30"
             >
               <button
                 type="button"
@@ -136,11 +134,11 @@ export function InspectionAreaPhotosField({
             </li>
           ))}
           {!disabled ? (
-            <li className="shrink-0">
+            <li className="min-w-0">
               <button
                 type="button"
                 onClick={() => uploadRef.current?.click()}
-                className="border-border text-muted-foreground flex size-20 items-center justify-center rounded-lg border border-dashed"
+                className="border-border text-muted-foreground flex aspect-square w-full items-center justify-center rounded-lg border border-dashed"
                 aria-label="Add photo"
               >
                 <Camera className="size-5" />

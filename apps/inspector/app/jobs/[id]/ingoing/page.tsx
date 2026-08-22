@@ -1,15 +1,15 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Mic } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { InspectionAreaActionBar } from '@/components/inspector/inspection-area-action-bar';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
 import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
+import { InspectionInspectChrome } from '@/components/inspector/inspection-inspect-chrome';
 import {
   InspectionSectionPhotos,
   markAllItemsGood,
@@ -23,13 +23,12 @@ import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar'
 import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   sectionAreaName,
 } from '@/constants/inspection-areas';
-import { jobDetail, ROUTES } from '@/constants/routes';
+import { jobDetail, jobInspect, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
 import type { InspectorFindingAreaPayload } from '@/lib/crossub-api/inspector-client';
@@ -49,6 +48,7 @@ import {
 } from '@/lib/custom-inspection-areas';
 import { inspectionAreaOverallPhotoLabel, inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
 import { jobLookupMiss } from '@/lib/job-lookup';
+import { parseJobWorkspaceView } from '@/lib/job-workspace-view';
 import {
   isAreaSetupComplete,
   sectionsForAvailableArea,
@@ -88,6 +88,8 @@ function emptyEntry(areaName: string, customAreas: IngoingExecutionDraft['custom
 
 export default function IngoingInspectionPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     getJob,
     commitInspectionAreaPhotos,
@@ -131,7 +133,6 @@ export default function IngoingInspectionPage() {
     photoInflight.current = Math.max(0, photoInflight.current - 1);
     if (photoInflight.current === 0) setPhotoBusy(false);
   };
-  const [addAreaOpen, setAddAreaOpen] = useState(false);
   const serverHydrated = useRef(false);
 
   useEffect(() => {
@@ -199,12 +200,17 @@ export default function IngoingInspectionPage() {
     draft.entries,
     customAreas,
   );
+  const workspaceView = parseJobWorkspaceView(
+    searchParams.get('view'),
+    areaSetupComplete,
+  );
+  const inspectRequested = searchParams.get('view') === 'inspect';
+  const canInspect =
+    areaSetupComplete || (inspectRequested && selectedAreaNames.length > 0);
   const areaCatalog = useMemo(
     () =>
-      areaSetupComplete
-        ? buildExecutionAreaCatalog(selectedAreaNames, customAreas)
-        : [],
-    [areaSetupComplete, selectedAreaNames, customAreas],
+      canInspect ? buildExecutionAreaCatalog(selectedAreaNames, customAreas) : [],
+    [canInspect, selectedAreaNames, customAreas],
   );
   const areaIndex = Math.min(
     Math.max(draft.areaIndex, 0),
@@ -231,6 +237,31 @@ export default function IngoingInspectionPage() {
       return { ...prev, selectedAreaNames: selected, entries: record };
     });
   }, [draft.areaSetupComplete, setDraft]);
+
+  useEffect(() => {
+    if (searchParams.get('view') !== 'inspect') return;
+    setDraft((prev) => {
+      if (prev.areaSetupComplete) return prev;
+      const custom = prev.customAreas ?? [];
+      const selected = effectiveSelectedAreaNames(
+        prev.selectedAreaNames,
+        prev.entries,
+        custom,
+      );
+      if (selected.length === 0) return prev;
+      const { record } = seedAreasForInspectionStart(prev.entries, selected, {
+        sectionsFor: (name) => sectionsForAvailableArea(name, custom, null, 'ingoing'),
+        emptyEntry: (name) => emptyEntry(name, custom),
+        emptyPhotos: () => [],
+      });
+      return {
+        ...prev,
+        selectedAreaNames: selected,
+        areaSetupComplete: true,
+        entries: record,
+      };
+    });
+  }, [searchParams, setDraft]);
 
   const handleAddCustomArea = (name: string, sectionMode: CustomAreaSectionMode) => {
     const classified = classifyAddedAreaName(name);
@@ -344,7 +375,7 @@ export default function IngoingInspectionPage() {
         ...prev,
         selectedAreaNames: selected,
         areaSetupComplete: true,
-        areaIndex: 0,
+        areaIndex: prev.areaSetupComplete ? prev.areaIndex : 0,
         entries: record,
       };
     });
@@ -378,7 +409,7 @@ export default function IngoingInspectionPage() {
     return <KeyCollectionRequired jobId={id} />;
   }
 
-  if (!areaSetupComplete) {
+  if (workspaceView === 'areas' || !canInspect) {
     return (
       <JobWorkspaceShell job={job} active="areas">
         <InspectionAreaSetupPanel
@@ -386,7 +417,7 @@ export default function IngoingInspectionPage() {
           kind="ingoing"
           selectedAreaNames={selectedAreaNames}
           customAreas={customAreas}
-          continuing={selectedAreaNames.length > 0 || areaIndex > 0}
+          continuing={areaSetupComplete || selectedAreaNames.length > 0 || areaIndex > 0}
           layoutSource={selectedAreaNames.length > 0 ? 'template' : 'manual'}
           busy={busy}
           onAddBuiltInArea={handleAddBuiltInArea}
@@ -394,7 +425,10 @@ export default function IngoingInspectionPage() {
           onRemoveArea={handleRemoveSetupArea}
           onRenameArea={handleRenameSetupArea}
           onMoveArea={handleMoveSetupArea}
-          onComplete={completeAreaSetup}
+          onComplete={() => {
+            completeAreaSetup();
+            router.replace(jobInspect(id, job.type));
+          }}
         />
       </JobWorkspaceShell>
     );
@@ -435,14 +469,6 @@ export default function IngoingInspectionPage() {
   const goToArea = (index: number) => {
     if (index < 0 || index >= areaCatalog.length) return;
     setDraft((prev) => ({ ...prev, areaIndex: index }));
-  };
-
-  const goBackArea = () => {
-    if (areaIndex > 0) {
-      goToArea(areaIndex - 1);
-      return;
-    }
-    setDraft((prev) => ({ ...prev, areaSetupComplete: false }));
   };
 
   const markAvailable = (available: boolean) => {
@@ -888,7 +914,7 @@ export default function IngoingInspectionPage() {
   if (draft.workflowStep === 'special') {
     return (
       <>
-        <JobWorkspaceShell job={job} active="areas">
+        <JobWorkspaceShell job={job} active="start">
           <div className="space-y-4">
             <JobWorkflowToolbar job={job} />
             <InspectionWorkspaceHeader job={job} />
@@ -913,135 +939,118 @@ export default function IngoingInspectionPage() {
 
   return (
     <>
-      <JobWorkspaceShell job={job} active="areas">
-        <div className="space-y-4">
-          <JobWorkflowToolbar job={job} />
-          <InspectionWorkspaceHeader job={job} />
-
-          <InspectionAreaNav
-            areaCatalog={areaCatalog}
-            areaIndex={areaIndex}
-            progressTone={progressTone}
-            onGoToArea={goToArea}
-            onAddArea={() => setAddAreaOpen(true)}
-          />
-
+      <JobWorkspaceShell job={job} active="start">
+        <InspectionInspectChrome
+          nav={
+            <InspectionAreaNav
+              areaCatalog={areaCatalog}
+              areaIndex={areaIndex}
+              progressTone={progressTone}
+              onGoToArea={goToArea}
+            />
+          }
+          footer={
+            <InspectionAreaActionBar
+              checked={entry.available === false ? 0 : checkedCount}
+              total={entry.available === false ? 0 : entry.activeSections.length}
+              issues={entry.available === false ? 0 : issueCount}
+              busy={busy}
+              isLast={isLast}
+              onNext={() =>
+                entry.available === false
+                  ? isLast
+                    ? completeFromSkippedLast()
+                    : goToArea(areaIndex + 1)
+                  : void saveArea()
+              }
+            />
+          }
+        >
           {entry.available === false ? (
-            <Card>
-              <CardContent className="space-y-3 pt-6">
-                <p className="text-muted-foreground text-sm">
-                  This area was marked unavailable. You can change that and photograph
-                  it, or continue.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => markAvailable(true)}
-                >
-                  Mark available & photograph
-                </Button>
-                <InspectionAreaActionBar
-                  checked={0}
-                  total={0}
-                  issues={0}
-                  busy={busy}
-                  isLast={isLast}
-                  onBack={goBackArea}
-                  onNext={() =>
-                    isLast ? completeFromSkippedLast() : goToArea(areaIndex + 1)
-                  }
-                />
-              </CardContent>
-            </Card>
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-sm">
+                This area was marked unavailable. You can change that and photograph
+                it, or continue.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => markAvailable(true)}
+              >
+                Mark available & photograph
+              </Button>
+            </div>
           ) : (
-            <Card>
-              <CardContent className="space-y-4 pt-6">
-                <InspectionAreaPhotosField
-                  label="Area photos"
-                  photoUrls={entry.areaPhotos ?? []}
-                  uploading={photoBusy}
-                  disabled={formBusy}
-                  sessionKey={area}
-                  emptyLabel="Snap several photos of this room, then attach them here."
-                  onAddFiles={(files) => addAreaPhotos(files)}
-                  onAddDataUrl={(dataUrl) => addAreaPhotos([dataUrl])}
-                  onAddDataUrls={(urls) => addAreaPhotos(urls)}
-                  onRemove={(index) =>
-                    updateEntry({
-                      areaPhotos: (entry.areaPhotos ?? []).filter((_, i) => i !== index),
-                    })
-                  }
+            <>
+              <InspectionAreaPhotosField
+                label="Area photos"
+                photoUrls={entry.areaPhotos ?? []}
+                uploading={photoBusy}
+                disabled={formBusy}
+                sessionKey={area}
+                emptyLabel="Snap several photos of this room, then attach them here."
+                onAddFiles={(files) => addAreaPhotos(files)}
+                onAddDataUrl={(dataUrl) => addAreaPhotos([dataUrl])}
+                onAddDataUrls={(urls) => addAreaPhotos(urls)}
+                onRemove={(index) =>
+                  updateEntry({
+                    areaPhotos: (entry.areaPhotos ?? []).filter((_, i) => i !== index),
+                  })
+                }
+              />
+
+              <InspectionSectionPhotos
+                definition={areaDef}
+                activeSections={entry.activeSections}
+                photosBySection={entry.photosBySection}
+                itemMarks={entry.itemMarks}
+                itemComments={entry.itemComments}
+                busy={formBusy}
+                photoUploading={photoBusy}
+                onAddSection={addSection}
+                onRemoveSection={removeSection}
+                onRenameSection={renameSection}
+                onMoveSection={moveSection}
+                onChangeMarks={changeMarks}
+                onFillColumn={fillColumn}
+                onMarkAllGood={markAllGood}
+                onChangeComment={changeItemComment}
+                onAddFiles={(section, files) => addLocalPhotos(section, files)}
+                onAddDataUrl={(section, dataUrl) =>
+                  addLocalPhotos(section, [dataUrl])
+                }
+                onAddDataUrls={(section, urls) => addLocalPhotos(section, urls)}
+                onRemovePhoto={removePhoto}
+              />
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  Comments
+                  <Mic className="size-3.5 text-muted-foreground" />
+                </Label>
+                <Input
+                  placeholder="Room condition notes (voice-to-text supported)"
+                  value={entry.comments}
+                  onChange={(ev) => updateEntry({ comments: ev.target.value })}
                 />
+              </div>
 
-                <InspectionSectionPhotos
-                  definition={areaDef}
-                  activeSections={entry.activeSections}
-                  photosBySection={entry.photosBySection}
-                  itemMarks={entry.itemMarks}
-                  itemComments={entry.itemComments}
-                  busy={formBusy}
-                  photoUploading={photoBusy}
-                  onAddSection={addSection}
-                  onRemoveSection={removeSection}
-                  onRenameSection={renameSection}
-                  onMoveSection={moveSection}
-                  onChangeMarks={changeMarks}
-                  onFillColumn={fillColumn}
-                  onMarkAllGood={markAllGood}
-                  onChangeComment={changeItemComment}
-                  onAddFiles={(section, files) => addLocalPhotos(section, files)}
-                  onAddDataUrl={(section, dataUrl) =>
-                    addLocalPhotos(section, [dataUrl])
-                  }
-                  onAddDataUrls={(section, urls) => addLocalPhotos(section, urls)}
-                  onRemovePhoto={removePhoto}
-                />
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    Comments
-                    <Mic className="size-3.5 text-muted-foreground" />
-                  </Label>
-                  <Input
-                    placeholder="Room condition notes (voice-to-text supported)"
-                    value={entry.comments}
-                    onChange={(ev) => updateEntry({ comments: ev.target.value })}
-                  />
-                </div>
-
-                <InspectionAreaActionBar
-                  checked={checkedCount}
-                  total={entry.activeSections.length}
-                  issues={issueCount}
-                  busy={busy}
-                  isLast={isLast}
-                  onBack={goBackArea}
-                  onNext={() => void saveArea()}
-                />
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-muted-foreground"
-                  disabled={busy}
-                  onClick={() => markAvailable(false)}
-                >
-                  Skip this area instead
-                </Button>
-              </CardContent>
-            </Card>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground"
+                disabled={busy}
+                onClick={() => markAvailable(false)}
+              >
+                Skip this area instead
+              </Button>
+            </>
           )}
-        </div>
+        </InspectionInspectChrome>
       </JobWorkspaceShell>
       {Celebration}
-      <AddCustomAreaDialog
-        open={addAreaOpen}
-        existingNames={selectedAreaNames}
-        onClose={() => setAddAreaOpen(false)}
-        onConfirm={handleAddCustomArea}
-      />
     </>
   );
 }

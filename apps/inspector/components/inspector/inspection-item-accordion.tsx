@@ -1,9 +1,10 @@
 'use client';
 
 import { Check, ChevronDown, ChevronUp, CircleAlert, Trash2 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
+import { inspectionItemIcon } from '@/lib/inspection-item-icon';
 import {
   ITEM_CONDITION_KEYS,
   ITEM_CONDITION_LABEL,
@@ -30,6 +31,8 @@ export function InspectionItemAccordion({
   photoUrls,
   busy,
   photoUploading,
+  open,
+  onOpenChange,
   onRename,
   onRemove,
   onChangeMarks,
@@ -47,6 +50,8 @@ export function InspectionItemAccordion({
   photoUrls: string[];
   busy?: boolean;
   photoUploading?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onRename: () => void;
   onRemove: () => void;
   onChangeMarks: (marks: ItemConditionMarks) => void;
@@ -58,10 +63,10 @@ export function InspectionItemAccordion({
   extra?: ReactNode;
   showItemPhotos?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const current = marks ?? emptyItemMarks();
   const allGood = marksAreAllGood(current);
   const hasIssue = marksHaveNo(current);
+  const Icon = inspectionItemIcon(name);
 
   const toggleChip = (key: ItemConditionKey) => {
     const value = current[key];
@@ -73,63 +78,62 @@ export function InspectionItemAccordion({
 
   return (
     <div className="min-w-0 flex-1">
-      <div className="flex items-start gap-2">
-        <button
-          type="button"
-          className="min-w-0 flex-1 text-left"
-          onClick={() => setOpen((v) => !v)}
+      <button
+        type="button"
+        className="flex w-full items-center gap-3 text-left"
+        onClick={() => onOpenChange(!open)}
+      >
+        <span className="bg-secondary text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg">
+          <Icon className="size-4" />
+        </span>
+        <span className="text-foreground min-w-0 flex-1 text-sm font-medium leading-snug">
+          {name}
+        </span>
+        <span
+          className={cn(
+            'inline-flex shrink-0 items-center gap-1 text-[11px] font-medium',
+            hasIssue ? 'text-destructive' : allGood ? 'text-emerald-400' : 'text-muted-foreground',
+          )}
         >
-          <p className="text-sm font-medium leading-snug">{name}</p>
-          <p
-            className={cn(
-              'mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium',
-              hasIssue ? 'text-destructive' : allGood ? 'text-emerald-400' : 'text-muted-foreground',
-            )}
-          >
-            {hasIssue ? (
-              <>
-                <CircleAlert className="size-3" />
-                Issue found
-              </>
-            ) : allGood ? (
-              <>
-                <Check className="size-3" />
-                All good
-              </>
-            ) : (
-              'Not marked'
-            )}
-          </p>
-        </button>
-        <button
-          type="button"
-          className="text-muted-foreground hover:text-destructive shrink-0 rounded-md p-1"
-          aria-label={`Remove ${name}`}
-          disabled={busy}
-          onClick={onRemove}
-        >
-          <Trash2 className="size-4" />
-        </button>
-        <button
-          type="button"
-          className="text-muted-foreground shrink-0 rounded-md p-1"
-          aria-label={open ? `Collapse ${name}` : `Expand ${name}`}
-          onClick={() => setOpen((v) => !v)}
-        >
+          {hasIssue ? (
+            <>
+              Issue found
+              <CircleAlert className="size-3.5" />
+            </>
+          ) : allGood ? (
+            <>
+              All good
+              <Check className="size-3.5" />
+            </>
+          ) : (
+            'Not marked'
+          )}
           {open ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-        </button>
-      </div>
+        </span>
+      </button>
 
       {open ? (
-        <div className="mt-3 space-y-3">
-          <button
-            type="button"
-            className="text-muted-foreground text-[11px] underline"
-            disabled={busy}
-            onClick={onRename}
-          >
-            Rename item
-          </button>
+        <div className="mt-3 space-y-3 pl-12">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              className="text-muted-foreground text-[11px] underline"
+              disabled={busy}
+              onClick={onRename}
+            >
+              Rename item
+            </button>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-destructive inline-flex items-center gap-1 rounded-md text-[11px]"
+              aria-label={`Remove ${name}`}
+              disabled={busy}
+              onClick={onRemove}
+            >
+              <Trash2 className="size-3.5" />
+              Delete
+            </button>
+          </div>
 
           <div>
             <p className="text-muted-foreground mb-1.5 text-[11px] font-medium uppercase">
@@ -227,6 +231,15 @@ export function InspectionItemAccordion({
               onRemove={onRemovePhoto}
             />
           ) : null}
+
+          <button
+            type="button"
+            className="text-muted-foreground mx-auto flex items-center gap-1 text-xs"
+            onClick={() => onOpenChange(false)}
+          >
+            <ChevronUp className="size-4" />
+            Collapse
+          </button>
         </div>
       ) : null}
     </div>

@@ -128,7 +128,9 @@ export function InspectionAreaSetupPanel({
           </button>
         </div>
         <p className="text-muted-foreground text-xs">
-          Confirm the areas before starting the inspection.
+          {continuing
+            ? 'Add, remove, or reorder areas. You can keep editing after the inspection has started.'
+            : 'Confirm the areas before starting the inspection.'}
         </p>
 
         <ul className="border-border bg-card divide-y overflow-hidden rounded-2xl border">

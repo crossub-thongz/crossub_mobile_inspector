@@ -1,26 +1,26 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { InspectionAreaActionBar } from '@/components/inspector/inspection-area-action-bar';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
 import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel, RoutinePreInspectionSmsButton } from '@/components/inspector/inspection-area-setup-panel';
+import { InspectionInspectChrome } from '@/components/inspector/inspection-inspect-chrome';
 import {
   OutgoingSectionPhotos,
   type SectionBeforeAfter,
 } from '@/components/inspector/outgoing-section-photos';
+import { markAllItemsGood } from '@/components/inspector/inspection-section-photos';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { InspectorShell } from '@/components/layout/inspector-shell';
-import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
 import { ResetInspectionDialog } from '@/components/inspector/reset-inspection-dialog';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -33,7 +33,7 @@ import {
   effectiveSelectedAreaNames,
   type CustomAreaSectionMode,
 } from '@/lib/custom-inspection-areas';
-import { jobDetail, ROUTES } from '@/constants/routes';
+import { jobDetail, jobInspect, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
 import { inspectionAreaOverallPhotoLabel, inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
@@ -73,11 +73,14 @@ import { findingsAreaFromSections } from '@/lib/inspection-findings-items';
 import {
   applyColumnMark,
   firstIncompleteSection,
+  marksAreComplete,
+  marksHaveNo,
   type ItemConditionKey,
   type ItemConditionMarks,
 } from '@/lib/item-condition-marks';
 import { moveIndex, rekeyRecord, renameCustomArea } from '@/lib/inspection-layout-edit';
 import { jobLookupMiss } from '@/lib/job-lookup';
+import { parseJobWorkspaceView } from '@/lib/job-workspace-view';
 
 type AreaIssue = RoutineAreaIssueDraft;
 
@@ -92,6 +95,8 @@ function emptyAreaIssue(areaName: string): AreaIssue {
 
 export default function RoutineInspectionPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     getJob,
     commitInspectionAreaPhotos,
@@ -273,12 +278,17 @@ export default function RoutineInspectionPage() {
     draft.issues,
     customAreas,
   );
+  const workspaceView = parseJobWorkspaceView(
+    searchParams.get('view'),
+    areaSetupComplete,
+  );
+  const inspectRequested = searchParams.get('view') === 'inspect';
+  const canInspect =
+    areaSetupComplete || (inspectRequested && selectedAreaNames.length > 0);
   const areaCatalog = useMemo(
     () =>
-      areaSetupComplete
-        ? buildExecutionAreaCatalog(selectedAreaNames, customAreas)
-        : [],
-    [areaSetupComplete, selectedAreaNames, customAreas],
+      canInspect ? buildExecutionAreaCatalog(selectedAreaNames, customAreas) : [],
+    [canInspect, selectedAreaNames, customAreas],
   );
   const areaIndex = Math.min(
     Math.max(draft.areaIndex, 0),
@@ -306,6 +316,32 @@ export default function RoutineInspectionPage() {
       return { ...prev, selectedAreaNames: selected, issues: record };
     });
   }, [draft.areaSetupComplete, ingoingAreaPlan, setDraft]);
+
+  useEffect(() => {
+    if (searchParams.get('view') !== 'inspect') return;
+    setDraft((prev) => {
+      if (prev.areaSetupComplete) return prev;
+      const custom = prev.customAreas ?? [];
+      const selected = effectiveSelectedAreaNames(
+        prev.selectedAreaNames,
+        prev.issues,
+        custom,
+      );
+      if (selected.length === 0) return prev;
+      const { record } = seedAreasForInspectionStart(prev.issues, selected, {
+        sectionsFor: (name) =>
+          sectionsForAvailableArea(name, custom, ingoingAreaPlan, 'routine'),
+        emptyEntry: (name) => emptyAreaIssue(name),
+        emptyPhotos: emptySectionPhotos,
+      });
+      return {
+        ...prev,
+        selectedAreaNames: selected,
+        areaSetupComplete: true,
+        issues: record,
+      };
+    });
+  }, [searchParams, setDraft, ingoingAreaPlan]);
 
   const resetInspection = async () => {
     setResetOpen(false);
@@ -493,7 +529,7 @@ export default function RoutineInspectionPage() {
         ...prev,
         selectedAreaNames: selected,
         areaSetupComplete: true,
-        areaIndex: 0,
+        areaIndex: prev.areaSetupComplete ? prev.areaIndex : 0,
         issues: record,
       };
     });
@@ -532,7 +568,7 @@ export default function RoutineInspectionPage() {
     return <KeyCollectionRequired jobId={id} />;
   }
 
-  if (!areaSetupComplete) {
+  if (workspaceView === 'areas' || !canInspect) {
     return (
       <JobWorkspaceShell job={job} active="areas">
         <div className="space-y-4">
@@ -543,7 +579,7 @@ export default function RoutineInspectionPage() {
             selectedAreaNames={selectedAreaNames}
             customAreas={customAreas}
             existingAreaNames={ingoingExistingAreas}
-            continuing={selectedAreaNames.length > 0 || areaIndex > 0}
+            continuing={areaSetupComplete || selectedAreaNames.length > 0 || areaIndex > 0}
             layoutSource={
               ingoingExistingAreas.length > 0
                 ? 'copied'
@@ -590,7 +626,10 @@ export default function RoutineInspectionPage() {
             onRenameArea={handleRenameSetupArea}
             onMoveArea={handleMoveSetupArea}
             onAddAllExisting={ingoingExistingAreas.length > 0 ? addAllFromIngoing : undefined}
-            onComplete={completeAreaSetup}
+            onComplete={() => {
+              completeAreaSetup();
+              router.replace(jobInspect(id, job.type));
+            }}
           />
         </div>
       </JobWorkspaceShell>
@@ -632,14 +671,6 @@ export default function RoutineInspectionPage() {
   const goToArea = (index: number) => {
     if (index < 0 || index >= areaCatalog.length) return;
     setDraft((prev) => ({ ...prev, areaIndex: index }));
-  };
-
-  const goBackArea = () => {
-    if (areaIndex > 0) {
-      goToArea(areaIndex - 1);
-      return;
-    }
-    setDraft((prev) => ({ ...prev, areaSetupComplete: false }));
   };
 
   const seedSectionIngoing = (section: string): string[] =>
@@ -1086,201 +1117,155 @@ export default function RoutineInspectionPage() {
     return 'bg-secondary';
   };
 
+  const markAllGood = () => {
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area);
+      return {
+        ...prev,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            itemMarks: markAllItemsGood(current.activeSections),
+          },
+        },
+      };
+    });
+  };
+
+  const checkedCount = issue.activeSections.filter((section) =>
+    marksAreComplete(issue.itemMarks?.[section]),
+  ).length;
+  const issueCount = issue.activeSections.filter((section) =>
+    marksHaveNo(issue.itemMarks?.[section]),
+  ).length;
+
   return (
     <>
-      <JobWorkspaceShell job={job} active="areas">
-        <div className="space-y-4">
-          <JobWorkflowToolbar job={job} />
-          {resetControls}
-
-          <div className="flex gap-2">
-            <Button
-              variant={method === 'physical' ? 'default' : 'outline'}
-              className="flex-1"
-              onClick={() => setDraft((prev) => ({ ...prev, method: 'physical' }))}
-            >
-              Physical Inspection
-            </Button>
-            <Button
-              variant={method === 'self' ? 'default' : 'outline'}
-              className="flex-1"
-              onClick={() => setDraft((prev) => ({ ...prev, method: 'self' }))}
-            >
-              Self Inspection
-            </Button>
-          </div>
-
-          <p className="text-muted-foreground text-xs">
-            Each room opens with its items ready. Skip areas that are in order and
-            photograph exceptions beside the latest ingoing baseline.
-          </p>
-
+      <JobWorkspaceShell job={job} active="start">
+        <InspectionInspectChrome
+          nav={
+            <InspectionAreaNav
+              areaCatalog={areaCatalog}
+              areaIndex={areaIndex}
+              progressTone={progressTone}
+              onGoToArea={goToArea}
+            />
+          }
+          footer={
+            <InspectionAreaActionBar
+              checked={issue.available === false ? 0 : checkedCount}
+              total={issue.available === false ? 0 : issue.activeSections.length}
+              issues={issue.available === false ? 0 : issueCount}
+              busy={busy || loadingReference}
+              isLast={isLast}
+              onNext={() =>
+                issue.available === false
+                  ? isLast
+                    ? void completeFromSkippedLast()
+                    : goToArea(areaIndex + 1)
+                  : void next()
+              }
+            />
+          }
+        >
           {loadingReference ? (
             <p className="text-muted-foreground text-xs">
               Loading latest ingoing photos…
             </p>
           ) : null}
 
-          <InspectionAreaNav
-            areaCatalog={areaCatalog}
-            areaIndex={areaIndex}
-            progressTone={progressTone}
-            onGoToArea={goToArea}
-          />
-
           {issue.available === false ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {area} — skipped ({areaIndex + 1}/{areaCatalog.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={loadingReference}
-                  onClick={() => markAvailable(true)}
-                >
-                  Mark available & photograph
-                </Button>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={goBackArea}
-                  >
-                    <ChevronLeft className="size-4" />
-                    Back
-                  </Button>
-                  {isLast ? (
-                    <Button
-                      type="button"
-                      className="flex-1"
-                      disabled={busy || loadingReference}
-                      onClick={() => void completeFromSkippedLast()}
-                    >
-                      {busy ? 'Submitting…' : 'Complete Routine Report'}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      className="flex-1"
-                      onClick={() => goToArea(areaIndex + 1)}
-                    >
-                      Next Area
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-sm">
+                This area was marked unavailable. You can change that and photograph
+                it, or continue.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={loadingReference}
+                onClick={() => markAvailable(true)}
+              >
+                Mark available & photograph
+              </Button>
+            </div>
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {area} ({areaIndex + 1}/{areaCatalog.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <InspectionAreaPhotosField
-                  label="Area photos"
-                  photoUrls={issue.areaPhotos ?? []}
-                  uploading={photoBusy || loadingReference}
-                  disabled={formBusy || loadingReference}
-                  sessionKey={area}
-                  emptyLabel="Snap several photos of this room, then attach them here."
-                  onAddFiles={(files) => addAreaPhotos(files)}
-                  onAddDataUrl={(dataUrl) => addAreaPhotos([dataUrl])}
-                  onAddDataUrls={(urls) => addAreaPhotos(urls)}
-                  onRemove={(index) =>
-                    updateIssue({
-                      areaPhotos: (issue.areaPhotos ?? []).filter((_, i) => i !== index),
-                    })
+            <>
+              <InspectionAreaPhotosField
+                label="Area photos"
+                photoUrls={issue.areaPhotos ?? []}
+                uploading={photoBusy || loadingReference}
+                disabled={formBusy || loadingReference}
+                sessionKey={area}
+                emptyLabel="Snap several photos of this room, then attach them here."
+                onAddFiles={(files) => addAreaPhotos(files)}
+                onAddDataUrl={(dataUrl) => addAreaPhotos([dataUrl])}
+                onAddDataUrls={(urls) => addAreaPhotos(urls)}
+                onRemove={(index) =>
+                  updateIssue({
+                    areaPhotos: (issue.areaPhotos ?? []).filter((_, i) => i !== index),
+                  })
+                }
+              />
+
+              <OutgoingSectionPhotos
+                definition={areaDef}
+                activeSections={issue.activeSections}
+                photosBySection={issue.photosBySection}
+                itemMarks={issue.itemMarks}
+                itemComments={issue.itemComments}
+                busy={formBusy || loadingReference}
+                photoUploading={photoBusy}
+                ingoingReadOnly={ingoingFromReference}
+                currentLabel="Routine"
+                onAddSection={addSection}
+                onRemoveSection={removeSection}
+                onRenameSection={renameSection}
+                onMoveSection={moveSection}
+                onChangeMarks={changeMarks}
+                onFillColumn={fillColumn}
+                onMarkAllGood={markAllGood}
+                onChangeComment={changeItemComment}
+                onAddFiles={(section, side, files) =>
+                  addLocalPhotos(section, side, files)
+                }
+                onAddDataUrl={(section, side, dataUrl) =>
+                  addLocalPhotos(section, side, [dataUrl])
+                }
+                onAddDataUrls={(section, side, urls) =>
+                  addLocalPhotos(section, side, urls)
+                }
+                onRemovePhoto={removePhoto}
+              />
+
+              <div className="space-y-2">
+                <Label>Area notes</Label>
+                <Input
+                  value={issue.notes}
+                  onChange={(e) => updateIssue({ notes: e.target.value })}
+                  placeholder={
+                    method === 'physical'
+                      ? 'Inspector notes'
+                      : 'Review notes for tenant submission'
                   }
                 />
+              </div>
 
-                <OutgoingSectionPhotos
-                  definition={areaDef}
-                  activeSections={issue.activeSections}
-                  photosBySection={issue.photosBySection}
-                  itemMarks={issue.itemMarks}
-                  itemComments={issue.itemComments}
-                  busy={formBusy || loadingReference}
-                  photoUploading={photoBusy}
-                  ingoingReadOnly={ingoingFromReference}
-                  currentLabel="Routine"
-                  onAddSection={addSection}
-                  onRemoveSection={removeSection}
-                  onRenameSection={renameSection}
-                  onMoveSection={moveSection}
-                  onChangeMarks={changeMarks}
-                  onFillColumn={fillColumn}
-                  onChangeComment={changeItemComment}
-                  onAddFiles={(section, side, files) =>
-                    addLocalPhotos(section, side, files)
-                  }
-                  onAddDataUrl={(section, side, dataUrl) =>
-                    addLocalPhotos(section, side, [dataUrl])
-                  }
-                  onAddDataUrls={(section, side, urls) =>
-                    addLocalPhotos(section, side, urls)
-                  }
-                  onRemovePhoto={removePhoto}
-                />
-
-                <div className="space-y-2">
-                  <Label>Area notes</Label>
-                  <Input
-                    value={issue.notes}
-                    onChange={(e) => updateIssue({ notes: e.target.value })}
-                    placeholder={
-                      method === 'physical'
-                        ? 'Inspector notes'
-                        : 'Review notes for tenant submission'
-                    }
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    disabled={busy}
-                    onClick={goBackArea}
-                  >
-                    <ChevronLeft className="size-4" />
-                    Back
-                  </Button>
-                  <Button
-                    className="flex-[2]"
-                    disabled={busy || loadingReference}
-                    onClick={() => void next()}
-                  >
-                    {busy
-                      ? 'Uploading photos…'
-                      : isLast
-                        ? 'Complete Routine Report'
-                        : 'Next Area'}
-                  </Button>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-muted-foreground"
-                  disabled={busy}
-                  onClick={() => markAvailable(false)}
-                >
-                  Skip this area instead
-                </Button>
-              </CardContent>
-            </Card>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground"
+                disabled={busy}
+                onClick={() => markAvailable(false)}
+              >
+                Skip this area instead
+              </Button>
+            </>
           )}
-        </div>
+        </InspectionInspectChrome>
       </JobWorkspaceShell>
       {Celebration}
     </>

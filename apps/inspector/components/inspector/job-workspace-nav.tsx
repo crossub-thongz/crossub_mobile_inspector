@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FileText, KeyRound, LayoutGrid, Play } from 'lucide-react';
 
-import { jobKeys, jobWorkflow } from '@/constants/routes';
+import { jobAreas, jobInspect, jobKeys } from '@/constants/routes';
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -14,7 +14,6 @@ export function JobWorkspaceNav({
   job: InspectionJob;
   active: 'details' | 'handover' | 'areas' | 'start';
 }) {
-  const workflowHref = jobWorkflow(job.id, job.type);
   const items = [
     {
       id: 'details' as const,
@@ -30,20 +29,20 @@ export function JobWorkspaceNav({
     },
     {
       id: 'areas' as const,
-      href: workflowHref,
+      href: jobAreas(job.id, job.type),
       label: 'Areas',
       icon: LayoutGrid,
     },
     {
       id: 'start' as const,
-      href: workflowHref,
+      href: jobInspect(job.id, job.type),
       label: 'Start Inspection',
       icon: Play,
     },
   ];
 
   return (
-    <nav className="border-border -mx-4 mb-3 flex border-b px-1">
+    <nav className="border-border -mx-4 flex border-b px-1">
       {items.map(({ id, href, label, icon: Icon }) => {
         const isActive = active === id;
         return (

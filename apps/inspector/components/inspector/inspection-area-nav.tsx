@@ -1,8 +1,7 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
 import { cn } from '@/lib/utils';
 
@@ -11,8 +10,6 @@ type InspectionAreaNavProps = {
   areaIndex: number;
   progressTone: (index: number, areaName: string) => string;
   onGoToArea: (index: number) => void;
-  onAddArea?: () => void;
-  addAreaLabel?: string;
 };
 
 export function InspectionAreaNav({
@@ -20,8 +17,6 @@ export function InspectionAreaNav({
   areaIndex,
   progressTone,
   onGoToArea,
-  onAddArea,
-  addAreaLabel = 'Add area',
 }: InspectionAreaNavProps) {
   const totalAreas = areaCatalog.length;
   const current = areaCatalog[areaIndex];
@@ -59,25 +54,23 @@ export function InspectionAreaNav({
         </button>
       </div>
 
-      <div className="flex gap-1">
-        {areaCatalog.map((item, index) => (
-          <button
-            key={`${index}:${item.name}`}
-            type="button"
-            title={item.name}
-            aria-label={`Go to ${item.name}`}
-            className={cn('h-1.5 flex-1 rounded-full', progressTone(index, item.name))}
-            onClick={() => onGoToArea(index)}
-          />
-        ))}
+      <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 gap-1">
+          {areaCatalog.map((item, index) => (
+            <button
+              key={`${index}:${item.name}`}
+              type="button"
+              title={item.name}
+              aria-label={`Go to ${item.name}`}
+              className={cn('h-1.5 flex-1 rounded-full', progressTone(index, item.name))}
+              onClick={() => onGoToArea(index)}
+            />
+          ))}
+        </div>
+        <span className="text-muted-foreground shrink-0 text-[11px] font-semibold tabular-nums">
+          {totalAreas === 0 ? '0/0' : `${areaIndex + 1}/${totalAreas}`}
+        </span>
       </div>
-
-      {onAddArea ? (
-        <Button type="button" variant="outline" size="sm" className="w-full" onClick={onAddArea}>
-          <Plus className="size-4" />
-          {addAreaLabel}
-        </Button>
-      ) : null}
     </div>
   );
 }
