@@ -54,20 +54,35 @@ export function DraggableNamedList({
     const from = index;
     let over = index;
     let didMove = false;
+    let scrollLocked = false;
     const originY = event.clientY;
+    let previousOverflow = '';
+    let previousTouchAction = '';
+
+    const lockScroll = () => {
+      if (scrollLocked) return;
+      scrollLocked = true;
+      previousOverflow = document.body.style.overflow;
+      previousTouchAction = document.body.style.touchAction;
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    };
+
+    const unlockScroll = () => {
+      if (!scrollLocked) return;
+      document.body.style.overflow = previousOverflow;
+      document.body.style.touchAction = previousTouchAction;
+      scrollLocked = false;
+    };
 
     setActiveIndex(from);
     setOverIndex(from);
-
-    const previousOverflow = document.body.style.overflow;
-    const previousTouchAction = document.body.style.touchAction;
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
 
     const onMove = (moveEvent: PointerEvent) => {
       if (!didMove) {
         if (Math.abs(moveEvent.clientY - originY) < DRAG_THRESHOLD_PX) return;
         didMove = true;
+        lockScroll();
       }
       moveEvent.preventDefault();
       over = indexFromY(moveEvent.clientY);
@@ -84,8 +99,7 @@ export function DraggableNamedList({
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
-      document.body.style.overflow = previousOverflow;
-      document.body.style.touchAction = previousTouchAction;
+      unlockScroll();
       setActiveIndex(null);
       setOverIndex(null);
       if (didMove && from !== over) onReorderRef.current(from, over);
@@ -116,14 +130,7 @@ export function DraggableNamedList({
               activeIndex !== index &&
               'border-primary border-t-2',
           )}
-          onPointerDown={(event) => {
-            if (disabled) return;
-            const target = event.target as HTMLElement;
-            if (target.closest('button, a, input, textarea, label, select')) return;
-            startDrag(index, event);
-          }}
         >
-          {variant === 'row' ? (
           <button
             type="button"
             aria-label={`Drag ${name} to reorder`}
@@ -133,7 +140,6 @@ export function DraggableNamedList({
           >
             <GripVertical className="size-5" />
           </button>
-          ) : null}
           {renderItem(name, index)}
         </li>
       ))}
