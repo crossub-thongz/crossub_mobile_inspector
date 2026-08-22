@@ -131,7 +131,7 @@ export default function JobDetailPage() {
   return (
     <InspectorShell title={workspaceTitle} backHref={backHref} variant="workspace">
       <JobWorkspaceNav job={job} active="details" />
-      <div className="space-y-3">
+      <div className="space-y-3 pt-4">
         {paymentBlocked ? (
           <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
             Waiting for the agency to pay the platform fee. You cannot start

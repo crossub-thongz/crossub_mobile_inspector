@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { CheckCircle2, KeyRound } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { HandoverCollectForm } from '@/components/inspector/handover-collect-form';
@@ -16,9 +16,6 @@ import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { INSPECTION_PAY_LABEL } from '@/constants/inspection';
 import { jobAreas, jobDetail } from '@/constants/routes';
 import {
@@ -47,9 +44,6 @@ export default function JobKeysPage() {
   const job = getJob(id);
 
   const [tab, setTab] = useState<Tab>(initialTab);
-  const [stepsConfirmed, setStepsConfirmed] = useState(false);
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [noImageOpen, setNoImageOpen] = useState(false);
 
@@ -68,22 +62,11 @@ export default function JobKeysPage() {
 
   useKeyReturnGate(job, id, tab);
 
-  const phaseDone = tab === 'collect' ? collectDone : returnDone;
   const phaseRecord = tab === 'collect' ? workflow?.collect : workflow?.return;
-  const jobAvailable = job != null;
 
   useEffect(() => {
     void refresh();
   }, [id, refresh]);
-
-  useEffect(() => {
-    if (!job) return;
-    const record =
-      tab === 'collect' ? getKeyWorkflow(job)?.collect : getKeyWorkflow(job)?.return;
-    setStepsConfirmed(record?.stepsConfirmed ?? false);
-    setPhotos(record?.photoUrls ?? []);
-    setNotes(record?.notes ?? '');
-  }, [id, tab, jobAvailable]);
 
   if (!job) {
     return (
@@ -107,7 +90,7 @@ export default function JobKeysPage() {
         variant="workspace"
       >
         <JobWorkspaceNav job={job} active="handover" />
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground mt-4 text-sm">
           No key collection required for this job.
         </p>
         <Link href={jobDetail(id)}>
@@ -116,8 +99,6 @@ export default function JobKeysPage() {
       </InspectorShell>
     );
   }
-
-  const access = job.keyAccess;
 
   const switchTab = (next: Tab) => {
     if (next === 'return' && !returnUnlocked) {
@@ -141,27 +122,11 @@ export default function JobKeysPage() {
     router.replace(jobAreas(id, job.type));
   };
 
-  const submitReturn = async () => {
+  const submitReturn = async (record: KeyPhaseRecord) => {
     if (returnDone) return;
-
-    if (!stepsConfirmed) {
-      toast.error('Confirm you completed all steps.');
-      return;
-    }
-    if (access.photoRequired && photos.length === 0) {
-      setNoImageOpen(true);
-      return;
-    }
-
     try {
       setSubmitting(true);
-      await saveKeyWorkflow(id, 'return', {
-        completedAt: new Date().toISOString(),
-        stepsConfirmed: true,
-        photoConfirmed: access.photoRequired ? true : undefined,
-        photoUrls: access.photoRequired ? photos : undefined,
-        notes: notes.trim() || undefined,
-      });
+      await saveKeyWorkflow(id, 'return', record);
     } catch {
       return;
     } finally {
@@ -175,7 +140,55 @@ export default function JobKeysPage() {
     }, 0);
   };
 
-  const steps = access.returnSteps;
+  const completedView = (phaseLabel: string) => (
+    <div className="space-y-4">
+      <JobPropertyHeader job={job} inspectorName={profile.name} />
+      <div className="space-y-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
+        <div className="flex items-center gap-2 text-xs text-emerald-400">
+          <CheckCircle2 className="size-4 shrink-0" />
+          <span>
+            Handover completed · {phaseLabel}
+            {phaseRecord?.completedAt
+              ? ` · ${formatDateTime(phaseRecord.completedAt)}`
+              : ''}
+          </span>
+        </div>
+        {phaseRecord?.handoverParty ? (
+          <p className="text-xs">
+            With {phaseRecord.handoverParty}
+            {phaseRecord.contactName ? ` · ${phaseRecord.contactName}` : ''}
+          </p>
+        ) : null}
+        {(phaseRecord?.photoUrls?.length ?? 0) > 0 ? (
+          <KeyPhasePhotoField
+            label="Submitted photos"
+            photos={phaseRecord?.photoUrls ?? []}
+            onChange={() => undefined}
+            disabled
+          />
+        ) : (
+          <KeyPhasePhotoField
+            label="Submitted photos"
+            photos={[]}
+            onChange={() => undefined}
+            disabled
+            onEmptyPress={() => setNoImageOpen(true)}
+          />
+        )}
+        {phaseRecord?.notes && (
+          <p className="text-muted-foreground whitespace-pre-wrap text-xs">
+            {phaseRecord.notes}
+          </p>
+        )}
+        <p className="text-muted-foreground text-[10px]">
+          This step cannot be edited after submission.
+        </p>
+        <Link href={jobDetail(id)}>
+          <Button className="w-full">Back to job details</Button>
+        </Link>
+      </div>
+    </div>
+  );
 
   return (
     <InspectorShell
@@ -184,8 +197,8 @@ export default function JobKeysPage() {
       variant="workspace"
     >
       <JobWorkspaceNav job={job} active="handover" />
-      <div className="space-y-5">
-        <div className="mt-4 mb-1 flex gap-1.5 rounded-xl border bg-secondary/30 p-1.5">
+      <div className="space-y-5 pt-4">
+        <div className="mb-1 flex gap-1.5 rounded-xl border bg-secondary/30 p-1.5">
           <button
             type="button"
             onClick={() => switchTab('collect')}
@@ -232,56 +245,11 @@ export default function JobKeysPage() {
 
         {tab === 'collect' ? (
           collectDone ? (
-            <div className="space-y-4">
-              <JobPropertyHeader job={job} inspectorName={profile.name} />
-              <div className="space-y-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
-                <div className="flex items-center gap-2 text-xs text-emerald-400">
-                  <CheckCircle2 className="size-4 shrink-0" />
-                  <span>
-                    Handover completed · Collecting keys
-                    {phaseRecord?.completedAt
-                      ? ` · ${formatDateTime(phaseRecord.completedAt)}`
-                      : ''}
-                  </span>
-                </div>
-                {phaseRecord?.handoverParty ? (
-                  <p className="text-xs">
-                    With {phaseRecord.handoverParty}
-                    {phaseRecord.contactName ? ` · ${phaseRecord.contactName}` : ''}
-                  </p>
-                ) : null}
-                {(phaseRecord?.photoUrls?.length ?? 0) > 0 ? (
-                  <KeyPhasePhotoField
-                    label="Submitted photos"
-                    photos={phaseRecord?.photoUrls ?? []}
-                    onChange={() => undefined}
-                    disabled
-                  />
-                ) : (
-                  <KeyPhasePhotoField
-                    label="Submitted photos"
-                    photos={[]}
-                    onChange={() => undefined}
-                    disabled
-                    onEmptyPress={() => setNoImageOpen(true)}
-                  />
-                )}
-                {phaseRecord?.notes && (
-                  <p className="text-muted-foreground whitespace-pre-wrap text-xs">
-                    {phaseRecord.notes}
-                  </p>
-                )}
-                <p className="text-muted-foreground text-[10px]">
-                  This step cannot be edited after submission.
-                </p>
-                <Link href={jobDetail(id)}>
-                  <Button className="w-full">Back to job details</Button>
-                </Link>
-              </div>
-            </div>
+            completedView('Collecting keys')
           ) : (
             <HandoverCollectForm
               job={job}
+              mode="collect"
               inspectorName={profile.name}
               deviceLocation={deviceLocation}
               submitting={submitting}
@@ -289,97 +257,18 @@ export default function JobKeysPage() {
               onSubmit={submitCollect}
             />
           )
-        ) : phaseDone ? (
-          <div className="space-y-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
-            <div className="flex items-center gap-2 text-xs text-emerald-400">
-              <CheckCircle2 className="size-4 shrink-0" />
-              <span>
-                Handover completed · Returning keys
-                {phaseRecord?.completedAt
-                  ? ` · ${formatDateTime(phaseRecord.completedAt)}`
-                  : ''}
-              </span>
-            </div>
-            {access.photoRequired && (phaseRecord?.photoUrls?.length ?? 0) > 0 && (
-              <KeyPhasePhotoField
-                label="Submitted photos"
-                photos={phaseRecord?.photoUrls ?? []}
-                onChange={() => undefined}
-                disabled
-              />
-            )}
-            {phaseRecord?.notes && (
-              <p className="text-muted-foreground text-xs">Notes: {phaseRecord.notes}</p>
-            )}
-            <p className="text-muted-foreground text-[10px]">
-              This step cannot be edited after submission.
-            </p>
-            <Link href={jobDetail(id)}>
-              <Button className="w-full">Back to job details</Button>
-            </Link>
-          </div>
+        ) : returnDone ? (
+          completedView('Returning keys')
         ) : (
-          <>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <KeyRound className="text-primary size-4" />
-                  Handover (returning keys)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                <p className="font-medium">{access.location}</p>
-                <ol className="list-decimal space-y-2 pl-4 text-xs leading-relaxed">
-                  {steps.map((step) => (
-                    <li key={step}>{step}</li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
-
-            <p className="text-muted-foreground text-xs">
-              Required after the inspection is finished — completes the task.
-            </p>
-
-            <div className="space-y-4 rounded-lg border border-border/80 bg-card p-4">
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={stepsConfirmed}
-                  onChange={(e) => setStepsConfirmed(e.target.checked)}
-                  className="mt-0.5"
-                />
-                <span>I confirm all steps above are done</span>
-              </label>
-
-              {access.photoRequired && (
-                <KeyPhasePhotoField
-                  photos={photos}
-                  onChange={setPhotos}
-                  onEmptyPress={() => setNoImageOpen(true)}
-                />
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="key-notes">Notes (optional)</Label>
-                <Input
-                  id="key-notes"
-                  placeholder="e.g. lockbox stiff, left keys with agent"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-
-              <Button
-                type="button"
-                className="w-full"
-                disabled={submitting}
-                onClick={() => void submitReturn()}
-              >
-                {submitting ? 'Uploading proof…' : 'Handover completed'}
-              </Button>
-            </div>
-          </>
+          <HandoverCollectForm
+            job={job}
+            mode="return"
+            inspectorName={profile.name}
+            deviceLocation={deviceLocation}
+            submitting={submitting}
+            initial={phaseRecord}
+            onSubmit={submitReturn}
+          />
         )}
       </div>
       <NoImageDialog

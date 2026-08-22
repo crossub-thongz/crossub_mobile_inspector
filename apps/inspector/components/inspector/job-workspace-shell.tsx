@@ -28,7 +28,7 @@ export function JobWorkspaceShell({
       >
         <JobWorkspaceNav job={job} active={active} />
       </div>
-      {children}
+      <div className="pt-4">{children}</div>
     </InspectorShell>
   );
 }
