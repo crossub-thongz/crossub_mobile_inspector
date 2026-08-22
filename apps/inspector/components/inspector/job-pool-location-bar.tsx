@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   POOL_RADIUS_OPTIONS,
+  POOL_SORT_LABEL,
   reverseGeocodeLabel,
   searchPlaces,
   type GeocodeHit,
@@ -211,8 +212,11 @@ export function JobPoolLocationBar({
               onChange={(event) => onSortChange(event.target.value as PoolSort)}
               className="border-border bg-card h-7 rounded-full border px-2 text-[11px] font-semibold"
             >
-              <option value="nearest">Nearest</option>
-              <option value="soonest">Soonest</option>
+              {(Object.keys(POOL_SORT_LABEL) as PoolSort[]).map((value) => (
+                <option key={value} value={value}>
+                  {POOL_SORT_LABEL[value]}
+                </option>
+              ))}
             </select>
           </label>
         </div>

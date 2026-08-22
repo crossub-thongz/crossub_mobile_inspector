@@ -146,6 +146,8 @@ export interface InspectionJob {
   longitude?: number;
   scheduledDate: string;
   scheduledTime: string;
+  /** When the inspection record was created (pool "newest" sort). */
+  createdAt?: string;
   priority: JobPriority;
   distanceKm: number;
   status: JobStatus;

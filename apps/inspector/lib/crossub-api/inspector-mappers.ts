@@ -212,6 +212,7 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     ...(leaseEnd ? { leaseEnd } : {}),
     scheduledDate: scheduled,
     scheduledTime: scheduled,
+    createdAt: asString(dto.createdAt) ?? undefined,
     priority: dto.urgent ? 'urgent' : 'normal',
     distanceKm: 0,
     status: mapInspectionJobStatus(dto, type),

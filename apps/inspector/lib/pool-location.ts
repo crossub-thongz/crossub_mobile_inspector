@@ -2,7 +2,13 @@ import type { GeoPoint } from '@/lib/travel';
 
 export const POOL_RADIUS_OPTIONS = [10, 25, 50, 100] as const;
 export type PoolRadiusKm = (typeof POOL_RADIUS_OPTIONS)[number] | null;
-export type PoolSort = 'nearest' | 'soonest';
+export type PoolSort = 'nearest' | 'soonest' | 'newest';
+
+export const POOL_SORT_LABEL: Record<PoolSort, string> = {
+  nearest: 'Nearest',
+  soonest: 'Soonest',
+  newest: 'Newest',
+};
 
 export type PoolOrigin = GeoPoint & {
   label: string;
@@ -44,7 +50,10 @@ export function loadPoolLocationPrefs(): PoolLocationPrefs {
     return {
       origin,
       radiusKm: radius,
-      sort: parsed.sort === 'soonest' ? 'soonest' : 'nearest',
+      sort:
+        parsed.sort === 'soonest' || parsed.sort === 'newest'
+          ? parsed.sort
+          : 'nearest',
     };
   } catch {
     return DEFAULT_PREFS;

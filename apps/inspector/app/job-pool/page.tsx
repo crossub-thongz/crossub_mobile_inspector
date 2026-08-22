@@ -25,6 +25,7 @@ import {
 } from '@/lib/inspector-access-level';
 import {
   loadPoolLocationPrefs,
+  POOL_SORT_LABEL,
   savePoolLocationPrefs,
   type PoolOrigin,
 } from '@/lib/pool-location';
@@ -119,6 +120,11 @@ export default function JobPoolPage() {
           new Date(a.job.scheduledTime).getTime() -
           new Date(b.job.scheduledTime).getTime()
         );
+      }
+      if (prefs.sort === 'newest') {
+        const createdA = a.job.createdAt ?? a.job.scheduledTime;
+        const createdB = b.job.createdAt ?? b.job.scheduledTime;
+        return new Date(createdB).getTime() - new Date(createdA).getTime();
       }
       if (a.distanceKm !== b.distanceKm) return a.distanceKm - b.distanceKm;
       return (
@@ -222,7 +228,7 @@ export default function JobPoolPage() {
                   within {radiusLabel}
                 </p>
                 <p className="text-muted-foreground text-[11px]">
-                  Sorted by {prefs.sort === 'soonest' ? 'Soonest' : 'Nearest'}
+                  Sorted by {POOL_SORT_LABEL[prefs.sort]}
                 </p>
               </div>
             </div>
