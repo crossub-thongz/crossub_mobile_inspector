@@ -18,7 +18,7 @@ import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { jobDetail, jobHistory, jobKeys, jobWorkflow, ROUTES } from '@/constants/routes';
+import { jobDetail, inspectionsByType, jobHistory, jobKeys, jobWorkflow, ROUTES } from '@/constants/routes';
 import { isPoolJob } from '@/lib/inspector-job-filters';
 import { jobLookupMiss } from '@/lib/job-lookup';
 import {
@@ -59,7 +59,7 @@ export default function JobDetailPage() {
   }
 
   const poolPreview = isPoolJob(job);
-  const backHref = poolPreview ? ROUTES.JOB_POOL : ROUTES.INSPECTIONS;
+  const backHref = poolPreview ? ROUTES.JOB_POOL : inspectionsByType(job.type);
 
   const workflowHref = jobWorkflow(job.id, job.type);
   const workflowStarted =

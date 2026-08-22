@@ -13,21 +13,17 @@ import {
   inspectionsByType,
 } from '@/constants/routes';
 import { isStaffAssignedJob } from '@/lib/inspector-job-filters';
-import { isKeyCollectComplete, isKeyReturnComplete } from '@/lib/key-access-workflow';
+import { inspectorLevelAllows } from '@/lib/inspector-access-level';
 
 export default function DashboardPage() {
-  const { summary, jobs } = useInspectorData();
-
-  const keyPending = jobs.filter(
-    (j) =>
-      j.keyAccess &&
-      j.status !== 'completed' &&
-      (!isKeyCollectComplete(j) || !isKeyReturnComplete(j)),
-  ).length;
+  const { summary, jobs, profile } = useInspectorData();
 
   const crossubAssignedPending = jobs.filter(
     (j) => isStaffAssignedJob(j) && j.status !== 'completed',
   ).length;
+
+  const showOpen = inspectorLevelAllows(profile.accessLevel, 'open');
+  const showTribunal = inspectorLevelAllows(profile.accessLevel, 'tribunal');
 
   return (
     <InspectorShell variant="home">
@@ -43,21 +39,6 @@ export default function DashboardPage() {
                 completedWeek={summary.completedThisWeek}
               />
             </DashboardHubCard>
-
-            <DashboardHubCard
-              href={ROUTES.KEY_MANAGEMENT}
-              title={
-                <>
-                  <span className="text-primary font-semibold">KEY</span>
-                  {keyPending > 0 && (
-                    <span className="bg-primary/15 text-primary mx-1 inline-flex rounded-md px-1.5 py-0.5 text-xs font-bold tabular-nums">
-                      {keyPending}
-                    </span>
-                  )}
-                  Management
-                </>
-              }
-            />
           </div>
 
           <div className="flex min-h-[18.5rem] flex-col gap-2.5">
@@ -78,11 +59,15 @@ export default function DashboardPage() {
                 </>
               }
             />
-            <DashboardHubCard
-              href={inspectionsByType('open')}
-              title="Open Inspection"
-            />
-            <DashboardHubCard href={ROUTES.TRIBUNAL} title="Tribunal" />
+            {showOpen ? (
+              <DashboardHubCard
+                href={inspectionsByType('open')}
+                title="Open Inspection"
+              />
+            ) : null}
+            {showTribunal ? (
+              <DashboardHubCard href={ROUTES.TRIBUNAL} title="Tribunal" />
+            ) : null}
           </div>
         </div>
       </div>

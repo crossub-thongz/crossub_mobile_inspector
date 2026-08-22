@@ -21,6 +21,10 @@ import {
 import { ROUTES } from '@/constants/routes';
 import { fetchPoolInspections } from '@/lib/crossub-api/inspector-client';
 import { mapPoolInspections } from '@/lib/crossub-api/inspector-mappers';
+import {
+  inspectorLevelAllows,
+  poolTypesForInspectorLevel,
+} from '@/lib/inspector-access-level';
 import type { InspectionJob } from '@/lib/types';
 
 export default function JobPoolPage() {
@@ -31,7 +35,13 @@ export default function JobPoolPage() {
     rosterLinked,
     poolError,
     refresh,
+    profile,
   } = useInspectorData();
+  const allowedPoolTypes = useMemo(
+    () => poolTypesForInspectorLevel(profile.accessLevel),
+    [profile.accessLevel],
+  );
+  const showOpenBatch = inspectorLevelAllows(profile.accessLevel, 'open');
   const [filter, setFilter] = useState<JobPoolFilter>('all');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -43,6 +53,12 @@ export default function JobPoolPage() {
     if (!receivingJobs) return;
     void refresh({ background: true, includePool: true });
   }, [receivingJobs, refresh]);
+
+  useEffect(() => {
+    if (filter !== 'all' && !allowedPoolTypes.includes(filter)) {
+      setFilter('all');
+    }
+  }, [allowedPoolTypes, filter]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -143,6 +159,7 @@ export default function JobPoolPage() {
           came here looking for Saturday work needs to be sent somewhere, not left to
           conclude the opens have dried up.
         */}
+        {showOpenBatch ? (
         <Link
           href={ROUTES.OPEN_BATCH}
           className="border-border bg-card hover:border-primary/40 flex items-center gap-3 rounded-xl border p-3 transition-colors"
@@ -159,8 +176,14 @@ export default function JobPoolPage() {
           </div>
           <ChevronRight className="text-muted-foreground size-4 shrink-0" />
         </Link>
+        ) : null}
 
-        <JobPoolTypeTags active={filter} onChange={setFilter} counts={counts} />
+        <JobPoolTypeTags
+          active={filter}
+          onChange={setFilter}
+          counts={counts}
+          types={allowedPoolTypes}
+        />
 
         {!receivingJobs ? (
           <EmptyState
@@ -220,7 +243,7 @@ export default function JobPoolPage() {
           />
         ) : filter === 'all' ? (
           <div className="space-y-5">
-            {CORE_INSPECTION_TYPES.map((type) => {
+            {allowedPoolTypes.map((type) => {
               const typeJobs = searchedJobs.filter((j) => j.type === type);
               if (typeJobs.length === 0) return null;
 

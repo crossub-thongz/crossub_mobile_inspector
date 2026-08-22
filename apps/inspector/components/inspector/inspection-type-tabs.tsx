@@ -69,19 +69,21 @@ export function JobPoolTypeTags({
   active,
   onChange,
   counts,
+  types = CORE_INSPECTION_TYPES,
 }: {
   active: JobPoolFilter;
   onChange: (filter: JobPoolFilter) => void;
   counts: Record<CoreInspectionType, number>;
+  types?: readonly CoreInspectionType[];
 }) {
-  const allCount = CORE_INSPECTION_TYPES.reduce(
+  const allCount = types.reduce(
     (sum, type) => sum + (counts[type] ?? 0),
     0,
   );
 
   const tags: { id: JobPoolFilter; label: string; count: number }[] = [
     { id: 'all', label: 'ALL', count: allCount },
-    ...CORE_INSPECTION_TYPES.map((type) => ({
+    ...types.map((type) => ({
       id: type,
       label: INSPECTION_TYPE_LABEL[type],
       count: counts[type] ?? 0,

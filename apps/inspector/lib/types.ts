@@ -125,6 +125,8 @@ export interface InspectorProfile {
   email: string;
   phone: string;
   tribunalQualified: boolean;
+  /** 1–5 roster capability tag. Defaults to 4 when the API has not sent one yet. */
+  accessLevel: number;
   weeklyEarnings: number;
   /** Average performance rating (1–5). Null for brand-new inspectors. */
   rating: number | null;

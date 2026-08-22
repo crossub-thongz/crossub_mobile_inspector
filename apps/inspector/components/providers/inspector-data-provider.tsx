@@ -78,9 +78,11 @@ import {
   filterUpcomingInspections,
   isApiInspectionId,
   isDemoJobId,
+  isPoolJob,
 } from '@/lib/inspector-job-filters';
 import {
   clearPersistedJobProgress,
+  jobHasLocalProgress,
   loadPersistedJobProgress,
   mergeJobWithLocalProgress,
   persistJobProgress,
@@ -296,6 +298,7 @@ const DEMO_PROFILE: InspectorProfile = {
   email: '',
   phone: '',
   tribunalQualified: false,
+  accessLevel: 4,
   weeklyEarnings: 0,
   rating: null,
   totalCompleted: 0,
@@ -628,8 +631,9 @@ export function InspectorDataProvider({
       ...(fetchPool ? poolFromApi.map((j) => j.id) : [...apiPoolIds.current]),
     ]);
     if (inspections.status === 'fulfilled' || (fetchPool && pool.status === 'fulfilled')) {
+      const inspectionsOk = inspections.status === 'fulfilled';
       const apiIds = new Set([
-        ...assignedFromApi.map((j) => j.id),
+        ...(inspectionsOk ? assignedFromApi.map((j) => j.id) : []),
         ...(fetchPool ? poolFromApi.map((j) => j.id) : []),
       ]);
       let assignedWithKeys = assignedFromApi;
@@ -640,7 +644,7 @@ export function InspectorDataProvider({
       // 5s refresh (113 jobs on staging), which exhausted the browser's connection
       // pool and made unrelated fetches fail as "API unavailable".
       const poolWithKeys = poolFromApi;
-      if (connected) {
+      if (connected && inspectionsOk) {
         assignedWithKeys = await enrichJobsWithKeyCollection(assignedFromApi);
       }
       setJobs((prev) => {
@@ -686,6 +690,15 @@ export function InspectorDataProvider({
                   j.status === 'available',
               )
             : [];
+        const assignedRows = inspectionsOk
+          ? assignedWithKeys.map(mergeApiJobFinal)
+          : prev.filter(
+              (j) =>
+                !isDemoJobId(j.id) &&
+                !apiPoolIds.current.has(j.id) &&
+                j.source !== 'pool' &&
+                j.status !== 'available',
+            );
         // When the API is reachable, UUID jobs must come from assigned/pool
         // responses. Keeping a stale local "accepted" card after a failed or
         // never-persisted claim is why admin/agent saw no inspector while the
@@ -693,21 +706,30 @@ export function InspectorDataProvider({
         const localOnly = prev.filter((j) => {
           if (isDemoJobId(j.id)) return false;
           if (apiIds.has(j.id)) return false;
+          if (assignedRows.some((row) => row.id === j.id)) return false;
           if (keptPoolRows.some((p) => p.id === j.id)) return false;
-          if (connected && isApiInspectionId(j.id)) {
+          if (connected && inspectionsOk && isApiInspectionId(j.id)) {
+            if (jobHasLocalProgress(j.id) && !isPoolJob(j)) {
+              return true;
+            }
             clearPersistedJobProgress(j.id);
             return false;
           }
           return true;
         });
         const merged = [
-          ...assignedWithKeys.map(mergeApiJobFinal),
+          ...assignedRows,
           ...(fetchPool
             ? poolWithKeys.map(mergeApiJobFinal)
             : keptPoolRows),
           ...localOnly,
         ];
-        return merged.filter((j) => !isDemoJobId(j.id));
+        const seen = new Set<string>();
+        return merged.filter((j) => {
+          if (isDemoJobId(j.id) || seen.has(j.id)) return false;
+          seen.add(j.id);
+          return true;
+        });
       });
     }
     if (ledger.status === 'fulfilled') {
@@ -1795,25 +1817,28 @@ export function InspectorDataProvider({
     const localName = registration
       ? `${registration.firstName} ${registration.lastName}`.trim()
       : '';
-    const roster = serverProfile?.roster as
-      | {
-          averageRating?: number | null;
-          totalCompleted?: number;
-          lateArrivals?: number;
-        }
-      | null
-      | undefined;
-    return {
+      const roster = serverProfile?.roster as
+        | {
+            averageRating?: number | null;
+            totalCompleted?: number;
+            lateArrivals?: number;
+            tribunalQualified?: boolean;
+            accessLevel?: number;
+          }
+        | null
+        | undefined;
+      const accessLevel =
+        roster?.accessLevel ??
+        (roster?.tribunalQualified || registration?.tribunalQualified ? 5 : 4);
+      return {
       ...DEMO_PROFILE,
       id: serverProfile?.roster?.inspectorId ?? DEMO_PROFILE.id,
       name: serverName || localName || DEMO_PROFILE.name,
       email:
         serverProfile?.email ?? registration?.email ?? user?.email ?? DEMO_PROFILE.email,
       phone: serverProfile?.phone ?? registration?.mobile ?? DEMO_PROFILE.phone,
-      tribunalQualified:
-        serverProfile?.roster?.tribunalQualified ??
-        registration?.tribunalQualified ??
-        false,
+      tribunalQualified: accessLevel === 3 || accessLevel === 5,
+      accessLevel,
       weeklyEarnings: summary.weeklyEarnings,
       rating: roster?.averageRating ?? null,
       totalCompleted: roster?.totalCompleted ?? 0,

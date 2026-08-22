@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { ArrowLeft, ClipboardCheck, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { EmptyState } from '@/components/inspector/empty-state';
 import { InspectionListCard } from '@/components/inspector/inspection-list-card';
@@ -20,21 +20,28 @@ import {
   inspectionTypeHeading,
   type CoreInspectionType,
 } from '@/constants/inspection';
+import { poolTypesForInspectorLevel } from '@/lib/inspector-access-level';
 import { isStaffAssignedJob } from '@/lib/inspector-job-filters';
+import {
+  readLastInspectionsSection,
+  readLastInspectionsType,
+  writeLastInspectionsSection,
+  writeLastInspectionsType,
+} from '@/lib/inspections-list-prefs';
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 type StatusFilter = 'pending' | 'completed';
 type ListSection = 'all' | 'crossub';
 
-function parseType(value: string | null): CoreInspectionType {
+function parseType(value: string | null): CoreInspectionType | null {
   if (
     value &&
     INSPECTION_LIST_TAB_ORDER.includes(value as CoreInspectionType)
   ) {
     return value as CoreInspectionType;
   }
-  return 'outgoing';
+  return null;
 }
 
 function parseSection(value: string | null): ListSection {
@@ -59,13 +66,69 @@ function matchesQuery(job: InspectionJob, q: string): boolean {
 
 export default function InspectionsPageClient() {
   const searchParams = useSearchParams();
-  const initialType = parseType(searchParams.get('type'));
-  const initialSection = parseSection(searchParams.get('section'));
-  const [type, setType] = useState<CoreInspectionType>(initialType);
-  const [section, setSection] = useState<ListSection>(initialSection);
+  const router = useRouter();
+  const urlType = parseType(searchParams.get('type'));
+  const urlSection = searchParams.get('section');
+  const type = urlType ?? readLastInspectionsType() ?? 'outgoing';
+  const section: ListSection =
+    urlSection == null
+      ? readLastInspectionsSection()
+      : parseSection(urlSection);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
   const [query, setQuery] = useState('');
-  const { jobs, completedJobs } = useInspectorData();
+  const { jobs, completedJobs, profile } = useInspectorData();
+
+  const visibleTypes = useMemo(() => {
+    const allowed = new Set(poolTypesForInspectorLevel(profile.accessLevel));
+    const assignedTypes = new Set(
+      [...jobs, ...completedJobs]
+        .filter(isAssignedInspection)
+        .map((j) => j.type as CoreInspectionType),
+    );
+    const types = INSPECTION_LIST_TAB_ORDER.filter(
+      (t) => allowed.has(t) || assignedTypes.has(t),
+    );
+    return types.length > 0 ? types : (['ingoing', 'outgoing'] as CoreInspectionType[]);
+  }, [completedJobs, jobs, profile.accessLevel]);
+
+  const replaceListParams = (next: {
+    type?: CoreInspectionType;
+    section?: ListSection;
+  }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const nextType = next.type ?? type;
+    const nextSection = next.section ?? section;
+    params.set('type', nextType);
+    if (nextSection === 'crossub') params.set('section', 'crossub');
+    else params.delete('section');
+    writeLastInspectionsType(nextType);
+    writeLastInspectionsSection(nextSection);
+    router.replace(`/inspections?${params.toString()}`, { scroll: false });
+  };
+
+  useEffect(() => {
+    if (urlType) writeLastInspectionsType(urlType);
+    if (urlSection != null) {
+      writeLastInspectionsSection(parseSection(urlSection));
+    }
+    if (urlType || urlSection != null) return;
+    const lastType = readLastInspectionsType();
+    const lastSection = readLastInspectionsSection();
+    if (!lastType && lastSection === 'all') return;
+    const params = new URLSearchParams(searchParams.toString());
+    if (lastType) params.set('type', lastType);
+    if (lastSection === 'crossub') params.set('section', 'crossub');
+    router.replace(`/inspections?${params.toString()}`, { scroll: false });
+  }, [urlType, urlSection, searchParams, router]);
+
+  useEffect(() => {
+    if (section !== 'all') return;
+    if (visibleTypes.includes(type)) return;
+    const fallback = visibleTypes[0];
+    if (!fallback) return;
+    replaceListParams({ type: fallback });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the level or current type is invalid
+  }, [section, type, visibleTypes]);
 
   const pendingJobs = useMemo(
     () => jobs.filter((j) => isAssignedInspection(j) && j.status !== 'completed'),
@@ -162,7 +225,7 @@ export default function InspectionsPageClient() {
               <button
                 key={id}
                 type="button"
-                onClick={() => setSection(id)}
+                onClick={() => replaceListParams({ section: id })}
                 className={cn(
                   'rounded-full px-3 py-1.5 text-xs font-semibold transition',
                   section === id
@@ -177,7 +240,11 @@ export default function InspectionsPageClient() {
 
           {section === 'all' ? (
             <div className="mt-3">
-              <InspectionTypeStrip active={type} onChange={setType} />
+              <InspectionTypeStrip
+                active={type}
+                types={visibleTypes}
+                onChange={(nextType) => replaceListParams({ type: nextType })}
+              />
             </div>
           ) : null}
         </div>

@@ -1,10 +1,11 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-import { Camera, ImagePlus, X } from 'lucide-react';
+import { ImagePlus, X } from 'lucide-react';
 
-import { KeyCameraCapture } from '@/components/inspector/key-camera-capture';
+import { NativeCameraSnapButton } from '@/components/inspector/native-camera-snap-button';
 import { Button } from '@/components/ui/button';
+import { IMAGE_UPLOAD_ACCEPT } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 type BeforeAfterPhotoColumnProps = {
@@ -13,7 +14,7 @@ type BeforeAfterPhotoColumnProps = {
   uploading?: boolean;
   disabled?: boolean;
   onAddFiles: (files: File[]) => void | Promise<void>;
-  onAddDataUrl: (dataUrl: string) => void | Promise<void>;
+  onAddDataUrl?: (dataUrl: string) => void | Promise<void>;
   onAddDataUrls?: (dataUrls: string[]) => void | Promise<void>;
   onRemove?: (index: number) => void;
 };
@@ -24,27 +25,14 @@ export function BeforeAfterPhotoColumn({
   uploading = false,
   disabled = false,
   onAddFiles,
-  onAddDataUrl,
-  onAddDataUrls,
   onRemove,
 }: BeforeAfterPhotoColumnProps) {
   const uploadId = useId();
-  const nativeCameraId = useId();
-  const nativeCameraRef = useRef<HTMLInputElement>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
+  const uploadRef = useRef<HTMLInputElement>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   const blocked = disabled || uploading;
   const primaryUrl = photoUrls[0];
-
-  const openSnap = () => {
-    if (blocked) return;
-    if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
-      setCameraOpen(true);
-      return;
-    }
-    nativeCameraRef.current?.click();
-  };
 
   const handleFiles = (files: FileList | null) => {
     if (!files?.length || blocked) return;
@@ -92,30 +80,26 @@ export function BeforeAfterPhotoColumn({
 
       {!disabled && (
         <div className="flex flex-col gap-1.5">
+          <NativeCameraSnapButton
+            disabled={blocked}
+            uploading={uploading}
+            className="w-full flex-none"
+            onFiles={handleFiles}
+          />
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="w-full"
             disabled={blocked}
-            onClick={openSnap}
-          >
-            <Camera className="size-4" />
-            {uploading ? 'Uploading…' : 'Snap photos'}
-          </Button>
-          <label
-            htmlFor={uploadId}
-            className={cn(
-              'inline-flex w-full cursor-pointer items-center justify-center gap-2',
-              'rounded-md border border-input bg-background px-3 text-sm font-medium',
-              'shadow-xs hover:bg-accent hover:text-accent-foreground',
-              'h-8',
-              blocked && 'pointer-events-none opacity-60',
-            )}
+            onClick={() => {
+              if (blocked) return;
+              uploadRef.current?.click();
+            }}
           >
             <ImagePlus className="size-4" />
             Upload
-          </label>
+          </Button>
         </div>
       )}
 
@@ -151,23 +135,10 @@ export function BeforeAfterPhotoColumn({
       ) : null}
 
       <input
-        id={nativeCameraId}
-        ref={nativeCameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="sr-only"
-        tabIndex={-1}
-        disabled={blocked}
-        onChange={(e) => {
-          handleFiles(e.target.files);
-          e.target.value = '';
-        }}
-      />
-      <input
         id={uploadId}
+        ref={uploadRef}
         type="file"
-        accept="image/*"
+        accept={IMAGE_UPLOAD_ACCEPT}
         multiple
         className="sr-only"
         tabIndex={-1}
@@ -176,27 +147,6 @@ export function BeforeAfterPhotoColumn({
           handleFiles(e.target.files);
           e.target.value = '';
         }}
-      />
-
-      <KeyCameraCapture
-        open={cameraOpen}
-        captureMode="burst"
-        onClose={() => setCameraOpen(false)}
-        onCapture={(dataUrl) => {
-          if (blocked) return;
-          void onAddDataUrl(dataUrl);
-        }}
-        onBurstComplete={(dataUrls) => {
-          if (blocked || dataUrls.length === 0) return;
-          if (onAddDataUrls) {
-            void onAddDataUrls(dataUrls);
-            return;
-          }
-          void (async () => {
-            for (const url of dataUrls) await onAddDataUrl(url);
-          })();
-        }}
-        nativeInputId={nativeCameraId}
       />
 
       {previewUrl ? (

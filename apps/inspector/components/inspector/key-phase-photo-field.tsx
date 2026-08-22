@@ -1,13 +1,13 @@
 'use client';
 
-import { useId, useRef, useState } from 'react';
-import { Camera, ImagePlus, X } from 'lucide-react';
+import { useId, useRef } from 'react';
+import { ImagePlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { KeyCameraCapture } from '@/components/inspector/key-camera-capture';
+import { NativeCameraSnapButton } from '@/components/inspector/native-camera-snap-button';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { compressImageForUpload } from '@/lib/compress-image';
+import { compressImageForUpload, IMAGE_UPLOAD_ACCEPT } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 const MAX_PHOTOS = 5;
@@ -24,18 +24,8 @@ export function KeyPhasePhotoField({
   disabled?: boolean;
 }) {
   const uploadId = useId();
-  const nativeCameraId = useId();
-  const nativeCameraRef = useRef<HTMLInputElement>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
-
-  const addDataUrl = (dataUrl: string) => {
-    if (disabled) return;
-    if (photos.length >= MAX_PHOTOS) {
-      toast.error(`Maximum ${MAX_PHOTOS} photos`);
-      return;
-    }
-    onChange([...photos, dataUrl]);
-  };
+  const uploadRef = useRef<HTMLInputElement>(null);
+  const atLimit = photos.length >= MAX_PHOTOS;
 
   const addFiles = async (files: FileList | null) => {
     if (!files?.length || disabled) return;
@@ -48,8 +38,10 @@ export function KeyPhasePhotoField({
     try {
       const urls = await Promise.all(picked.map((file) => compressImageForUpload(file)));
       onChange([...photos, ...urls]);
-    } catch {
-      toast.error('Could not read one of the photos');
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Could not read one of the photos',
+      );
     }
   };
 
@@ -58,83 +50,44 @@ export function KeyPhasePhotoField({
     onChange(photos.filter((_, i) => i !== index));
   };
 
-  const openSnap = () => {
-    if (disabled) return;
-    if (photos.length >= MAX_PHOTOS) {
-      toast.error(`Maximum ${MAX_PHOTOS} photos`);
-      return;
-    }
-    // Prefer live camera preview (works on desktop webcam + mobile with permission).
-    if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
-      setCameraOpen(true);
-      return;
-    }
-    // Fallback: native picker / camera sheet (must be a direct label tap, not .click()).
-    nativeCameraRef.current?.click();
-  };
-
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
       {!disabled && (
         <div className="flex gap-2">
+          <NativeCameraSnapButton
+            disabled={atLimit}
+            multiple={false}
+            label="Snap photo"
+            onFiles={(files) => void addFiles(files)}
+          />
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="flex-1"
-            onClick={openSnap}
-          >
-            <Camera className="size-4" />
-            Snap photo
-          </Button>
-          <label
-            htmlFor={uploadId}
-            className={cn(
-              'inline-flex flex-1 cursor-pointer items-center justify-center gap-2',
-              'rounded-md border border-input bg-background px-3 text-sm font-medium',
-              'shadow-xs hover:bg-accent hover:text-accent-foreground',
-              'h-8',
-            )}
+            disabled={atLimit}
+            onClick={() => uploadRef.current?.click()}
           >
             <ImagePlus className="size-4" />
             Upload
-          </label>
+          </Button>
         </div>
       )}
 
-      {/* Native camera fallback — sr-only (not display:none) so mobile Safari allows it */}
-      <input
-        id={nativeCameraId}
-        ref={nativeCameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="sr-only"
-        tabIndex={-1}
-        onChange={(e) => {
-          void addFiles(e.target.files);
-          e.target.value = '';
-        }}
-      />
       <input
         id={uploadId}
+        ref={uploadRef}
         type="file"
-        accept="image/*"
+        accept={IMAGE_UPLOAD_ACCEPT}
         multiple
         className="sr-only"
         tabIndex={-1}
+        disabled={disabled || atLimit}
         onChange={(e) => {
           void addFiles(e.target.files);
           e.target.value = '';
         }}
-      />
-
-      <KeyCameraCapture
-        open={cameraOpen}
-        onClose={() => setCameraOpen(false)}
-        onCapture={addDataUrl}
-        nativeInputId={nativeCameraId}
       />
 
       {photos.length === 0 ? (

@@ -108,6 +108,7 @@ export const INSPECTOR_PROFILE: InspectorProfile = {
   email: 'alex.chen@crossub.com.au',
   phone: '0412 345 678',
   tribunalQualified: true,
+  accessLevel: 5,
   weeklyEarnings: 0,
   rating: 4.9,
   totalCompleted: 42,

@@ -6,10 +6,10 @@ import { AddSectionControl } from '@/components/inspector/add-section-control';
 import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
 import { EditableChecklistRow } from '@/components/inspector/editable-checklist-row';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
+import { InspectionItemCommentField } from '@/components/inspector/inspection-item-comment-field';
 import { ItemConditionColumnBar } from '@/components/inspector/item-condition-column-bar';
 import { ItemConditionToggles } from '@/components/inspector/item-condition-toggles';
 import { RenameLabelDialog } from '@/components/inspector/rename-label-dialog';
-import { Input } from '@/components/ui/input';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
 import {
   emptyItemMarks,
@@ -99,11 +99,10 @@ export function InspectionSectionPhotos({
                     onChange={(marks) => onChangeMarks(section, marks)}
                     onFillColumn={onFillColumn}
                   />
-                  <Input
-                    placeholder="Comment (optional)"
+                  <InspectionItemCommentField
                     value={itemComments?.[section] ?? ''}
                     disabled={busy}
-                    onChange={(event) => onChangeComment(section, event.target.value)}
+                    onChange={(comment) => onChangeComment(section, comment)}
                   />
                   <InspectionAreaPhotosField
                     label="Item photos"

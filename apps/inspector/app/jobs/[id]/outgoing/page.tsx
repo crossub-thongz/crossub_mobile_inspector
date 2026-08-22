@@ -703,8 +703,10 @@ export default function OutgoingInspectionPage() {
           },
         };
       });
-    } catch {
-      toast.error('Could not upload photo');
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Could not upload photo',
+      );
     } finally {
       setBusy(false);
     }
@@ -904,8 +906,10 @@ export default function OutgoingInspectionPage() {
           },
         };
       });
-    } catch {
-      toast.error('Could not upload photo');
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Could not upload photo',
+      );
     } finally {
       setBusy(false);
     }

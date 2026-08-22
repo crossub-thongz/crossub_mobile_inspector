@@ -43,6 +43,8 @@ import {
   stopsMissingAgentPreference,
   toSydneyInputValue,
 } from '@/lib/open-batch';
+import { ROUTES } from '@/constants/routes';
+import { inspectorLevelAllows } from '@/lib/inspector-access-level';
 import { cn } from '@/lib/utils';
 
 /**
@@ -62,7 +64,7 @@ import { cn } from '@/lib/utils';
  * disabled button with no explanation reads as a broken app.
  */
 export default function OpenBatchPage() {
-  const { receivingJobs } = useInspectorData();
+  const { receivingJobs, profile } = useInspectorData();
   const [overview, setOverview] = useState<OpenBatchOverview | null>(null);
   const [plan, setPlan] = useState<OpenBatchPlan | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -70,6 +72,8 @@ export default function OpenBatchPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const canOpen = inspectorLevelAllows(profile.accessLevel, 'open');
 
   const load = useCallback(async () => {
     try {
@@ -88,8 +92,12 @@ export default function OpenBatchPage() {
   }, []);
 
   useEffect(() => {
+    if (!canOpen) {
+      setLoading(false);
+      return;
+    }
     void load();
-  }, [load]);
+  }, [canOpen, load]);
 
   const togglePick = (inspectionId: string) => {
     setPicked((prior) => {
@@ -177,6 +185,18 @@ export default function OpenBatchPage() {
     overview !== null &&
     (plan?.stops.length ?? 0) + picked.size >= overview.maxSelectable;
   const allConfirmed = Boolean(plan?.confirmed);
+
+  if (!canOpen) {
+    return (
+      <InspectorShell title="Open Task Pool" backHref={ROUTES.DASHBOARD}>
+        <EmptyState
+          icon={Route}
+          title="Open inspections not available"
+          description="The open task pool is available from Level 4."
+        />
+      </InspectorShell>
+    );
+  }
 
   return (
     <InspectorShell title="Open Task Pool">

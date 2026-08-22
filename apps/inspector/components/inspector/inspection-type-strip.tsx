@@ -16,13 +16,15 @@ export const INSPECTION_LIST_TAB_ORDER: CoreInspectionType[] = [
 export function InspectionTypeStrip({
   active,
   onChange,
+  types = INSPECTION_LIST_TAB_ORDER,
 }: {
   active: CoreInspectionType;
   onChange: (type: CoreInspectionType) => void;
+  types?: readonly CoreInspectionType[];
 }) {
   return (
     <div className="border-border flex border-b">
-      {INSPECTION_LIST_TAB_ORDER.map((type) => {
+      {types.map((type) => {
         const selected = active === type;
         const label =
           type === 'routine'

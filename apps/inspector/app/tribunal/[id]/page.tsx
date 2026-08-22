@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TRIBUNAL_OUTCOMES } from '@/constants/inspection';
 import { ROUTES } from '@/constants/routes';
+import { inspectorLevelAllows } from '@/lib/inspector-access-level';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import type { TribunalOutcome } from '@/lib/types';
 
@@ -18,8 +19,19 @@ export default function TribunalDetailPage() {
     getTribunal,
     updateTribunalChecklist,
     recordTribunalOutcome,
+    profile,
   } = useInspectorData();
   const hearing = getTribunal(id);
+
+  if (!inspectorLevelAllows(profile.accessLevel, 'tribunal')) {
+    return (
+      <InspectorShell title="Tribunal" backHref={ROUTES.DASHBOARD}>
+        <p className="text-muted-foreground text-sm">
+          Tribunal assignments are only shown for Level 3 and Level 5 inspectors.
+        </p>
+      </InspectorShell>
+    );
+  }
 
   if (!hearing) {
     return (

@@ -28,14 +28,13 @@ export function isStaffAssignedJob(job: InspectionJob): boolean {
   return job.assignedBy === 'CROSSUB' && job.source === 'assigned';
 }
 
-/** Accepted/active inspection work scheduled for today. */
+/** Accepted/active inspection work scheduled for today (Inspect tab). */
 export function isTodaysInspection(job: InspectionJob): boolean {
   return (
     isToday(job.scheduledDate) &&
     job.status !== 'completed' &&
     job.status !== 'declined' &&
-    job.status !== 'available' &&
-    job.status !== 'assigned'
+    !isPoolJob(job)
   );
 }
 
@@ -46,8 +45,7 @@ export function isUpcomingInspection(job: InspectionJob): boolean {
     new Date(job.scheduledDate) > new Date() &&
     job.status !== 'completed' &&
     job.status !== 'declined' &&
-    job.status !== 'available' &&
-    job.status !== 'assigned'
+    !isPoolJob(job)
   );
 }
 

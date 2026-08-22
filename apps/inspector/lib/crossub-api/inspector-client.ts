@@ -543,7 +543,9 @@ export async function uploadInspectionPhoto(
     '/inspector/inspections/{inspectionId}/photos/upload',
     { params: { path: { inspectionId } }, body },
   );
-  if (error || !data) throw new Error('Failed to upload photo');
+  if (error || !data) {
+    throw new Error(crossubErrorMessage(error, 'Failed to upload photo'));
+  }
   return data;
 }
 

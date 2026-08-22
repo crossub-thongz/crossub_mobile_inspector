@@ -6,7 +6,9 @@ import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { JobTypeBadge } from '@/components/inspector/status-badge';
 import { jobDetail, jobHistory, jobWorkflow } from '@/constants/routes';
+import { CORE_INSPECTION_TYPES, type CoreInspectionType } from '@/constants/inspection';
 import { jobStartCta } from '@/lib/inspection-start-flow';
+import { writeLastInspectionsType } from '@/lib/inspections-list-prefs';
 import { buildMapUrl } from '@/lib/navigation';
 import { formatJobRefId } from '@/lib/job-cancellation';
 import type { InspectionJob } from '@/lib/types';
@@ -114,7 +116,16 @@ export function InspectionListCard({
             }
             asChild
           >
-            <Link href={actionHref}>
+            <Link
+              href={actionHref}
+              onClick={() => {
+                if (
+                  CORE_INSPECTION_TYPES.includes(job.type as CoreInspectionType)
+                ) {
+                  writeLastInspectionsType(job.type as CoreInspectionType);
+                }
+              }}
+            >
               {completed ? 'View report' : jobStartCta(job.type, false)}
             </Link>
           </Button>

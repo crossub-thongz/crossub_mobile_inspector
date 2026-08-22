@@ -8,25 +8,32 @@ import { PageIntro } from '@/components/inspector/page-intro';
 import { StatusBadge } from '@/components/inspector/status-badge';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
-import { tribunalDetail } from '@/constants/routes';
+import { ROUTES, tribunalDetail } from '@/constants/routes';
+import { inspectorLevelAllows } from '@/lib/inspector-access-level';
 import { formatDateTime } from '@/lib/utils';
 
 export default function TribunalPage() {
   const { tribunals, profile } = useInspectorData();
+  const showTribunal = inspectorLevelAllows(profile.accessLevel, 'tribunal');
   const upcoming = tribunals.filter((t) => t.status === 'upcoming');
   const completed = tribunals.filter((t) => t.status === 'completed');
+
+  if (!showTribunal) {
+    return (
+      <InspectorShell title="Tribunal" backHref={ROUTES.DASHBOARD}>
+        <EmptyState
+          icon={Scale}
+          title="Tribunal not available"
+          description="Tribunal assignments are only shown for Level 3 and Level 5 inspectors."
+        />
+      </InspectorShell>
+    );
+  }
 
   return (
     <InspectorShell title="Tribunal">
       <div className="space-y-4">
         <PageIntro description="Tribunal-qualified inspectors only. Auto-compiled evidence packages — no manual document gathering." />
-
-        {!profile.tribunalQualified && (
-          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-            Your profile is not marked tribunal-qualified. Contact management to
-            enable tribunal assignments.
-          </p>
-        )}
 
         <section className="space-y-3">
           <h2 className="text-sm font-semibold">Upcoming Hearings</h2>

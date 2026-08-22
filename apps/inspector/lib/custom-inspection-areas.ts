@@ -1,6 +1,7 @@
 import {
   COMMON_DEFAULT_SECTIONS,
   INSPECTION_AREA_CATALOG,
+  getInspectionAreaDefinition,
   type InspectionAreaDefinition,
 } from '@/constants/inspection-areas';
 
@@ -17,6 +18,14 @@ export type CustomAreaDefinition = {
 export function customAreaToDefinition(
   custom: CustomAreaDefinition,
 ): InspectionAreaDefinition {
+  const catalog = getInspectionAreaDefinition(custom.name);
+  const standardDefaults = catalog
+    ? [...catalog.defaultSections]
+    : [...COMMON_DEFAULT_SECTIONS];
+  const standardOptional = catalog
+    ? [...catalog.optionalSections]
+    : ['Custom / Other'];
+
   if (custom.defaultSections || custom.optionalSections) {
     return {
       name: custom.name,
@@ -24,18 +33,18 @@ export function customAreaToDefinition(
         custom.defaultSections && custom.defaultSections.length > 0
           ? [...custom.defaultSections]
           : custom.sectionMode === 'standard'
-            ? [...COMMON_DEFAULT_SECTIONS]
+            ? standardDefaults
             : [],
       optionalSections: custom.optionalSections?.length
         ? [...custom.optionalSections]
-        : ['Custom / Other'],
+        : standardOptional,
     };
   }
   if (custom.sectionMode === 'standard') {
     return {
       name: custom.name,
-      defaultSections: [...COMMON_DEFAULT_SECTIONS],
-      optionalSections: ['Custom / Other'],
+      defaultSections: standardDefaults,
+      optionalSections: standardOptional,
     };
   }
   return {
@@ -73,11 +82,11 @@ export function resolveAreaDefinition(
   const custom = customAreas.find(
     (area) => area.name.trim().toLowerCase() === areaName.trim().toLowerCase(),
   );
-  if (custom?.defaultSections || custom?.optionalSections) {
+  if (custom?.defaultSections?.length || custom?.optionalSections?.length) {
     return customAreaToDefinition(custom);
   }
 
-  const builtIn = INSPECTION_AREA_CATALOG.find((area) => area.name === areaName);
+  const builtIn = getInspectionAreaDefinition(areaName);
   if (builtIn) return builtIn;
   if (custom) return customAreaToDefinition(custom);
 

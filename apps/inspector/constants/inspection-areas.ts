@@ -10,6 +10,42 @@ export const COMMON_DEFAULT_SECTIONS = [
   'Floor Coverings',
 ] as const;
 
+/** Inspection Express bathroom items, in template order. */
+export const BATHROOM_DEFAULT_SECTIONS = [
+  'Walls/tiles',
+  'Floor tiles/floor coverings',
+  'Doors/doorway frames',
+  'Windows/screens/window safety devices',
+  'Ceiling/light fittings',
+  'Blinds/curtains',
+  'Lights/power points',
+  'Bath/taps',
+  'Shower/screen/taps',
+  'Wash basin/taps',
+  'Mirror/cabinet/vanity',
+  'Towel rails',
+  'Toilet/cistern/seat',
+  'Toilet roll holder',
+  'Heating/exhaust fan/vent',
+  'Other',
+] as const;
+
+/** Inspection Express laundry items, in template order. */
+export const LAUNDRY_DEFAULT_SECTIONS = [
+  'Walls/tiles',
+  'Floor tiles/floor coverings',
+  'Doors/doorway frames',
+  'Windows/screens/window safety devices',
+  'Ceiling/light fittings',
+  'Blinds/curtains',
+  'Lights/power points',
+  'Washing machine/taps',
+  'Exhaust fan/vent',
+  'Washing tub',
+  'Dryer',
+  'Other',
+] as const;
+
 export type InspectionAreaDefinition = {
   name: string;
   /** Always shown when the area is available. */
@@ -50,14 +86,11 @@ export const INSPECTION_AREA_CATALOG: readonly InspectionAreaDefinition[] = [
   },
   {
     name: 'Laundry',
-    defaultSections: COMMON_DEFAULT_SECTIONS,
+    defaultSections: LAUNDRY_DEFAULT_SECTIONS,
     optionalSections: [
       'Cupboards / Drawers',
       'Bench Tops / Tiling',
       'Sink / Taps / Disposal Unit',
-      'Washing Tub',
-      'Washing Machine / Dryer',
-      'Exhaust Fan / Vent',
       'Custom / Other',
     ],
   },
@@ -68,17 +101,8 @@ export const INSPECTION_AREA_CATALOG: readonly InspectionAreaDefinition[] = [
   },
   {
     name: 'Bathroom',
-    defaultSections: COMMON_DEFAULT_SECTIONS,
-    optionalSections: [
-      'Wash Basin',
-      'Mirror / Vanity',
-      'Bath / Taps',
-      'Shower / Taps',
-      'Towel Rails',
-      'Toilet & Toilet Roll Holder',
-      'Heating / Vent / Exhaust',
-      'Custom / Other',
-    ],
+    defaultSections: BATHROOM_DEFAULT_SECTIONS,
+    optionalSections: ['Custom / Other'],
   },
   {
     name: 'Balcony',
@@ -137,10 +161,34 @@ export const INSPECTION_AREA_CATALOG: readonly InspectionAreaDefinition[] = [
 /** Ordered area names used by ingoing / outgoing workflows. */
 export const INSPECTION_AREAS = INSPECTION_AREA_CATALOG.map((a) => a.name);
 
+/**
+ * Catalog match for a room name, including numbered copies
+ * (`Bathroom 2` → Bathroom, `Laundry 2` → Laundry).
+ */
+export function catalogAreaNameFor(name: string): string | undefined {
+  const trimmed = name.trim();
+  if (!trimmed) return undefined;
+  const lower = trimmed.toLowerCase();
+  const exact = INSPECTION_AREA_CATALOG.find(
+    (area) => area.name.toLowerCase() === lower,
+  );
+  if (exact) return exact.name;
+  const numbered = /^(.+?)\s+\d+$/.exec(trimmed);
+  if (!numbered) return undefined;
+  const base = numbered[1].trim().toLowerCase();
+  return INSPECTION_AREA_CATALOG.find((area) => area.name.toLowerCase() === base)
+    ?.name;
+}
+
 export function getInspectionAreaDefinition(
   name: string,
 ): InspectionAreaDefinition | undefined {
-  return INSPECTION_AREA_CATALOG.find((a) => a.name === name);
+  const catalogName = catalogAreaNameFor(name);
+  if (!catalogName) return undefined;
+  const def = INSPECTION_AREA_CATALOG.find((area) => area.name === catalogName);
+  if (!def) return undefined;
+  const trimmed = name.trim();
+  return def.name === trimmed ? def : { ...def, name: trimmed };
 }
 
 /** Photo / findings key for a room section. */

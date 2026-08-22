@@ -98,6 +98,10 @@ export function loadPersistedJobProgress(
   }
 }
 
+export function jobHasLocalProgress(jobId: string): boolean {
+  return hasWorkflowProgress(loadPersistedJobProgress(jobId) ?? undefined);
+}
+
 function stripPhotoFields(
   data: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {

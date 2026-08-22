@@ -22,6 +22,7 @@ import { useInspectorData } from '@/components/providers/inspector-data-provider
 import { Button } from '@/components/ui/button';
 import { ROUTES, isPublicRoute } from '@/constants/routes';
 import { Role } from '@/constants/roles';
+import { inspectorLevelAllows } from '@/lib/inspector-access-level';
 import { cn, displayName } from '@/lib/utils';
 
 const PRIMARY_NAV = [
@@ -31,20 +32,16 @@ const PRIMARY_NAV = [
   { href: ROUTES.TRIBUNAL, label: 'Tribunal', icon: Scale },
 ] as const;
 
-const MORE_NAV = [
-  // The bottom bar is full at four, so the weekly open batch lives here — and the Job Pool
-  // screen carries a banner into it, because a screen reachable only by typing a URL is
-  // indistinguishable from a feature that was never built.
-  { href: ROUTES.OPEN_BATCH, label: 'Open task pool' },
-  { href: ROUTES.HISTORY, label: 'Job history' },
-  { href: ROUTES.WEEKLY_AVAILABILITY, label: 'Availability calendar' },
-  { href: ROUTES.KEY_MANAGEMENT, label: 'Key management' },
-  { href: ROUTES.EARNINGS, label: 'Earnings' },
-  { href: ROUTES.REGISTER, label: 'Registration' },
-  { href: ROUTES.MESSAGES, label: 'Messages' },
-  { href: ROUTES.NOTIFICATIONS, label: 'Notifications' },
-  { href: ROUTES.SETTINGS, label: 'Settings' },
-  { href: ROUTES.PROFILE, label: 'Profile' },
+const MORE_NAV_BASE = [
+  { href: ROUTES.OPEN_BATCH, label: 'Open task pool', need: 'open' as const },
+  { href: ROUTES.HISTORY, label: 'Job history', need: null },
+  { href: ROUTES.WEEKLY_AVAILABILITY, label: 'Availability calendar', need: null },
+  { href: ROUTES.EARNINGS, label: 'Earnings', need: null },
+  { href: ROUTES.REGISTER, label: 'Registration', need: null },
+  { href: ROUTES.MESSAGES, label: 'Messages', need: null },
+  { href: ROUTES.NOTIFICATIONS, label: 'Notifications', need: null },
+  { href: ROUTES.SETTINGS, label: 'Settings', need: null },
+  { href: ROUTES.PROFILE, label: 'Profile', need: null },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
@@ -98,7 +95,15 @@ export function InspectorShell({
   const headerRef = useRef<HTMLElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
-  const { notifications, messages, poolJobs, todaysJobs } = useInspectorData();
+  const { notifications, messages, poolJobs, todaysJobs, profile } = useInspectorData();
+  const showTribunal = inspectorLevelAllows(profile.accessLevel, 'tribunal');
+  const showOpen = inspectorLevelAllows(profile.accessLevel, 'open');
+  const primaryNav = PRIMARY_NAV.filter(
+    (item) => item.href !== ROUTES.TRIBUNAL || showTribunal,
+  );
+  const moreNav = MORE_NAV_BASE.filter(
+    (item) => item.need !== 'open' || showOpen,
+  );
   const isMessageThread = /^\/messages\/[^/]+\/?$/.test(pathname);
   const showAvailabilityBubble =
     Boolean(user) && !isPublicRoute(pathname) && !isMessageThread;
@@ -283,7 +288,7 @@ export function InspectorShell({
                 More
               </p>
               <div className="flex flex-col gap-1">
-                {MORE_NAV.map(({ href, label }) => (
+                {moreNav.map(({ href, label }) => (
                   <Link
                     key={href}
                     href={href}
@@ -339,7 +344,7 @@ export function InspectorShell({
 
       <nav className="fixed bottom-0 left-1/2 z-[60] w-full max-w-lg -translate-x-1/2 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
         <div className="flex h-16 items-stretch justify-around px-1">
-          {PRIMARY_NAV.map(({ href, label, icon: Icon }) => {
+          {primaryNav.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             const badge =
               href === ROUTES.JOB_POOL

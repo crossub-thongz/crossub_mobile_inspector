@@ -1,11 +1,10 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { Camera, CheckCircle2, ImagePlus, X } from 'lucide-react';
+import { CheckCircle2, ImagePlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { KeyCameraCapture } from '@/components/inspector/key-camera-capture';
-import { Button } from '@/components/ui/button';
+import { NativeCameraSnapButton } from '@/components/inspector/native-camera-snap-button';
 import { cn } from '@/lib/utils';
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -33,14 +32,7 @@ export function InspectionAreaPhotoRow({
   disabled?: boolean;
 }) {
   const uploadId = useId();
-  const nativeCameraId = useId();
-  const [cameraOpen, setCameraOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-
-  const addDataUrl = (dataUrl: string) => {
-    if (disabled) return;
-    onChange(dataUrl);
-  };
 
   const addFile = async (files: FileList | null) => {
     if (!files?.length || disabled) return;
@@ -49,16 +41,6 @@ export function InspectionAreaPhotoRow({
     } catch {
       toast.error('Could not read the photo');
     }
-  };
-
-  const openSnap = () => {
-    if (disabled) return;
-    if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
-      setCameraOpen(true);
-      return;
-    }
-    // Programmatic click is blocked on iOS — KeyCameraCapture falls back to a label tap.
-    setCameraOpen(true);
   };
 
   return (
@@ -92,16 +74,11 @@ export function InspectionAreaPhotoRow({
 
       {!disabled && (
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={openSnap}
-          >
-            <Camera className="size-4" />
-            {photoUrl ? 'Retake' : 'Snap photo'}
-          </Button>
+          <NativeCameraSnapButton
+            multiple={false}
+            label={photoUrl ? 'Retake' : 'Snap photo'}
+            onFiles={(files) => void addFile(files)}
+          />
           <label
             htmlFor={uploadId}
             className={cn(
@@ -128,18 +105,6 @@ export function InspectionAreaPhotoRow({
       )}
 
       <input
-        id={nativeCameraId}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="sr-only"
-        tabIndex={-1}
-        onChange={(e) => {
-          void addFile(e.target.files);
-          e.target.value = '';
-        }}
-      />
-      <input
         id={uploadId}
         type="file"
         accept="image/*"
@@ -149,13 +114,6 @@ export function InspectionAreaPhotoRow({
           void addFile(e.target.files);
           e.target.value = '';
         }}
-      />
-
-      <KeyCameraCapture
-        open={cameraOpen}
-        onClose={() => setCameraOpen(false)}
-        onCapture={addDataUrl}
-        nativeInputId={nativeCameraId}
       />
 
       {previewOpen && photoUrl && (

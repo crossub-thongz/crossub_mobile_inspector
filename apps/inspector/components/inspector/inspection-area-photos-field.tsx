@@ -1,12 +1,12 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-import { Camera, ImagePlus, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { ImagePlus, X } from 'lucide-react';
 
-import { KeyCameraCapture } from '@/components/inspector/key-camera-capture';
+import { NativeCameraSnapButton } from '@/components/inspector/native-camera-snap-button';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { IMAGE_UPLOAD_ACCEPT } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 type InspectionAreaPhotosFieldProps = {
@@ -16,7 +16,7 @@ type InspectionAreaPhotosFieldProps = {
   disabled?: boolean;
   emptyLabel?: string;
   onAddFiles: (files: File[]) => void | Promise<void>;
-  onAddDataUrl: (dataUrl: string) => void | Promise<void>;
+  onAddDataUrl?: (dataUrl: string) => void | Promise<void>;
   onAddDataUrls?: (dataUrls: string[]) => void | Promise<void>;
   onRemove?: (index: number) => void;
 };
@@ -28,26 +28,13 @@ export function InspectionAreaPhotosField({
   disabled = false,
   emptyLabel = 'Add at least one photo for this area.',
   onAddFiles,
-  onAddDataUrl,
-  onAddDataUrls,
   onRemove,
 }: InspectionAreaPhotosFieldProps) {
   const uploadId = useId();
-  const nativeCameraId = useId();
-  const nativeCameraRef = useRef<HTMLInputElement>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
+  const uploadRef = useRef<HTMLInputElement>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   const blocked = disabled || uploading;
-
-  const openSnap = () => {
-    if (blocked) return;
-    if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
-      setCameraOpen(true);
-      return;
-    }
-    nativeCameraRef.current?.click();
-  };
 
   const handleFiles = (files: FileList | null) => {
     if (!files?.length || blocked) return;
@@ -62,52 +49,33 @@ export function InspectionAreaPhotosField({
 
       {!disabled && (
         <div className="flex gap-2">
+          <NativeCameraSnapButton
+            disabled={blocked}
+            uploading={uploading}
+            onFiles={handleFiles}
+          />
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="flex-1"
             disabled={blocked}
-            onClick={openSnap}
-          >
-            <Camera className="size-4" />
-            {uploading ? 'Uploading…' : 'Snap photos'}
-          </Button>
-          <label
-            htmlFor={uploadId}
-            className={cn(
-              'inline-flex flex-1 cursor-pointer items-center justify-center gap-2',
-              'rounded-md border border-input bg-background px-3 text-sm font-medium',
-              'shadow-xs hover:bg-accent hover:text-accent-foreground',
-              'h-8',
-              blocked && 'pointer-events-none opacity-60',
-            )}
+            onClick={() => {
+              if (blocked) return;
+              uploadRef.current?.click();
+            }}
           >
             <ImagePlus className="size-4" />
             Upload
-          </label>
+          </Button>
         </div>
       )}
 
       <input
-        id={nativeCameraId}
-        ref={nativeCameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        multiple
-        className="sr-only"
-        tabIndex={-1}
-        disabled={blocked}
-        onChange={(e) => {
-          handleFiles(e.target.files);
-          e.target.value = '';
-        }}
-      />
-      <input
         id={uploadId}
+        ref={uploadRef}
         type="file"
-        accept="image/*"
+        accept={IMAGE_UPLOAD_ACCEPT}
         multiple
         className="sr-only"
         tabIndex={-1}
@@ -116,27 +84,6 @@ export function InspectionAreaPhotosField({
           handleFiles(e.target.files);
           e.target.value = '';
         }}
-      />
-
-      <KeyCameraCapture
-        open={cameraOpen}
-        captureMode="burst"
-        onClose={() => setCameraOpen(false)}
-        onCapture={(dataUrl) => {
-          if (blocked) return;
-          void onAddDataUrl(dataUrl);
-        }}
-        onBurstComplete={(dataUrls) => {
-          if (blocked || dataUrls.length === 0) return;
-          if (onAddDataUrls) {
-            void onAddDataUrls(dataUrls);
-            return;
-          }
-          void (async () => {
-            for (const url of dataUrls) await onAddDataUrl(url);
-          })();
-        }}
-        nativeInputId={nativeCameraId}
       />
 
       {photoUrls.length === 0 ? (
