@@ -63,6 +63,7 @@ import {
   layoutTemplateFromProperty,
   mergeCustomAreas,
 } from '@/lib/inspection-layout-template';
+import { scrollInspectionWorkspaceToTop } from '@/lib/utils';
 import { preInspectionSmsHref } from '@/lib/inspection-start-flow';
 import {
   referenceIngoingAreaPlan,
@@ -671,6 +672,7 @@ export default function RoutineInspectionPage() {
   const goToArea = (index: number) => {
     if (index < 0 || index >= areaCatalog.length) return;
     setDraft((prev) => ({ ...prev, areaIndex: index }));
+    scrollInspectionWorkspaceToTop();
   };
 
   const seedSectionIngoing = (section: string): string[] =>

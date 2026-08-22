@@ -93,6 +93,7 @@ import {
   layoutTemplateFromProperty,
   mergeCustomAreas,
 } from '@/lib/inspection-layout-template';
+import { scrollInspectionWorkspaceToTop } from '@/lib/utils';
 
 const RESPONSIBILITY = [
   'Tenant Responsible',
@@ -664,6 +665,7 @@ export default function OutgoingInspectionPage() {
   const goToArea = (index: number) => {
     if (index < 0 || index >= areaCatalog.length) return;
     setDraft((prev) => ({ ...prev, areaIndex: index }));
+    scrollInspectionWorkspaceToTop();
   };
 
   const seedSectionIngoing = (section: string): string[] => {

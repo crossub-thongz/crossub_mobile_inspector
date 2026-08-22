@@ -69,6 +69,7 @@ import {
   layoutTemplateFromProperty,
   mergeCustomAreas,
 } from '@/lib/inspection-layout-template';
+import { scrollInspectionWorkspaceToTop } from '@/lib/utils';
 import {
   useAwaitingAgentPaymentGate,
   useInspectionFinishedGate,
@@ -469,6 +470,7 @@ export default function IngoingInspectionPage() {
   const goToArea = (index: number) => {
     if (index < 0 || index >= areaCatalog.length) return;
     setDraft((prev) => ({ ...prev, areaIndex: index }));
+    scrollInspectionWorkspaceToTop();
   };
 
   const markAvailable = (available: boolean) => {

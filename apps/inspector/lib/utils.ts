@@ -25,6 +25,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Scroll the inspector workspace back to the top after changing areas. */
+export function scrollInspectionWorkspaceToTop() {
+  if (typeof window === 'undefined') return;
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+
 export function displayName(user: {
   firstName?: string | null;
   lastName?: string | null;
