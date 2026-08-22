@@ -61,6 +61,7 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
   job: InspectionJob | undefined,
   kind: T['kind'],
   createEmpty: () => T,
+  enabled = true,
 ) {
   const { updateJobWorkflow, apiConnected } = useInspectorData();
   const [draft, setDraftState] = useState<T>(createEmpty);
@@ -69,6 +70,8 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
   const remoteMerged = useRef(false);
   const draftRef = useRef(draft);
   draftRef.current = draft;
+  const jobRef = useRef(job);
+  jobRef.current = job;
   const deviceIdRef = useRef(getOrCreateInspectionDeviceId());
   const [hydrateTick, setHydrateTick] = useState(0);
 
@@ -93,7 +96,13 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
   }, [apiConnected]);
 
   useEffect(() => {
-    if (!apiConnected || !jobId || !localDraftLoaded.current || remoteMerged.current) {
+    if (
+      !enabled ||
+      !apiConnected ||
+      !jobId ||
+      !localDraftLoaded.current ||
+      remoteMerged.current
+    ) {
       return;
     }
     let cancelled = false;
@@ -131,16 +140,17 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
     return () => {
       cancelled = true;
     };
-  }, [apiConnected, jobId, kind, hydrateTick]);
+  }, [apiConnected, enabled, jobId, kind, hydrateTick]);
 
   const persistDraft = useCallback(
     (next: T) => {
-      if (!job) return;
+      const currentJob = jobRef.current;
+      if (!enabled || !currentJob) return;
       const stamped = stampDraftUpdatedAt(next);
       updateJobWorkflow(
         jobId,
         Math.max(stamped.areaIndex + 1, 1),
-        buildInspectionDraftPatch(job, stamped),
+        buildInspectionDraftPatch(currentJob, stamped),
       );
       if (!apiConnected) return;
       void saveInspectionExecutionDraft(jobId, {
@@ -152,15 +162,16 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
         // Local persist still holds the walk; retry on the next edit.
       });
     },
-    [apiConnected, job, jobId, kind, updateJobWorkflow],
+    [apiConnected, enabled, jobId, kind, updateJobWorkflow],
   );
 
   const setDraft = useCallback(
     (updater: T | ((prev: T) => T)) => {
       setDraftState((prev) => {
-        const next = stampDraftUpdatedAt(
-          typeof updater === 'function' ? updater(prev) : updater,
-        );
+        const computed =
+          typeof updater === 'function' ? updater(prev) : updater;
+        if (computed === prev) return prev;
+        const next = stampDraftUpdatedAt(computed);
         if (persistTimer.current) clearTimeout(persistTimer.current);
         persistTimer.current = setTimeout(() => persistDraft(next), 350);
         return next;
@@ -195,15 +206,16 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
     () => () => {
       if (persistTimer.current) {
         clearTimeout(persistTimer.current);
-        if (job) persistDraft(draftRef.current);
+        persistTimer.current = null;
+        persistDraft(draftRef.current);
       }
     },
-    [job, persistDraft],
+    [persistDraft],
   );
 
   useEffect(() => {
     const flush = () => {
-      if (!job) return;
+      if (!jobRef.current) return;
       if (persistTimer.current) {
         clearTimeout(persistTimer.current);
         persistTimer.current = null;
@@ -226,7 +238,7 @@ export function useInspectionExecutionDraft<T extends InspectionExecutionDraft>(
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('online', onOnline);
     };
-  }, [job, persistDraft]);
+  }, [persistDraft]);
 
   return {
     draft,

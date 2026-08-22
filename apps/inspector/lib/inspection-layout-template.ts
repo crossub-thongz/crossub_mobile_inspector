@@ -1,4 +1,4 @@
-import { INSPECTION_AREA_CATALOG } from '@/constants/inspection-areas';
+import { catalogAreaNameFor, INSPECTION_AREA_CATALOG } from '@/constants/inspection-areas';
 import type { CustomAreaDefinition } from '@/lib/custom-inspection-areas';
 import type { IngoingAreaPlan } from '@/lib/ingoing-area-plan';
 import type { PropertyInspectionSpec } from '@/lib/types';
@@ -8,11 +8,38 @@ export type InspectionLayout = {
   customAreas: CustomAreaDefinition[];
 };
 
-function numberedRooms(baseName: string, count: number): string[] {
-  const n = Math.max(0, Math.floor(count));
-  if (n <= 0) return [];
-  if (n === 1) return [baseName];
-  return [baseName, ...Array.from({ length: n - 1 }, (_, i) => `${baseName} ${i + 2}`)];
+const ONE_BED_AREAS = [
+  'Lounge Room',
+  'Dining Room',
+  'Kitchen',
+  'Laundry',
+  'Bathroom',
+  'Bedroom 1',
+] as const;
+
+/**
+ * Room list from property bedroom count (bathrooms / parking are ignored).
+ *
+ * - 1B: Lounge, Dining, Kitchen, Laundry, Bathroom, Bedroom 1
+ * - 2B: + Ensuite under Bedroom 1, Bedroom 2
+ * - 3B: + Bedroom 3
+ * - 4B / 5B+: + Bedroom 4, Bathroom 2
+ */
+export function areasFromBedroomCount(
+  bedrooms: number | null | undefined,
+): string[] {
+  const count = Number.isFinite(bedrooms) ? Math.floor(Number(bedrooms)) : 1;
+  const names = [...ONE_BED_AREAS];
+  if (count <= 1) return names;
+
+  names.push('Ensuite', 'Bedroom 2');
+  if (count === 2) return names;
+
+  names.push('Bedroom 3');
+  if (count === 3) return names;
+
+  names.push('Bedroom 4', 'Bathroom 2');
+  return names;
 }
 
 export function customAreasForRoomNames(
@@ -27,7 +54,7 @@ export function customAreasForRoomNames(
     const trimmed = name.trim();
     if (!trimmed) continue;
     const key = trimmed.toLowerCase();
-    if (catalog.has(key) || seen.has(key)) continue;
+    if (catalog.has(key) || catalogAreaNameFor(trimmed) || seen.has(key)) continue;
     seen.add(key);
     custom.push({ name: trimmed, sectionMode: 'standard' });
   }
@@ -62,31 +89,32 @@ export function mergeCustomAreas(
   return next;
 }
 
+function sameLayout(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every(
+    (name, index) =>
+      name.trim().toLowerCase() === b[index].trim().toLowerCase(),
+  );
+}
+
+/** Previous house/apartment seed (Entry + Living Room + Balcony / Exterior). */
+export function isLegacyGeneratedLayout(names: string[]): boolean {
+  const lower = names.map((name) => name.trim().toLowerCase());
+  if (lower[0] !== 'entry') return false;
+  return (
+    lower.includes('living room') &&
+    (lower.includes('balcony') || lower.includes('general & exterior'))
+  );
+}
+
 /**
- * Default room layout for an ingoing — same idea as Inspection Express templates:
- * rooms are ready before the inspector reaches the property.
+ * Default room layout from the property bedroom count — same templates as
+ * tenant self-routine.
  */
 export function layoutTemplateFromProperty(
   spec: PropertyInspectionSpec,
 ): InspectionLayout {
-  const names: string[] = ['Entry'];
-
-  if (spec.propertyKind === 'house') {
-    names.push(...numberedRooms('Living Room', spec.livingAreas || 1));
-    names.push(...numberedRooms('Kitchen', spec.kitchens || 1));
-    names.push(...numberedRooms('Bedroom', spec.bedrooms || 1));
-    names.push(...numberedRooms('Bathroom', spec.bathrooms || 1));
-    names.push(...numberedRooms('Laundry', spec.laundries || 1));
-    names.push('General & Exterior');
-    if (spec.hasYard) names.push('Garage');
-  } else {
-    names.push('Living Room', 'Kitchen');
-    names.push(...numberedRooms('Bedroom', spec.bedrooms || 1));
-    names.push(...numberedRooms('Bathroom', spec.bathrooms || 1));
-    names.push('Laundry', 'Balcony');
-  }
-
-  const unique = [...new Set(names.map((name) => name.trim()).filter(Boolean))];
+  const unique = areasFromBedroomCount(spec.bedrooms);
   return { names: unique, customAreas: customAreasForRoomNames(unique) };
 }
 
@@ -112,12 +140,16 @@ export function layoutFromIngoingPlan(
   return { names, customAreas };
 }
 
-export function draftNeedsLayoutSeed(draft: {
-  areaSetupComplete?: boolean;
-  selectedAreaNames?: string[];
-}): boolean {
-  return (
-    draft.areaSetupComplete !== true &&
-    (draft.selectedAreaNames?.length ?? 0) === 0
-  );
+export function draftNeedsLayoutSeed(
+  draft: {
+    areaSetupComplete?: boolean;
+    selectedAreaNames?: string[];
+  },
+  templateNames?: string[],
+): boolean {
+  if (draft.areaSetupComplete === true) return false;
+  const selected = draft.selectedAreaNames ?? [];
+  if (selected.length === 0) return true;
+  if (templateNames && sameLayout(selected, templateNames)) return false;
+  return isLegacyGeneratedLayout(selected);
 }

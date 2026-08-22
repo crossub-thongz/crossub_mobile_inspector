@@ -102,6 +102,7 @@ export default function IngoingInspectionPage() {
       selectedAreaNames: [],
       areaSetupComplete: false,
     }),
+    keysCollected,
   );
   const [busy, setBusy] = useState(false);
   const [addAreaOpen, setAddAreaOpen] = useState(false);
@@ -149,12 +150,12 @@ export default function IngoingInspectionPage() {
   useEffect(() => {
     if (!job || !localDraftLoaded.current) return;
     setDraft((prev) => {
-      if (!draftNeedsLayoutSeed(prev)) return prev;
       const layout = layoutTemplateFromProperty(job.property);
+      if (!draftNeedsLayoutSeed(prev, layout.names)) return prev;
       const nextCustom = mergeCustomAreas(prev.customAreas ?? [], layout.customAreas);
-      const nextEntries = { ...prev.entries };
+      const nextEntries: typeof prev.entries = {};
       for (const name of layout.names) {
-        if (!nextEntries[name]) nextEntries[name] = emptyEntry(name, nextCustom);
+        nextEntries[name] = prev.entries[name] ?? emptyEntry(name, nextCustom);
       }
       return {
         ...prev,

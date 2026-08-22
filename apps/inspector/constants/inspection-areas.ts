@@ -66,6 +66,16 @@ export const INSPECTION_AREA_CATALOG: readonly InspectionAreaDefinition[] = [
     optionalSections: ['Custom / Other'],
   },
   {
+    name: 'Lounge Room',
+    defaultSections: COMMON_DEFAULT_SECTIONS,
+    optionalSections: ['Custom / Other'],
+  },
+  {
+    name: 'Dining Room',
+    defaultSections: COMMON_DEFAULT_SECTIONS,
+    optionalSections: ['Custom / Other'],
+  },
+  {
     name: 'Living Room',
     defaultSections: COMMON_DEFAULT_SECTIONS,
     optionalSections: ['Custom / Other'],
@@ -101,6 +111,11 @@ export const INSPECTION_AREA_CATALOG: readonly InspectionAreaDefinition[] = [
   },
   {
     name: 'Bathroom',
+    defaultSections: BATHROOM_DEFAULT_SECTIONS,
+    optionalSections: ['Custom / Other'],
+  },
+  {
+    name: 'Ensuite',
     defaultSections: BATHROOM_DEFAULT_SECTIONS,
     optionalSections: ['Custom / Other'],
   },

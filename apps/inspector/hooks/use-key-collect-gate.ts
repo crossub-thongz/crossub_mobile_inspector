@@ -34,7 +34,6 @@ export function useKeyCollectGate(
   job: InspectionJob | undefined,
   jobId: string,
 ): boolean {
-  const router = useRouter();
   const redirected = useRef(false);
   // Undecided while the job list is still loading — the screen renders its own
   // loading state, and gating on "not yet known" would bounce the inspector out.
@@ -47,8 +46,8 @@ export function useKeyCollectGate(
     }
     if (redirected.current) return;
     redirected.current = true;
-    router.replace(jobKeys(jobId, 'collect'));
-  }, [allowed, jobId, router]);
+    window.location.assign(jobKeys(jobId, 'collect'));
+  }, [allowed, jobId]);
 
   return allowed;
 }

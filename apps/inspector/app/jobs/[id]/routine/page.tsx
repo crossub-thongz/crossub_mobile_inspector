@@ -116,7 +116,7 @@ export default function RoutineInspectionPage() {
       customAreas: [],
       selectedAreaNames: [],
       areaSetupComplete: false,
-    }));
+    }), keysCollected);
   const [busy, setBusy] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [loadingReference, setLoadingReference] = useState(apiConnected);
@@ -232,14 +232,14 @@ export default function RoutineInspectionPage() {
   useEffect(() => {
     if (!job || loadingReference || !localDraftLoaded.current) return;
     setDraft((prev) => {
-      if (!draftNeedsLayoutSeed(prev)) return prev;
       const layout =
         layoutFromIngoingPlan(ingoingAreaPlan) ??
         layoutTemplateFromProperty(job.property);
+      if (!draftNeedsLayoutSeed(prev, layout.names)) return prev;
       const nextCustom = mergeCustomAreas(prev.customAreas ?? [], layout.customAreas);
-      const nextIssues = { ...prev.issues };
+      const nextIssues: typeof prev.issues = {};
       for (const name of layout.names) {
-        if (!nextIssues[name]) nextIssues[name] = emptyAreaIssue(name);
+        nextIssues[name] = prev.issues[name] ?? emptyAreaIssue(name);
       }
       return {
         ...prev,

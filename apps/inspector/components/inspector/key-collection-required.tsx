@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { KeyRound } from 'lucide-react';
 
 import { InspectorShell } from '@/components/layout/inspector-shell';
@@ -16,6 +15,10 @@ import { jobDetail, jobKeys } from '@/constants/routes';
  * workflow would otherwise render and happily accept a whole property's worth of
  * photos and notes that the API then refuses, leaving the inspector with a
  * connection banner and no work.
+ *
+ * Leave this screen with a full page load. Soft Next.js navigation from
+ * `/jobs/:id/ingoing` (and the other workflow routes) stalls under in-flight
+ * draft saves, which is why "Go to key collection" appeared to do nothing.
  */
 export function KeyCollectionRequired({ jobId }: { jobId: string }) {
   return (
@@ -32,8 +35,12 @@ export function KeyCollectionRequired({ jobId }: { jobId: string }) {
             </p>
           </div>
         </div>
-        <Button asChild className="w-full">
-          <Link href={jobKeys(jobId, 'collect')}>Go to key collection</Link>
+        <Button
+          type="button"
+          className="w-full"
+          onClick={() => window.location.assign(jobKeys(jobId, 'collect'))}
+        >
+          Go to key collection
         </Button>
       </div>
     </InspectorShell>

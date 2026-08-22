@@ -98,11 +98,29 @@ const BILLING_SOURCE_VIEW: Record<InspectorJob['source'], InspectionType> = {
 };
 
 const DEFAULT_REGION: ServiceRegionKey = 'cbd_inner';
-const DEFAULT_PROPERTY: PropertyInspectionSpec = {
-  propertyKind: 'apartment',
-  bedrooms: 2,
-  bathrooms: 1,
-};
+
+function propertySpecFromDto(dto: InspectorInspection): PropertyInspectionSpec {
+  const extra = dto as {
+    propertyBedrooms?: unknown;
+    propertyBathrooms?: unknown;
+    propertyType?: unknown;
+  };
+  const bedrooms = asNumber(extra.propertyBedrooms) ?? 1;
+  const bathrooms = asNumber(extra.propertyBathrooms) ?? 1;
+  const type = asString(extra.propertyType)?.toUpperCase();
+  if (type === 'HOUSE' || type === 'TOWNHOUSE') {
+    return {
+      propertyKind: 'house',
+      bedrooms,
+      bathrooms,
+      livingAreas: 1,
+      kitchens: 1,
+      laundries: 1,
+      hasYard: false,
+    };
+  }
+  return { propertyKind: 'apartment', bedrooms, bathrooms };
+}
 
 /** Map one assigned inspection (thin facade DTO) onto the app's InspectionJob card. */
 export function toInspectionJob(dto: InspectorInspection): InspectionJob {
@@ -150,7 +168,7 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     source: 'assigned',
     ...(assignedByStaff ? { assignedBy: 'CROSSUB' } : {}),
     serviceRegion: DEFAULT_REGION,
-    property: DEFAULT_PROPERTY,
+    property: propertySpecFromDto(dto),
     durationLabel: `~${estimatedHours} hr${estimatedHours === 1 ? '' : 's'}`,
     travelKmOneWay: 0,
     estimatedHours,
