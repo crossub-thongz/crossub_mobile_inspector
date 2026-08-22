@@ -24,7 +24,7 @@ export default function TribunalPage() {
         <EmptyState
           icon={Scale}
           title="Tribunal not available"
-          description="Tribunal assignments are only shown for Level 3 and Level 5 inspectors."
+          description="Tribunal assignments are only shown for Level 5 inspectors."
         />
       </InspectorShell>
     );

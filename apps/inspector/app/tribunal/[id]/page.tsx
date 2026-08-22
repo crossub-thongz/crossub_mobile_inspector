@@ -27,7 +27,7 @@ export default function TribunalDetailPage() {
     return (
       <InspectorShell title="Tribunal" backHref={ROUTES.DASHBOARD}>
         <p className="text-muted-foreground text-sm">
-          Tribunal assignments are only shown for Level 3 and Level 5 inspectors.
+          Tribunal assignments are only shown for Level 5 inspectors.
         </p>
       </InspectorShell>
     );

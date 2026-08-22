@@ -1829,7 +1829,7 @@ export function InspectorDataProvider({
         | undefined;
       const accessLevel =
         roster?.accessLevel ??
-        (roster?.tribunalQualified || registration?.tribunalQualified ? 5 : 4);
+        (roster?.tribunalQualified || registration?.tribunalQualified ? 5 : 1);
       return {
       ...DEMO_PROFILE,
       id: serverProfile?.roster?.inspectorId ?? DEMO_PROFILE.id,
@@ -1837,7 +1837,7 @@ export function InspectorDataProvider({
       email:
         serverProfile?.email ?? registration?.email ?? user?.email ?? DEMO_PROFILE.email,
       phone: serverProfile?.phone ?? registration?.mobile ?? DEMO_PROFILE.phone,
-      tribunalQualified: accessLevel === 3 || accessLevel === 5,
+      tribunalQualified: accessLevel === 5,
       accessLevel,
       weeklyEarnings: summary.weeklyEarnings,
       rating: roster?.averageRating ?? null,

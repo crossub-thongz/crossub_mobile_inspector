@@ -3,7 +3,7 @@ import type { CoreInspectionType } from '@/constants/inspection';
 export const INSPECTOR_ACCESS_LEVELS = [1, 2, 3, 4, 5] as const;
 export type InspectorAccessLevel = (typeof INSPECTOR_ACCESS_LEVELS)[number];
 
-export const INSPECTOR_ACCESS_LEVEL_DEFAULT: InspectorAccessLevel = 4;
+export const INSPECTOR_ACCESS_LEVEL_DEFAULT: InspectorAccessLevel = 1;
 
 export function normalizeInspectorAccessLevel(
   value: unknown,
@@ -19,9 +19,9 @@ export function inspectorLevelAllows(
   capability: 'routine' | 'open' | 'tribunal',
 ): boolean {
   const access = normalizeInspectorAccessLevel(level);
-  if (capability === 'routine') return access >= 2;
-  if (capability === 'open') return access >= 4;
-  return access === 3 || access === 5;
+  if (capability === 'routine') return access === 2 || access >= 4;
+  if (capability === 'open') return access >= 3;
+  return access === 5;
 }
 
 export function poolTypesForInspectorLevel(

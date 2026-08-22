@@ -258,7 +258,18 @@ export default function RegisterPage() {
         </section>
 
         <section className="space-y-3">
+          <h2 className="text-sm font-semibold">Access level</h2>
+          <p className="text-xs text-muted-foreground">
+            New inspectors start at Level 1 (Outgoing, Ingoing). CROSSUB staff set your
+            level from the admin portal after review — it cannot be changed here.
+          </p>
+        </section>
+
+        <section className="space-y-3">
           <h2 className="text-sm font-semibold">Tribunal qualification (optional)</h2>
+          <p className="text-xs text-muted-foreground">
+            Tells staff you can take tribunal work. It does not raise your access level.
+          </p>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" {...register('tribunalQualified')} />
             I am qualified to accept tribunal assignments

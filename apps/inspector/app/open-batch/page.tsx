@@ -192,7 +192,7 @@ export default function OpenBatchPage() {
         <EmptyState
           icon={Route}
           title="Open inspections not available"
-          description="The open task pool is available from Level 4."
+          description="The open task pool is available from Level 3."
         />
       </InspectorShell>
     );
