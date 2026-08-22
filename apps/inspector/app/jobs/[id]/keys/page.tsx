@@ -7,6 +7,7 @@ import { CheckCircle2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { HandoverCollectForm } from '@/components/inspector/handover-collect-form';
+import { JobWorkspaceNav } from '@/components/inspector/job-workspace-nav';
 import { JobPropertyHeader } from '@/components/inspector/job-property-header';
 import { KeyPhasePhotoField } from '@/components/inspector/key-phase-photo-field';
 import { LeasingKeyCollectionPanel } from '@/components/inspector/leasing-key-collection-panel';
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { INSPECTION_PAY_LABEL } from '@/constants/inspection';
 import { jobDetail } from '@/constants/routes';
 import {
   useAwaitingAgentPaymentGate,
@@ -99,7 +101,12 @@ export default function JobKeysPage() {
 
   if (!job.keyAccess) {
     return (
-      <InspectorShell title="Handover" backHref={jobDetail(id)}>
+      <InspectorShell
+        title={`${INSPECTION_PAY_LABEL[job.type] ?? job.type} Inspection`}
+        backHref={jobDetail(id)}
+        variant="workspace"
+      >
+        <JobWorkspaceNav job={job} active="handover" />
         <p className="text-muted-foreground text-sm">
           No key collection required for this job.
         </p>
@@ -172,9 +179,11 @@ export default function JobKeysPage() {
 
   return (
     <InspectorShell
-      title={tab === 'collect' ? 'Handover' : 'Key return'}
+      title={`${INSPECTION_PAY_LABEL[job.type] ?? job.type} Inspection`}
       backHref={jobDetail(id)}
+      variant="workspace"
     >
+      <JobWorkspaceNav job={job} active="handover" />
       <div className="space-y-5">
         <div className="flex gap-1 rounded-lg border bg-secondary/30 p-1">
           <button

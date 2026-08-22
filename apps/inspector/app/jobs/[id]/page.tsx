@@ -2,23 +2,24 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { KeyRound, Phone, User } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
-import { AgentStrip } from '@/components/inspector/agent-strip';
-import { FindingsCard } from '@/components/inspector/findings-card';
-import { JobSummaryCard } from '@/components/inspector/job-summary-card';
-import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
-import { MapLinks } from '@/components/inspector/map-links';
-import {
-  JobStatusBadge,
-  PriorityBadge,
-} from '@/components/inspector/status-badge';
+import { JobDetailsSummaryCard } from '@/components/inspector/job-details-summary-card';
+import { JobKeyDetailsCard } from '@/components/inspector/job-key-details-card';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
+import { JobSummaryCard } from '@/components/inspector/job-summary-card';
+import { JobWorkspaceNav } from '@/components/inspector/job-workspace-nav';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { jobDetail, inspectionsByType, jobHistory, jobKeys, jobWorkflow, ROUTES } from '@/constants/routes';
+import { INSPECTION_PAY_LABEL } from '@/constants/inspection';
+import {
+  jobDetail,
+  jobHistory,
+  jobKeys,
+  jobWorkflow,
+  ROUTES,
+} from '@/constants/routes';
 import { isPoolJob } from '@/lib/inspector-job-filters';
 import { jobLookupMiss } from '@/lib/job-lookup';
 import {
@@ -29,24 +30,10 @@ import {
 import { hasInspectionExecutionDraft } from '@/lib/inspection-execution-draft';
 import { jobPrimaryAction } from '@/lib/inspection-job-cta';
 
-const STATUS_FLOW = [
-  { status: 'accepted' as const, label: 'Accepted' },
-  { status: 'on_the_way' as const, label: 'On the way' },
-  { status: 'arrived' as const, label: 'Arrived' },
-  { status: 'in_progress' as const, label: 'In progress' },
-];
-
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const {
-    getJob,
-    updateJobStatus,
-    acceptJob,
-    declineJob,
-    deviceLocation,
-    jobsHydrated,
-  } = useInspectorData();
+  const { getJob, acceptJob, declineJob, jobsHydrated } = useInspectorData();
   const job = getJob(id);
 
   if (!job) {
@@ -59,241 +46,144 @@ export default function JobDetailPage() {
   }
 
   const poolPreview = isPoolJob(job);
-  const backHref = poolPreview ? ROUTES.JOB_POOL : inspectionsByType(job.type);
-
+  const backHref = poolPreview ? ROUTES.JOB_POOL : ROUTES.INSPECTIONS;
   const workflowHref = jobWorkflow(job.id, job.type);
   const workflowStarted =
     (job.workflowStep ?? 0) > 0 ||
     hasInspectionExecutionDraft(job) ||
     job.status === 'in_progress';
-  const canStartInspection =
-    job.status === 'arrived' || job.status === 'in_progress';
   const keyCollectDone = isKeyCollectComplete(job);
   const keyReturnDone = isKeyReturnComplete(job);
   const inspectionFinished = isInspectionWorkflowFinished(job);
   const paymentBlocked = Boolean(job.awaitingAgentPayment);
   const keysBlocked = Boolean(job.keyAccess && !keyCollectDone);
-  const startBlocked = keysBlocked || paymentBlocked;
   const returnPending =
     job.keyAccess && inspectionFinished && !keyReturnDone && job.status !== 'completed';
 
   const handleAccept = () => {
     void (async () => {
       const result = await acceptJob(id);
-      // After accept, unpaid Level 1 jobs await agency payment before start.
       if (result?.awaitingAgentPayment) return;
       router.push(workflowHref);
     })();
   };
 
-  return (
-    <InspectorShell title={poolPreview ? 'Job preview' : 'Job Details'} backHref={backHref}>
-      <div className="space-y-4">
-        {poolPreview ? (
-          <>
-            <p className="text-muted-foreground text-xs">
-              Review scheduled date, address, payout, and job type. Accept to open
-              the {job.type} inspection workflow.
+  if (poolPreview) {
+    return (
+      <InspectorShell title="Job preview" backHref={backHref}>
+        <div className="space-y-4">
+          <p className="text-muted-foreground text-xs">
+            Review scheduled date, address, payout, and job type. Accept to open
+            the {job.type} inspection workflow.
+          </p>
+          <JobSummaryCard job={job} />
+          {paymentBlocked ? (
+            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+              Waiting for the agency to pay the platform fee. You can accept this
+              job, but you cannot start until payment clears.
             </p>
-            <JobSummaryCard job={job} />
-            {paymentBlocked ? (
-              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-                Waiting for the agency to pay the platform fee. You can accept this
-                job, but you cannot start until payment clears.
-              </p>
-            ) : null}
-            <div className="space-y-2">
-              <Button
-                className="w-full"
-                onClick={handleAccept}
-              >
-                Accept job
-              </Button>
-              <Button
-                className="w-full"
-                variant="outline"
-                onClick={() => {
-                  declineJob(id);
-                  router.push(ROUTES.JOB_POOL);
-                }}
-              >
-                Decline
-              </Button>
-            </div>
-          </>
+          ) : null}
+          <div className="space-y-2">
+            <Button className="w-full" onClick={handleAccept}>
+              Accept job
+            </Button>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => {
+                declineJob(id);
+                router.push(ROUTES.JOB_POOL);
+              }}
+            >
+              Decline
+            </Button>
+          </div>
+        </div>
+      </InspectorShell>
+    );
+  }
+
+  const workspaceTitle = `${INSPECTION_PAY_LABEL[job.type] ?? job.type} Inspection`;
+  const handoverNext = Boolean(job.keyAccess && !keyCollectDone && !paymentBlocked);
+  const ctaHref = paymentBlocked
+    ? jobDetail(job.id)
+    : returnPending
+      ? jobKeys(job.id, 'return')
+      : handoverNext
+        ? jobKeys(job.id, 'collect')
+        : workflowHref;
+  const ctaLabel = paymentBlocked
+    ? 'Waiting for agency payment'
+    : job.status === 'awaiting_approval'
+      ? 'Pending Approval'
+      : job.status === 'completed'
+        ? 'View inspection report'
+        : returnPending
+          ? 'Return keys'
+          : handoverNext
+            ? 'Continue to Handover'
+            : jobPrimaryAction(job, workflowStarted).label;
+  const ctaDisabled =
+    paymentBlocked ||
+    job.status === 'awaiting_approval' ||
+    (handoverNext ? false : keysBlocked);
+
+  return (
+    <InspectorShell title={workspaceTitle} backHref={backHref} variant="workspace">
+      <JobWorkspaceNav job={job} active="details" />
+      <div className="space-y-3">
+        {paymentBlocked ? (
+          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+            Waiting for the agency to pay the platform fee. You cannot start
+            this job until payment clears.
+          </p>
+        ) : keysBlocked ? (
+          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+            Complete handover before starting the inspection.
+          </p>
+        ) : null}
+
+        {job.reportDeclineReason &&
+        job.status !== 'completed' &&
+        job.status !== 'awaiting_approval' ? (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <span className="font-semibold">Report declined — </span>
+            {job.reportDeclineReason} Redo the inspection and resubmit your report.
+          </p>
+        ) : null}
+
+        {returnPending ? (
+          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+            Inspection finished — return the keys to complete this task.
+          </p>
+        ) : null}
+
+        <JobDetailsSummaryCard job={job} />
+        <JobKeyDetailsCard job={job} />
+
+        {job.status === 'completed' ? (
+          <Button className="w-full" asChild>
+            <Link href={jobHistory(job.id)}>
+              View inspection report
+              <ChevronRight className="ml-auto size-4" />
+            </Link>
+          </Button>
         ) : (
-          <>
-            <div className="flex flex-wrap gap-2">
-              <PriorityBadge priority={job.priority} />
-              <JobStatusBadge status={job.status} />
-            </div>
-
-            <JobSummaryCard job={job} />
-
-            {(job.agentName || job.agentCompany) && (
-              <section className="space-y-1">
-                <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
-                  Agent information
-                </p>
-                <AgentStrip job={job} />
-              </section>
-            )}
-
-            {job.keyAccess && (
-              <Link
-                href={jobKeys(job.id)}
-                className="group flex w-full flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/10"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <KeyRound className="text-primary size-4 shrink-0" />
-                    Handover
-                  </span>
-                  <span className="text-right text-[10px] text-muted-foreground group-hover:text-foreground">
-                    Handover {keyCollectDone ? '✓' : 'pending'}
-                    <span className="text-muted-foreground/60 group-hover:text-foreground/70">
-                      {' · '}
-                    </span>
-                    Return {keyReturnDone ? '✓' : 'pending'}
-                  </span>
-                </div>
-              </Link>
-            )}
-
-            <FindingsCard jobId={job.id} />
-
-            <MapLinks
-              address={job.propertyAddress}
-              lat={job.latitude}
-              lng={job.longitude}
-              origin={deviceLocation ?? undefined}
-            />
-
-            {job.tenantName && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tenant</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                  <p className="flex items-center gap-2">
-                    <User className="size-4 text-muted-foreground" />
-                    {job.tenantName}
-                    {job.tenantPhone && (
-                      <a href={`tel:${job.tenantPhone}`} className="text-primary ml-auto">
-                        <Phone className="size-4" />
-                      </a>
-                    )}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {job.status !== 'completed' &&
-              job.status !== 'awaiting_approval' &&
-              !paymentBlocked && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Status</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  {STATUS_FLOW.map(({ status, label }) => (
-                    <Button
-                      key={status}
-                      size="sm"
-                      variant={job.status === status ? 'default' : 'outline'}
-                      onClick={() => updateJobStatus(job.id, status)}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {paymentBlocked ? (
-              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-                Waiting for the agency to pay the platform fee. You cannot start
-                this job until payment clears.
-              </p>
-            ) : keysBlocked ? (
-              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-                Complete handover before starting the inspection.
-              </p>
-            ) : null}
-
-            {job.reportDeclineReason &&
-            job.status !== 'completed' &&
-            job.status !== 'awaiting_approval' ? (
-              <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                <span className="font-semibold">Report declined — </span>
-                {job.reportDeclineReason} Redo the inspection and resubmit your report.
-              </p>
-            ) : null}
-
-            {returnPending && (
-              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-                Inspection finished — return the keys to complete this task.
-              </p>
-            )}
-
-            {job.status === 'awaiting_approval' ? (
-              <Button className="w-full" disabled>
-                Pending Approval
-              </Button>
-            ) : job.status === 'completed' ? (
-              <Link href={jobHistory(job.id)}>
-                <Button className="w-full">View inspection report</Button>
-              </Link>
-            ) : returnPending ? (
-              <Link href={jobKeys(job.id, 'return')}>
-                <Button className="w-full">Return keys</Button>
-              </Link>
+          <Button className="relative w-full" disabled={ctaDisabled} asChild={!ctaDisabled}>
+            {ctaDisabled ? (
+              ctaLabel
             ) : (
               <Link
-                href={
-                  paymentBlocked
-                    ? jobDetail(job.id)
-                    : keysBlocked
-                      ? jobKeys(job.id, 'collect')
-                      : workflowHref
-                }
+                href={ctaHref}
                 onClick={(event) => {
                   if (paymentBlocked) event.preventDefault();
                 }}
               >
-                <Button
-                  className="w-full"
-                  disabled={
-                    paymentBlocked ||
-                    startBlocked ||
-                    (!canStartInspection &&
-                      job.status !== 'accepted' &&
-                      !job.reportDeclineReason)
-                  }
-                >
-                  {paymentBlocked
-                    ? 'Waiting for agency payment'
-                    : jobPrimaryAction(job, workflowStarted).label}
-                </Button>
+                {ctaLabel}
+                <ChevronRight className="absolute right-3 size-4" />
               </Link>
             )}
-
-            {workflowStarted &&
-              job.status !== 'completed' &&
-              job.status !== 'awaiting_approval' &&
-              !paymentBlocked && (
-              <>
-                <p className="text-muted-foreground text-center text-[10px]">
-                  Progress saved — you can continue where you left off.
-                </p>
-                <JobWorkflowToolbar job={job} />
-              </>
-            )}
-
-            {job.notes && (
-              <p className="text-muted-foreground text-xs">{job.notes}</p>
-            )}
-          </>
+          </Button>
         )}
       </div>
     </InspectorShell>

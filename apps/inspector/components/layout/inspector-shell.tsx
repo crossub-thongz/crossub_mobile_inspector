@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  ArrowLeft,
   Bell,
   Briefcase,
   ClipboardCheck,
@@ -87,7 +88,7 @@ export function InspectorShell({
   children: React.ReactNode;
   title?: string;
   backHref?: string;
-  variant?: 'default' | 'home';
+  variant?: 'default' | 'home' | 'workspace';
   /** No app header — page supplies its own top bar (e.g. Crossub Inspection list). */
   bare?: boolean;
 }) {
@@ -142,6 +143,7 @@ export function InspectorShell({
   }, [moreOpen]);
 
   const isHome = variant === 'home';
+  const isWorkspace = variant === 'workspace';
 
   return (
     <div
@@ -207,6 +209,77 @@ export function InspectorShell({
                 className="size-9"
                 onClick={() => setMoreOpen((v) => !v)}
                 aria-label="Menu"
+              >
+                <Menu className="size-5" />
+              </Button>
+            </div>
+          </div>
+        ) : isWorkspace ? (
+          <div className="relative flex h-14 items-center gap-1 px-3 pt-1">
+            {backHref ? (
+              <Link
+                href={backHref}
+                className="text-foreground flex size-9 shrink-0 items-center justify-center"
+                aria-label="Back"
+                onClick={(event) => {
+                  if (!hardLeaveFromWorkflow) return;
+                  event.preventDefault();
+                  navigateFromWorkflow(backHref);
+                }}
+              >
+                <ArrowLeft className="size-5" />
+              </Link>
+            ) : (
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <ClipboardCheck className="size-4" />
+              </div>
+            )}
+            <h1
+              className={cn(
+                'min-w-0 flex-1 truncate text-base font-semibold',
+                backHref && 'pointer-events-none absolute inset-x-12 text-center',
+              )}
+            >
+              {title}
+            </h1>
+            <div className="ml-auto flex shrink-0 items-center">
+              <Link
+                href={ROUTES.MESSAGES}
+                className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
+                aria-label="Messages"
+                onClick={(event) => {
+                  if (!hardLeaveFromWorkflow) return;
+                  event.preventDefault();
+                  navigateFromWorkflow(ROUTES.MESSAGES);
+                }}
+              >
+                <MessageSquare className="size-5" />
+                {unreadMessages > 0 && (
+                  <span className="bg-destructive absolute top-1 right-1 flex size-4 items-center justify-center rounded-full text-[9px] text-white">
+                    {unreadMessages}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href={ROUTES.NOTIFICATIONS}
+                className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
+                aria-label="Notifications"
+                onClick={(event) => {
+                  if (!hardLeaveFromWorkflow) return;
+                  event.preventDefault();
+                  navigateFromWorkflow(ROUTES.NOTIFICATIONS);
+                }}
+              >
+                <Bell className="size-5" />
+                {unreadNotifications > 0 && (
+                  <span className="bg-destructive absolute top-1 right-1 size-2 rounded-full" />
+                )}
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-9"
+                onClick={() => setMoreOpen((v) => !v)}
               >
                 <Menu className="size-5" />
               </Button>
@@ -280,7 +353,7 @@ export function InspectorShell({
         </div>
         )}
 
-        {title && !isHome && (
+        {title && !isHome && !isWorkspace && (
           <div className="border-t border-border px-4 py-1.5">
             <h1 className="truncate text-base font-semibold">{title}</h1>
             {user && (

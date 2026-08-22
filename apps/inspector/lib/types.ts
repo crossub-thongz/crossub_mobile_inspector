@@ -177,6 +177,8 @@ export interface InspectionJob {
   workflowData?: Record<string, unknown>;
   /** Pool jobs — inspectors available on the scheduled day (from timetables). */
   availableInspectorCount?: number | null;
+  /** Lease start date when the facade includes it. */
+  leaseStart?: string;
   /** Agent declined the last submitted report — redo and resubmit. */
   reportDeclineReason?: string;
   /** Account manager signed off the submitted report (ISO). */

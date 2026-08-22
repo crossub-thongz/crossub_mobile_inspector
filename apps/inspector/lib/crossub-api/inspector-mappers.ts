@@ -177,6 +177,8 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     agentCompany?: unknown;
     agentEmail?: unknown;
     agentPhone?: unknown;
+    leaseStart?: unknown;
+    leaseStartDate?: unknown;
   };
   const propertyImageUrl = asString(extra.propertyImageUrl);
   const tenantName = asString(extra.tenantName);
@@ -186,6 +188,7 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
   const agentCompany = asString(extra.agentCompany);
   const agentEmail = asString(extra.agentEmail);
   const agentPhone = asString(extra.agentPhone);
+  const leaseStart = asString(extra.leaseStart) ?? asString(extra.leaseStartDate);
   return {
     id: dto.id,
     type,
@@ -202,6 +205,7 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     ...(agentCompany ? { agentCompany } : {}),
     ...(agentEmail ? { agentEmail } : {}),
     ...(agentPhone ? { agentPhone } : {}),
+    ...(leaseStart ? { leaseStart } : {}),
     scheduledDate: scheduled,
     scheduledTime: scheduled,
     priority: dto.urgent ? 'urgent' : 'normal',
