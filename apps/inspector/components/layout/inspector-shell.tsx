@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import { AvailabilityBubble } from '@/components/inspector/availability-bubble';
+import { HeaderReceivingToggle } from '@/components/inspector/availability-bubble';
 import { ConnectionBanner } from '@/components/inspector/connection-banner';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -78,6 +78,73 @@ const HOME_DATE_FMT = new Intl.DateTimeFormat('en-AU', {
   year: 'numeric',
 });
 
+function HeaderActionCluster({
+  showReceiving,
+  showMessages,
+  unreadMessages,
+  unreadNotifications,
+  hardLeaveFromWorkflow,
+  onToggleMore,
+}: {
+  showReceiving: boolean;
+  showMessages: boolean;
+  unreadMessages: number;
+  unreadNotifications: number;
+  hardLeaveFromWorkflow: boolean;
+  onToggleMore: () => void;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-0.5">
+      {showReceiving ? <HeaderReceivingToggle /> : null}
+      {showMessages ? (
+        <Link
+          href={ROUTES.MESSAGES}
+          className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
+          aria-label={
+            unreadMessages > 0 ? `Messages — ${unreadMessages} unread` : 'Messages'
+          }
+          onClick={(event) => {
+            if (!hardLeaveFromWorkflow) return;
+            event.preventDefault();
+            navigateFromWorkflow(ROUTES.MESSAGES);
+          }}
+        >
+          <MessageSquare className="size-5" />
+          {unreadMessages > 0 ? (
+            <span className="bg-destructive absolute top-1 right-1 flex size-4 items-center justify-center rounded-full text-[9px] text-white">
+              {unreadMessages > 9 ? '9+' : unreadMessages}
+            </span>
+          ) : null}
+        </Link>
+      ) : null}
+      <Link
+        href={ROUTES.NOTIFICATIONS}
+        className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
+        aria-label="Notifications"
+        onClick={(event) => {
+          if (!hardLeaveFromWorkflow) return;
+          event.preventDefault();
+          navigateFromWorkflow(ROUTES.NOTIFICATIONS);
+        }}
+      >
+        <Bell className="size-5" />
+        {unreadNotifications > 0 ? (
+          <span className="bg-destructive absolute top-1.5 right-1.5 size-2 rounded-full" />
+        ) : null}
+      </Link>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-9"
+        onClick={onToggleMore}
+        aria-label="Menu"
+      >
+        <Menu className="size-5" />
+      </Button>
+    </div>
+  );
+}
+
 export function InspectorShell({
   children,
   title,
@@ -92,7 +159,7 @@ export function InspectorShell({
   variant?: 'default' | 'home' | 'workspace';
   /** No app header — page supplies its own top bar (e.g. Crossub Inspection list). */
   bare?: boolean;
-  /** Hide Messages / Receiving FABs so a sticky inspect footer can sit above the tab bar. */
+  /** Hide the Receiving toggle during in-progress inspect so the header stays compact. */
   hideAvailability?: boolean;
 }) {
   const pathname = usePathname();
@@ -108,11 +175,15 @@ export function InspectorShell({
     (item) => item.need !== 'open' || showOpen,
   );
   const isMessageThread = /^\/messages\/[^/]+\/?$/.test(pathname);
-  const showAvailabilityBubble =
+  const showReceivingToggle =
     Boolean(user) &&
     !isPublicRoute(pathname) &&
     !isMessageThread &&
     !hideAvailability;
+  const showHeaderMessages =
+    Boolean(user) &&
+    !isPublicRoute(pathname) &&
+    !isMessageThread;
   const hardLeaveFromWorkflow = isInspectionWorkflowPath(pathname);
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const unreadMessages = messages.reduce((s, m) => s + m.unread, 0);
@@ -203,26 +274,15 @@ export function InspectorShell({
             ) : (
               <div className="h-12 flex-1" />
             )}
-            <div className="flex shrink-0 items-center gap-0.5 pt-1">
-              <Link
-                href={ROUTES.NOTIFICATIONS}
-                className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
-                aria-label="Notifications"
-              >
-                <Bell className="size-5" />
-                {unreadNotifications > 0 && (
-                  <span className="bg-destructive absolute top-1.5 right-1.5 size-2 rounded-full" />
-                )}
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-9"
-                onClick={() => setMoreOpen((v) => !v)}
-                aria-label="Menu"
-              >
-                <Menu className="size-5" />
-              </Button>
+            <div className="pt-1">
+              <HeaderActionCluster
+                showReceiving={showReceivingToggle}
+                showMessages={showHeaderMessages}
+                unreadMessages={unreadMessages}
+                unreadNotifications={unreadNotifications}
+                hardLeaveFromWorkflow={hardLeaveFromWorkflow}
+                onToggleMore={() => setMoreOpen((v) => !v)}
+              />
             </div>
           </div>
         ) : isWorkspace ? (
@@ -245,56 +305,17 @@ export function InspectorShell({
                 <ClipboardCheck className="size-4" />
               </div>
             )}
-            <h1
-              className={cn(
-                'min-w-0 flex-1 truncate text-base font-semibold',
-                backHref && 'pointer-events-none absolute inset-x-12 text-center',
-              )}
-            >
+            <h1 className="min-w-0 flex-1 truncate text-base font-semibold">
               {title}
             </h1>
-            <div className="ml-auto flex shrink-0 items-center">
-              <Link
-                href={ROUTES.MESSAGES}
-                className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
-                aria-label="Messages"
-                onClick={(event) => {
-                  if (!hardLeaveFromWorkflow) return;
-                  event.preventDefault();
-                  navigateFromWorkflow(ROUTES.MESSAGES);
-                }}
-              >
-                <MessageSquare className="size-5" />
-                {unreadMessages > 0 && (
-                  <span className="bg-destructive absolute top-1 right-1 flex size-4 items-center justify-center rounded-full text-[9px] text-white">
-                    {unreadMessages}
-                  </span>
-                )}
-              </Link>
-              <Link
-                href={ROUTES.NOTIFICATIONS}
-                className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
-                aria-label="Notifications"
-                onClick={(event) => {
-                  if (!hardLeaveFromWorkflow) return;
-                  event.preventDefault();
-                  navigateFromWorkflow(ROUTES.NOTIFICATIONS);
-                }}
-              >
-                <Bell className="size-5" />
-                {unreadNotifications > 0 && (
-                  <span className="bg-destructive absolute top-1 right-1 size-2 rounded-full" />
-                )}
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-9"
-                onClick={() => setMoreOpen((v) => !v)}
-              >
-                <Menu className="size-5" />
-              </Button>
-            </div>
+            <HeaderActionCluster
+              showReceiving={showReceivingToggle}
+              showMessages={showHeaderMessages}
+              unreadMessages={unreadMessages}
+              unreadNotifications={unreadNotifications}
+              hardLeaveFromWorkflow={hardLeaveFromWorkflow}
+              onToggleMore={() => setMoreOpen((v) => !v)}
+            />
           </div>
         ) : (
           <div className="flex h-14 items-center justify-between gap-2 px-4 pt-1">
@@ -319,48 +340,14 @@ export function InspectorShell({
             </Link>
           )}
 
-          <div className="flex items-center gap-1">
-            <Link
-              href={ROUTES.MESSAGES}
-              className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
-              aria-label="Messages"
-              onClick={(event) => {
-                if (!hardLeaveFromWorkflow) return;
-                event.preventDefault();
-                navigateFromWorkflow(ROUTES.MESSAGES);
-              }}
-            >
-              <MessageSquare className="size-5" />
-              {unreadMessages > 0 && (
-                <span className="bg-destructive absolute top-1 right-1 flex size-4 items-center justify-center rounded-full text-[9px] text-white">
-                  {unreadMessages}
-                </span>
-              )}
-            </Link>
-            <Link
-              href={ROUTES.NOTIFICATIONS}
-              className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
-              aria-label="Notifications"
-              onClick={(event) => {
-                if (!hardLeaveFromWorkflow) return;
-                event.preventDefault();
-                navigateFromWorkflow(ROUTES.NOTIFICATIONS);
-              }}
-            >
-              <Bell className="size-5" />
-              {unreadNotifications > 0 && (
-                <span className="bg-destructive absolute top-1 right-1 size-2 rounded-full" />
-              )}
-            </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-9"
-              onClick={() => setMoreOpen((v) => !v)}
-            >
-              <Menu className="size-5" />
-            </Button>
-          </div>
+          <HeaderActionCluster
+            showReceiving={showReceivingToggle}
+            showMessages={showHeaderMessages}
+            unreadMessages={unreadMessages}
+            unreadNotifications={unreadNotifications}
+            hardLeaveFromWorkflow={hardLeaveFromWorkflow}
+            onToggleMore={() => setMoreOpen((v) => !v)}
+          />
         </div>
         )}
 
@@ -423,12 +410,9 @@ export function InspectorShell({
           'flex-1 px-4',
           isMessageThread
             ? 'flex min-h-0 flex-col pb-20'
-            : // Messages + Receiving FABs float over the last ~200px above the nav.
-              showAvailabilityBubble
-              ? 'pb-52'
-              : hideAvailability
-                ? 'pb-40'
-                : 'pb-24',
+            : hideAvailability
+              ? 'pb-40'
+              : 'pb-24',
         )}
         style={bare ? { paddingTop: 8 } : { paddingTop: headerHeight }}
       >
@@ -480,8 +464,6 @@ export function InspectorShell({
           })}
         </div>
       </nav>
-
-      {showAvailabilityBubble ? <AvailabilityBubble /> : null}
     </div>
   );
 }
