@@ -31,6 +31,8 @@ type OutgoingSectionPhotosProps = {
   itemMarks?: Record<string, ItemConditionMarks>;
   itemComments?: Record<string, string>;
   busy?: boolean;
+  /** Photo upload in progress — show on Snap, do not disable the camera. */
+  photoUploading?: boolean;
   ingoingReadOnly?: boolean;
   currentLabel?: string;
   onAddSection: (section: string) => void;
@@ -69,6 +71,7 @@ export function OutgoingSectionPhotos({
   itemMarks,
   itemComments,
   busy = false,
+  photoUploading = false,
   ingoingReadOnly = false,
   currentLabel = 'Outgoing',
   onAddSection,
@@ -138,8 +141,9 @@ export function OutgoingSectionPhotos({
                     <BeforeAfterPhotoColumn
                       title="Ingoing"
                       photoUrls={photos.ingoingPhotoUrls}
-                      uploading={busy}
+                      uploading={photoUploading}
                       disabled={busy || sectionIngoingLocked}
+                      sessionKey={`${section}-ingoing`}
                       onAddFiles={(files) => onAddFiles(section, 'ingoing', files)}
                       onAddDataUrl={(dataUrl) =>
                         onAddDataUrl(section, 'ingoing', dataUrl)
@@ -159,8 +163,9 @@ export function OutgoingSectionPhotos({
                     <BeforeAfterPhotoColumn
                       title={currentLabel}
                       photoUrls={photos.outgoingPhotoUrls}
-                      uploading={busy}
+                      uploading={photoUploading}
                       disabled={busy}
+                      sessionKey={`${section}-outgoing`}
                       onAddFiles={(files) => onAddFiles(section, 'outgoing', files)}
                       onAddDataUrl={(dataUrl) =>
                         onAddDataUrl(section, 'outgoing', dataUrl)

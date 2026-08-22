@@ -104,7 +104,20 @@ export default function IngoingInspectionPage() {
     }),
     keysCollected,
   );
-  const [busy, setBusy] = useState(false);
+  const photoInflight = useRef(0);
+  const [formBusy, setFormBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const busy = formBusy || photoBusy;
+
+  const beginPhotoUpload = () => {
+    photoInflight.current += 1;
+    setPhotoBusy(true);
+  };
+
+  const endPhotoUpload = () => {
+    photoInflight.current = Math.max(0, photoInflight.current - 1);
+    if (photoInflight.current === 0) setPhotoBusy(false);
+  };
   const [addAreaOpen, setAddAreaOpen] = useState(false);
   const serverHydrated = useRef(false);
 
@@ -467,7 +480,7 @@ export default function IngoingInspectionPage() {
 
   const addLocalPhotos = async (section: string, sources: Array<File | string>) => {
     if (sources.length === 0) return;
-    setBusy(true);
+    beginPhotoUpload();
     try {
       const uploadedUrls = await uploadInspectionPhotos(
         id,
@@ -498,13 +511,13 @@ export default function IngoingInspectionPage() {
         err instanceof Error ? err.message : 'Could not upload photo',
       );
     } finally {
-      setBusy(false);
+      endPhotoUpload();
     }
   };
 
   const addAreaPhotos = async (sources: Array<File | string>) => {
     if (sources.length === 0) return;
-    setBusy(true);
+    beginPhotoUpload();
     try {
       const uploadedUrls = await uploadInspectionPhotos(
         id,
@@ -529,7 +542,7 @@ export default function IngoingInspectionPage() {
         err instanceof Error ? err.message : 'Could not upload photo',
       );
     } finally {
-      setBusy(false);
+      endPhotoUpload();
     }
   };
 
@@ -708,7 +721,7 @@ export default function IngoingInspectionPage() {
       return;
     }
 
-    setBusy(true);
+    setFormBusy(true);
     try {
       const nextPhotos: Record<string, string[]> = { ...entry.photosBySection };
       for (const section of entry.activeSections) {
@@ -745,7 +758,7 @@ export default function IngoingInspectionPage() {
     } catch {
       toast.error('Photo upload failed — please retry');
     } finally {
-      setBusy(false);
+      setFormBusy(false);
     }
   };
 
@@ -816,13 +829,13 @@ export default function IngoingInspectionPage() {
 
   const completeFromSkippedLast = async () => {
     // Last area was skipped — still allow finishing the report.
-    setBusy(true);
+    setFormBusy(true);
     try {
       await finalizeAndSubmit(entries);
     } catch {
       toast.error('Could not complete the report');
     } finally {
-      setBusy(false);
+      setFormBusy(false);
     }
   };
 
@@ -913,7 +926,9 @@ export default function IngoingInspectionPage() {
                 <InspectionAreaPhotosField
                   label="Area photos"
                   photoUrls={entry.areaPhotos ?? []}
-                  uploading={busy}
+                  uploading={photoBusy}
+                  disabled={formBusy}
+                  sessionKey={area}
                   emptyLabel="Snap several photos of this room, then attach them here."
                   onAddFiles={(files) => addAreaPhotos(files)}
                   onAddDataUrl={(dataUrl) => addAreaPhotos([dataUrl])}
@@ -931,7 +946,8 @@ export default function IngoingInspectionPage() {
                   photosBySection={entry.photosBySection}
                   itemMarks={entry.itemMarks}
                   itemComments={entry.itemComments}
-                  busy={busy}
+                  busy={formBusy}
+                  photoUploading={photoBusy}
                   onAddSection={addSection}
                   onRemoveSection={removeSection}
                   onRenameSection={renameSection}

@@ -13,6 +13,7 @@ type BeforeAfterPhotoColumnProps = {
   photoUrls: string[];
   uploading?: boolean;
   disabled?: boolean;
+  sessionKey?: string;
   onAddFiles: (files: File[]) => void | Promise<void>;
   onAddDataUrl?: (dataUrl: string) => void | Promise<void>;
   onAddDataUrls?: (dataUrls: string[]) => void | Promise<void>;
@@ -24,6 +25,7 @@ export function BeforeAfterPhotoColumn({
   photoUrls,
   uploading = false,
   disabled = false,
+  sessionKey,
   onAddFiles,
   onRemove,
 }: BeforeAfterPhotoColumnProps) {
@@ -31,14 +33,12 @@ export function BeforeAfterPhotoColumn({
   const uploadRef = useRef<HTMLInputElement>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
-  const blocked = disabled || uploading;
-  const primaryUrl = photoUrls[0];
-
   const handleFiles = (files: FileList | null) => {
-    if (!files?.length || blocked) return;
+    if (!files?.length || disabled) return;
     void onAddFiles(Array.from(files));
   };
 
+  const primaryUrl = photoUrls[0];
   const previewUrl = previewIndex != null ? photoUrls[previewIndex] : null;
 
   return (
@@ -81,8 +81,9 @@ export function BeforeAfterPhotoColumn({
       {!disabled && (
         <div className="flex flex-col gap-1.5">
           <NativeCameraSnapButton
-            disabled={blocked}
+            disabled={disabled}
             uploading={uploading}
+            sessionKey={sessionKey ?? title}
             className="w-full flex-none"
             onFiles={handleFiles}
           />
@@ -91,9 +92,9 @@ export function BeforeAfterPhotoColumn({
             variant="outline"
             size="sm"
             className="w-full"
-            disabled={blocked}
+            disabled={disabled}
             onClick={() => {
-              if (blocked) return;
+              if (disabled) return;
               uploadRef.current?.click();
             }}
           >
@@ -142,7 +143,7 @@ export function BeforeAfterPhotoColumn({
         multiple
         className="sr-only"
         tabIndex={-1}
-        disabled={blocked}
+        disabled={disabled}
         onChange={(e) => {
           handleFiles(e.target.files);
           e.target.value = '';

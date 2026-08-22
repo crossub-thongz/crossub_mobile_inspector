@@ -15,6 +15,8 @@ type InspectionAreaPhotosFieldProps = {
   uploading?: boolean;
   disabled?: boolean;
   emptyLabel?: string;
+  /** Stable id for the keep-shooting camera sheet (usually the area name). */
+  sessionKey?: string;
   onAddFiles: (files: File[]) => void | Promise<void>;
   onAddDataUrl?: (dataUrl: string) => void | Promise<void>;
   onAddDataUrls?: (dataUrls: string[]) => void | Promise<void>;
@@ -27,6 +29,7 @@ export function InspectionAreaPhotosField({
   uploading = false,
   disabled = false,
   emptyLabel = 'Add at least one photo for this area.',
+  sessionKey,
   onAddFiles,
   onRemove,
 }: InspectionAreaPhotosFieldProps) {
@@ -34,10 +37,8 @@ export function InspectionAreaPhotosField({
   const uploadRef = useRef<HTMLInputElement>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
-  const blocked = disabled || uploading;
-
   const handleFiles = (files: FileList | null) => {
-    if (!files?.length || blocked) return;
+    if (!files?.length || disabled) return;
     void onAddFiles(Array.from(files));
   };
 
@@ -50,8 +51,9 @@ export function InspectionAreaPhotosField({
       {!disabled && (
         <div className="flex gap-2">
           <NativeCameraSnapButton
-            disabled={blocked}
+            disabled={disabled}
             uploading={uploading}
+            sessionKey={sessionKey ?? label}
             onFiles={handleFiles}
           />
           <Button
@@ -59,9 +61,9 @@ export function InspectionAreaPhotosField({
             variant="outline"
             size="sm"
             className="flex-1"
-            disabled={blocked}
+            disabled={disabled}
             onClick={() => {
-              if (blocked) return;
+              if (disabled) return;
               uploadRef.current?.click();
             }}
           >
@@ -79,7 +81,7 @@ export function InspectionAreaPhotosField({
         multiple
         className="sr-only"
         tabIndex={-1}
-        disabled={blocked}
+        disabled={disabled}
         onChange={(e) => {
           handleFiles(e.target.files);
           e.target.value = '';

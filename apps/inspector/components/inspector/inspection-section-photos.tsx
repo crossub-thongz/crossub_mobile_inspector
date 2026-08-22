@@ -26,6 +26,8 @@ type InspectionSectionPhotosProps = {
   itemMarks?: Record<string, ItemConditionMarks>;
   itemComments?: Record<string, string>;
   busy?: boolean;
+  /** Photo upload in progress — show on Snap, do not disable the camera. */
+  photoUploading?: boolean;
   onAddSection: (section: string) => void;
   onRemoveSection: (section: string) => void;
   onRenameSection: (from: string, to: string) => void;
@@ -46,6 +48,7 @@ export function InspectionSectionPhotos({
   itemMarks,
   itemComments,
   busy = false,
+  photoUploading = false,
   onAddSection,
   onRemoveSection,
   onRenameSection,
@@ -107,7 +110,9 @@ export function InspectionSectionPhotos({
                   <InspectionAreaPhotosField
                     label="Item photos"
                     photoUrls={urls}
-                    uploading={busy}
+                    uploading={photoUploading}
+                    disabled={busy}
+                    sessionKey={section}
                     emptyLabel="Optional close-ups for this item."
                     onAddFiles={(files) => onAddFiles(section, files)}
                     onAddDataUrl={(dataUrl) => onAddDataUrl(section, dataUrl)}

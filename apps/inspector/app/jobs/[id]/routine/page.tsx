@@ -117,7 +117,20 @@ export default function RoutineInspectionPage() {
       selectedAreaNames: [],
       areaSetupComplete: false,
     }), keysCollected);
-  const [busy, setBusy] = useState(false);
+  const photoInflight = useRef(0);
+  const [formBusy, setFormBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const busy = formBusy || photoBusy;
+
+  const beginPhotoUpload = () => {
+    photoInflight.current += 1;
+    setPhotoBusy(true);
+  };
+
+  const endPhotoUpload = () => {
+    photoInflight.current = Math.max(0, photoInflight.current - 1);
+    if (photoInflight.current === 0) setPhotoBusy(false);
+  };
   const [resetOpen, setResetOpen] = useState(false);
   const [loadingReference, setLoadingReference] = useState(apiConnected);
   const [ingoingFromReference, setIngoingFromReference] = useState(false);
@@ -295,7 +308,7 @@ export default function RoutineInspectionPage() {
 
   const resetInspection = async () => {
     setResetOpen(false);
-    setBusy(true);
+    setFormBusy(true);
     try {
       if (apiConnected) {
         try {
@@ -319,7 +332,7 @@ export default function RoutineInspectionPage() {
     } catch {
       toast.error('Could not reset inspection');
     } finally {
-      setBusy(false);
+      setFormBusy(false);
     }
   };
 
@@ -698,7 +711,7 @@ export default function RoutineInspectionPage() {
     ) {
       return;
     }
-    setBusy(true);
+    beginPhotoUpload();
     try {
       const uploadedUrls = await uploadInspectionPhotos(
         id,
@@ -731,7 +744,7 @@ export default function RoutineInspectionPage() {
         err instanceof Error ? err.message : 'Could not upload photo',
       );
     } finally {
-      setBusy(false);
+      endPhotoUpload();
     }
   };
 
@@ -909,7 +922,7 @@ export default function RoutineInspectionPage() {
 
   const addAreaPhotos = async (sources: Array<File | string>) => {
     if (sources.length === 0) return;
-    setBusy(true);
+    beginPhotoUpload();
     try {
       const uploadedUrls = await uploadInspectionPhotos(
         id,
@@ -934,7 +947,7 @@ export default function RoutineInspectionPage() {
         err instanceof Error ? err.message : 'Could not upload photo',
       );
     } finally {
-      setBusy(false);
+      endPhotoUpload();
     }
   };
 
@@ -1007,7 +1020,7 @@ export default function RoutineInspectionPage() {
       return;
     }
 
-    setBusy(true);
+    setFormBusy(true);
     try {
       const nextPhotos: Record<string, SectionBeforeAfter> = {
         ...issue.photosBySection,
@@ -1050,18 +1063,18 @@ export default function RoutineInspectionPage() {
     } catch {
       toast.error('Photo upload failed — please retry');
     } finally {
-      setBusy(false);
+      setFormBusy(false);
     }
   };
 
   const completeFromSkippedLast = async () => {
-    setBusy(true);
+    setFormBusy(true);
     try {
       await finalizeAndSubmit(issues);
     } catch {
       toast.error('Could not complete the report');
     } finally {
-      setBusy(false);
+      setFormBusy(false);
     }
   };
 
@@ -1175,7 +1188,9 @@ export default function RoutineInspectionPage() {
                 <InspectionAreaPhotosField
                   label="Area photos"
                   photoUrls={issue.areaPhotos ?? []}
-                  uploading={busy || loadingReference}
+                  uploading={photoBusy || loadingReference}
+                  disabled={formBusy || loadingReference}
+                  sessionKey={area}
                   emptyLabel="Snap several photos of this room, then attach them here."
                   onAddFiles={(files) => addAreaPhotos(files)}
                   onAddDataUrl={(dataUrl) => addAreaPhotos([dataUrl])}
@@ -1193,7 +1208,8 @@ export default function RoutineInspectionPage() {
                   photosBySection={issue.photosBySection}
                   itemMarks={issue.itemMarks}
                   itemComments={issue.itemComments}
-                  busy={busy || loadingReference}
+                  busy={formBusy || loadingReference}
+                  photoUploading={photoBusy}
                   ingoingReadOnly={ingoingFromReference}
                   currentLabel="Routine"
                   onAddSection={addSection}
