@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Briefcase, ChevronRight, Route, Search } from 'lucide-react';
+import { Briefcase, ChevronRight, Route } from 'lucide-react';
 
 import { EmptyState } from '@/components/inspector/empty-state';
 import {
@@ -13,15 +13,12 @@ import { JobCard } from '@/components/inspector/job-card';
 import { JobPoolLocationBar } from '@/components/inspector/job-pool-location-bar';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
-import { Input } from '@/components/ui/input';
 import {
   CORE_INSPECTION_TYPES,
   INSPECTION_TYPE_LABEL,
   type CoreInspectionType,
 } from '@/constants/inspection';
 import { ROUTES } from '@/constants/routes';
-import { fetchPoolInspections } from '@/lib/crossub-api/inspector-client';
-import { mapPoolInspections } from '@/lib/crossub-api/inspector-mappers';
 import {
   inspectorLevelAllows,
   poolTypesForInspectorLevel,
@@ -32,7 +29,6 @@ import {
   type PoolOrigin,
 } from '@/lib/pool-location';
 import { computeTravelEstimate } from '@/lib/travel';
-import type { InspectionJob } from '@/lib/types';
 
 function liveOrigin(
   saved: PoolOrigin | null,
@@ -67,11 +63,6 @@ export default function JobPoolPage() {
   );
   const showOpenBatch = inspectorLevelAllows(profile.accessLevel, 'open');
   const [filter, setFilter] = useState<JobPoolFilter>('all');
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [searchJobs, setSearchJobs] = useState<InspectionJob[] | null>(null);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
   const [prefs, setPrefs] = useState(loadPoolLocationPrefs);
 
   const origin = liveOrigin(prefs.origin, deviceLocation);
@@ -91,79 +82,22 @@ export default function JobPoolPage() {
     }
   }, [allowedPoolTypes, filter]);
 
-  useEffect(() => {
-    const handle = window.setTimeout(() => {
-      setDebouncedQuery(query.trim());
-    }, 300);
-    return () => window.clearTimeout(handle);
-  }, [query]);
-
-  useEffect(() => {
-    if (!receivingJobs) {
-      setSearchJobs(null);
-      setSearchError(null);
-      return;
-    }
-    if (debouncedQuery.length < 2) {
-      setSearchJobs(null);
-      setSearchError(null);
-      setSearchLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setSearchLoading(true);
-    setSearchError(null);
-    void (async () => {
-      try {
-        const items = await fetchPoolInspections(debouncedQuery);
-        if (cancelled) return;
-        setSearchJobs(mapPoolInspections(items));
-      } catch (err) {
-        if (cancelled) return;
-        setSearchJobs([]);
-        setSearchError(
-          err instanceof Error ? err.message : 'Could not search the job pool.',
-        );
-      } finally {
-        if (!cancelled) setSearchLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedQuery, receivingJobs]);
-
-  const sourceJobs = searchJobs ?? poolJobs;
-
-  const searchedJobs = useMemo(() => {
-    if (searchJobs) return searchJobs;
-    const q = debouncedQuery.toLowerCase();
-    if (q.length < 2) return poolJobs;
-    return poolJobs.filter((j) => {
-      const address = (j.propertyAddress ?? '').toLowerCase();
-      const suburb = (j.suburb ?? '').toLowerCase();
-      return `${address} ${suburb}`.includes(q);
-    });
-  }, [poolJobs, searchJobs, debouncedQuery]);
-
   const counts = useMemo(
     () =>
       CORE_INSPECTION_TYPES.reduce(
         (acc, type) => {
-          acc[type] = searchedJobs.filter((j) => j.type === type).length;
+          acc[type] = poolJobs.filter((j) => j.type === type).length;
           return acc;
         },
         {} as Record<CoreInspectionType, number>,
       ),
-    [searchedJobs],
+    [poolJobs],
   );
 
   const typedJobs = useMemo(() => {
-    if (filter === 'all') return searchedJobs;
-    return searchedJobs.filter((j) => j.type === filter);
-  }, [searchedJobs, filter]);
+    if (filter === 'all') return poolJobs;
+    return poolJobs.filter((j) => j.type === filter);
+  }, [poolJobs, filter]);
 
   const filteredJobs = useMemo(() => {
     const withDistance = typedJobs.map((job) => {
@@ -195,9 +129,8 @@ export default function JobPoolPage() {
     return inRadius.map((row) => row.job);
   }, [origin, prefs.radiusKm, prefs.sort, typedJobs]);
 
-  const totalAvailable = sourceJobs.length;
-  const searchActive = debouncedQuery.length >= 2;
-  const showLoading = loading || searchLoading;
+  const totalAvailable = poolJobs.length;
+  const showLoading = loading;
   const radiusLabel =
     prefs.radiusKm == null ? 'any distance' : `${prefs.radiusKm}km`;
 
@@ -213,17 +146,6 @@ export default function JobPoolPage() {
           onRadiusChange={(radiusKm) => setPrefs((prev) => ({ ...prev, radiusKm }))}
           onSortChange={(sort) => setPrefs((prev) => ({ ...prev, sort }))}
         />
-
-        <div className="relative">
-          <Input
-            placeholder="Search another area, suburb, postcode or address"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="border-border bg-card h-10 rounded-full pr-10"
-            aria-label="Search job pool by property"
-          />
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-        </div>
 
         {showOpenBatch ? (
         <Link
@@ -263,17 +185,11 @@ export default function JobPoolPage() {
             title="Roster not approved yet"
             description="Complete your registration in Profile and ask ops to approve your inspector roster. Pool jobs appear here once you're on the live roster."
           />
-        ) : poolError && !searchActive ? (
+        ) : poolError ? (
           <EmptyState
             icon={Briefcase}
             title="Could not load the pool"
             description={poolError}
-          />
-        ) : searchError ? (
-          <EmptyState
-            icon={Briefcase}
-            title="Could not search the pool"
-            description={searchError}
           />
         ) : showLoading && totalAvailable === 0 ? (
           <EmptyState
@@ -284,28 +200,18 @@ export default function JobPoolPage() {
         ) : totalAvailable === 0 ? (
           <EmptyState
             icon={Briefcase}
-            title={searchActive ? 'No matching properties' : 'No jobs available'}
-            description={
-              searchActive
-                ? 'Try a different street name or suburb.'
-                : 'Check back later — new jobs are posted throughout the day.'
-            }
+            title="No jobs available"
+            description="Check back later — new jobs are posted throughout the day."
           />
         ) : filteredJobs.length === 0 ? (
           <EmptyState
             icon={Briefcase}
             title={
-              searchActive
-                ? 'No matching properties'
-                : filter === 'all'
-                  ? 'No jobs in this area'
-                  : `No ${INSPECTION_TYPE_LABEL[filter]} jobs`
+              filter === 'all'
+                ? 'No jobs in this area'
+                : `No ${INSPECTION_TYPE_LABEL[filter]} jobs`
             }
-            description={
-              searchActive
-                ? 'Try a different street name or suburb.'
-                : `Nothing within ${radiusLabel}. Widen the radius or set another location.`
-            }
+            description={`Nothing within ${radiusLabel}. Widen the radius or set another location.`}
           />
         ) : (
           <div className="space-y-3">
@@ -321,7 +227,7 @@ export default function JobPoolPage() {
               </div>
             </div>
             {filteredJobs.map((job) => (
-              <JobCard key={job.id} job={job} showActions />
+              <JobCard key={job.id} job={job} showActions origin={origin} />
             ))}
           </div>
         )}
