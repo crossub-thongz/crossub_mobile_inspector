@@ -27,6 +27,7 @@ export function BeforeAfterPhotoColumn({
   disabled = false,
   sessionKey,
   onAddFiles,
+  onAddDataUrls,
   onRemove,
 }: BeforeAfterPhotoColumnProps) {
   const uploadId = useId();
@@ -86,6 +87,7 @@ export function BeforeAfterPhotoColumn({
             sessionKey={sessionKey ?? title}
             className="w-full flex-none"
             onFiles={handleFiles}
+            onDataUrls={onAddDataUrls}
           />
           <Button
             type="button"

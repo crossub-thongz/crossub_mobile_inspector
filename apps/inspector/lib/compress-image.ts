@@ -142,6 +142,15 @@ export function compressCanvasToDataUrl(canvas: HTMLCanvasElement): string {
   return encodeImageAsJpeg(canvas, Math.max(canvas.width, canvas.height));
 }
 
+export function dataUrlToFile(dataUrl: string, fileName: string): File | null {
+  const parts = dataUrlToUploadParts(dataUrl);
+  if (!parts) return null;
+  const binary = atob(parts.contentBase64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], fileName, { type: parts.mimeType });
+}
+
 async function decodeImageFile(
   file: File,
 ): Promise<ImageBitmap | HTMLImageElement> {

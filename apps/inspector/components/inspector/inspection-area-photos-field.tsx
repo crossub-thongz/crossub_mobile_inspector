@@ -31,6 +31,7 @@ export function InspectionAreaPhotosField({
   emptyLabel = 'Add at least one photo for this area.',
   sessionKey,
   onAddFiles,
+  onAddDataUrls,
   onRemove,
 }: InspectionAreaPhotosFieldProps) {
   const uploadId = useId();
@@ -55,6 +56,7 @@ export function InspectionAreaPhotosField({
             uploading={uploading}
             sessionKey={sessionKey ?? label}
             onFiles={handleFiles}
+            onDataUrls={onAddDataUrls}
           />
           <Button
             type="button"
