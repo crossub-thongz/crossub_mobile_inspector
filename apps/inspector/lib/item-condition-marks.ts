@@ -70,6 +70,15 @@ export function marksAreComplete(marks: ItemConditionMarks | undefined): boolean
   return ITEM_CONDITION_KEYS.every((key) => typeof marks[key] === 'boolean');
 }
 
+export function marksAreAllGood(marks: ItemConditionMarks | undefined): boolean {
+  if (!marksAreComplete(marks) || !marks) return false;
+  return ITEM_CONDITION_KEYS.every((key) => marks[key] === true);
+}
+
+export function allGoodMarks(): ItemConditionMarks {
+  return { clean: true, undamaged: true, working: true };
+}
+
 export function marksHaveNo(marks: ItemConditionMarks | undefined): boolean {
   if (!marks) return false;
   return ITEM_CONDITION_KEYS.some((key) => marks[key] === false);

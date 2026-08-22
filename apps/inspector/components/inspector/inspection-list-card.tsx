@@ -5,9 +5,9 @@ import { Calendar } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { JobTypeBadge } from '@/components/inspector/status-badge';
-import { jobDetail, jobHistory, jobWorkflow } from '@/constants/routes';
+import { jobHistory } from '@/constants/routes';
 import { CORE_INSPECTION_TYPES, type CoreInspectionType } from '@/constants/inspection';
-import { jobStartCta } from '@/lib/inspection-start-flow';
+import { jobPrimaryAction } from '@/lib/inspection-job-cta';
 import { writeLastInspectionsType } from '@/lib/inspections-list-prefs';
 import { buildMapUrl } from '@/lib/navigation';
 import { formatJobRefId } from '@/lib/job-cancellation';
@@ -34,11 +34,8 @@ export function InspectionListCard({
     job.propertyAddress,
   );
   const paymentBlocked = Boolean(job.awaitingAgentPayment);
-  const actionHref = completed
-    ? jobHistory(job.id)
-    : paymentBlocked
-      ? jobDetail(job.id)
-      : jobWorkflow(job.id, job.type);
+  const action = jobPrimaryAction(job, false);
+  const actionHref = completed ? jobHistory(job.id) : action.href;
 
   return (
     <article className="rounded-2xl border border-border bg-card p-4">
@@ -97,23 +94,27 @@ export function InspectionListCard({
             </a>
           </Button>
         )}
-        {paymentBlocked && !completed ? (
+        {completed ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary h-8 w-full rounded-full text-xs font-medium"
+            asChild
+          >
+            <Link href={jobHistory(job.id)}>View report</Link>
+          </Button>
+        ) : action.disabled ? (
           <Button
             size="sm"
             disabled
             className="h-8 min-w-[4.5rem] rounded-full px-4 text-xs font-medium"
           >
-            Awaiting payment
+            {action.label}
           </Button>
         ) : (
           <Button
             size="sm"
-            variant={completed ? 'outline' : 'default'}
-            className={
-              completed
-                ? 'border-primary text-primary h-8 w-full rounded-full text-xs font-medium'
-                : 'h-8 min-w-[4.5rem] rounded-full px-4 text-xs font-medium'
-            }
+            className="h-8 min-w-[4.5rem] rounded-full px-4 text-xs font-medium"
             asChild
           >
             <Link
@@ -126,7 +127,7 @@ export function InspectionListCard({
                 }
               }}
             >
-              {completed ? 'View report' : jobStartCta(job.type, false)}
+              {action.label}
             </Link>
           </Button>
         )}

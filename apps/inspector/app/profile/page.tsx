@@ -2,14 +2,15 @@
 
 import Link from 'next/link';
 import {
-  Award,
+  CalendarClock,
   CreditCard,
   FileText,
   MapPin,
   Shield,
-  Star,
   User,
 } from 'lucide-react';
+
+import { TribunalQualifiedTag } from '@/components/inspector/tribunal-qualified-tag';
 
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useAuth } from '@/components/providers/auth-provider';
@@ -102,45 +103,30 @@ export default function ProfilePage() {
                     </span>
                   ))}
                 </div>
-                {reg.tribunalQualified && (
-                  <p className="mt-3 flex items-center gap-2 text-sm">
-                    <Award className="size-4 text-primary" />
-                    Tribunal qualified
-                  </p>
-                )}
+                <div className="mt-3">
+                  <TribunalQualifiedTag
+                    certified={Boolean(reg.tribunalQualified)}
+                  />
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Star className="size-4 fill-warning text-warning" />
-                  Performance
+                  <CalendarClock className="size-4" />
+                  Time Availability
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {profile.rating != null ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold tabular-nums">
-                      {profile.rating.toFixed(1)}
-                    </span>
-                    <span className="text-muted-foreground text-sm">/ 5.0 average rating</span>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">
-                    {profile.totalCompleted > 0
-                      ? 'Rating building — complete more inspections for a score.'
-                      : 'New inspector — no rating yet.'}
-                  </p>
-                )}
-                <InfoRow
-                  label="Completed inspections"
-                  value={String(profile.totalCompleted)}
-                />
-                <InfoRow
-                  label="Late arrivals"
-                  value={String(profile.lateArrivals)}
-                />
+              <CardContent className="space-y-3">
+                <p className="text-muted-foreground text-sm">
+                  Select the days and hours you can take inspection jobs.
+                </p>
+                <Link href={ROUTES.WEEKLY_AVAILABILITY}>
+                  <Button variant="outline" className="w-full">
+                    Set available times
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 

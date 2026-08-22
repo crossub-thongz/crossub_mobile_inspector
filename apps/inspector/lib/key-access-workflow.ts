@@ -1,5 +1,8 @@
 import type { InspectionJob } from '@/lib/types';
 
+export type HandoverParty = 'tenant' | 'agent';
+export type KeyCondition = 'good' | 'damaged';
+
 export interface KeyPhaseRecord {
   completedAt: string;
   stepsConfirmed: boolean;
@@ -7,6 +10,13 @@ export interface KeyPhaseRecord {
   /** Data URLs of snapped or uploaded proof photos (persisted in workflowData). */
   photoUrls?: string[];
   notes?: string;
+  handoverParty?: HandoverParty;
+  keySets?: number;
+  keyCondition?: KeyCondition;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  agencyName?: string;
 }
 
 export interface KeyWorkflowData {
@@ -35,12 +45,48 @@ export function isKeyCollectComplete(job: InspectionJob): boolean {
   if (!job.keyAccess) return true;
   const collect = getKeyWorkflow(job)?.collect;
   if (!collect?.stepsConfirmed) return false;
-  if (job.keyAccess.photoRequired) {
-    if (!collect.photoUrls?.length) return false;
-    // Assigned API jobs must have server-hosted proof — not browser-only state.
-    if (job.source === 'assigned' && !hasServerKeyProof(collect)) return false;
-  }
+  // Handover always needs at least one proof photo.
+  if (!collect.photoUrls?.length) return false;
+  // Assigned API jobs must have server-hosted proof — not browser-only state.
+  if (job.source === 'assigned' && !hasServerKeyProof(collect)) return false;
   return true;
+}
+
+/** Persist handover extras in the notes field the key-custody API already stores. */
+export function formatHandoverNotes(record: KeyPhaseRecord): string | undefined {
+  const lines: string[] = [];
+  if (record.handoverParty) {
+    lines.push(`Handover with ${record.handoverParty}`);
+  }
+  if (record.contactName) lines.push(`Contact: ${record.contactName}`);
+  if (record.agencyName) lines.push(`Agency: ${record.agencyName}`);
+  if (record.contactPhone) lines.push(`Phone: ${record.contactPhone}`);
+  if (record.contactEmail) lines.push(`Email: ${record.contactEmail}`);
+  if (record.keySets != null) lines.push(`Key sets: ${record.keySets}`);
+  if (record.keyCondition) {
+    lines.push(`Condition: ${record.keyCondition}`);
+  }
+  if (record.notes?.trim()) lines.push(record.notes.trim());
+  return lines.length ? lines.join('\n') : undefined;
+}
+
+/** Keep structured handover fields after the server round-trip overwrites photo URLs. */
+export function mergeKeyPhaseExtras(
+  server: KeyWorkflowData | undefined,
+  submitted: KeyPhaseRecord,
+  phase: 'collect' | 'return',
+): KeyWorkflowData {
+  const base = server ?? {};
+  const existing = base[phase];
+  return {
+    ...base,
+    [phase]: {
+      ...(existing ?? submitted),
+      ...submitted,
+      photoUrls: existing?.photoUrls?.length ? existing.photoUrls : submitted.photoUrls,
+      completedAt: existing?.completedAt ?? submitted.completedAt,
+    },
+  };
 }
 
 export function isKeyReturnComplete(job: InspectionJob): boolean {
@@ -57,7 +103,7 @@ export function isKeyReturnComplete(job: InspectionJob): boolean {
 /** Inspection report/workflow submitted — required before the return-key step unlocks. */
 export function isInspectionWorkflowFinished(job: InspectionJob): boolean {
   if (!job.keyAccess) return true;
-  if (job.status === 'completed') return true;
+  if (job.status === 'completed' || job.status === 'awaiting_approval') return true;
   return Boolean(job.workflowData?.[INSPECTION_FINISHED_KEY]);
 }
 

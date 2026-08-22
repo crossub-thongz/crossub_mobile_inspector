@@ -2,24 +2,26 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
+import { InspectionAreaActionBar } from '@/components/inspector/inspection-area-action-bar';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
 import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
+import { InspectionWorkspaceHeader } from '@/components/inspector/inspection-workspace-header';
 import {
   OutgoingSectionPhotos,
   type SectionBeforeAfter,
 } from '@/components/inspector/outgoing-section-photos';
+import { SpecialReportingForm } from '@/components/inspector/special-reporting-form';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -36,6 +38,7 @@ import {
   useKeyCollectGate,
 } from '@/hooks/use-key-collect-gate';
 import { fetchInspectionDetail } from '@/lib/crossub-api/inspector-client';
+import type { InspectorFindingAreaPayload } from '@/lib/crossub-api/inspector-client';
 import {
   applyOutgoingDetailPhotos,
   emptyOutgoingIssue,
@@ -43,6 +46,10 @@ import {
 } from '@/lib/inspection-execution-hydration';
 import type { OutgoingAreaIssueDraft, OutgoingExecutionDraft } from '@/lib/inspection-execution-draft';
 import { jobLookupMiss } from '@/lib/job-lookup';
+import {
+  defaultSpecialReporting,
+  specialReportingAsFindings,
+} from '@/lib/special-reporting';
 import {
   appendSelectedAreaName,
   buildEffectiveAreaCatalog,
@@ -68,10 +75,13 @@ import {
   sectionsForAvailableArea,
   seedAreasForInspectionStart,
 } from '@/lib/inspection-area-workflow';
+import { markAllItemsGood } from '@/components/inspector/inspection-section-photos';
 import { findingsAreaFromSections } from '@/lib/inspection-findings-items';
 import {
   applyColumnMark,
   firstIncompleteSection,
+  marksAreComplete,
+  marksHaveNo,
   type ItemConditionKey,
   type ItemConditionMarks,
 } from '@/lib/item-condition-marks';
@@ -995,12 +1005,15 @@ export default function OutgoingInspectionPage() {
         ...prev,
         issues: nextIssues,
         areaIndex: isLast ? prev.areaIndex : prev.areaIndex + 1,
+        ...(isLast
+          ? {
+              workflowStep: 'special' as const,
+              specialReporting:
+                prev.specialReporting ?? defaultSpecialReporting(),
+            }
+          : {}),
       }));
-
-      if (isLast) {
-        await finalizeAndSubmit(nextIssues);
-        return;
-      }
+      return;
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'Photo upload failed — please retry',
@@ -1011,9 +1024,7 @@ export default function OutgoingInspectionPage() {
   };
 
   const finalizeAndSubmit = async (finalIssues: Record<string, AreaIssue>) => {
-    const saved = await saveInspectionFindings(
-      id,
-      areaCatalog.filter((def) => {
+    const areas: InspectorFindingAreaPayload[] = areaCatalog.filter((def) => {
         const rec = finalIssues[def.name];
         return (
           rec &&
@@ -1049,8 +1060,13 @@ export default function OutgoingInspectionPage() {
             ...(area.items ?? []),
           ],
         };
-      }),
+      });
+    areas.push(
+      specialReportingAsFindings(
+        draft.specialReporting ?? defaultSpecialReporting(),
+      ),
     );
+    const saved = await saveInspectionFindings(id, areas);
     // The draft is the only other copy of the field pass. Clearing it after a save
     // that never reached the server threw the whole inspection away and still marked
     // the job finished, so the workflow refused to reopen.
@@ -1062,18 +1078,36 @@ export default function OutgoingInspectionPage() {
       return;
     }
     clearDraft();
-    submitInspection('Outgoing report synced with bond claims and accounting');
+    submitInspection('Outgoing report sent for account manager review');
   };
 
-  const completeFromSkippedLast = async () => {
-    setFormBusy(true);
-    try {
-      await finalizeAndSubmit(issues);
-    } catch {
-      toast.error('Could not complete the report');
-    } finally {
-      setFormBusy(false);
-    }
+  const goToSpecialReporting = () => {
+    setDraft((prev) => ({
+      ...prev,
+      workflowStep: 'special',
+      specialReporting: prev.specialReporting ?? defaultSpecialReporting(),
+    }));
+  };
+
+  const completeFromSkippedLast = () => {
+    goToSpecialReporting();
+  };
+
+  const markAllGood = () => {
+    setDraft((prev) => {
+      const current =
+        prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
+      return {
+        ...prev,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            itemMarks: markAllItemsGood(current.activeSections),
+          },
+        },
+      };
+    });
   };
 
   const progressTone = (index: number, areaName: string) => {
@@ -1085,16 +1119,45 @@ export default function OutgoingInspectionPage() {
     return 'bg-secondary';
   };
 
+  const checkedCount = issue.activeSections.filter((section) =>
+    marksAreComplete(issue.itemMarks?.[section]),
+  ).length;
+  const issueCount = issue.activeSections.filter((section) =>
+    marksHaveNo(issue.itemMarks?.[section]),
+  ).length;
+
+  if (draft.workflowStep === 'special') {
+    return (
+      <>
+        <InspectorShell title="Outgoing Inspection" backHref={jobDetail(id)}>
+          <div className="space-y-4">
+            <JobWorkflowToolbar job={job} />
+            <InspectionWorkspaceHeader job={job} />
+            <SpecialReportingForm
+              value={draft.specialReporting ?? defaultSpecialReporting()}
+              onChange={(specialReporting) =>
+                setDraft((prev) => ({ ...prev, specialReporting }))
+              }
+              submitting={busy}
+              onBack={() => setDraft((prev) => ({ ...prev, workflowStep: 'areas' }))}
+              onFinalise={() => {
+                setFormBusy(true);
+                void finalizeAndSubmit(issues).finally(() => setFormBusy(false));
+              }}
+            />
+          </div>
+        </InspectorShell>
+        {Celebration}
+      </>
+    );
+  }
+
   return (
     <>
       <InspectorShell title="Outgoing Inspection" backHref={jobDetail(id)}>
         <div className="space-y-4">
           <JobWorkflowToolbar job={job} />
-
-          <p className="text-muted-foreground text-xs">
-            Photograph each section. Rooms and items follow the latest ingoing
-            report when available.
-          </p>
+          <InspectionWorkspaceHeader job={job} />
 
           {loadingReference ? (
             <p className="text-muted-foreground text-xs">
@@ -1112,12 +1175,7 @@ export default function OutgoingInspectionPage() {
 
           {issue.available === false ? (
             <Card>
-              <CardHeader>
-                <CardTitle>
-                  {area} — skipped ({areaIndex + 1}/{areaCatalog.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 pt-6">
                 <p className="text-muted-foreground text-sm">
                   This area was marked unavailable. You can change that and photograph
                   it, or continue.
@@ -1131,46 +1189,22 @@ export default function OutgoingInspectionPage() {
                 >
                   Mark available & photograph
                 </Button>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={goBackArea}
-                  >
-                    <ChevronLeft className="size-4" />
-                    Back
-                  </Button>
-                  {isLast ? (
-                    <Button
-                      type="button"
-                      className="flex-1"
-                      disabled={busy || loadingReference}
-                      onClick={() => void completeFromSkippedLast()}
-                    >
-                      {busy ? 'Submitting…' : 'Complete Outgoing Report'}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      className="flex-1"
-                      onClick={() => goToArea(areaIndex + 1)}
-                    >
-                      Next Area
-                    </Button>
-                  )}
-                </div>
+                <InspectionAreaActionBar
+                  checked={0}
+                  total={0}
+                  issues={0}
+                  busy={busy || loadingReference}
+                  isLast={isLast}
+                  onBack={goBackArea}
+                  onNext={() =>
+                    isLast ? completeFromSkippedLast() : goToArea(areaIndex + 1)
+                  }
+                />
               </CardContent>
             </Card>
           ) : (
             <Card>
-              <CardHeader>
-                <CardTitle>
-                  {area} — Before / After ({areaIndex + 1}/
-                  {areaCatalog.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 <InspectionAreaPhotosField
                   label="Area photos"
                   photoUrls={issue.areaPhotos ?? []}
@@ -1203,6 +1237,7 @@ export default function OutgoingInspectionPage() {
                   onMoveSection={moveSection}
                   onChangeMarks={changeMarks}
                   onFillColumn={fillColumn}
+                  onMarkAllGood={markAllGood}
                   onChangeComment={changeItemComment}
                   onAddFiles={(section, side, files) =>
                     addLocalPhotos(section, side, files)
@@ -1248,29 +1283,15 @@ export default function OutgoingInspectionPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    disabled={busy}
-                    onClick={goBackArea}
-                  >
-                    <ChevronLeft className="size-4" />
-                    Back
-                  </Button>
-                  <Button
-                    className="flex-[2]"
-                    disabled={busy || loadingReference}
-                    onClick={() => void next()}
-                  >
-                    {busy
-                      ? 'Uploading photos…'
-                      : isLast
-                        ? 'Complete Outgoing Report'
-                        : 'Next Area'}
-                  </Button>
-                </div>
+                <InspectionAreaActionBar
+                  checked={checkedCount}
+                  total={issue.activeSections.length}
+                  issues={issueCount}
+                  busy={busy || loadingReference}
+                  isLast={isLast}
+                  onBack={goBackArea}
+                  onNext={() => void next()}
+                />
 
                 <Button
                   type="button"

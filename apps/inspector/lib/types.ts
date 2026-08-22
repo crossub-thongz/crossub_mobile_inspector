@@ -14,6 +14,7 @@ export type JobStatus =
   | 'on_the_way'
   | 'arrived'
   | 'in_progress'
+  | 'awaiting_approval'
   | 'completed'
   | 'declined';
 
@@ -152,10 +153,13 @@ export interface InspectionJob {
   assignedBy?: string;
   tenantName?: string;
   tenantPhone?: string;
+  tenantEmail?: string;
   agentName?: string;
   agentCompany?: string;
   agentEmail?: string;
   agentPhone?: string;
+  /** Listing / cover photo for the property. Missing → NO IMAGE placeholder. */
+  propertyImageUrl?: string;
   keyAccess?: KeyAccess;
   /** Live leasing key-collection arrangement (API-backed jobs). */
   leasingKeyCollection?: InspectorLeasingKeyContext;
@@ -175,6 +179,8 @@ export interface InspectionJob {
   availableInspectorCount?: number | null;
   /** Agent declined the last submitted report — redo and resubmit. */
   reportDeclineReason?: string;
+  /** Account manager signed off the submitted report (ISO). */
+  approvedAt?: string;
   /**
    * Level 1 prepaid: true until the agency pays at order create —
    * inspector cannot claim or accept while this is true.

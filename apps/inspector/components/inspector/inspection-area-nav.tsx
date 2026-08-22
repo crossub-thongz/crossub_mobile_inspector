@@ -1,9 +1,8 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
 import { cn } from '@/lib/utils';
 
@@ -26,9 +25,40 @@ export function InspectionAreaNav({
 }: InspectionAreaNavProps) {
   const totalAreas = areaCatalog.length;
   const current = areaCatalog[areaIndex];
+  const canPrev = areaIndex > 0;
+  const canNext = areaIndex < totalAreas - 1;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          disabled={!canPrev}
+          aria-label="Previous area"
+          className="text-foreground flex size-9 items-center justify-center rounded-full disabled:opacity-30"
+          onClick={() => onGoToArea(areaIndex - 1)}
+        >
+          <ChevronLeft className="size-5" />
+        </button>
+        <div className="min-w-0 text-center">
+          <p className="text-foreground truncate text-base font-semibold">
+            {current?.name ?? 'Area'}
+          </p>
+          <p className="text-muted-foreground text-[11px]">
+            {totalAreas === 0 ? '0 of 0' : `${areaIndex + 1} of ${totalAreas}`}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={!canNext}
+          aria-label="Next area"
+          className="text-foreground flex size-9 items-center justify-center rounded-full disabled:opacity-30"
+          onClick={() => onGoToArea(areaIndex + 1)}
+        >
+          <ChevronRight className="size-5" />
+        </button>
+      </div>
+
       <div className="flex gap-1">
         {areaCatalog.map((item, index) => (
           <button
@@ -40,28 +70,6 @@ export function InspectionAreaNav({
             onClick={() => onGoToArea(index)}
           />
         ))}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="inspection-area-nav">Current area</Label>
-        <select
-          id="inspection-area-nav"
-          key={areaCatalog.map((item) => item.name).join('|')}
-          className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
-          value={String(areaIndex)}
-          onChange={(event) => onGoToArea(Number(event.target.value))}
-        >
-          {areaCatalog.map((item, index) => (
-            <option key={`${index}:${item.name}`} value={String(index)}>
-              {index + 1} of {totalAreas}: {item.name}
-            </option>
-          ))}
-        </select>
-        {current ? (
-          <p className="text-muted-foreground text-xs">
-            Area {areaIndex + 1} of {totalAreas} — {current.name}
-          </p>
-        ) : null}
       </div>
 
       {onAddArea ? (

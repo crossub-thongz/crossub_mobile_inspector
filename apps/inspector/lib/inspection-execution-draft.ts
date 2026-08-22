@@ -2,6 +2,7 @@ import type { InspectionJob } from '@/lib/types';
 import type { CustomAreaDefinition } from '@/lib/custom-inspection-areas';
 import type { ItemConditionMarks } from '@/lib/item-condition-marks';
 import { loadPersistedJobProgress } from '@/lib/job-workflow-persist';
+import type { SpecialReportingDraft } from '@/lib/special-reporting';
 
 export const INSPECTION_DRAFT_KEY = 'inspectionDraft';
 export const INSPECTION_DEVICE_ID_KEY = 'crossub-inspector-device-id';
@@ -24,6 +25,8 @@ export type IngoingExecutionDraft = {
   customAreas?: CustomAreaDefinition[];
   selectedAreaNames?: string[];
   areaSetupComplete?: boolean;
+  specialReporting?: SpecialReportingDraft;
+  workflowStep?: 'areas' | 'special';
   updatedAt?: string;
 };
 
@@ -71,6 +74,8 @@ export type OutgoingExecutionDraft = {
   customAreas?: CustomAreaDefinition[];
   selectedAreaNames?: string[];
   areaSetupComplete?: boolean;
+  specialReporting?: SpecialReportingDraft;
+  workflowStep?: 'areas' | 'special';
   updatedAt?: string;
 };
 

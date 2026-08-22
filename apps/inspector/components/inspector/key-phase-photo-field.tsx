@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useRef } from 'react';
-import { ImagePlus, X } from 'lucide-react';
+import { ImagePlus, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { NativeCameraSnapButton } from '@/components/inspector/native-camera-snap-button';
@@ -17,11 +17,14 @@ export function KeyPhasePhotoField({
   photos,
   onChange,
   disabled = false,
+  onEmptyPress,
 }: {
   label?: string;
   photos: string[];
   onChange: (photos: string[]) => void;
   disabled?: boolean;
+  /** When there are no photos, the empty tile can open a NO IMAGE popup. */
+  onEmptyPress?: () => void;
 }) {
   const uploadId = useId();
   const uploadRef = useRef<HTMLInputElement>(null);
@@ -52,7 +55,7 @@ export function KeyPhasePhotoField({
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      {label ? <Label>{label}</Label> : null}
       {!disabled && (
         <div className="flex gap-2">
           <NativeCameraSnapButton
@@ -91,9 +94,24 @@ export function KeyPhasePhotoField({
       />
 
       {photos.length === 0 ? (
-        <p className="text-muted-foreground text-xs">
-          {disabled ? 'No photos recorded.' : 'Add at least one photo to continue.'}
-        </p>
+        <button
+          type="button"
+          disabled={disabled && !onEmptyPress}
+          onClick={() => {
+            if (disabled) {
+              onEmptyPress?.();
+              return;
+            }
+            uploadRef.current?.click();
+          }}
+          className="border-border text-muted-foreground flex w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed px-3 py-6"
+        >
+          <Plus className="size-5" />
+          <span className="text-[10px] font-bold tracking-wide">NO IMAGE</span>
+          <span className="text-[11px]">
+            {disabled ? 'No photos recorded.' : 'Add photos'}
+          </span>
+        </button>
       ) : (
         <ul className="grid grid-cols-3 gap-2">
           {photos.map((url, index) => (

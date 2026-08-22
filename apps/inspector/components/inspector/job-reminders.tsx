@@ -16,7 +16,7 @@ export function JobReminders() {
   const shownRef = useRef<Set<string>>(new Set());
 
   const upcoming = todaysJobs.filter((j) => {
-    if (j.status === 'completed' || j.status === 'declined') return false;
+    if (j.status === 'completed' || j.status === 'declined' || j.status === 'awaiting_approval') return false;
     const diff = new Date(j.scheduledTime).getTime() - Date.now();
     return diff > 0 && diff <= REMINDER_WINDOW_MS;
   });

@@ -10,6 +10,7 @@ import {
   type JobPoolFilter,
 } from '@/components/inspector/inspection-type-tabs';
 import { JobCard } from '@/components/inspector/job-card';
+import { JobPoolLocationBar } from '@/components/inspector/job-pool-location-bar';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Input } from '@/components/ui/input';
@@ -25,7 +26,29 @@ import {
   inspectorLevelAllows,
   poolTypesForInspectorLevel,
 } from '@/lib/inspector-access-level';
+import {
+  loadPoolLocationPrefs,
+  savePoolLocationPrefs,
+  type PoolOrigin,
+} from '@/lib/pool-location';
+import { computeTravelEstimate } from '@/lib/travel';
 import type { InspectionJob } from '@/lib/types';
+
+function liveOrigin(
+  saved: PoolOrigin | null,
+  gps: { latitude: number; longitude: number } | null,
+): PoolOrigin | null {
+  if (saved?.source === 'custom') return saved;
+  if (gps) {
+    return {
+      latitude: gps.latitude,
+      longitude: gps.longitude,
+      label: saved?.source === 'gps' ? saved.label : 'Current location',
+      source: 'gps',
+    };
+  }
+  return saved;
+}
 
 export default function JobPoolPage() {
   const {
@@ -36,6 +59,7 @@ export default function JobPoolPage() {
     poolError,
     refresh,
     profile,
+    deviceLocation,
   } = useInspectorData();
   const allowedPoolTypes = useMemo(
     () => poolTypesForInspectorLevel(profile.accessLevel),
@@ -48,6 +72,13 @@ export default function JobPoolPage() {
   const [searchJobs, setSearchJobs] = useState<InspectionJob[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [prefs, setPrefs] = useState(loadPoolLocationPrefs);
+
+  const origin = liveOrigin(prefs.origin, deviceLocation);
+
+  useEffect(() => {
+    savePoolLocationPrefs({ ...prefs, origin });
+  }, [origin, prefs]);
 
   useEffect(() => {
     if (!receivingJobs) return;
@@ -107,7 +138,6 @@ export default function JobPoolPage() {
   const sourceJobs = searchJobs ?? poolJobs;
 
   const searchedJobs = useMemo(() => {
-    // Server search already filtered; only client-filter when using the local pool list.
     if (searchJobs) return searchJobs;
     const q = debouncedQuery.toLowerCase();
     if (q.length < 2) return poolJobs;
@@ -130,21 +160,63 @@ export default function JobPoolPage() {
     [searchedJobs],
   );
 
-  const filteredJobs = useMemo(() => {
+  const typedJobs = useMemo(() => {
     if (filter === 'all') return searchedJobs;
     return searchedJobs.filter((j) => j.type === filter);
   }, [searchedJobs, filter]);
 
+  const filteredJobs = useMemo(() => {
+    const withDistance = typedJobs.map((job) => {
+      const travel = computeTravelEstimate(
+        origin,
+        job.latitude != null && job.longitude != null
+          ? { latitude: job.latitude, longitude: job.longitude }
+          : null,
+      );
+      return { job, distanceKm: travel?.distanceKm ?? Number.POSITIVE_INFINITY };
+    });
+    const inRadius =
+      prefs.radiusKm == null
+        ? withDistance
+        : withDistance.filter((row) => row.distanceKm <= (prefs.radiusKm ?? 0));
+    inRadius.sort((a, b) => {
+      if (prefs.sort === 'soonest') {
+        return (
+          new Date(a.job.scheduledTime).getTime() -
+          new Date(b.job.scheduledTime).getTime()
+        );
+      }
+      if (a.distanceKm !== b.distanceKm) return a.distanceKm - b.distanceKm;
+      return (
+        new Date(a.job.scheduledTime).getTime() -
+        new Date(b.job.scheduledTime).getTime()
+      );
+    });
+    return inRadius.map((row) => row.job);
+  }, [origin, prefs.radiusKm, prefs.sort, typedJobs]);
+
   const totalAvailable = sourceJobs.length;
   const searchActive = debouncedQuery.length >= 2;
   const showLoading = loading || searchLoading;
+  const radiusLabel =
+    prefs.radiusKm == null ? 'any distance' : `${prefs.radiusKm}km`;
 
   return (
     <InspectorShell title="Job Pool">
       <div className="space-y-3">
+        <JobPoolLocationBar
+          origin={origin}
+          gps={deviceLocation}
+          radiusKm={prefs.radiusKm}
+          sort={prefs.sort}
+          onOriginChange={(next) => setPrefs((prev) => ({ ...prev, origin: next }))}
+          onRadiusChange={(radiusKm) => setPrefs((prev) => ({ ...prev, radiusKm }))}
+          onSortChange={(sort) => setPrefs((prev) => ({ ...prev, sort }))}
+        />
+
         <div className="relative">
           <Input
-            placeholder="Search address or suburb"
+            placeholder="Search another area, suburb, postcode or address"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="border-border bg-card h-10 rounded-full pr-10"
@@ -153,12 +225,6 @@ export default function JobPoolPage() {
           <Search className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
         </div>
 
-        {/*
-          Opens do not live in this list any more, and saying so is the point. They are
-          picked as a set on Wednesday afternoon and routed together — an inspector who
-          came here looking for Saturday work needs to be sent somewhere, not left to
-          conclude the opens have dried up.
-        */}
         {showOpenBatch ? (
         <Link
           href={ROUTES.OPEN_BATCH}
@@ -232,42 +298,28 @@ export default function JobPoolPage() {
               searchActive
                 ? 'No matching properties'
                 : filter === 'all'
-                  ? 'No jobs in this filter'
+                  ? 'No jobs in this area'
                   : `No ${INSPECTION_TYPE_LABEL[filter]} jobs`
             }
             description={
               searchActive
                 ? 'Try a different street name or suburb.'
-                : 'Try another type tag or check back later.'
+                : `Nothing within ${radiusLabel}. Widen the radius or set another location.`
             }
           />
-        ) : filter === 'all' ? (
-          <div className="space-y-5">
-            {allowedPoolTypes.map((type) => {
-              const typeJobs = searchedJobs.filter((j) => j.type === type);
-              if (typeJobs.length === 0) return null;
-
-              return (
-                <section key={type} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-bold tracking-widest text-primary">
-                      {INSPECTION_TYPE_LABEL[type]}
-                    </h2>
-                    <span className="text-muted-foreground text-[10px] tabular-nums">
-                      {typeJobs.length} available
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    {typeJobs.map((job) => (
-                      <JobCard key={job.id} job={job} showActions />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
         ) : (
           <div className="space-y-3">
+            <div className="flex items-end justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold">
+                  {filteredJobs.length} job{filteredJobs.length === 1 ? '' : 's'}{' '}
+                  within {radiusLabel}
+                </p>
+                <p className="text-muted-foreground text-[11px]">
+                  Sorted by {prefs.sort === 'soonest' ? 'Soonest' : 'Nearest'}
+                </p>
+              </div>
+            </div>
             {filteredJobs.map((job) => (
               <JobCard key={job.id} job={job} showActions />
             ))}

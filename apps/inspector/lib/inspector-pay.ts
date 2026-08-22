@@ -2,6 +2,7 @@ import {
   FUEL_RATE_PER_KM_AUD,
   INSPECTOR_HOURLY_RATE_AUD,
 } from '@/constants/inspection-rates';
+import { agentCatalogFeeIncGst } from '@/lib/agent-inspection-pricing';
 import {
   calculateInspectionDuration,
   tribunalInspectionHours,
@@ -33,7 +34,9 @@ export function calculateJobPay(
     type === 'tribunal'
       ? tribunalInspectionHours()
       : calculateInspectionDuration(spec);
-  const laborAmount = calculateLaborFee(estimatedHours);
+  const catalogFee = agentCatalogFeeIncGst(type, spec);
+  const laborAmount =
+    catalogFee ?? calculateLaborFee(estimatedHours);
   const fuelAllowance =
     type === 'tribunal' ? 0 : calculateFuelAllowance(travelKmOneWay);
 

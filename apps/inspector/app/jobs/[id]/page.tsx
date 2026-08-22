@@ -27,7 +27,7 @@ import {
   isKeyReturnComplete,
 } from '@/lib/key-access-workflow';
 import { hasInspectionExecutionDraft } from '@/lib/inspection-execution-draft';
-import { jobStartCta } from '@/lib/inspection-start-flow';
+import { jobPrimaryAction } from '@/lib/inspection-job-cta';
 
 const STATUS_FLOW = [
   { status: 'accepted' as const, label: 'Accepted' },
@@ -147,10 +147,10 @@ export default function JobDetailPage() {
                 <div className="flex items-center justify-between gap-3">
                   <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <KeyRound className="text-primary size-4 shrink-0" />
-                    Key details
+                    Handover
                   </span>
                   <span className="text-right text-[10px] text-muted-foreground group-hover:text-foreground">
-                    Collect {keyCollectDone ? '✓' : 'pending'}
+                    Handover {keyCollectDone ? '✓' : 'pending'}
                     <span className="text-muted-foreground/60 group-hover:text-foreground/70">
                       {' · '}
                     </span>
@@ -188,7 +188,9 @@ export default function JobDetailPage() {
               </Card>
             )}
 
-            {job.status !== 'completed' && !paymentBlocked && (
+            {job.status !== 'completed' &&
+              job.status !== 'awaiting_approval' &&
+              !paymentBlocked && (
               <Card>
                 <CardHeader>
                   <CardTitle>Status</CardTitle>
@@ -215,11 +217,13 @@ export default function JobDetailPage() {
               </p>
             ) : keysBlocked ? (
               <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-                Complete key collection before starting the inspection.
+                Complete handover before starting the inspection.
               </p>
             ) : null}
 
-            {job.reportDeclineReason && job.status !== 'completed' ? (
+            {job.reportDeclineReason &&
+            job.status !== 'completed' &&
+            job.status !== 'awaiting_approval' ? (
               <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 <span className="font-semibold">Report declined — </span>
                 {job.reportDeclineReason} Redo the inspection and resubmit your report.
@@ -232,7 +236,11 @@ export default function JobDetailPage() {
               </p>
             )}
 
-            {job.status === 'completed' ? (
+            {job.status === 'awaiting_approval' ? (
+              <Button className="w-full" disabled>
+                Pending Approval
+              </Button>
+            ) : job.status === 'completed' ? (
               <Link href={jobHistory(job.id)}>
                 <Button className="w-full">View inspection report</Button>
               </Link>
@@ -258,17 +266,22 @@ export default function JobDetailPage() {
                   disabled={
                     paymentBlocked ||
                     startBlocked ||
-                    (!canStartInspection && job.status !== 'accepted')
+                    (!canStartInspection &&
+                      job.status !== 'accepted' &&
+                      !job.reportDeclineReason)
                   }
                 >
                   {paymentBlocked
                     ? 'Waiting for agency payment'
-                    : jobStartCta(job.type, workflowStarted)}
+                    : jobPrimaryAction(job, workflowStarted).label}
                 </Button>
               </Link>
             )}
 
-            {workflowStarted && job.status !== 'completed' && !paymentBlocked && (
+            {workflowStarted &&
+              job.status !== 'completed' &&
+              job.status !== 'awaiting_approval' &&
+              !paymentBlocked && (
               <>
                 <p className="text-muted-foreground text-center text-[10px]">
                   Progress saved — you can continue where you left off.

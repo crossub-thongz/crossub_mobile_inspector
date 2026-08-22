@@ -9,6 +9,7 @@ const STATUS_STYLES: Record<string, string> = {
   on_the_way: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
   arrived: 'bg-primary/15 text-primary border-primary/30',
   in_progress: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+  awaiting_approval: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   completed: 'bg-primary/15 text-primary border-primary/30',
   declined: 'bg-destructive/15 text-destructive border-destructive/30',
   urgent: 'bg-destructive/15 text-destructive border-destructive/30',

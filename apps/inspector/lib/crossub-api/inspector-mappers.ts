@@ -22,10 +22,10 @@ import {
   TRIBUNAL_TYPE_LABEL,
 } from '@/constants/api-enums';
 import {
-  ESTIMATED_HOURS_BY_TYPE,
   INSPECTOR_HOURLY_RATE_AUD,
   TRIBUNAL_OUTCOMES,
 } from '@/constants/inspection';
+import { calculateJobPay } from '@/lib/inspector-pay';
 import type { LabeledPhoto } from '@/lib/job-history';
 import type {
   EarningsRecord,
@@ -91,6 +91,21 @@ const INSPECTION_STATUS_VIEW: Record<InspectorInspection['status'], JobStatus> =
   [INSPECTION_STATUS.CANCELLED]: 'declined',
 };
 
+function mapInspectionJobStatus(
+  dto: InspectorInspection,
+  type: InspectionType,
+): JobStatus {
+  const approvedAt = asString((dto as { approvedAt?: unknown }).approvedAt);
+  const pendingReview =
+    (type === 'ingoing' || type === 'outgoing') &&
+    !approvedAt &&
+    (dto.status === INSPECTION_STATUS.COMPLETED ||
+      dto.status === INSPECTION_STATUS.FIRST_REVIEW ||
+      dto.status === INSPECTION_STATUS.SECOND_REVIEW);
+  if (pendingReview) return 'awaiting_approval';
+  return INSPECTION_STATUS_VIEW[dto.status] ?? 'assigned';
+}
+
 /** API BillingSource -> the app's InspectionType label for an earnings line. */
 const BILLING_SOURCE_VIEW: Record<InspectorJob['source'], InspectionType> = {
   [BILLING_SOURCE.ROUTINE_INSPECTION]: 'routine',
@@ -130,8 +145,8 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     asString(dto.inspectionDate) ??
     asString(dto.createdAt) ??
     '';
-  const estimatedHours = ESTIMATED_HOURS_BY_TYPE[type];
-  const laborAmount = Math.round(estimatedHours * INSPECTOR_HOURLY_RATE_AUD);
+  const property = propertySpecFromDto(dto);
+  const pay = calculateJobPay(property, 0, type);
   const propertyLatitude = asNumber(
     (dto as { propertyLatitude?: unknown }).propertyLatitude,
   );
@@ -146,12 +161,31 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
   const reportDeclineReason = asString(
     (dto as { reportDeclineReason?: unknown }).reportDeclineReason,
   );
+  const approvedAt = asString((dto as { approvedAt?: unknown }).approvedAt);
   const awaitingAgentPayment = Boolean(
     (dto as { awaitingAgentPayment?: unknown }).awaitingAgentPayment,
   );
   const assignedByStaff = Boolean(
     (dto as { assignedByStaff?: unknown }).assignedByStaff,
   );
+  const extra = dto as {
+    propertyImageUrl?: unknown;
+    tenantName?: unknown;
+    tenantPhone?: unknown;
+    tenantEmail?: unknown;
+    agentName?: unknown;
+    agentCompany?: unknown;
+    agentEmail?: unknown;
+    agentPhone?: unknown;
+  };
+  const propertyImageUrl = asString(extra.propertyImageUrl);
+  const tenantName = asString(extra.tenantName);
+  const tenantPhone = asString(extra.tenantPhone);
+  const tenantEmail = asString(extra.tenantEmail);
+  const agentName = asString(extra.agentName);
+  const agentCompany = asString(extra.agentCompany);
+  const agentEmail = asString(extra.agentEmail);
+  const agentPhone = asString(extra.agentPhone);
   return {
     id: dto.id,
     type,
@@ -160,23 +194,32 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     ...(hasPropertyGeo
       ? { latitude: propertyLatitude, longitude: propertyLongitude }
       : {}),
+    ...(propertyImageUrl ? { propertyImageUrl } : {}),
+    ...(tenantName ? { tenantName } : {}),
+    ...(tenantPhone ? { tenantPhone } : {}),
+    ...(tenantEmail ? { tenantEmail } : {}),
+    ...(agentName ? { agentName } : {}),
+    ...(agentCompany ? { agentCompany } : {}),
+    ...(agentEmail ? { agentEmail } : {}),
+    ...(agentPhone ? { agentPhone } : {}),
     scheduledDate: scheduled,
     scheduledTime: scheduled,
     priority: dto.urgent ? 'urgent' : 'normal',
     distanceKm: 0,
-    status: INSPECTION_STATUS_VIEW[dto.status] ?? 'assigned',
+    status: mapInspectionJobStatus(dto, type),
     source: 'assigned',
     ...(assignedByStaff ? { assignedBy: 'CROSSUB' } : {}),
     serviceRegion: DEFAULT_REGION,
-    property: propertySpecFromDto(dto),
-    durationLabel: `~${estimatedHours} hr${estimatedHours === 1 ? '' : 's'}`,
+    property,
+    durationLabel: `Approx. ${pay.estimatedHours} hr${pay.estimatedHours === 1 ? '' : 's'}`,
     travelKmOneWay: 0,
-    estimatedHours,
-    laborAmount,
-    fuelAllowance: 0,
-    payAmount: laborAmount,
+    estimatedHours: pay.estimatedHours,
+    laborAmount: pay.laborAmount,
+    fuelAllowance: pay.fuelAllowance,
+    payAmount: pay.payAmount,
     availableInspectorCount,
     ...(reportDeclineReason ? { reportDeclineReason } : {}),
+    ...(approvedAt ? { approvedAt } : {}),
     ...(awaitingAgentPayment ? { awaitingAgentPayment: true } : {}),
   };
 }

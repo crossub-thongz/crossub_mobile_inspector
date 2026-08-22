@@ -1,6 +1,5 @@
 'use client';
 
-import { formatHourlyRate } from '@/lib/inspector-pay';
 import { formatCurrency } from '@/lib/utils';
 
 export function PayBreakdown({
@@ -24,11 +23,14 @@ export function PayBreakdown({
       {durationLabel && (
         <p className="text-muted-foreground text-[10px]">{durationLabel}</p>
       )}
+      <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
+        Est. Fee
+      </p>
       <p className="text-primary text-sm font-semibold tabular-nums">
         {formatCurrency(laborAmount)}
       </p>
       <p className="text-muted-foreground text-[10px] leading-relaxed">
-        {hours}h × {formatHourlyRate()} = {formatCurrency(laborAmount)}
+        Agent APP price list{hours > 0 ? ` · ~${hours}h on site` : ''}
       </p>
     </div>
   );

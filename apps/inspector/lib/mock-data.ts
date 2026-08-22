@@ -161,6 +161,7 @@ export const JOBS: InspectionJob[] = [
     assignedBy: 'James Wu',
     tenantName: 'Emma Thompson',
     tenantPhone: '0423 111 222',
+    tenantEmail: 'emma.thompson@email.com',
     agentName: 'James Wu',
     agentCompany: 'Western Sydney Realty',
     agentEmail: 'james.wu@westernsydneyrealty.com.au',
@@ -176,7 +177,7 @@ export const JOBS: InspectionJob[] = [
         'Return keys to reception before 5pm',
         'Confirm return on the sign-out sheet',
       ],
-      photoRequired: false,
+      photoRequired: true,
     },
     ...pay(
       { propertyKind: 'apartment', bedrooms: 3, bathrooms: 2 },

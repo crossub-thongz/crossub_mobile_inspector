@@ -108,7 +108,7 @@ export function useInspectionInProgress(
   updateJobStatus: (id: string, status: JobStatus) => void,
 ): void {
   useEffect(() => {
-    if (!job || job.status === 'completed') return;
+    if (!job || job.status === 'completed' || job.status === 'awaiting_approval') return;
     if (job.awaitingAgentPayment) return;
     if (job.keyAccess && !isKeyCollectComplete(job)) return;
     if (job.status === 'in_progress') return;
@@ -128,7 +128,7 @@ export function useInspectionFinishedGate(
   useEffect(() => {
     if (!job) return;
 
-    if (job.status === 'completed') {
+    if (job.status === 'completed' || job.status === 'awaiting_approval') {
       if (redirected.current) return;
       redirected.current = true;
       router.replace(ROUTES.DASHBOARD);

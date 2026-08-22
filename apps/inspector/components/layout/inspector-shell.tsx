@@ -6,12 +6,11 @@ import {
   Bell,
   Briefcase,
   ClipboardCheck,
+  Ellipsis,
   LayoutDashboard,
-  LogOut,
   Menu,
   MessageSquare,
   Scale,
-  Wallet,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -23,19 +22,19 @@ import { Button } from '@/components/ui/button';
 import { ROUTES, isPublicRoute } from '@/constants/routes';
 import { Role } from '@/constants/roles';
 import { inspectorLevelAllows } from '@/lib/inspector-access-level';
-import { cn, displayName } from '@/lib/utils';
+import { cn, displayName, personInitials } from '@/lib/utils';
 
 const PRIMARY_NAV = [
   { href: ROUTES.DASHBOARD, label: 'Home', icon: LayoutDashboard },
   { href: ROUTES.JOB_POOL, label: 'Pool', icon: Briefcase },
   { href: ROUTES.INSPECTIONS, label: 'Inspect', icon: ClipboardCheck },
   { href: ROUTES.TRIBUNAL, label: 'Tribunal', icon: Scale },
+  { href: ROUTES.MORE, label: 'More', icon: Ellipsis },
 ] as const;
 
 const MORE_NAV_BASE = [
   { href: ROUTES.OPEN_BATCH, label: 'Open task pool', need: 'open' as const },
   { href: ROUTES.HISTORY, label: 'Job history', need: null },
-  { href: ROUTES.WEEKLY_AVAILABILITY, label: 'Availability calendar', need: null },
   { href: ROUTES.EARNINGS, label: 'Earnings', need: null },
   { href: ROUTES.REGISTER, label: 'Registration', need: null },
   { href: ROUTES.MESSAGES, label: 'Messages', need: null },
@@ -64,16 +63,19 @@ function roleLabel(role: string): string {
   return 'Staff';
 }
 
-function userInitials(user: {
-  firstName?: string | null;
-  lastName?: string | null;
-  email: string;
-}): string {
-  const first = user.firstName?.trim().charAt(0) ?? '';
-  const last = user.lastName?.trim().charAt(0) ?? '';
-  const initials = `${first}${last}`.toUpperCase();
-  return initials || user.email.charAt(0).toUpperCase();
+function greetingForHour(date = new Date()): string {
+  const hour = date.getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
 }
+
+const HOME_DATE_FMT = new Intl.DateTimeFormat('en-AU', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
 
 export function InspectorShell({
   children,
@@ -96,11 +98,8 @@ export function InspectorShell({
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
   const { notifications, messages, poolJobs, todaysJobs, profile } = useInspectorData();
-  const showTribunal = inspectorLevelAllows(profile.accessLevel, 'tribunal');
   const showOpen = inspectorLevelAllows(profile.accessLevel, 'open');
-  const primaryNav = PRIMARY_NAV.filter(
-    (item) => item.href !== ROUTES.TRIBUNAL || showTribunal,
-  );
+  const primaryNav = PRIMARY_NAV;
   const moreNav = MORE_NAV_BASE.filter(
     (item) => item.need !== 'open' || showOpen,
   );
@@ -110,6 +109,11 @@ export function InspectorShell({
   const hardLeaveFromWorkflow = isInspectionWorkflowPath(pathname);
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const unreadMessages = messages.reduce((s, m) => s + m.unread, 0);
+  const homeName = user
+    ? [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
+      profile.name ||
+      displayName(user)
+    : '';
 
   useEffect(() => {
     if (bare) {
@@ -156,27 +160,47 @@ export function InspectorShell({
       >
         <div ref={toolbarRef} className="relative">
         {isHome ? (
-          <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-3">
+          <div className="flex items-start justify-between gap-3 px-4 pb-3 pt-3">
             {user ? (
-              <Link href={ROUTES.PROFILE} className="flex min-w-0 flex-1 items-center gap-3">
-                <div className="ring-primary bg-secondary flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2">
-                  <span className="text-foreground text-sm font-semibold">
-                    {userInitials(user)}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-foreground truncate text-base font-semibold">
-                    {displayName(user)}
-                  </p>
-                  <span className="bg-primary/15 text-primary mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium">
+              <Link href={ROUTES.PROFILE} className="flex min-w-0 flex-1 items-start gap-3">
+                <div className="flex w-12 shrink-0 flex-col items-center gap-1">
+                  <div className="bg-secondary ring-primary/80 flex size-12 items-center justify-center overflow-hidden rounded-full ring-2">
+                    <span className="text-primary text-sm font-bold tracking-wide">
+                      {personInitials({
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        fullName: profile.name,
+                        email: user.email,
+                      })}
+                    </span>
+                  </div>
+                  <span className="border-primary text-primary inline-flex rounded-full border px-1.5 py-px text-[10px] font-medium leading-tight">
                     {roleLabel(user.role)}
                   </span>
+                </div>
+                <div className="min-w-0 pt-0.5">
+                  <p className="text-foreground truncate text-lg font-semibold leading-tight">
+                    {greetingForHour()}, {homeName}
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {HOME_DATE_FMT.format(new Date())}
+                  </p>
                 </div>
               </Link>
             ) : (
               <div className="h-12 flex-1" />
             )}
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="flex shrink-0 items-center gap-0.5 pt-1">
+              <Link
+                href={ROUTES.NOTIFICATIONS}
+                className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
+                aria-label="Notifications"
+              >
+                <Bell className="size-5" />
+                {unreadNotifications > 0 && (
+                  <span className="bg-destructive absolute top-1.5 right-1.5 size-2 rounded-full" />
+                )}
+              </Link>
               <Button
                 variant="ghost"
                 size="icon"
@@ -186,14 +210,6 @@ export function InspectorShell({
               >
                 <Menu className="size-5" />
               </Button>
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 px-1 text-sm font-medium"
-              >
-                Log Out
-                <LogOut className="size-4" />
-              </button>
             </div>
           </div>
         ) : (
@@ -376,28 +392,6 @@ export function InspectorShell({
               </Link>
             );
           })}
-          <Link
-            href={ROUTES.EARNINGS}
-            onClick={(event) => {
-              if (!hardLeaveFromWorkflow) return;
-              event.preventDefault();
-              navigateFromWorkflow(ROUTES.EARNINGS);
-            }}
-            className={cn(
-              'flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors',
-              isActive(pathname, ROUTES.EARNINGS)
-                ? 'text-primary'
-                : 'text-muted-foreground',
-            )}
-          >
-            <Wallet
-              className={cn(
-                'size-5',
-                isActive(pathname, ROUTES.EARNINGS) && 'stroke-[2.5]',
-              )}
-            />
-            <span>Earnings</span>
-          </Link>
         </div>
       </nav>
 

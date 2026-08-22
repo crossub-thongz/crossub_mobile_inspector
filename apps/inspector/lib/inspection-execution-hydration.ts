@@ -501,6 +501,8 @@ export function mergeIngoingExecutionDraft(
     customAreas,
     selectedAreaNames: unionNames(saved.selectedAreaNames, baseline.selectedAreaNames),
     areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
+    specialReporting: saved.specialReporting ?? baseline.specialReporting,
+    workflowStep: saved.workflowStep ?? baseline.workflowStep,
   };
 }
 
@@ -579,5 +581,7 @@ export function mergeOutgoingExecutionDraft(
     customAreas,
     selectedAreaNames: unionNames(saved.selectedAreaNames, baseline.selectedAreaNames),
     areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
+    specialReporting: saved.specialReporting ?? baseline.specialReporting,
+    workflowStep: saved.workflowStep ?? baseline.workflowStep,
   };
 }

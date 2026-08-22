@@ -1,75 +1,58 @@
 'use client';
 
-import {
-  DashboardHubCard,
-  DashboardOverviewChart,
-} from '@/components/inspector/dashboard-hub-card';
+import Link from 'next/link';
+
+import { DashboardGlanceRow } from '@/components/inspector/dashboard-glance-row';
+import { DashboardInspectionRow } from '@/components/inspector/dashboard-inspection-row';
 import { JobReminders } from '@/components/inspector/job-reminders';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
-import {
-  ROUTES,
-  inspectionsAssignedByCrossub,
-  inspectionsByType,
-} from '@/constants/routes';
-import { isStaffAssignedJob } from '@/lib/inspector-job-filters';
-import { inspectorLevelAllows } from '@/lib/inspector-access-level';
+import { ROUTES } from '@/constants/routes';
+import { filterOverdueInspections } from '@/lib/inspector-job-filters';
 
 export default function DashboardPage() {
-  const { summary, jobs, profile } = useInspectorData();
-
-  const crossubAssignedPending = jobs.filter(
-    (j) => isStaffAssignedJob(j) && j.status !== 'completed',
-  ).length;
-
-  const showOpen = inspectorLevelAllows(profile.accessLevel, 'open');
-  const showTribunal = inspectorLevelAllows(profile.accessLevel, 'tribunal');
+  const { summary, jobs, todaysJobs } = useInspectorData();
+  const overdueCount = filterOverdueInspections(jobs).length;
+  const todaysList = [...todaysJobs].sort(
+    (a, b) =>
+      new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime(),
+  );
 
   return (
     <InspectorShell variant="home">
-      <div className="space-y-3">
+      <div className="space-y-4">
         <JobReminders />
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className="flex min-h-[18.5rem] flex-col gap-2.5">
-            <DashboardHubCard href={ROUTES.INSPECTIONS} title="Overview" tall>
-              <DashboardOverviewChart
-                today={summary.todaysJobs}
-                pool={summary.availableInPool}
-                completedWeek={summary.completedThisWeek}
-              />
-            </DashboardHubCard>
-          </div>
+        <DashboardGlanceRow
+          today={summary.todaysJobs}
+          upcoming={summary.upcomingJobs}
+          overdue={overdueCount}
+        />
 
-          <div className="flex min-h-[18.5rem] flex-col gap-2.5">
-            <DashboardHubCard
+        <section className="rounded-2xl border border-border bg-card px-4 py-3">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <h2 className="text-foreground text-sm font-semibold">
+              Today&apos;s Inspections
+            </h2>
+            <Link
               href={ROUTES.INSPECTIONS}
-              title="Crossub Inspection"
-            />
-            <DashboardHubCard
-              href={inspectionsAssignedByCrossub()}
-              title={
-                <>
-                  Assigned by CROSSUB
-                  {crossubAssignedPending > 0 && (
-                    <span className="bg-primary/15 text-primary mx-1 inline-flex rounded-md px-1.5 py-0.5 text-xs font-bold tabular-nums">
-                      {crossubAssignedPending}
-                    </span>
-                  )}
-                </>
-              }
-            />
-            {showOpen ? (
-              <DashboardHubCard
-                href={inspectionsByType('open')}
-                title="Open Inspection"
-              />
-            ) : null}
-            {showTribunal ? (
-              <DashboardHubCard href={ROUTES.TRIBUNAL} title="Tribunal" />
-            ) : null}
+              className="text-primary text-xs font-medium"
+            >
+              View all
+            </Link>
           </div>
-        </div>
+          {todaysList.length === 0 ? (
+            <p className="text-muted-foreground py-6 text-center text-xs">
+              No inspections scheduled for today.
+            </p>
+          ) : (
+            <div>
+              {todaysList.map((job) => (
+                <DashboardInspectionRow key={job.id} job={job} />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </InspectorShell>
   );

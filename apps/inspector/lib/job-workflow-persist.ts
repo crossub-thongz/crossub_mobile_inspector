@@ -9,7 +9,8 @@ const STATUS_RANK: Record<JobStatus, number> = {
   on_the_way: 3,
   arrived: 4,
   in_progress: 5,
-  completed: 6,
+  awaiting_approval: 6,
+  completed: 7,
   declined: -1,
 };
 
@@ -26,6 +27,16 @@ function preferStatus(incoming: JobStatus, local?: JobStatus): JobStatus {
   // Still in the pool on the server — a device-local "accepted" is a ghost accept
   // (offline optimism or a failed claim) and must not hide the unclaimed state.
   if (incoming === 'available') return incoming;
+  if (incoming === 'completed') return incoming;
+  if (
+    incoming === 'awaiting_approval' &&
+    (local === 'completed' || local === 'in_progress')
+  ) {
+    return incoming;
+  }
+  if (incoming === 'in_progress' && local === 'awaiting_approval') {
+    return incoming;
+  }
   return STATUS_RANK[local] >= STATUS_RANK[incoming] ? local : incoming;
 }
 

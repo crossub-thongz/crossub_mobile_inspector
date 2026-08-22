@@ -1,17 +1,16 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Check } from 'lucide-react';
 
 import { AddSectionControl } from '@/components/inspector/add-section-control';
 import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
-import { EditableChecklistRow } from '@/components/inspector/editable-checklist-row';
-import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
-import { InspectionItemCommentField } from '@/components/inspector/inspection-item-comment-field';
-import { ItemConditionColumnBar } from '@/components/inspector/item-condition-column-bar';
-import { ItemConditionToggles } from '@/components/inspector/item-condition-toggles';
+import { InspectionItemAccordion } from '@/components/inspector/inspection-item-accordion';
 import { RenameLabelDialog } from '@/components/inspector/rename-label-dialog';
+import { Button } from '@/components/ui/button';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
 import {
+  allGoodMarks,
   emptyItemMarks,
   type ItemConditionKey,
   type ItemConditionMarks,
@@ -26,7 +25,6 @@ type InspectionSectionPhotosProps = {
   itemMarks?: Record<string, ItemConditionMarks>;
   itemComments?: Record<string, string>;
   busy?: boolean;
-  /** Photo upload in progress — show on Snap, do not disable the camera. */
   photoUploading?: boolean;
   onAddSection: (section: string) => void;
   onRemoveSection: (section: string) => void;
@@ -34,6 +32,7 @@ type InspectionSectionPhotosProps = {
   onMoveSection: (from: number, to: number) => void;
   onChangeMarks: (section: string, marks: ItemConditionMarks) => void;
   onFillColumn: (key: ItemConditionKey, value: boolean) => void;
+  onMarkAllGood?: () => void;
   onChangeComment: (section: string, comment: string) => void;
   onAddFiles: (section: string, files: File[]) => void | Promise<void>;
   onAddDataUrl: (section: string, dataUrl: string) => void | Promise<void>;
@@ -54,7 +53,8 @@ export function InspectionSectionPhotos({
   onRenameSection,
   onMoveSection,
   onChangeMarks,
-  onFillColumn,
+  onFillColumn: _onFillColumn,
+  onMarkAllGood,
   onChangeComment,
   onAddFiles,
   onAddDataUrl,
@@ -76,44 +76,50 @@ export function InspectionSectionPhotos({
         </p>
       ) : (
         <>
-          <p className="text-muted-foreground text-xs">
-            Drag the handle on the left to reorder. Tap edit to rename an item.
-            Hold Yes / No on a mark to fill that column for every item.
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">
+              Items in this area
+              <span className="bg-primary/20 text-primary ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold">
+                {activeSections.length}
+              </span>
+            </p>
+            {onMarkAllGood ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-emerald-400 h-8 px-2 text-xs"
+                disabled={busy}
+                onClick={onMarkAllGood}
+              >
+                <Check className="size-3.5" />
+                All good
+              </Button>
+            ) : null}
+          </div>
+          <p className="text-muted-foreground text-[11px]">
+            Drag a row to reorder. Tap an item to expand. Delete removes it.
           </p>
-          <ItemConditionColumnBar disabled={busy} onFillColumn={onFillColumn} />
-          <ul className="space-y-4">
+          <ul className="space-y-2">
             <DraggableNamedList
               items={activeSections}
               variant="card"
               disabled={busy}
               onReorder={onMoveSection}
               renderItem={(section) => {
-              const urls = photosBySection[section] ?? [];
-              return (
-                <EditableChecklistRow
-                  name={section}
-                  busy={busy}
-                  onRename={() => setRenameFrom(section)}
-                  onRemove={() => onRemoveSection(section)}
-                >
-                  <ItemConditionToggles
+                const urls = photosBySection[section] ?? [];
+                return (
+                  <InspectionItemAccordion
+                    name={section}
                     marks={itemMarks?.[section] ?? emptyItemMarks()}
-                    disabled={busy}
-                    onChange={(marks) => onChangeMarks(section, marks)}
-                    onFillColumn={onFillColumn}
-                  />
-                  <InspectionItemCommentField
-                    value={itemComments?.[section] ?? ''}
-                    disabled={busy}
-                    onChange={(comment) => onChangeComment(section, comment)}
-                  />
-                  <InspectionAreaPhotosField
-                    label="Item photos"
+                    comment={itemComments?.[section] ?? ''}
                     photoUrls={urls}
-                    uploading={photoUploading}
-                    disabled={busy}
-                    sessionKey={section}
-                    emptyLabel="Optional close-ups for this item."
+                    busy={busy}
+                    photoUploading={photoUploading}
+                    onRename={() => setRenameFrom(section)}
+                    onRemove={() => onRemoveSection(section)}
+                    onChangeMarks={(marks) => onChangeMarks(section, marks)}
+                    onChangeComment={(comment) => onChangeComment(section, comment)}
                     onAddFiles={(files) => onAddFiles(section, files)}
                     onAddDataUrl={(dataUrl) => onAddDataUrl(section, dataUrl)}
                     onAddDataUrls={
@@ -121,11 +127,10 @@ export function InspectionSectionPhotos({
                         ? (urlsToAdd) => onAddDataUrls(section, urlsToAdd)
                         : undefined
                     }
-                    onRemove={(photoIndex) => onRemovePhoto(section, photoIndex)}
+                    onRemovePhoto={(photoIndex) => onRemovePhoto(section, photoIndex)}
                   />
-                </EditableChecklistRow>
-              );
-            }}
+                );
+              }}
             />
           </ul>
         </>
@@ -153,4 +158,12 @@ export function InspectionSectionPhotos({
       />
     </div>
   );
+}
+
+export function markAllItemsGood(
+  sections: readonly string[],
+): Record<string, ItemConditionMarks> {
+  const next: Record<string, ItemConditionMarks> = {};
+  for (const section of sections) next[section] = allGoodMarks();
+  return next;
 }

@@ -2,21 +2,27 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, Mic } from 'lucide-react';
+import { Mic } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
+import { InspectionAreaActionBar } from '@/components/inspector/inspection-area-action-bar';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
 import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
-import { InspectionSectionPhotos } from '@/components/inspector/inspection-section-photos';
+import {
+  InspectionSectionPhotos,
+  markAllItemsGood,
+} from '@/components/inspector/inspection-section-photos';
+import { InspectionWorkspaceHeader } from '@/components/inspector/inspection-workspace-header';
+import { SpecialReportingForm } from '@/components/inspector/special-reporting-form';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -51,6 +57,8 @@ import { findingsAreaFromSections } from '@/lib/inspection-findings-items';
 import {
   applyColumnMark,
   firstIncompleteSection,
+  marksAreComplete,
+  marksHaveNo,
   type ItemConditionKey,
   type ItemConditionMarks,
 } from '@/lib/item-condition-marks';
@@ -66,6 +74,10 @@ import {
   useInspectionInProgress,
   useKeyCollectGate,
 } from '@/hooks/use-key-collect-gate';
+import {
+  defaultSpecialReporting,
+  specialReportingAsFindings,
+} from '@/lib/special-reporting';
 
 type AreaEntry = IngoingAreaEntryDraft;
 
@@ -749,12 +761,15 @@ export default function IngoingInspectionPage() {
         ...prev,
         entries: finalEntries,
         areaIndex: isLast ? prev.areaIndex : prev.areaIndex + 1,
+        ...(isLast
+          ? {
+              workflowStep: 'special' as const,
+              specialReporting:
+                prev.specialReporting ?? defaultSpecialReporting(),
+            }
+          : {}),
       }));
-
-      if (isLast) {
-        await finalizeAndSubmit(finalEntries);
-        return;
-      }
+      return;
     } catch {
       toast.error('Photo upload failed — please retry');
     } finally {
@@ -784,6 +799,12 @@ export default function IngoingInspectionPage() {
         }),
       );
     }
+
+    findings.push(
+      specialReportingAsFindings(
+        draft.specialReporting ?? defaultSpecialReporting(),
+      ),
+    );
 
     // Also commit any still-local photos for available areas already visited.
     for (const def of areaCatalog) {
@@ -824,19 +845,35 @@ export default function IngoingInspectionPage() {
       return;
     }
     clearDraft();
-    submitInspection('Ingoing report sent to tenant, agent, and landlord');
+    submitInspection('Ingoing report sent for account manager review');
   };
 
-  const completeFromSkippedLast = async () => {
-    // Last area was skipped — still allow finishing the report.
-    setFormBusy(true);
-    try {
-      await finalizeAndSubmit(entries);
-    } catch {
-      toast.error('Could not complete the report');
-    } finally {
-      setFormBusy(false);
-    }
+  const goToSpecialReporting = () => {
+    setDraft((prev) => ({
+      ...prev,
+      workflowStep: 'special',
+      specialReporting: prev.specialReporting ?? defaultSpecialReporting(),
+    }));
+  };
+
+  const completeFromSkippedLast = () => {
+    goToSpecialReporting();
+  };
+
+  const markAllGood = () => {
+    setDraft((prev) => {
+      const current = prev.entries[area] ?? emptyEntry(area, prev.customAreas);
+      return {
+        ...prev,
+        entries: {
+          ...prev.entries,
+          [area]: {
+            ...current,
+            itemMarks: markAllItemsGood(current.activeSections),
+          },
+        },
+      };
+    });
   };
 
   const progressTone = (index: number, areaName: string) => {
@@ -850,11 +887,45 @@ export default function IngoingInspectionPage() {
     return 'bg-secondary';
   };
 
+  const checkedCount = entry.activeSections.filter((section) =>
+    marksAreComplete(entry.itemMarks?.[section]),
+  ).length;
+  const issueCount = entry.activeSections.filter((section) =>
+    marksHaveNo(entry.itemMarks?.[section]),
+  ).length;
+
+  if (draft.workflowStep === 'special') {
+    return (
+      <>
+        <InspectorShell title="Ingoing Inspection" backHref={jobDetail(id)}>
+          <div className="space-y-4">
+            <JobWorkflowToolbar job={job} />
+            <InspectionWorkspaceHeader job={job} />
+            <SpecialReportingForm
+              value={draft.specialReporting ?? defaultSpecialReporting()}
+              onChange={(specialReporting) =>
+                setDraft((prev) => ({ ...prev, specialReporting }))
+              }
+              submitting={busy}
+              onBack={() => setDraft((prev) => ({ ...prev, workflowStep: 'areas' }))}
+              onFinalise={() => {
+                setFormBusy(true);
+                void finalizeAndSubmit(entries).finally(() => setFormBusy(false));
+              }}
+            />
+          </div>
+        </InspectorShell>
+        {Celebration}
+      </>
+    );
+  }
+
   return (
     <>
       <InspectorShell title="Ingoing Inspection" backHref={jobDetail(id)}>
         <div className="space-y-4">
           <JobWorkflowToolbar job={job} />
+          <InspectionWorkspaceHeader job={job} />
 
           <InspectionAreaNav
             areaCatalog={areaCatalog}
@@ -866,12 +937,7 @@ export default function IngoingInspectionPage() {
 
           {entry.available === false ? (
             <Card>
-              <CardHeader>
-                <CardTitle>
-                  {area} — skipped ({areaIndex + 1}/{areaCatalog.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 pt-6">
                 <p className="text-muted-foreground text-sm">
                   This area was marked unavailable. You can change that and photograph
                   it, or continue.
@@ -884,45 +950,22 @@ export default function IngoingInspectionPage() {
                 >
                   Mark available & photograph
                 </Button>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={goBackArea}
-                  >
-                    <ChevronLeft className="size-4" />
-                    Back
-                  </Button>
-                  {isLast ? (
-                    <Button
-                      type="button"
-                      className="flex-1"
-                      disabled={busy}
-                      onClick={() => void completeFromSkippedLast()}
-                    >
-                      {busy ? 'Submitting…' : 'Complete & Send Report'}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      className="flex-1"
-                      onClick={() => goToArea(areaIndex + 1)}
-                    >
-                      Next Area
-                    </Button>
-                  )}
-                </div>
+                <InspectionAreaActionBar
+                  checked={0}
+                  total={0}
+                  issues={0}
+                  busy={busy}
+                  isLast={isLast}
+                  onBack={goBackArea}
+                  onNext={() =>
+                    isLast ? completeFromSkippedLast() : goToArea(areaIndex + 1)
+                  }
+                />
               </CardContent>
             </Card>
           ) : (
             <Card>
-              <CardHeader>
-                <CardTitle>
-                  {area} ({areaIndex + 1}/{areaCatalog.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 <InspectionAreaPhotosField
                   label="Area photos"
                   photoUrls={entry.areaPhotos ?? []}
@@ -954,6 +997,7 @@ export default function IngoingInspectionPage() {
                   onMoveSection={moveSection}
                   onChangeMarks={changeMarks}
                   onFillColumn={fillColumn}
+                  onMarkAllGood={markAllGood}
                   onChangeComment={changeItemComment}
                   onAddFiles={(section, files) => addLocalPhotos(section, files)}
                   onAddDataUrl={(section, dataUrl) =>
@@ -975,29 +1019,15 @@ export default function IngoingInspectionPage() {
                   />
                 </div>
 
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    disabled={busy}
-                    onClick={goBackArea}
-                  >
-                    <ChevronLeft className="size-4" />
-                    Back
-                  </Button>
-                  <Button
-                    className="flex-[2]"
-                    disabled={busy}
-                    onClick={() => void saveArea()}
-                  >
-                    {busy
-                      ? 'Uploading photos…'
-                      : isLast
-                        ? 'Complete & Send Report'
-                        : 'Next Area'}
-                  </Button>
-                </div>
+                <InspectionAreaActionBar
+                  checked={checkedCount}
+                  total={entry.activeSections.length}
+                  issues={issueCount}
+                  busy={busy}
+                  isLast={isLast}
+                  onBack={goBackArea}
+                  onNext={() => void saveArea()}
+                />
 
                 <Button
                   type="button"

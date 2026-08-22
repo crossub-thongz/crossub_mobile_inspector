@@ -6,8 +6,11 @@ import { useEffect, useState } from 'react';
 import { CheckCircle2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { HandoverCollectForm } from '@/components/inspector/handover-collect-form';
+import { JobPropertyHeader } from '@/components/inspector/job-property-header';
 import { KeyPhasePhotoField } from '@/components/inspector/key-phase-photo-field';
 import { LeasingKeyCollectionPanel } from '@/components/inspector/leasing-key-collection-panel';
+import { NoImageDialog } from '@/components/inspector/no-image-dialog';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -25,6 +28,7 @@ import {
   getKeyWorkflow,
   isKeyCollectComplete,
   isKeyReturnComplete,
+  type KeyPhaseRecord,
 } from '@/lib/key-access-workflow';
 import { cn, formatDateTime } from '@/lib/utils';
 import { jobLookupMiss } from '@/lib/job-lookup';
@@ -36,7 +40,7 @@ export default function JobKeysPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'return' ? 'return' : 'collect';
-  const { getJob, saveKeyWorkflow, completeJob, refresh, jobsHydrated } =
+  const { getJob, saveKeyWorkflow, completeJob, refresh, jobsHydrated, profile, deviceLocation } =
     useInspectorData();
   const job = getJob(id);
 
@@ -45,6 +49,7 @@ export default function JobKeysPage() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [noImageOpen, setNoImageOpen] = useState(false);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -65,15 +70,10 @@ export default function JobKeysPage() {
   const phaseRecord = tab === 'collect' ? workflow?.collect : workflow?.return;
   const jobAvailable = job != null;
 
-  // Pull the latest leasing key arrangement for this inspectionId (avoids
-  // showing another case's tenant photos until the next background poll).
   useEffect(() => {
     void refresh();
   }, [id, refresh]);
 
-  // Hydrate the form when opening a job/tab — not on every background refresh
-  // (the provider polls every 5s and replaces the job object, which was wiping
-  // in-progress checkbox/photo edits before submit).
   useEffect(() => {
     if (!job) return;
     const record =
@@ -88,7 +88,7 @@ export default function JobKeysPage() {
       <JobLookupFallback
         state={jobLookupMiss(jobsHydrated)}
         backHref={jobDetail(id)}
-        missingTitle="Key details"
+        missingTitle="Handover"
       />
     );
   }
@@ -99,7 +99,7 @@ export default function JobKeysPage() {
 
   if (!job.keyAccess) {
     return (
-      <InspectorShell title="Key details" backHref={jobDetail(id)}>
+      <InspectorShell title="Handover" backHref={jobDetail(id)}>
         <p className="text-muted-foreground text-sm">
           No key collection required for this job.
         </p>
@@ -120,21 +120,35 @@ export default function JobKeysPage() {
     setTab(next);
   };
 
-  const submit = async (phase: Tab) => {
-    if (phaseDone) return;
+  const submitCollect = async (record: KeyPhaseRecord) => {
+    if (collectDone) return;
+    try {
+      setSubmitting(true);
+      await saveKeyWorkflow(id, 'collect', record);
+    } catch {
+      return;
+    } finally {
+      setSubmitting(false);
+    }
+    toast.success('Handover recorded');
+    router.replace(jobDetail(id));
+  };
+
+  const submitReturn = async () => {
+    if (returnDone) return;
 
     if (!stepsConfirmed) {
       toast.error('Confirm you completed all steps.');
       return;
     }
     if (access.photoRequired && photos.length === 0) {
-      toast.error('Add at least one proof photo.');
+      setNoImageOpen(true);
       return;
     }
 
     try {
       setSubmitting(true);
-      await saveKeyWorkflow(id, phase, {
+      await saveKeyWorkflow(id, 'return', {
         completedAt: new Date().toISOString(),
         stepsConfirmed: true,
         photoConfirmed: access.photoRequired ? true : undefined,
@@ -147,23 +161,20 @@ export default function JobKeysPage() {
       setSubmitting(false);
     }
 
-    toast.success(
-      phase === 'collect' ? 'Key collection recorded' : 'Key return recorded',
-    );
-    if (phase === 'return') {
-      setTimeout(() => {
-        completeJob(id);
-        router.replace(jobDetail(id));
-      }, 0);
-      return;
-    }
-    router.replace(jobDetail(id));
+    toast.success('Key return recorded');
+    setTimeout(() => {
+      completeJob(id);
+      router.replace(jobDetail(id));
+    }, 0);
   };
 
-  const steps = tab === 'collect' ? access.collectSteps : access.returnSteps;
+  const steps = access.returnSteps;
 
   return (
-    <InspectorShell title="Key details" backHref={jobDetail(id)}>
+    <InspectorShell
+      title={tab === 'collect' ? 'Handover' : 'Key return'}
+      backHref={jobDetail(id)}
+    >
       <div className="space-y-5">
         <div className="flex gap-1 rounded-lg border bg-secondary/30 p-1">
           <button
@@ -176,7 +187,7 @@ export default function JobKeysPage() {
                 : 'text-muted-foreground',
             )}
           >
-            Collect
+            Handover
             {collectDone && <CheckCircle2 className="ml-1 inline size-3" />}
           </button>
           <button
@@ -200,34 +211,71 @@ export default function JobKeysPage() {
           <LeasingKeyCollectionPanel context={job.leasingKeyCollection} />
         )}
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <KeyRound className="text-primary size-4" />
-              {tab === 'collect' ? 'Key collection' : 'Key return'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <p className="font-medium">{access.location}</p>
-            {access.code && tab === 'collect' && (
-              <p className="rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-3 text-center font-mono text-lg font-bold tracking-widest text-primary">
-                {access.code}
-              </p>
-            )}
-            <ol className="list-decimal space-y-2 pl-4 text-xs leading-relaxed">
-              {steps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </CardContent>
-        </Card>
-
-        {phaseDone ? (
+        {tab === 'collect' ? (
+          collectDone ? (
+            <div className="space-y-4">
+              <JobPropertyHeader job={job} inspectorName={profile.name} />
+              <div className="space-y-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
+                <div className="flex items-center gap-2 text-xs text-emerald-400">
+                  <CheckCircle2 className="size-4 shrink-0" />
+                  <span>
+                    Handover completed
+                    {phaseRecord?.completedAt
+                      ? ` · ${formatDateTime(phaseRecord.completedAt)}`
+                      : ''}
+                  </span>
+                </div>
+                {phaseRecord?.handoverParty ? (
+                  <p className="text-xs">
+                    With {phaseRecord.handoverParty}
+                    {phaseRecord.contactName ? ` · ${phaseRecord.contactName}` : ''}
+                  </p>
+                ) : null}
+                {(phaseRecord?.photoUrls?.length ?? 0) > 0 ? (
+                  <KeyPhasePhotoField
+                    label="Submitted photos"
+                    photos={phaseRecord?.photoUrls ?? []}
+                    onChange={() => undefined}
+                    disabled
+                  />
+                ) : (
+                  <KeyPhasePhotoField
+                    label="Submitted photos"
+                    photos={[]}
+                    onChange={() => undefined}
+                    disabled
+                    onEmptyPress={() => setNoImageOpen(true)}
+                  />
+                )}
+                {phaseRecord?.notes && (
+                  <p className="text-muted-foreground whitespace-pre-wrap text-xs">
+                    {phaseRecord.notes}
+                  </p>
+                )}
+                <p className="text-muted-foreground text-[10px]">
+                  This step cannot be edited after submission.
+                </p>
+                <Link href={jobDetail(id)}>
+                  <Button className="w-full">Back to job details</Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <HandoverCollectForm
+              job={job}
+              inspectorName={profile.name}
+              deviceLocation={deviceLocation}
+              submitting={submitting}
+              initial={phaseRecord}
+              onSubmit={submitCollect}
+            />
+          )
+        ) : phaseDone ? (
           <div className="space-y-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
             <div className="flex items-center gap-2 text-xs text-emerald-400">
               <CheckCircle2 className="size-4 shrink-0" />
               <span>
-                {tab === 'collect' ? 'Collection' : 'Return'} completed
+                Return completed
                 {phaseRecord?.completedAt
                   ? ` · ${formatDateTime(phaseRecord.completedAt)}`
                   : ''}
@@ -242,9 +290,7 @@ export default function JobKeysPage() {
               />
             )}
             {phaseRecord?.notes && (
-              <p className="text-muted-foreground text-xs">
-                Notes: {phaseRecord.notes}
-              </p>
+              <p className="text-muted-foreground text-xs">Notes: {phaseRecord.notes}</p>
             )}
             <p className="text-muted-foreground text-[10px]">
               This step cannot be edited after submission.
@@ -255,10 +301,25 @@ export default function JobKeysPage() {
           </div>
         ) : (
           <>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <KeyRound className="text-primary size-4" />
+                  Key return
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <p className="font-medium">{access.location}</p>
+                <ol className="list-decimal space-y-2 pl-4 text-xs leading-relaxed">
+                  {steps.map((step) => (
+                    <li key={step}>{step}</li>
+                  ))}
+                </ol>
+              </CardContent>
+            </Card>
+
             <p className="text-muted-foreground text-xs">
-              {tab === 'collect'
-                ? 'Required before you can start the inspection.'
-                : 'Required after the inspection is finished — completes the task.'}
+              Required after the inspection is finished — completes the task.
             </p>
 
             <div className="space-y-4 rounded-lg border border-border/80 bg-card p-4">
@@ -276,6 +337,7 @@ export default function JobKeysPage() {
                 <KeyPhasePhotoField
                   photos={photos}
                   onChange={setPhotos}
+                  onEmptyPress={() => setNoImageOpen(true)}
                 />
               )}
 
@@ -293,16 +355,19 @@ export default function JobKeysPage() {
                 type="button"
                 className="w-full"
                 disabled={submitting}
-                onClick={() => submit(tab)}
+                onClick={() => void submitReturn()}
               >
-                {submitting
-                  ? 'Uploading proof…'
-                  : `Confirm ${tab === 'collect' ? 'collection' : 'return'}`}
+                {submitting ? 'Uploading proof…' : 'Confirm return'}
               </Button>
             </div>
           </>
         )}
       </div>
+      <NoImageDialog
+        open={noImageOpen}
+        onClose={() => setNoImageOpen(false)}
+        message="Add at least one photo before completing this step."
+      />
     </InspectorShell>
   );
 }

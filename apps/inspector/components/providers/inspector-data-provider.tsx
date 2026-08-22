@@ -98,6 +98,7 @@ import {
   isInspectionWorkflowFinished,
   isKeyCollectComplete,
   isKeyReturnComplete,
+  mergeKeyPhaseExtras,
   type KeyPhaseRecord,
 } from '@/lib/key-access-workflow';
 import type { CancelTaskMode } from '@/constants/job-cancellation';
@@ -1124,7 +1125,7 @@ export function InspectorDataProvider({
         !isKeyCollectComplete(job) &&
         newStatus === 'in_progress'
       ) {
-        toast.error('Complete key collection before starting the inspection.');
+        toast.error('Complete handover before starting the inspection.');
         return;
       }
       setJobs((prev) => {
@@ -1164,7 +1165,13 @@ export function InspectorDataProvider({
     (id: string) => {
       setJobs((prev) => {
         const job = prev.find((j) => j.id === id);
-        if (!job || job.status === 'completed') return prev;
+        if (
+          !job ||
+          job.status === 'completed' ||
+          job.status === 'awaiting_approval'
+        ) {
+          return prev;
+        }
 
         if (job.keyAccess) {
           if (!isInspectionWorkflowFinished(job)) {
@@ -1230,13 +1237,25 @@ export function InspectorDataProvider({
           ]);
           mutateWithOffline(id, 'complete', {});
         }
-        toast.success('Inspection completed — report generated');
+        toast.success(
+          job.type === 'ingoing' || job.type === 'outgoing'
+            ? 'Report submitted — awaiting approval'
+            : 'Inspection completed — report generated',
+        );
 
         return prev.map((j) => {
           if (j.id !== id) return j;
-          const completed = { ...j, status: 'completed' as const, workflowStep: 99 };
+          const awaitingReview =
+            j.type === 'ingoing' || j.type === 'outgoing';
+          const completed = {
+            ...j,
+            status: awaitingReview
+              ? ('awaiting_approval' as const)
+              : ('completed' as const),
+            workflowStep: 99,
+          };
           persistJobProgress(completed);
-          saveCompletedJobHistory(completed);
+          if (!awaitingReview) saveCompletedJobHistory(completed);
           return completed;
         });
       });
@@ -1332,6 +1351,7 @@ export function InspectorDataProvider({
           });
           apiInspectionIds.current.add(id);
           const serverWorkflow = keyWorkflowFromCustody(custody);
+          const keyWorkflow = mergeKeyPhaseExtras(serverWorkflow, record, 'collect');
           setJobs((prev) => {
             const next = prev.map((j) => {
               if (j.id !== id) return j;
@@ -1339,7 +1359,7 @@ export function InspectorDataProvider({
                 ...j,
                 workflowData: {
                   ...j.workflowData,
-                  ...(serverWorkflow ? { keyWorkflow: serverWorkflow } : {}),
+                  keyWorkflow,
                 },
               };
             });

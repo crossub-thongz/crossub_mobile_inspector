@@ -1,11 +1,10 @@
 'use client';
 
+import { Camera, Plus, X } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
-import { ImagePlus, X } from 'lucide-react';
 
 import { NativeCameraSnapButton } from '@/components/inspector/native-camera-snap-button';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { IMAGE_UPLOAD_ACCEPT } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
@@ -15,8 +14,8 @@ type InspectionAreaPhotosFieldProps = {
   uploading?: boolean;
   disabled?: boolean;
   emptyLabel?: string;
-  /** Stable id for the keep-shooting camera sheet (usually the area name). */
   sessionKey?: string;
+  compact?: boolean;
   onAddFiles: (files: File[]) => void | Promise<void>;
   onAddDataUrl?: (dataUrl: string) => void | Promise<void>;
   onAddDataUrls?: (dataUrls: string[]) => void | Promise<void>;
@@ -30,6 +29,7 @@ export function InspectionAreaPhotosField({
   disabled = false,
   emptyLabel = 'Add at least one photo for this area.',
   sessionKey,
+  compact = false,
   onAddFiles,
   onAddDataUrls,
   onRemove,
@@ -47,7 +47,16 @@ export function InspectionAreaPhotosField({
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">
+          {label}
+          {photoUrls.length > 0 ? (
+            <span className="bg-primary/20 text-primary ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold">
+              {photoUrls.length}
+            </span>
+          ) : null}
+        </p>
+      </div>
 
       {!disabled && (
         <div className="flex gap-2">
@@ -55,6 +64,8 @@ export function InspectionAreaPhotosField({
             disabled={disabled}
             uploading={uploading}
             sessionKey={sessionKey ?? label}
+            label="Take photos"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 flex-[2] border-0"
             onFiles={handleFiles}
             onDataUrls={onAddDataUrls}
           />
@@ -62,14 +73,10 @@ export function InspectionAreaPhotosField({
             type="button"
             variant="outline"
             size="sm"
-            className="flex-1"
+            className="h-10 flex-1"
             disabled={disabled}
-            onClick={() => {
-              if (disabled) return;
-              uploadRef.current?.click();
-            }}
+            onClick={() => uploadRef.current?.click()}
           >
-            <ImagePlus className="size-4" />
             Upload
           </Button>
         </div>
@@ -91,13 +98,21 @@ export function InspectionAreaPhotosField({
       />
 
       {photoUrls.length === 0 ? (
-        <p className="text-muted-foreground text-xs">{emptyLabel}</p>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => uploadRef.current?.click()}
+          className="border-border text-muted-foreground flex w-full items-center justify-center gap-2 rounded-lg border border-dashed py-6 text-xs"
+        >
+          <Plus className="size-4" />
+          {emptyLabel}
+        </button>
       ) : (
-        <ul className="grid grid-cols-3 gap-2">
+        <ul className={cn('flex gap-2 overflow-x-auto pb-1', compact && 'grid grid-cols-3 overflow-visible')}>
           {photoUrls.map((url, index) => (
             <li
               key={`${url.slice(0, 32)}-${index}`}
-              className="relative aspect-square overflow-hidden rounded-lg border border-border bg-secondary/30"
+              className="relative size-20 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary/30"
             >
               <button
                 type="button"
@@ -106,27 +121,32 @@ export function InspectionAreaPhotosField({
                 aria-label={`View photo ${index + 1}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={`Photo ${index + 1}`}
-                  className="size-full object-cover"
-                />
+                <img src={url} alt={`Photo ${index + 1}`} className="size-full object-cover" />
               </button>
               {!disabled && onRemove ? (
                 <button
                   type="button"
                   onClick={() => onRemove(index)}
-                  className={cn(
-                    'absolute top-1 right-1 flex size-6 items-center justify-center',
-                    'rounded-full bg-background/90 text-foreground shadow-sm',
-                  )}
+                  className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/70 text-white"
                   aria-label="Remove photo"
                 >
-                  <X className="size-3.5" />
+                  <X className="size-3" />
                 </button>
               ) : null}
             </li>
           ))}
+          {!disabled ? (
+            <li className="shrink-0">
+              <button
+                type="button"
+                onClick={() => uploadRef.current?.click()}
+                className="border-border text-muted-foreground flex size-20 items-center justify-center rounded-lg border border-dashed"
+                aria-label="Add photo"
+              >
+                <Camera className="size-5" />
+              </button>
+            </li>
+          ) : null}
         </ul>
       )}
 

@@ -49,6 +49,23 @@ export function isUpcomingInspection(job: InspectionJob): boolean {
   );
 }
 
+/** Assigned work whose scheduled day has already passed. */
+export function isOverdueInspection(job: InspectionJob): boolean {
+  if (
+    job.status === 'completed' ||
+    job.status === 'declined' ||
+    job.status === 'awaiting_approval' ||
+    isPoolJob(job)
+  ) {
+    return false;
+  }
+  const scheduled = new Date(job.scheduledDate);
+  if (Number.isNaN(scheduled.getTime())) return false;
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  return scheduled < startOfToday;
+}
+
 export function filterPoolJobs(jobs: InspectionJob[]): InspectionJob[] {
   return jobs.filter(isPoolJob);
 }
@@ -59,4 +76,8 @@ export function filterTodaysInspections(jobs: InspectionJob[]): InspectionJob[] 
 
 export function filterUpcomingInspections(jobs: InspectionJob[]): InspectionJob[] {
   return jobs.filter(isUpcomingInspection);
+}
+
+export function filterOverdueInspections(jobs: InspectionJob[]): InspectionJob[] {
+  return jobs.filter(isOverdueInspection);
 }

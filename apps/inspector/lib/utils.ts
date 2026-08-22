@@ -34,6 +34,40 @@ export function displayName(user: {
   return name || user.email;
 }
 
+/**
+ * Avatar letters: first initial of given name + first initial of family name.
+ * "Daniel ZHOU" → "DZ". Falls back to splitting a full name, then the email.
+ */
+export function personInitials(person: {
+  firstName?: string | null;
+  lastName?: string | null;
+  fullName?: string | null;
+  email?: string | null;
+}): string {
+  const first = person.firstName?.trim() ?? '';
+  const last = person.lastName?.trim() ?? '';
+  if (first && last) {
+    return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
+  }
+
+  const tokens = (person.fullName?.trim() || `${first} ${last}`.trim())
+    .split(/\s+/)
+    .filter(Boolean);
+  if (tokens.length >= 2) {
+    const given = tokens[0] ?? '';
+    const family = tokens[tokens.length - 1] ?? '';
+    return `${given.charAt(0)}${family.charAt(0)}`.toUpperCase();
+  }
+  if (tokens.length === 1 && tokens[0] && tokens[0].length >= 2) {
+    return tokens[0].slice(0, 2).toUpperCase();
+  }
+
+  const local = person.email?.split('@')[0]?.replace(/[^a-zA-Z]/g, '') ?? '';
+  if (local.length >= 2) return local.slice(0, 2).toUpperCase();
+  if (local.length === 1) return local.toUpperCase();
+  return '?';
+}
+
 /** dd/mm/yyyy — form / calendar input layouts only (not general UI display). */
 export function formatDateSlash(iso: string): string {
   const d = new Date(iso);
@@ -85,6 +119,13 @@ export function isToday(iso: string): boolean {
     d.getMonth() === now.getMonth() &&
     d.getDate() === now.getDate()
   );
+}
+
+/** Job-card schedule line. Example: "Today, 1:30 PM". */
+export function formatScheduleWhen(iso: string): string {
+  const time = formatTime(iso).replace(/\b(am|pm)\b/gi, (part) => part.toUpperCase());
+  if (isToday(iso)) return `Today, ${time}`;
+  return `${formatDate(iso)}, ${time}`;
 }
 
 export function isThisWeek(iso: string): boolean {

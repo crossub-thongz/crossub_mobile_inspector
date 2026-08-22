@@ -13,10 +13,9 @@ import {
 } from '@/components/inspector/status-badge';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { jobDetail, jobHistory } from '@/constants/routes';
-import { formatJobRefId } from '@/lib/job-cancellation';
 import { isPoolJob } from '@/lib/inspector-job-filters';
 import type { InspectionJob } from '@/lib/types';
-import { formatDate, formatTime } from '@/lib/utils';
+import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
 
 export function JobCard({
   job,
@@ -51,8 +50,11 @@ export function JobCard({
         <JobTypeBadge type={job.type} />
         <PriorityBadge priority={job.priority} />
         <JobStatusBadge status={job.status} />
-        <span className="text-muted-foreground ml-auto font-mono text-[10px]">
-          {formatJobRefId(job.id)}
+        <span className="text-primary ml-auto text-right text-sm font-bold leading-tight tabular-nums">
+          <span className="text-muted-foreground block text-[9px] font-medium uppercase tracking-wide">
+            Est. Fee
+          </span>
+          {formatCurrency(job.laborAmount)}
         </span>
       </div>
 
@@ -92,13 +94,15 @@ export function JobCard({
         className="mt-2"
       />
 
-      <div className="mt-3 border-t border-border/60 pt-3">
-        <PayBreakdown
-          compact
-          hours={job.estimatedHours}
-          laborAmount={job.laborAmount}
-        />
-      </div>
+      {!poolPreview ? (
+        <div className="mt-3 border-t border-border/60 pt-3">
+          <PayBreakdown
+            compact
+            hours={job.estimatedHours}
+            laborAmount={job.laborAmount}
+          />
+        </div>
+      ) : null}
 
       {poolPreview && (
         <p className="text-primary mt-3 flex items-center justify-center gap-1 text-xs font-medium">
