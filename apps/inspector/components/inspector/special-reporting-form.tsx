@@ -154,41 +154,43 @@ export function SpecialReportingForm({
     onChange({ ...value, ...partial });
 
   return (
-    <div className="space-y-4 pb-4">
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={onBack}>
-          <X className="size-3.5" />
-          Cancel
-        </Button>
-        <h2 className="text-foreground min-w-0 flex-1 text-center text-sm font-semibold">
+    <div className="space-y-5 pb-4">
+      <div className="space-y-3 px-1 py-4">
+        <h2 className="text-foreground text-center text-sm font-semibold">
           NSW Special Reporting
         </h2>
-        <div className="flex gap-1.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => toast.success('Special reporting saved')}
-          >
-            <Save className="size-3.5" />
-            Save
+        <div className="flex items-center justify-between gap-3">
+          <Button type="button" variant="outline" size="sm" onClick={onBack}>
+            <X className="size-3.5" />
+            Cancel
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            disabled={submitting}
-            onClick={() => {
-              const missing = specialReportingMissing(value);
-              if (missing) {
-                toast.error(missing);
-                return;
-              }
-              onFinalise();
-            }}
-          >
-            <FileCheck className="size-3.5" />
-            {submitting ? 'Submitting…' : 'Finalise'}
-          </Button>
+          <div className="flex gap-2.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => toast.success('Special reporting saved')}
+            >
+              <Save className="size-3.5" />
+              Save
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={submitting}
+              onClick={() => {
+                const missing = specialReportingMissing(value);
+                if (missing) {
+                  toast.error(missing);
+                  return;
+                }
+                onFinalise();
+              }}
+            >
+              <FileCheck className="size-3.5" />
+              {submitting ? 'Submitting…' : 'Finalise'}
+            </Button>
+          </div>
         </div>
       </div>
 
