@@ -34,13 +34,14 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { profile, registration } = useInspectorData();
+  const { profile, registration, registrationComplete } = useInspectorData();
   const reg = registration;
+  const needsRegistration = !registrationComplete;
 
   return (
     <InspectorShell title="Inspector Information">
       <div className="space-y-4">
-        {!reg ? (
+        {needsRegistration ? (
           <Card>
             <CardContent className="space-y-4 py-6 text-center">
               <p className="text-sm">Registration not completed.</p>
@@ -62,54 +63,84 @@ export default function ProfilePage() {
                 <p className="text-lg font-semibold">
                   {user ? displayName(user) : profile.name}
                 </p>
-                <InfoRow label="Status" value={REGISTRATION_STATUS_LABEL[reg.registrationStatus]} />
-                <InfoRow label="Email" value={reg.email} />
-                <InfoRow label="Mobile" value={reg.mobile} />
-                <InfoRow label="DOB" value={formatDate(reg.dateOfBirth)} />
-                <InfoRow label="Address" value={reg.residentialAddress} />
-                <InfoRow label="ABN" value={reg.abn} />
+                <InfoRow
+                  label="Status"
+                  value={
+                    reg
+                      ? REGISTRATION_STATUS_LABEL[reg.registrationStatus]
+                      : REGISTRATION_STATUS_LABEL.approved
+                  }
+                />
+                <InfoRow label="Email" value={reg?.email ?? profile.email} />
+                <InfoRow label="Mobile" value={reg?.mobile ?? profile.phone} />
+                <InfoRow
+                  label="DOB"
+                  value={reg?.dateOfBirth ? formatDate(reg.dateOfBirth) : undefined}
+                />
+                <InfoRow label="Address" value={reg?.residentialAddress} />
+                <InfoRow label="ABN" value={reg?.abn} />
+                <InfoRow label="Access level" value={`Level ${profile.accessLevel}`} />
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="size-4" />
-                  Licence
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <InfoRow label="Licence type" value={reg.licenceType} />
-                <InfoRow label="Licence no." value={reg.licenceNumber} />
-                <InfoRow label="Licence expiry" value={reg.licenceExpiry ? formatDate(reg.licenceExpiry) : undefined} />
-              </CardContent>
-            </Card>
+            {reg ? (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="size-4" />
+                      Licence
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <InfoRow label="Licence type" value={reg.licenceType} />
+                    <InfoRow label="Licence no." value={reg.licenceNumber} />
+                    <InfoRow
+                      label="Licence expiry"
+                      value={reg.licenceExpiry ? formatDate(reg.licenceExpiry) : undefined}
+                    />
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="size-4" />
-                  Service regions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {reg.serviceRegions.map((r) => (
-                    <span
-                      key={r}
-                      className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary"
-                    >
-                      {r}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-3">
-                  <TribunalQualifiedTag
-                    certified={Boolean(reg.tribunalQualified)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="size-4" />
+                      Service regions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {reg.serviceRegions.map((r) => (
+                        <span
+                          key={r}
+                          className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary"
+                        >
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="mt-3">
+                      <TribunalQualifiedTag
+                        certified={Boolean(reg.tribunalQualified)}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="size-4" />
+                    Access
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <TribunalQualifiedTag certified={profile.tribunalQualified} />
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>
@@ -130,42 +161,59 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="size-4" />
-                  Payroll (Accounting)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <InfoRow label="Account name" value={reg.bankAccountName} />
-                <InfoRow label="BSB" value={reg.bankBsb} />
-                <InfoRow label="Account" value={`••••${reg.bankAccountNumber.slice(-4)}`} />
-                <InfoRow
-                  label="Labour rate"
-                  value={`$${INSPECTOR_HOURLY_RATE_AUD}/hour`}
-                />
-                <p className="text-muted-foreground pt-1 text-xs">
-                  Weekly earnings: {formatCurrency(profile.weeklyEarnings)}
-                </p>
-              </CardContent>
-            </Card>
+            {reg ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="size-4" />
+                    Payroll (Accounting)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <InfoRow label="Account name" value={reg.bankAccountName} />
+                  <InfoRow label="BSB" value={reg.bankBsb} />
+                  <InfoRow
+                    label="Account"
+                    value={
+                      reg.bankAccountNumber
+                        ? `••••${reg.bankAccountNumber.slice(-4)}`
+                        : undefined
+                    }
+                  />
+                  <InfoRow
+                    label="Labour rate"
+                    value={`$${INSPECTOR_HOURLY_RATE_AUD}/hour`}
+                  />
+                  <p className="text-muted-foreground pt-1 text-xs">
+                    Weekly earnings: {formatCurrency(profile.weeklyEarnings)}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : null}
 
-            {reg.submittedAt && (
+            {reg?.submittedAt ? (
               <p className="text-muted-foreground flex items-center gap-2 text-xs">
                 <FileText className="size-3.5" />
                 Submitted {formatDate(reg.submittedAt)}
                 {reg.reviewedAt && ` · Reviewed ${formatDate(reg.reviewedAt)}`}
               </p>
-            )}
+            ) : null}
           </>
         )}
 
-        <Link href={ROUTES.REGISTER}>
-          <Button variant="outline" className="w-full">
-            {reg ? 'Update registration' : 'Start registration'}
-          </Button>
-        </Link>
+        {needsRegistration ? (
+          <Link href={ROUTES.REGISTER}>
+            <Button variant="outline" className="w-full">
+              Start registration
+            </Button>
+          </Link>
+        ) : reg ? (
+          <Link href={ROUTES.REGISTER}>
+            <Button variant="outline" className="w-full">
+              Update registration
+            </Button>
+          </Link>
+        ) : null}
       </div>
     </InspectorShell>
   );

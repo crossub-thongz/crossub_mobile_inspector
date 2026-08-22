@@ -1,7 +1,6 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import Link from 'next/link';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -41,7 +40,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function RegisterPage() {
   const { user, status } = useAuth();
-  const { saveRegistration, registrationComplete, registrationResolved } =
+  const { saveRegistration, registration, registrationComplete, registrationResolved } =
     useInspectorData();
 
   const {
@@ -59,6 +58,7 @@ export default function RegisterPage() {
   });
 
   const selectedRegions = watch('serviceRegions') ?? [];
+  const rosterOnlyComplete = registrationComplete && !registration;
 
   useEffect(() => {
     if (status === 'guest') {
@@ -67,11 +67,35 @@ export default function RegisterPage() {
   }, [status]);
 
   useEffect(() => {
+    if (!registrationResolved || !rosterOnlyComplete) return;
+    // Seeded / staff-approved roster accounts have no application form to fill.
+    // Profile used to send them here, then this page sent them back.
+    window.location.replace(ROUTES.DASHBOARD);
+  }, [registrationResolved, rosterOnlyComplete]);
+
+  useEffect(() => {
     if (!user?.firstName || !user?.lastName) return;
+    if (registration?.bankAccountName) return;
     setValue('bankAccountName', `${user.firstName} ${user.lastName}`.trim(), {
       shouldValidate: false,
     });
-  }, [user?.firstName, user?.lastName, setValue]);
+  }, [user?.firstName, user?.lastName, registration?.bankAccountName, setValue]);
+
+  useEffect(() => {
+    if (!registration) return;
+    setValue('mobile', registration.mobile ?? '');
+    setValue('dateOfBirth', registration.dateOfBirth ?? '');
+    setValue('residentialAddress', registration.residentialAddress ?? '');
+    setValue('abn', registration.abn ?? '');
+    setValue('licenceNumber', registration.licenceNumber ?? '');
+    setValue('licenceType', registration.licenceType ?? '');
+    setValue('licenceExpiry', registration.licenceExpiry ?? '');
+    setValue('serviceRegions', registration.serviceRegions ?? []);
+    setValue('tribunalQualified', Boolean(registration.tribunalQualified));
+    setValue('bankAccountName', registration.bankAccountName ?? '');
+    setValue('bankBsb', registration.bankBsb ?? '');
+    setValue('bankAccountNumber', registration.bankAccountNumber ?? '');
+  }, [registration, setValue]);
 
   const toggleRegion = (region: string) => {
     const next = selectedRegions.includes(region)
@@ -124,26 +148,8 @@ export default function RegisterPage() {
     return <AuthLoadingScreen message="Checking your profile…" />;
   }
 
-  if (registrationComplete) {
-    return (
-      <div className="mx-auto flex min-h-screen max-w-lg flex-col px-4 py-8">
-        <h1 className="text-xl font-semibold">Profile already completed</h1>
-        <p className="text-muted-foreground mt-2 text-sm">
-          Your inspector details are saved for this account. Update them on your profile
-          page any time.
-        </p>
-        <div className="mt-6 flex gap-2">
-          <Link href={ROUTES.PROFILE} className="flex-1">
-            <Button className="w-full">View profile</Button>
-          </Link>
-          <Link href={ROUTES.DASHBOARD} className="flex-1">
-            <Button variant="outline" className="w-full">
-              Dashboard
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
+  if (rosterOnlyComplete) {
+    return <AuthLoadingScreen message="Opening your dashboard…" />;
   }
 
   return (
