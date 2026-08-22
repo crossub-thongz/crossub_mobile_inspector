@@ -70,12 +70,14 @@ export function HandoverCollectForm({
   initial?: KeyPhaseRecord;
   onSubmit: (record: KeyPhaseRecord) => Promise<void>;
 }) {
-  const [party, setParty] = useState<HandoverParty | undefined>(
-    initial?.handoverParty,
+  const [party, setParty] = useState<HandoverParty>(
+    initial?.handoverParty ?? 'tenant',
   );
   const [contactName, setContactName] = useState(
     initial?.contactName ??
-      (party === 'agent' ? job.agentName : job.tenantName) ??
+      ((initial?.handoverParty ?? 'tenant') === 'agent'
+        ? job.agentName
+        : job.tenantName) ??
       '',
   );
   const [agencyName, setAgencyName] = useState(

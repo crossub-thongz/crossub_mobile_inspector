@@ -1,13 +1,13 @@
 'use client';
 
-import { MessageSquare, Pencil, Plus, Trash2 } from 'lucide-react';
+import { EllipsisVertical, MessageSquare, Play, Plus } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
+import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
+import { InspectionWorkspaceHeader } from '@/components/inspector/inspection-workspace-header';
 import { RenameLabelDialog } from '@/components/inspector/rename-label-dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { INSPECTION_AREA_CATALOG } from '@/constants/inspection-areas';
 import {
   normalizeCustomAreaName,
@@ -17,13 +17,14 @@ import {
 import type { InspectionAreaKind } from '@/lib/inspection-area-workflow';
 import { validateUniqueLabel } from '@/lib/inspection-layout-edit';
 import {
-  inspectionStartCopy,
   layoutSourceLabel,
   setupStartLabel,
   type InspectionLayoutSource,
 } from '@/lib/inspection-start-flow';
+import type { InspectionJob } from '@/lib/types';
 
 type InspectionAreaSetupPanelProps = {
+  job: InspectionJob;
   kind: InspectionAreaKind;
   selectedAreaNames: string[];
   customAreas: CustomAreaDefinition[];
@@ -42,6 +43,7 @@ type InspectionAreaSetupPanelProps = {
 };
 
 export function InspectionAreaSetupPanel({
+  job,
   kind,
   selectedAreaNames,
   customAreas: _customAreas,
@@ -58,164 +60,150 @@ export function InspectionAreaSetupPanel({
   onAddAllExisting,
   onComplete,
 }: InspectionAreaSetupPanelProps) {
-  const [newName, setNewName] = useState('');
-  const [addError, setAddError] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
   const [renameFrom, setRenameFrom] = useState<string | null>(null);
-  const copy = inspectionStartCopy(kind);
-
+  const [menuFor, setMenuFor] = useState<string | null>(null);
   const selectedSet = new Set(selectedAreaNames.map((name) => name.toLowerCase()));
   const availableExisting = existingAreaNames.filter(
     (name) => !selectedSet.has(name.toLowerCase()),
   );
   const sourceLabel = layoutSourceLabel(layoutSource, selectedAreaNames.length);
 
-  const submitNewArea = () => {
-    const normalized = normalizeCustomAreaName(newName);
-    const error = validateUniqueLabel(normalized, selectedAreaNames);
-    if (error) {
-      setAddError(error);
-      return;
-    }
+  const addArea = (name: string, sectionMode: CustomAreaSectionMode) => {
+    const normalized = normalizeCustomAreaName(name);
     const fromIngoing = existingAreaNames.find(
-      (name) => name.trim().toLowerCase() === normalized.toLowerCase(),
+      (item) => item.trim().toLowerCase() === normalized.toLowerCase(),
     );
     if (fromIngoing) {
       onAddBuiltInArea(fromIngoing);
-    } else {
-      const catalog = INSPECTION_AREA_CATALOG.find(
-        (area) => area.name.toLowerCase() === normalized.toLowerCase(),
-      );
-      if (catalog) onAddBuiltInArea(catalog.name);
-      else onAddCustomArea(normalized, 'standard');
+      return;
     }
-    setNewName('');
-    setAddError(null);
+    const catalog = INSPECTION_AREA_CATALOG.find(
+      (area) => area.name.toLowerCase() === normalized.toLowerCase(),
+    );
+    if (catalog) onAddBuiltInArea(catalog.name);
+    else onAddCustomArea(normalized, sectionMode);
   };
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{continuing ? copy.continueLabel : copy.title}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground text-sm">{copy.body}</p>
-          <p className="text-muted-foreground text-xs">
-            Drag the handle on the left to reorder. Scroll or tap edit and delete on the rest of
-            the row. Type a name in the last row to add an area.
-          </p>
+    <div className="space-y-4 pb-4">
+      <InspectionWorkspaceHeader job={job} />
 
-          {sourceLabel ? (
-            <p className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-foreground">
-              {sourceLabel}
-            </p>
-          ) : null}
+      {extraActions}
 
-          {extraActions}
+      {sourceLabel ? (
+        <p className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-foreground">
+          {sourceLabel}
+        </p>
+      ) : null}
 
-          {availableExisting.length > 0 && onAddAllExisting ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full"
-              disabled={busy}
-              onClick={onAddAllExisting}
-            >
-              Add remaining from ingoing report ({availableExisting.length})
-            </Button>
-          ) : null}
+      {availableExisting.length > 0 && onAddAllExisting ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          disabled={busy}
+          onClick={onAddAllExisting}
+        >
+          Add remaining from ingoing report ({availableExisting.length})
+        </Button>
+      ) : null}
 
-          <ul className="divide-y rounded-lg border">
+      <section className="space-y-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-foreground text-sm font-bold tracking-wide uppercase">
+            Property areas
+          </h2>
+          <span className="bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-full text-[10px] font-bold tabular-nums">
+            {selectedAreaNames.length}
+          </span>
+          <button
+            type="button"
+            className="text-primary ml-auto text-sm font-semibold"
+            disabled={busy}
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus className="mr-0.5 inline size-4" />
+            Add Area
+          </button>
+        </div>
+        <p className="text-muted-foreground text-xs">
+          Confirm the areas before starting the inspection.
+        </p>
+
+        <ul className="border-border bg-card divide-y overflow-hidden rounded-2xl border">
+          {selectedAreaNames.length === 0 ? (
+            <li className="text-muted-foreground px-4 py-6 text-center text-xs">
+              Add at least one area, then start the inspection.
+            </li>
+          ) : (
             <DraggableNamedList
               items={selectedAreaNames}
               disabled={busy}
               onReorder={onMoveArea}
               renderItem={(name) => (
                 <>
-                  <p className="min-w-0 flex-1 font-medium">{name}</p>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-foreground shrink-0 rounded-md p-1"
-                    aria-label={`Rename ${name}`}
-                    disabled={busy}
-                    onClick={() => setRenameFrom(name)}
-                  >
-                    <Pencil className="size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-destructive shrink-0 rounded-md p-1"
-                    aria-label={`Remove ${name}`}
-                    disabled={busy}
-                    onClick={() => onRemoveArea(name)}
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                  <p className="text-foreground min-w-0 flex-1 text-sm font-medium">{name}</p>
+                  <div className="relative shrink-0">
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground flex size-9 items-center justify-center rounded-md"
+                      aria-label={`More actions for ${name}`}
+                      disabled={busy}
+                      onClick={() =>
+                        setMenuFor((current) => (current === name ? null : name))
+                      }
+                    >
+                      <EllipsisVertical className="size-4" />
+                    </button>
+                    {menuFor === name ? (
+                      <div className="border-border bg-card absolute top-9 right-0 z-20 min-w-[8.5rem] overflow-hidden rounded-lg border shadow-lg">
+                        <button
+                          type="button"
+                          className="hover:bg-secondary w-full px-3 py-2 text-left text-xs"
+                          onClick={() => {
+                            setMenuFor(null);
+                            setRenameFrom(name);
+                          }}
+                        >
+                          Rename
+                        </button>
+                        <button
+                          type="button"
+                          className="text-destructive hover:bg-destructive/10 w-full px-3 py-2 text-left text-xs"
+                          onClick={() => {
+                            setMenuFor(null);
+                            onRemoveArea(name);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </>
               )}
             />
-            <li className="flex items-center gap-2 px-2 py-2">
-              <Plus className="text-muted-foreground size-4 shrink-0" />
-              <Input
-                value={newName}
-                placeholder="Type an area name"
-                disabled={busy}
-                className="h-9"
-                onChange={(event) => {
-                  setNewName(event.target.value);
-                  setAddError(null);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    submitNewArea();
-                  }
-                }}
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="shrink-0"
-                disabled={busy || !newName.trim()}
-                onClick={submitNewArea}
-              >
-                Add
-              </Button>
-            </li>
-          </ul>
-          {addError ? <p className="text-destructive text-xs">{addError}</p> : null}
+          )}
+        </ul>
+      </section>
 
-          {selectedAreaNames.length === 0 ? (
-            <p className="text-muted-foreground text-center text-xs">
-              Add at least one room, drag to arrange, then start.
-            </p>
-          ) : null}
+      <Button
+        type="button"
+        className="w-full"
+        disabled={busy || selectedAreaNames.length === 0}
+        onClick={onComplete}
+      >
+        <Play className="size-4 fill-current" />
+        {continuing ? setupStartLabel(kind, true) : 'Start Inspection'}
+      </Button>
 
-          <Button
-            type="button"
-            className="w-full"
-            disabled={busy || (selectedAreaNames.length === 0 && !newName.trim())}
-            onClick={() => {
-              if (newName.trim()) {
-                const error = validateUniqueLabel(
-                  normalizeCustomAreaName(newName),
-                  selectedAreaNames,
-                );
-                if (error) {
-                  setAddError(error);
-                  if (selectedAreaNames.length === 0) return;
-                } else {
-                  submitNewArea();
-                }
-              }
-              onComplete();
-            }}
-          >
-            {setupStartLabel(kind, continuing)}
-          </Button>
-        </CardContent>
-      </Card>
+      <AddCustomAreaDialog
+        open={addOpen}
+        existingNames={selectedAreaNames}
+        onClose={() => setAddOpen(false)}
+        onConfirm={(name, sectionMode) => addArea(name, sectionMode)}
+      />
 
       <RenameLabelDialog
         open={Boolean(renameFrom)}
@@ -230,7 +218,7 @@ export function InspectionAreaSetupPanel({
           return null;
         }}
       />
-    </>
+    </div>
   );
 }
 

@@ -20,6 +20,7 @@ import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
+import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -379,33 +380,23 @@ export default function IngoingInspectionPage() {
 
   if (!areaSetupComplete) {
     return (
-      <>
-        <InspectorShell title="Ingoing Inspection" backHref={jobDetail(id)}>
-          <div className="space-y-4">
-            <JobWorkflowToolbar job={job} />
-            <InspectionAreaSetupPanel
-              kind="ingoing"
-              selectedAreaNames={selectedAreaNames}
-              customAreas={customAreas}
-              continuing={selectedAreaNames.length > 0 || areaIndex > 0}
-              layoutSource={selectedAreaNames.length > 0 ? 'template' : 'manual'}
-              busy={busy}
-              onAddBuiltInArea={handleAddBuiltInArea}
-              onAddCustomArea={handleAddCustomArea}
-              onRemoveArea={handleRemoveSetupArea}
-              onRenameArea={handleRenameSetupArea}
-              onMoveArea={handleMoveSetupArea}
-              onComplete={completeAreaSetup}
-            />
-          </div>
-        </InspectorShell>
-        <AddCustomAreaDialog
-          open={addAreaOpen}
-          existingNames={selectedAreaNames}
-          onClose={() => setAddAreaOpen(false)}
-          onConfirm={handleAddCustomArea}
+      <JobWorkspaceShell job={job} active="areas">
+        <InspectionAreaSetupPanel
+          job={job}
+          kind="ingoing"
+          selectedAreaNames={selectedAreaNames}
+          customAreas={customAreas}
+          continuing={selectedAreaNames.length > 0 || areaIndex > 0}
+          layoutSource={selectedAreaNames.length > 0 ? 'template' : 'manual'}
+          busy={busy}
+          onAddBuiltInArea={handleAddBuiltInArea}
+          onAddCustomArea={handleAddCustomArea}
+          onRemoveArea={handleRemoveSetupArea}
+          onRenameArea={handleRenameSetupArea}
+          onMoveArea={handleMoveSetupArea}
+          onComplete={completeAreaSetup}
         />
-      </>
+      </JobWorkspaceShell>
     );
   }
 
@@ -897,7 +888,7 @@ export default function IngoingInspectionPage() {
   if (draft.workflowStep === 'special') {
     return (
       <>
-        <InspectorShell title="Ingoing Inspection" backHref={jobDetail(id)}>
+        <JobWorkspaceShell job={job} active="areas">
           <div className="space-y-4">
             <JobWorkflowToolbar job={job} />
             <InspectionWorkspaceHeader job={job} />
@@ -914,7 +905,7 @@ export default function IngoingInspectionPage() {
               }}
             />
           </div>
-        </InspectorShell>
+        </JobWorkspaceShell>
         {Celebration}
       </>
     );
@@ -922,7 +913,7 @@ export default function IngoingInspectionPage() {
 
   return (
     <>
-      <InspectorShell title="Ingoing Inspection" backHref={jobDetail(id)}>
+      <JobWorkspaceShell job={job} active="areas">
         <div className="space-y-4">
           <JobWorkflowToolbar job={job} />
           <InspectionWorkspaceHeader job={job} />
@@ -1043,7 +1034,7 @@ export default function IngoingInspectionPage() {
             </Card>
           )}
         </div>
-      </InspectorShell>
+      </JobWorkspaceShell>
       {Celebration}
       <AddCustomAreaDialog
         open={addAreaOpen}

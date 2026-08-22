@@ -6,6 +6,7 @@ import { Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
+import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
 import { OpenInspectionLinkQrBlock } from '@/components/open-inspection/open-inspection-link-qr-block';
 import { OpenInspectionVisitorList } from '@/components/open-inspection/open-inspection-visitor-list';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
@@ -228,7 +229,7 @@ export default function OpenInspectionPage() {
 
   return (
     <>
-      <InspectorShell title="Open inspection" backHref={jobDetail(id)}>
+      <JobWorkspaceShell job={job} active="areas">
         <div className="space-y-4 pb-28">
           <JobWorkflowToolbar job={job} />
 
@@ -384,7 +385,7 @@ export default function OpenInspectionPage() {
             </div>
           </div>
         ) : null}
-      </InspectorShell>
+      </JobWorkspaceShell>
       {Celebration}
     </>
   );

@@ -19,6 +19,7 @@ import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
+import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -563,31 +564,27 @@ export default function OutgoingInspectionPage() {
 
   if (!areaSetupComplete) {
     return (
-      <>
-        <InspectorShell title="Outgoing Inspection" backHref={jobDetail(id)}>
-          <div className="space-y-4">
-            <JobWorkflowToolbar job={job} />
-            <InspectionAreaSetupPanel
-              kind="outgoing"
-              selectedAreaNames={selectedAreaNames}
-              customAreas={customAreas}
-              existingAreaNames={ingoingExistingAreas}
-              continuing={selectedAreaNames.length > 0 || areaIndex > 0}
-              layoutSource={
-                ingoingExistingAreas.length > 0 ? 'copied' : selectedAreaNames.length > 0 ? 'template' : 'manual'
-              }
-              busy={busy || loadingReference}
-              onAddBuiltInArea={handleAddBuiltInArea}
-              onAddCustomArea={handleAddCustomArea}
-              onRemoveArea={handleRemoveSetupArea}
-              onRenameArea={handleRenameSetupArea}
-              onMoveArea={handleMoveSetupArea}
-              onAddAllExisting={ingoingExistingAreas.length > 0 ? addAllFromIngoing : undefined}
-              onComplete={completeAreaSetup}
-            />
-          </div>
-        </InspectorShell>
-      </>
+      <JobWorkspaceShell job={job} active="areas">
+        <InspectionAreaSetupPanel
+          job={job}
+          kind="outgoing"
+          selectedAreaNames={selectedAreaNames}
+          customAreas={customAreas}
+          existingAreaNames={ingoingExistingAreas}
+          continuing={selectedAreaNames.length > 0 || areaIndex > 0}
+          layoutSource={
+            ingoingExistingAreas.length > 0 ? 'copied' : selectedAreaNames.length > 0 ? 'template' : 'manual'
+          }
+          busy={busy || loadingReference}
+          onAddBuiltInArea={handleAddBuiltInArea}
+          onAddCustomArea={handleAddCustomArea}
+          onRemoveArea={handleRemoveSetupArea}
+          onRenameArea={handleRenameSetupArea}
+          onMoveArea={handleMoveSetupArea}
+          onAddAllExisting={ingoingExistingAreas.length > 0 ? addAllFromIngoing : undefined}
+          onComplete={completeAreaSetup}
+        />
+      </JobWorkspaceShell>
     );
   }
 
@@ -1129,7 +1126,7 @@ export default function OutgoingInspectionPage() {
   if (draft.workflowStep === 'special') {
     return (
       <>
-        <InspectorShell title="Outgoing Inspection" backHref={jobDetail(id)}>
+        <JobWorkspaceShell job={job} active="areas">
           <div className="space-y-4">
             <JobWorkflowToolbar job={job} />
             <InspectionWorkspaceHeader job={job} />
@@ -1146,7 +1143,7 @@ export default function OutgoingInspectionPage() {
               }}
             />
           </div>
-        </InspectorShell>
+        </JobWorkspaceShell>
         {Celebration}
       </>
     );
@@ -1154,7 +1151,7 @@ export default function OutgoingInspectionPage() {
 
   return (
     <>
-      <InspectorShell title="Outgoing Inspection" backHref={jobDetail(id)}>
+      <JobWorkspaceShell job={job} active="areas">
         <div className="space-y-4">
           <JobWorkflowToolbar job={job} />
           <InspectionWorkspaceHeader job={job} />
@@ -1307,7 +1304,7 @@ export default function OutgoingInspectionPage() {
             </Card>
           )}
         </div>
-      </InspectorShell>
+      </JobWorkspaceShell>
       {Celebration}
       <AddCustomAreaDialog
         open={addAreaOpen}

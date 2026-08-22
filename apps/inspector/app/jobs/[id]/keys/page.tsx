@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { INSPECTION_PAY_LABEL } from '@/constants/inspection';
-import { jobDetail } from '@/constants/routes';
+import { jobDetail, jobWorkflow } from '@/constants/routes';
 import {
   useAwaitingAgentPaymentGate,
   useKeyReturnGate,
@@ -138,7 +138,7 @@ export default function JobKeysPage() {
       setSubmitting(false);
     }
     toast.success('Handover recorded');
-    router.replace(jobDetail(id));
+    router.replace(jobWorkflow(id, job.type));
   };
 
   const submitReturn = async () => {

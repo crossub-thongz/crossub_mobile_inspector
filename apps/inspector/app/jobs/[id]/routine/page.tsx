@@ -16,6 +16,7 @@ import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
+import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
 import { ResetInspectionDialog } from '@/components/inspector/reset-inspection-dialog';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
@@ -533,68 +534,66 @@ export default function RoutineInspectionPage() {
 
   if (!areaSetupComplete) {
     return (
-      <>
-        <InspectorShell title="Routine Inspection" backHref={jobDetail(id)}>
-          <div className="space-y-4">
-            <JobWorkflowToolbar job={job} />
-            {resetControls}
-            <InspectionAreaSetupPanel
-              kind="routine"
-              selectedAreaNames={selectedAreaNames}
-              customAreas={customAreas}
-              existingAreaNames={ingoingExistingAreas}
-              continuing={selectedAreaNames.length > 0 || areaIndex > 0}
-              layoutSource={
-                ingoingExistingAreas.length > 0
-                  ? 'copied'
-                  : selectedAreaNames.length > 0
-                    ? 'template'
-                    : 'manual'
-              }
-              busy={busy || loadingReference}
-              extraActions={
-                <>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={method === 'physical' ? 'default' : 'outline'}
-                      className="flex-1"
-                      onClick={() =>
-                        setDraft((prev) => ({ ...prev, method: 'physical' }))
-                      }
-                    >
-                      Physical
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={method === 'self' ? 'default' : 'outline'}
-                      className="flex-1"
-                      onClick={() =>
-                        setDraft((prev) => ({ ...prev, method: 'self' }))
-                      }
-                    >
-                      Tenant self-inspect
-                    </Button>
-                  </div>
-                  {job.tenantPhone ? (
-                    <RoutinePreInspectionSmsButton
-                      href={preInspectionSmsHref(job) ?? '#'}
-                      disabled={busy}
-                    />
-                  ) : null}
-                </>
-              }
-              onAddBuiltInArea={handleAddBuiltInArea}
-              onAddCustomArea={handleAddCustomArea}
-              onRemoveArea={handleRemoveSetupArea}
-              onRenameArea={handleRenameSetupArea}
-              onMoveArea={handleMoveSetupArea}
-              onAddAllExisting={ingoingExistingAreas.length > 0 ? addAllFromIngoing : undefined}
-              onComplete={completeAreaSetup}
-            />
-          </div>
-        </InspectorShell>
-      </>
+      <JobWorkspaceShell job={job} active="areas">
+        <div className="space-y-4">
+          {resetControls}
+          <InspectionAreaSetupPanel
+            job={job}
+            kind="routine"
+            selectedAreaNames={selectedAreaNames}
+            customAreas={customAreas}
+            existingAreaNames={ingoingExistingAreas}
+            continuing={selectedAreaNames.length > 0 || areaIndex > 0}
+            layoutSource={
+              ingoingExistingAreas.length > 0
+                ? 'copied'
+                : selectedAreaNames.length > 0
+                  ? 'template'
+                  : 'manual'
+            }
+            busy={busy || loadingReference}
+            extraActions={
+              <>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={method === 'physical' ? 'default' : 'outline'}
+                    className="flex-1"
+                    onClick={() =>
+                      setDraft((prev) => ({ ...prev, method: 'physical' }))
+                    }
+                  >
+                    Physical
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={method === 'self' ? 'default' : 'outline'}
+                    className="flex-1"
+                    onClick={() =>
+                      setDraft((prev) => ({ ...prev, method: 'self' }))
+                    }
+                  >
+                    Tenant self-inspect
+                  </Button>
+                </div>
+                {job.tenantPhone ? (
+                  <RoutinePreInspectionSmsButton
+                    href={preInspectionSmsHref(job) ?? '#'}
+                    disabled={busy}
+                  />
+                ) : null}
+              </>
+            }
+            onAddBuiltInArea={handleAddBuiltInArea}
+            onAddCustomArea={handleAddCustomArea}
+            onRemoveArea={handleRemoveSetupArea}
+            onRenameArea={handleRenameSetupArea}
+            onMoveArea={handleMoveSetupArea}
+            onAddAllExisting={ingoingExistingAreas.length > 0 ? addAllFromIngoing : undefined}
+            onComplete={completeAreaSetup}
+          />
+        </div>
+      </JobWorkspaceShell>
     );
   }
 
@@ -1089,7 +1088,7 @@ export default function RoutineInspectionPage() {
 
   return (
     <>
-      <InspectorShell title="Routine Inspection" backHref={jobDetail(id)}>
+      <JobWorkspaceShell job={job} active="areas">
         <div className="space-y-4">
           <JobWorkflowToolbar job={job} />
           {resetControls}
@@ -1282,7 +1281,7 @@ export default function RoutineInspectionPage() {
             </Card>
           )}
         </div>
-      </InspectorShell>
+      </JobWorkspaceShell>
       {Celebration}
     </>
   );
