@@ -179,6 +179,8 @@ export interface InspectionJob {
   availableInspectorCount?: number | null;
   /** Lease start date when the facade includes it. */
   leaseStart?: string;
+  /** Lease end date when the facade includes it. */
+  leaseEnd?: string;
   /** Agent declined the last submitted report — redo and resubmit. */
   reportDeclineReason?: string;
   /** Account manager signed off the submitted report (ISO). */

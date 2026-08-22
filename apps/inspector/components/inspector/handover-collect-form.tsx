@@ -18,7 +18,6 @@ import { JobPropertyHeader } from '@/components/inspector/job-property-header';
 import { KeyPhasePhotoField } from '@/components/inspector/key-phase-photo-field';
 import { NoImageDialog } from '@/components/inspector/no-image-dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type {
   HandoverParty,
@@ -126,10 +125,6 @@ export function HandoverCollectForm({
       toast.error('Select handover with tenant or with agent.');
       return;
     }
-    if (!contactName.trim()) {
-      toast.error(party === 'agent' ? 'Enter the agent name.' : 'Enter the tenant name.');
-      return;
-    }
     if (photos.length === 0) {
       setNoImageOpen(true);
       return;
@@ -226,61 +221,51 @@ export function HandoverCollectForm({
               {party === 'tenant' ? 'Tenant details' : 'Agent details'}
             </p>
 
-            <label className="flex items-center justify-between gap-2 text-sm">
+            <div className="flex items-center justify-between gap-2 text-sm">
               <span className="text-muted-foreground text-xs">
                 {party === 'tenant' ? 'Tenant name' : 'Agent name'}
               </span>
-              <Input
-                className="h-8 max-w-[60%] text-right text-sm"
-                value={contactName}
-                onChange={(e) => setContactName(e.target.value)}
-              />
-            </label>
+              <span className="text-foreground max-w-[60%] truncate text-right text-sm">
+                {contactName.trim() || '—'}
+              </span>
+            </div>
 
             {party === 'agent' ? (
-              <label className="flex items-center justify-between gap-2 text-sm">
+              <div className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-muted-foreground text-xs">Agency</span>
-                <Input
-                  className="h-8 max-w-[60%] text-right text-sm"
-                  value={agencyName}
-                  onChange={(e) => setAgencyName(e.target.value)}
-                />
-              </label>
+                <span className="text-foreground max-w-[60%] truncate text-right text-sm">
+                  {agencyName.trim() || '—'}
+                </span>
+              </div>
             ) : null}
 
-            <label className="block space-y-1">
+            <div className="space-y-1">
               <span className="text-muted-foreground text-xs">Phone</span>
               <div className="flex items-center gap-2">
-                <Input
-                  className="h-8 flex-1 text-sm"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  inputMode="tel"
-                />
-                {phone ? (
+                <span className="bg-secondary/60 text-foreground min-h-8 flex-1 rounded-md px-3 py-1.5 text-sm">
+                  {phone.trim() || '—'}
+                </span>
+                {phone.trim() ? (
                   <ContactAction href={`tel:${phone}`} accent={accent}>
                     <Phone className="size-3.5" />
                   </ContactAction>
                 ) : null}
               </div>
-            </label>
+            </div>
 
-            <label className="block space-y-1">
+            <div className="space-y-1">
               <span className="text-muted-foreground text-xs">Email</span>
               <div className="flex items-center gap-2">
-                <Input
-                  className="h-8 flex-1 text-sm"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                {email ? (
+                <span className="bg-secondary/60 text-foreground min-h-8 flex-1 truncate rounded-md px-3 py-1.5 text-sm">
+                  {email.trim() || '—'}
+                </span>
+                {email.trim() ? (
                   <ContactAction href={`mailto:${email}`} accent={accent}>
                     <Mail className="size-3.5" />
                   </ContactAction>
                 ) : null}
               </div>
-            </label>
+            </div>
           </section>
 
           <section className="space-y-3 rounded-xl border border-border bg-card p-3">

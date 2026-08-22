@@ -962,10 +962,8 @@ export function InspectorDataProvider({
       if (shouldPersistApi) {
         apiInspectionIds.current.add(id);
         const claimThenAccept = async () => {
-          try {
+          if (isPoolRow) {
             await apiClaimInspection(id);
-          } catch {
-            // Already mine, or staff-assigned — accept validates ownership.
           }
           return apiAcceptInspection(id);
         };
