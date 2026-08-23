@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Maximize2, Share2, X } from 'lucide-react';
+import { useState, type LucideIcon } from 'react';
+import { Maximize2, Share2, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -12,14 +12,16 @@ export function OpenInspectionLinkQrBlock({
   description,
   url,
   qrFilename,
+  icon: Icon = Users,
 }: {
   title: string;
   description: string;
   url: string;
   qrFilename: string;
+  icon?: LucideIcon;
 }) {
   const [enlarged, setEnlarged] = useState(false);
-  const qrSrc = openInspectionQrImageUrl(url, 220);
+  const qrSrc = openInspectionQrImageUrl(url, 280);
   const largeQrSrc = openInspectionQrImageUrl(url, 420);
 
   const shareLink = async () => {
@@ -43,40 +45,47 @@ export function OpenInspectionLinkQrBlock({
 
   return (
     <>
-      <div className="border-border bg-card flex items-center gap-3 rounded-2xl border p-3">
-        <img
-          src={qrSrc}
-          alt=""
-          className="size-[4.5rem] shrink-0 rounded-md border bg-white p-1"
-          loading="lazy"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">{title}</p>
-          <p className="text-muted-foreground mt-0.5 text-[11px] leading-snug">
-            {description}
-          </p>
+      <div className="space-y-3 py-1">
+        <div className="flex items-start gap-3">
+          <span className="bg-emerald-500/20 text-emerald-400 flex size-10 shrink-0 items-center justify-center rounded-full">
+            <Icon className="size-4" />
+          </span>
+          <div className="min-w-0 pt-0.5">
+            <p className="text-sm font-semibold">{title}</p>
+            <p className="text-muted-foreground mt-0.5 text-[11px] leading-snug">
+              {description}
+            </p>
+          </div>
         </div>
-        <div className="flex shrink-0 flex-col gap-1.5">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1.5 text-[11px]"
-            onClick={() => void shareLink()}
-          >
-            <Share2 className="size-3.5" />
-            Share link
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1.5 text-[11px]"
-            onClick={() => setEnlarged(true)}
-          >
-            <Maximize2 className="size-3.5" />
-            Enlarge
-          </Button>
+        <div className="flex items-center gap-3">
+          <img
+            src={qrSrc}
+            alt=""
+            className="size-[7.25rem] shrink-0 rounded-lg bg-white p-1.5"
+            loading="lazy"
+          />
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="h-11 justify-center gap-2 rounded-lg text-xs font-semibold"
+              onClick={() => void shareLink()}
+            >
+              <Share2 className="size-3.5" />
+              Share link
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="h-11 justify-center gap-2 rounded-lg text-xs font-semibold"
+              onClick={() => setEnlarged(true)}
+            >
+              <Maximize2 className="size-3.5" />
+              Enlarge
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -107,7 +116,7 @@ export function OpenInspectionLinkQrBlock({
             <img
               src={largeQrSrc}
               alt={title}
-              className="mx-auto size-64 rounded-xl border bg-white p-2"
+              className="mx-auto size-64 rounded-xl bg-white p-2"
             />
             <p className="text-muted-foreground mt-3 break-all text-center text-[10px]">
               {qrFilename}

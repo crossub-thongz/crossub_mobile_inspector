@@ -81,8 +81,8 @@ export function OpenInspectionVisitorList({
             className="border-border bg-card h-7 rounded-full border px-2 text-[11px] font-semibold text-foreground"
             aria-label="Sort check-ins"
           >
-            <option value="time">time</option>
-            <option value="name">name</option>
+            <option value="time">Time</option>
+            <option value="name">Name</option>
           </select>
         </label>
       </div>

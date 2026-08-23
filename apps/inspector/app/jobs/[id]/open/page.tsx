@@ -2,7 +2,7 @@
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Square, Star, Users } from 'lucide-react';
+import { FileText, Loader2, Radio, Star, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
@@ -324,7 +324,7 @@ export default function OpenInspectionPage() {
             </>
           ) : null}
 
-          <div className="bg-muted/40 flex rounded-lg p-1">
+          <div className="border-border flex border-b">
             {(
               [
                 ['checkins', `Check-ins (${checkIns.length})`],
@@ -335,10 +335,10 @@ export default function OpenInspectionPage() {
                 key={value}
                 type="button"
                 className={cn(
-                  'flex-1 rounded-md px-3 py-2 text-xs font-medium transition-colors',
+                  '-mb-px flex-1 px-3 py-2.5 text-sm font-semibold transition-colors',
                   tab === value
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground',
+                    ? 'text-primary border-primary border-b-2'
+                    : 'text-muted-foreground border-b-2 border-transparent',
                 )}
                 onClick={() => setTab(value)}
               >
@@ -369,32 +369,43 @@ export default function OpenInspectionPage() {
             />
           ) : (
             <div className="space-y-3">
-              <p className="text-sm font-semibold">Share with Prospects</p>
-              <OpenInspectionLinkQrBlock
-                title="Check-in QR"
-                description="Prospects scan to register their arrival at the open."
-                url={viewing.checkInUrl}
-                qrFilename={`check-in-${viewing.id.slice(0, 8)}.png`}
-              />
-              <OpenInspectionLinkQrBlock
-                title="Application QR"
-                description="Prospects scan to apply for this property."
-                url={viewing.applyUrl}
-                qrFilename={`apply-${viewing.id.slice(0, 8)}.png`}
-              />
+              <div>
+                <p className="text-sm font-semibold">Share with prospects</p>
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  Prospects can scan or use the link below.
+                </p>
+              </div>
+              <div className="border-border bg-card divide-y divide-border rounded-2xl border px-3 py-1">
+                <OpenInspectionLinkQrBlock
+                  title="Check-in QR"
+                  description="Prospects scan to register their arrival at the open."
+                  url={viewing.checkInUrl}
+                  qrFilename={`check-in-${viewing.id.slice(0, 8)}.png`}
+                  icon={Users}
+                />
+                <OpenInspectionLinkQrBlock
+                  title="Application QR"
+                  description="Prospects scan to apply for this property."
+                  url={viewing.applyUrl}
+                  qrFilename={`apply-${viewing.id.slice(0, 8)}.png`}
+                  icon={FileText}
+                />
+              </div>
               <OpenInspectionHelpCard />
             </div>
           )}
         </div>
 
         {isLive && viewing ? (
-          <div className="border-border bg-background/95 fixed inset-x-0 z-40 border-t px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+          <div
+            className="bg-background/95 fixed inset-x-0 z-40 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
             style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
           >
             <div className="mx-auto max-w-lg">
               {canCompleteEarly ? (
                 <Button
-                  className="h-12 w-full gap-2 bg-red-600 text-white hover:bg-red-600/90"
+                  variant="outline"
+                  className="h-12 w-full gap-2 rounded-xl border-red-500 bg-transparent text-red-500 hover:bg-red-500/10 hover:text-red-400 hover:border-red-400 dark:bg-transparent"
                   disabled={completing}
                   onClick={handleCompleteEarly}
                 >
@@ -407,7 +418,7 @@ export default function OpenInspectionPage() {
                     'Ending…'
                   ) : (
                     <>
-                      <Square className="size-3.5 fill-current" />
+                      <Radio className="size-4" />
                       End open inspection
                     </>
                   )}
