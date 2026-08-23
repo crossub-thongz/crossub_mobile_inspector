@@ -534,6 +534,23 @@ export async function fileReport(
   return data;
 }
 
+/** Download the filed inspection report PDF for a completed Ingoing / Outgoing / Routine job. */
+export async function downloadInspectorReportPdf(
+  inspectionId: string,
+): Promise<Blob> {
+  const base = `${process.env.NEXT_PUBLIC_API_URL ?? '/api'}/v1`;
+  const res = await fetch(
+    `${base}/inspector/inspections/${encodeURIComponent(inspectionId)}/report/pdf`,
+    { credentials: 'include', cache: 'no-store' },
+  );
+  if (!res.ok) {
+    throw new Error(
+      await inspectorFetchErrorMessage(res, 'Inspection report is not available yet.'),
+    );
+  }
+  return res.blob();
+}
+
 /** Upload an inspection-level evidence photo (`POST /inspector/inspections/{inspectionId}/photos/upload`). */
 export async function uploadInspectionPhoto(
   inspectionId: string,

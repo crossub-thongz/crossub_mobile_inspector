@@ -129,6 +129,15 @@ export function useInspectionFinishedGate(
     if (!job) return;
 
     if (job.status === 'completed' || job.status === 'awaiting_approval') {
+      // Completed Open jobs keep Check-ins / QR on the inspect screen for reference.
+      if (
+        job.status === 'completed' &&
+        job.type === 'open' &&
+        WORKFLOW_PATH.test(pathname)
+      ) {
+        redirected.current = false;
+        return;
+      }
       if (redirected.current) return;
       redirected.current = true;
       router.replace(ROUTES.DASHBOARD);

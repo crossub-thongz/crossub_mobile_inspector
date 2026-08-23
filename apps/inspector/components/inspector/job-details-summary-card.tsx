@@ -3,6 +3,7 @@
 import { Calendar, Compass, Hash } from 'lucide-react';
 
 import { InitialsAvatar } from '@/components/inspector/initials-avatar';
+import { PayBreakdown } from '@/components/inspector/pay-breakdown';
 import { PropertyThumb } from '@/components/inspector/property-thumb';
 import { Button } from '@/components/ui/button';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
@@ -64,6 +65,15 @@ export function JobDetailsSummaryCard({ job }: { job: InspectionJob }) {
           Directions
         </a>
       </Button>
+
+      <div className="border-border border-t pt-3">
+        <PayBreakdown
+          hours={job.estimatedHours}
+          laborAmount={job.laborAmount}
+          durationLabel={job.durationLabel}
+          label={job.status === 'completed' ? 'Fee' : 'Est. Fee'}
+        />
+      </div>
     </div>
   );
 }

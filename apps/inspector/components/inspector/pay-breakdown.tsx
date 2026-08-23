@@ -7,11 +7,13 @@ export function PayBreakdown({
   laborAmount,
   durationLabel,
   compact,
+  label = 'Est. Fee',
 }: {
   hours: number;
   laborAmount: number;
   durationLabel?: string;
   compact?: boolean;
+  label?: string;
   /** @deprecated Fuel hidden from inspector UI — kept for call-site compatibility */
   travelKmOneWay?: number;
   fuelAllowance?: number;
@@ -24,7 +26,7 @@ export function PayBreakdown({
         <p className="text-muted-foreground text-[10px]">{durationLabel}</p>
       )}
       <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
-        Est. Fee
+        {label}
       </p>
       <p className="text-primary text-sm font-semibold tabular-nums">
         {formatCurrency(laborAmount)}

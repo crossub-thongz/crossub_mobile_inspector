@@ -187,6 +187,8 @@ export interface InspectionJob {
   reportDeclineReason?: string;
   /** Account manager signed off the submitted report (ISO). */
   approvedAt?: string;
+  /** Filed inspection report PDF URL from the admin site. */
+  reportUrl?: string;
   /**
    * Level 1 prepaid: true until the agency pays at order create —
    * inspector cannot claim or accept while this is true.

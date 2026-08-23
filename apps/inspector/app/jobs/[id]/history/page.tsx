@@ -2,7 +2,6 @@
 
 import { useParams } from 'next/navigation';
 
-import { AgentStrip } from '@/components/inspector/agent-strip';
 import { JobHistoryReport } from '@/components/inspector/job-history-report';
 import {
   JobStatusBadge,
@@ -15,6 +14,7 @@ import { ROUTES } from '@/constants/routes';
 import { mergeJobWithHistory } from '@/lib/job-history';
 import { isDemoJobId } from '@/lib/inspector-job-filters';
 import { jobLookupMiss } from '@/lib/job-lookup';
+import { formatCurrency } from '@/lib/utils';
 
 export default function JobHistoryDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -42,12 +42,20 @@ export default function JobHistoryDetailPage() {
           <JobStatusBadge status={job.status} />
         </div>
 
-        <div>
-          <p className="text-sm font-semibold">{job.propertyAddress}</p>
-          <p className="text-muted-foreground text-xs">{job.suburb}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">{job.propertyAddress}</p>
+            <p className="text-muted-foreground text-xs">{job.suburb}</p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-primary text-lg font-bold leading-none tabular-nums">
+              {formatCurrency(job.laborAmount)}
+            </p>
+            <p className="text-muted-foreground mt-1 text-[9px] font-medium uppercase tracking-wide">
+              Fee
+            </p>
+          </div>
         </div>
-
-        {(job.agentName || job.agentCompany) && <AgentStrip job={job} compact />}
 
         <JobHistoryReport job={job} />
       </div>

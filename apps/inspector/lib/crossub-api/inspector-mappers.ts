@@ -162,6 +162,7 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     (dto as { reportDeclineReason?: unknown }).reportDeclineReason,
   );
   const approvedAt = asString((dto as { approvedAt?: unknown }).approvedAt);
+  const reportUrl = asString((dto as { reportUrl?: unknown }).reportUrl);
   const awaitingAgentPayment = Boolean(
     (dto as { awaitingAgentPayment?: unknown }).awaitingAgentPayment,
   );
@@ -229,6 +230,7 @@ export function toInspectionJob(dto: InspectorInspection): InspectionJob {
     availableInspectorCount,
     ...(reportDeclineReason ? { reportDeclineReason } : {}),
     ...(approvedAt ? { approvedAt } : {}),
+    ...(reportUrl ? { reportUrl } : {}),
     ...(awaitingAgentPayment ? { awaitingAgentPayment: true } : {}),
   };
 }
