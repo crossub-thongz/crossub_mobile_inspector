@@ -1,45 +1,51 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText, KeyRound, LayoutGrid, Play } from 'lucide-react';
+import { FileText, KeyRound, LayoutGrid, Play, type LucideIcon } from 'lucide-react';
 
 import { jobAreas, jobInspect, jobKeys } from '@/constants/routes';
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
+
+type WorkspaceTab = 'details' | 'handover' | 'areas' | 'start';
 
 export function JobWorkspaceNav({
   job,
   active,
 }: {
   job: InspectionJob;
-  active: 'details' | 'handover' | 'areas' | 'start';
+  active: WorkspaceTab;
 }) {
-  const items = [
+  const items: { id: WorkspaceTab; href: string; label: string; icon: LucideIcon }[] = [
     {
-      id: 'details' as const,
+      id: 'details',
       href: `/jobs/${job.id}`,
       label: 'Job Details',
       icon: FileText,
     },
     {
-      id: 'handover' as const,
+      id: 'handover',
       href: jobKeys(job.id),
       label: 'Handover',
       icon: KeyRound,
     },
-    {
-      id: 'areas' as const,
+  ];
+
+  if (job.type !== 'open') {
+    items.push({
+      id: 'areas',
       href: jobAreas(job.id, job.type),
       label: 'Areas',
       icon: LayoutGrid,
-    },
-    {
-      id: 'start' as const,
-      href: jobInspect(job.id, job.type),
-      label: 'Start Inspection',
-      icon: Play,
-    },
-  ];
+    });
+  }
+
+  items.push({
+    id: 'start',
+    href: jobInspect(job.id, job.type),
+    label: 'Start Inspection',
+    icon: Play,
+  });
 
   return (
     <nav className="border-border -mx-4 flex border-b px-1">

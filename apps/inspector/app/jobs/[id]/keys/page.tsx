@@ -17,7 +17,7 @@ import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { INSPECTION_PAY_LABEL } from '@/constants/inspection';
-import { jobAreas, jobDetail } from '@/constants/routes';
+import { jobAreas, jobDetail, jobInspect } from '@/constants/routes';
 import {
   useAwaitingAgentPaymentGate,
   useKeyReturnGate,
@@ -119,7 +119,11 @@ export default function JobKeysPage() {
       setSubmitting(false);
     }
     toast.success('Handover recorded');
-    router.replace(jobAreas(id, job.type));
+    router.replace(
+      job.type === 'open'
+        ? jobInspect(id, job.type)
+        : jobAreas(id, job.type),
+    );
   };
 
   const submitReturn = async (record: KeyPhaseRecord) => {
@@ -183,8 +187,18 @@ export default function JobKeysPage() {
         <p className="text-muted-foreground text-[10px]">
           This step cannot be edited after submission.
         </p>
-        <Link href={jobDetail(id)}>
-          <Button className="w-full">Back to job details</Button>
+        <Link
+          href={
+            tab === 'collect' && job.type === 'open'
+              ? jobInspect(id, job.type)
+              : jobDetail(id)
+          }
+        >
+          <Button className="w-full">
+            {tab === 'collect' && job.type === 'open'
+              ? 'Continue to Start Inspection'
+              : 'Back to job details'}
+          </Button>
         </Link>
       </div>
     </div>

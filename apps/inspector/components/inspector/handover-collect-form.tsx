@@ -101,14 +101,12 @@ export function HandoverCollectForm({
   onSubmit: (record: KeyPhaseRecord) => Promise<void>;
 }) {
   const copy = COPY[mode];
-  const [party, setParty] = useState<HandoverParty>(
-    initial?.handoverParty ?? 'tenant',
-  );
+  const defaultParty: HandoverParty =
+    initial?.handoverParty ?? (job.type === 'open' ? 'agent' : 'tenant');
+  const [party, setParty] = useState<HandoverParty>(defaultParty);
   const [contactName, setContactName] = useState(
     initial?.contactName ??
-      ((initial?.handoverParty ?? 'tenant') === 'agent'
-        ? job.agentName
-        : job.tenantName) ??
+      (defaultParty === 'agent' ? job.agentName : job.tenantName) ??
       '',
   );
   const [agencyName, setAgencyName] = useState(

@@ -49,7 +49,10 @@ export function jobPrimaryAction(
   }
   return {
     label: started ? 'View' : jobStartCta(job.type, started),
-    href: started ? jobInspect(job.id, job.type) : jobAreas(job.id, job.type),
+    href:
+      started || job.type === 'open'
+        ? jobInspect(job.id, job.type)
+        : jobAreas(job.id, job.type),
     disabled: false,
   };
 }

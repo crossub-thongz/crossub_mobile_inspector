@@ -1,21 +1,20 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Square, Star, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
+import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
 import { OpenInspectionCountdown } from '@/components/open-inspection/open-inspection-countdown';
 import { OpenInspectionHelpCard } from '@/components/open-inspection/open-inspection-help-card';
 import { OpenInspectionLinkQrBlock } from '@/components/open-inspection/open-inspection-link-qr-block';
 import { OpenInspectionVisitorList } from '@/components/open-inspection/open-inspection-visitor-list';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
-import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { jobDetail, ROUTES } from '@/constants/routes';
+import { jobInspect, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import {
   useAwaitingAgentPaymentGate,
@@ -47,6 +46,8 @@ function viewingTimes(viewing: InspectorOpenViewing, endTime: string) {
 
 export default function OpenInspectionPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     getJob,
     updateJobStatus,
@@ -60,6 +61,12 @@ export default function OpenInspectionPage() {
   const keysCollected = useKeyCollectGate(job, id);
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
+
+  useEffect(() => {
+    if (searchParams.get('view') === 'areas') {
+      router.replace(jobInspect(id, 'open'));
+    }
+  }, [id, router, searchParams]);
 
   const [tab, setTab] = useState<Tab>('checkins');
   const [viewing, setViewing] = useState<InspectorOpenViewing | null>(null);
@@ -210,12 +217,12 @@ export default function OpenInspectionPage() {
 
   if (!paymentCleared) {
     return (
-      <InspectorShell title="Open inspection" backHref={jobDetail(id)}>
+      <JobWorkspaceShell job={job} active="start">
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm text-amber-700 dark:text-amber-300">
           Waiting for the agency to pay the platform fee before you can start
           this job.
         </p>
-      </InspectorShell>
+      </JobWorkspaceShell>
     );
   }
 
@@ -225,17 +232,8 @@ export default function OpenInspectionPage() {
 
   return (
     <>
-      <InspectorShell
-        title="Open inspection"
-        backHref={jobDetail(id)}
-        hideAvailability={isLive}
-      >
+      <JobWorkspaceShell job={job} active="start">
         <div className={cn('space-y-4', isLive ? 'pb-28' : 'pb-6')}>
-          <JobWorkflowToolbar
-            job={job}
-            summaryLabel={`Property: ${job.propertyAddress}`}
-          />
-
           {viewing?.awaitingAgentPayment ? (
             <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
               Waiting for the agency to pay the platform fee before you can start
@@ -427,7 +425,7 @@ export default function OpenInspectionPage() {
             </div>
           </div>
         ) : null}
-      </InspectorShell>
+      </JobWorkspaceShell>
       {Celebration}
     </>
   );
