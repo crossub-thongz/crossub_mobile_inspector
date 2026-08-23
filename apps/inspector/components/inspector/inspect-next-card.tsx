@@ -9,7 +9,7 @@ import {
   type CoreInspectionType,
 } from '@/constants/inspection';
 import { jobDetail } from '@/constants/routes';
-import { jobInspectionStarted, jobPrimaryAction } from '@/lib/inspection-job-cta';
+import { jobInspectionStarted, jobPrimaryAction, inspectListCtaLabel } from '@/lib/inspection-job-cta';
 import { writeLastInspectionsType } from '@/lib/inspections-list-prefs';
 import {
   formatInspectDuration,
@@ -105,7 +105,7 @@ export function InspectNextCard({
               {action.label === 'Re-Open' ? null : (
                 <Play className="size-4 fill-current" />
               )}
-              {action.label === 'Re-Open' ? 'Re-Open' : 'Start Inspection'}
+              {action.label === 'Re-Open' ? 'Re-Open' : inspectListCtaLabel(job, action)}
             </Link>
           </Button>
         )}

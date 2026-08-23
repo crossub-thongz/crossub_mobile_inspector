@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FileText, KeyRound, LayoutGrid, Play, type LucideIcon } from 'lucide-react';
 
 import { jobAreas, jobInspect, jobKeys } from '@/constants/routes';
+import { jobInspectionContinuing } from '@/lib/inspection-job-cta';
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -43,7 +44,7 @@ export function JobWorkspaceNav({
   items.push({
     id: 'start',
     href: jobInspect(job.id, job.type),
-    label: 'Start Inspection',
+    label: jobInspectionContinuing(job) ? 'Continue Inspection' : 'Start Inspection',
     icon: Play,
   });
 

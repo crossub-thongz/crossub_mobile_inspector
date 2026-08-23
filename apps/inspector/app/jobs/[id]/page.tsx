@@ -26,8 +26,7 @@ import {
   isKeyCollectComplete,
   isKeyReturnComplete,
 } from '@/lib/key-access-workflow';
-import { hasInspectionExecutionDraft } from '@/lib/inspection-execution-draft';
-import { jobPrimaryAction } from '@/lib/inspection-job-cta';
+import { jobInspectionStarted, jobPrimaryAction } from '@/lib/inspection-job-cta';
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -46,10 +45,7 @@ export default function JobDetailPage() {
 
   const poolPreview = isPoolJob(job);
   const backHref = poolPreview ? ROUTES.JOB_POOL : ROUTES.INSPECTIONS;
-  const workflowStarted =
-    (job.workflowStep ?? 0) > 0 ||
-    hasInspectionExecutionDraft(job) ||
-    job.status === 'in_progress';
+  const workflowStarted = jobInspectionStarted(job);
   const primaryAction = jobPrimaryAction(job, workflowStarted);
   const workflowHref = primaryAction.href;
   const keyCollectDone = isKeyCollectComplete(job);

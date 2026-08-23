@@ -21,12 +21,30 @@ export function jobInspectionStarted(job: InspectionJob): boolean {
   return (job.workflowStep ?? 0) > 0 || hasInspectionExecutionDraft(job);
 }
 
+/** Handover or inspection notes/photos already on the job — resume, don't start over. */
+export function jobInspectionContinuing(job: InspectionJob): boolean {
+  if (jobInspectionStarted(job)) return true;
+  return Boolean(job.keyAccess && isKeyCollectComplete(job));
+}
+
 export type JobPrimaryAction = {
   label: string;
   href: string;
   disabled: boolean;
   muted?: boolean;
 };
+
+export function inspectListCtaLabel(
+  job: InspectionJob,
+  action: JobPrimaryAction,
+  compact = false,
+): string {
+  if (action.disabled || action.label === 'Re-Open') return action.label;
+  if (jobInspectionContinuing(job)) {
+    return compact ? 'Continue' : 'Continue Inspection';
+  }
+  return compact ? 'Start' : 'Start Inspection';
+}
 
 export function jobPrimaryAction(
   job: InspectionJob,
@@ -57,6 +75,7 @@ export function jobPrimaryAction(
   // First Start Inspection after accept must open Job Details. Accept sets
   // IN_PROGRESS on the API, which used to skip details and land on Handover
   // via the key-collect gate on Areas/Inspect.
+  const continuing = started || jobInspectionContinuing(job);
   const href =
     job.type === 'open'
       ? jobInspect(job.id, job.type)
@@ -66,7 +85,7 @@ export function jobPrimaryAction(
           ? jobInspect(job.id, job.type)
           : jobAreas(job.id, job.type);
   return {
-    label: started ? 'View' : jobStartCta(job.type, started),
+    label: jobStartCta(job.type, continuing),
     href,
     disabled: false,
   };

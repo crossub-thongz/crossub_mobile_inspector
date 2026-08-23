@@ -196,7 +196,7 @@ export default function JobKeysPage() {
         >
           <Button className="w-full">
             {tab === 'collect' && job.type === 'open'
-              ? 'Continue to Start Inspection'
+              ? 'Continue Inspection'
               : 'Back to job details'}
           </Button>
         </Link>
