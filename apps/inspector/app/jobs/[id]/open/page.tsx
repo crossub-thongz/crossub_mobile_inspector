@@ -2,11 +2,12 @@
 
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, Loader2 } from 'lucide-react';
+import { Loader2, Square, Star, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { JobWorkflowToolbar } from '@/components/inspector/job-workflow-toolbar';
-import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
+import { OpenInspectionCountdown } from '@/components/open-inspection/open-inspection-countdown';
+import { OpenInspectionHelpCard } from '@/components/open-inspection/open-inspection-help-card';
 import { OpenInspectionLinkQrBlock } from '@/components/open-inspection/open-inspection-link-qr-block';
 import { OpenInspectionVisitorList } from '@/components/open-inspection/open-inspection-visitor-list';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
@@ -14,7 +15,6 @@ import { KeyCollectionRequired } from '@/components/inspector/key-collection-req
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { jobDetail, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import {
@@ -25,27 +25,18 @@ import {
 } from '@/hooks/use-key-collect-gate';
 import {
   fetchOpenViewing,
+  splitOpenInspectionVisitors,
   startOpenViewing,
   type InspectorOpenViewing,
 } from '@/lib/inspector-open-viewing';
-import { cn, formatDateTime } from '@/lib/utils';
+import {
+  formatOpenInspectionClock,
+  openInspectionRemainingRatio,
+} from '@/lib/open-inspection-ui';
+import { cn, formatTime } from '@/lib/utils';
 import { jobLookupMiss } from '@/lib/job-lookup';
 
 type Tab = 'checkins' | 'qr';
-
-function formatCountdown(endIso: string, nowMs: number): string {
-  const end = new Date(endIso).getTime();
-  const diff = end - nowMs;
-  if (Number.isNaN(end)) return '—';
-  if (diff <= 0) return 'Viewing window ended';
-  const totalSec = Math.floor(diff / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  if (h > 0) return `${h}h ${m}m ${s}s remaining`;
-  if (m > 0) return `${m}m ${s}s remaining`;
-  return `${s}s remaining`;
-}
 
 function viewingTimes(viewing: InspectorOpenViewing, endTime: string) {
   return {
@@ -70,7 +61,7 @@ export default function OpenInspectionPage() {
   useInspectionFinishedGate(job, id);
   useInspectionInProgress(job, id, updateJobStatus);
 
-  const [tab, setTab] = useState<Tab>('qr');
+  const [tab, setTab] = useState<Tab>('checkins');
   const [viewing, setViewing] = useState<InspectorOpenViewing | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -93,7 +84,7 @@ export default function OpenInspectionPage() {
         if (
           session &&
           !session.canCompleteEarly &&
-          session.sessionStatus !== 'OPEN' &&
+          session.sessionStatus !== 'open' &&
           job?.status !== 'completed'
         ) {
           void refresh();
@@ -112,17 +103,6 @@ export default function OpenInspectionPage() {
     };
   }, [id, job?.status, refresh]);
 
-  const countdown = useMemo(
-    () => (viewing ? formatCountdown(viewing.endTime, now) : null),
-    [viewing, now],
-  );
-
-  const scheduledLabel = viewing
-    ? `${formatDateTime(viewing.startTime)} – ${formatDateTime(viewing.endTime)}`
-    : job?.scheduledDate
-      ? formatDateTime(job.scheduledDate)
-      : '—';
-
   const isBeforeScheduledStart = Boolean(
     viewing?.canStart && now < new Date(viewing.startTime).getTime(),
   );
@@ -133,6 +113,26 @@ export default function OpenInspectionPage() {
 
   const isCompleted = job?.status === 'completed';
   const canCompleteEarly = Boolean(viewing?.canCompleteEarly) && !isCompleted;
+  const isLive =
+    Boolean(viewing) &&
+    !viewing?.canStart &&
+    (canCompleteEarly || viewing?.sessionStatus === 'open' || isCompleted);
+
+  const { checkIns, interested } = useMemo(
+    () => splitOpenInspectionVisitors(viewing?.visitors ?? []),
+    [viewing?.visitors],
+  );
+
+  const clock = viewing
+    ? formatOpenInspectionClock(viewing.endTime, now)
+    : '—';
+  const remainingRatio = viewing
+    ? openInspectionRemainingRatio(
+        viewing.originalScheduledStart ?? viewing.startTime,
+        viewing.endTime,
+        now,
+      )
+    : 0;
 
   const runComplete = useCallback(
     async (early: boolean) => {
@@ -208,7 +208,6 @@ export default function OpenInspectionPage() {
     );
   }
 
-  // Payment gate redirects to job detail; don't render workflow while unpaid.
   if (!paymentCleared) {
     return (
       <InspectorShell title="Open inspection" backHref={jobDetail(id)}>
@@ -220,75 +219,118 @@ export default function OpenInspectionPage() {
     );
   }
 
-  // The redirect useKeyCollectGate asks for is asynchronous and can fail; rendering
-  // the workflow in the meantime is how a whole field pass gets typed into a screen
-  // whose writes the API rejects.
   if (!keysCollected) {
     return <KeyCollectionRequired jobId={id} />;
   }
 
   return (
     <>
-      <JobWorkspaceShell job={job} active="areas">
-        <div className="space-y-4 pb-28">
-          <JobWorkflowToolbar job={job} />
+      <InspectorShell
+        title="Open inspection"
+        backHref={jobDetail(id)}
+        hideAvailability={isLive}
+      >
+        <div className={cn('space-y-4', isLive ? 'pb-28' : 'pb-6')}>
+          <JobWorkflowToolbar
+            job={job}
+            summaryLabel={`Property: ${job.propertyAddress}`}
+          />
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Viewing window</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <p className="font-medium">{scheduledLabel}</p>
-              {viewing?.startedEarly && viewing.originalScheduledStart ? (
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  Started early — originally scheduled from{' '}
-                  {formatDateTime(viewing.originalScheduledStart)}
-                </p>
-              ) : null}
-              {countdown ? (
-                <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                  <Clock className="size-3.5" />
-                  {countdown}
-                </p>
-              ) : null}
-              {canCompleteEarly ? (
-                <p className="text-muted-foreground text-xs">
-                  Finish early anytime during the viewing, or this job completes
-                  automatically when the window ends.
-                </p>
-              ) : null}
-              {viewing?.awaitingAgentPayment ? (
-                <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-                  Waiting for the agency to pay the platform fee before you can
-                  start this open inspection.
-                </p>
-              ) : viewing?.canStart ? (
-                <Button
-                  type="button"
-                  className="w-full"
-                  disabled={starting}
-                  onClick={() => void handleStart()}
-                >
-                  {starting ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Starting…
-                    </>
-                  ) : isBeforeScheduledStart ? (
-                    'Start early'
-                  ) : (
-                    'Start open inspection'
-                  )}
-                </Button>
-              ) : null}
-            </CardContent>
-          </Card>
+          {viewing?.awaitingAgentPayment ? (
+            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+              Waiting for the agency to pay the platform fee before you can start
+              this open inspection.
+            </p>
+          ) : viewing?.canStart ? (
+            <div className="border-border bg-card space-y-3 rounded-2xl border p-4">
+              <p className="text-sm font-semibold">
+                {formatTime(viewing.startTime)} – {formatTime(viewing.endTime)}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Start the open inspection to open check-in and application links
+                for prospects.
+              </p>
+              <Button
+                type="button"
+                className="w-full"
+                disabled={starting}
+                onClick={() => void handleStart()}
+              >
+                {starting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Starting…
+                  </>
+                ) : isBeforeScheduledStart ? (
+                  'Start early'
+                ) : (
+                  'Start open inspection'
+                )}
+              </Button>
+            </div>
+          ) : isLive && viewing ? (
+            <>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-400">
+                      <span className="size-1.5 rounded-full bg-emerald-400" />
+                      Open now
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      Ends {formatTime(viewing.endTime)}
+                    </span>
+                  </div>
+                  <p className="text-foreground text-lg font-semibold leading-tight">
+                    {formatTime(viewing.startTime)} – {formatTime(viewing.endTime)}
+                  </p>
+                  {viewing.startedEarly && viewing.originalScheduledStart ? (
+                    <p className="text-muted-foreground text-xs">
+                      Started early — scheduled{' '}
+                      {formatTime(viewing.originalScheduledStart)}
+                    </p>
+                  ) : null}
+                </div>
+                <OpenInspectionCountdown
+                  clock={clock}
+                  ratio={remainingRatio}
+                  ended={windowEnded || isCompleted}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="border-border bg-card rounded-2xl border px-3 py-3">
+                  <p className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
+                    <Users className="size-3.5" />
+                    Checked in
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">
+                    {checkIns.length}
+                  </p>
+                </div>
+                <div className="border-border bg-card rounded-2xl border px-3 py-3">
+                  <p className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
+                    <Star className="size-3.5" />
+                    Interested
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">
+                    {interested.length}
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                Finish early anytime during the viewing, or this job completes
+                automatically when the window ends.
+              </p>
+            </>
+          ) : null}
 
           <div className="bg-muted/40 flex rounded-lg p-1">
             {(
               [
-                ['checkins', 'Check-ins'],
-                ['qr', 'QR & links'],
+                ['checkins', `Check-ins (${checkIns.length})`],
+                ['qr', 'QR & Links'],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -323,9 +365,13 @@ export default function OpenInspectionPage() {
               refresh — if this persists, contact CROSSUB support.
             </p>
           ) : tab === 'checkins' ? (
-            <OpenInspectionVisitorList visitors={viewing.visitors} />
+            <OpenInspectionVisitorList
+              checkIns={checkIns}
+              interested={interested}
+            />
           ) : (
             <div className="space-y-3">
+              <p className="text-sm font-semibold">Share with Prospects</p>
               <OpenInspectionLinkQrBlock
                 title="Check-in QR"
                 description="Prospects scan to register their arrival at the open."
@@ -338,46 +384,42 @@ export default function OpenInspectionPage() {
                 url={viewing.applyUrl}
                 qrFilename={`apply-${viewing.id.slice(0, 8)}.png`}
               />
+              <OpenInspectionHelpCard />
             </div>
           )}
         </div>
 
-        {!viewing?.canStart ? (
-          <div className="border-border bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            <div className="mx-auto flex max-w-lg items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {isCompleted ? 'Status' : 'Scheduled end'}
-                </p>
-                <p className="truncate text-xs font-medium">
-                  {isCompleted
-                    ? 'Job completed'
-                    : (countdown ?? (viewing ? formatDateTime(viewing.endTime) : '—'))}
-                </p>
-              </div>
+        {isLive && viewing ? (
+          <div className="border-border bg-background/95 fixed inset-x-0 z-40 border-t px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+            style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+          >
+            <div className="mx-auto max-w-lg">
               {canCompleteEarly ? (
                 <Button
-                  className="shrink-0"
+                  className="h-12 w-full gap-2 bg-red-600 text-white hover:bg-red-600/90"
                   disabled={completing}
                   onClick={handleCompleteEarly}
                 >
                   {completing ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      Completing…
+                      Ending…
                     </>
                   ) : windowEnded ? (
-                    'Completing…'
+                    'Ending…'
                   ) : (
-                    'Complete early'
+                    <>
+                      <Square className="size-3.5 fill-current" />
+                      End open inspection
+                    </>
                   )}
                 </Button>
               ) : isCompleted ? (
-                <Button className="shrink-0" disabled variant="secondary">
+                <Button className="h-12 w-full" disabled variant="secondary">
                   Completed
                 </Button>
               ) : windowEnded ? (
-                <Button className="shrink-0" disabled>
+                <Button className="h-12 w-full" disabled>
                   <Loader2 className="size-4 animate-spin" />
                   Completing…
                 </Button>
@@ -385,7 +427,7 @@ export default function OpenInspectionPage() {
             </div>
           </div>
         ) : null}
-      </JobWorkspaceShell>
+      </InspectorShell>
       {Celebration}
     </>
   );

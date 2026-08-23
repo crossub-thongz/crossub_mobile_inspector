@@ -14,7 +14,13 @@ import { formatJobRefId } from '@/lib/job-cancellation';
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-export function JobWorkflowToolbar({ job }: { job: InspectionJob }) {
+export function JobWorkflowToolbar({
+  job,
+  summaryLabel = 'Job details',
+}: {
+  job: InspectionJob;
+  summaryLabel?: string;
+}) {
   const router = useRouter();
   const { cancelJob } = useInspectorData();
   const [open, setOpen] = useState(false);
@@ -35,7 +41,7 @@ export function JobWorkflowToolbar({ job }: { job: InspectionJob }) {
           onClick={() => setOpen((value) => !value)}
         >
           <div className="min-w-0">
-            <p className="text-sm font-medium">Job details</p>
+            <p className="text-sm font-medium">{summaryLabel}</p>
             <p className="text-muted-foreground truncate text-xs">
               {job.type} · {formatJobRefId(job.id)}
             </p>

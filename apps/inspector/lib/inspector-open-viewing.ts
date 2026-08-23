@@ -24,8 +24,42 @@ export type InspectorOpenViewingVisitor = {
   email: string;
   phone: string;
   registrationSource: string;
+  attendanceStatus?: string;
+  createdAt?: string;
   hasApplication?: boolean;
 };
+
+/** Prospects who already applied via the application form. */
+export function isInterestedApplicant(
+  visitor: InspectorOpenViewingVisitor,
+): boolean {
+  return Boolean(visitor.hasApplication);
+}
+
+/**
+ * On-site check-ins. Application-form-only rows stay in Interested until they
+ * also check in (attended / walk-in).
+ */
+export function isOpenInspectionCheckIn(
+  visitor: InspectorOpenViewingVisitor,
+): boolean {
+  const attendance = (visitor.attendanceStatus ?? '').toLowerCase();
+  if (attendance === 'attended' || attendance === 'no_show') return true;
+  if (visitor.registrationSource === 'walk_in') return true;
+  return !isInterestedApplicant(visitor);
+}
+
+export function splitOpenInspectionVisitors(
+  visitors: InspectorOpenViewingVisitor[],
+): {
+  checkIns: InspectorOpenViewingVisitor[];
+  interested: InspectorOpenViewingVisitor[];
+} {
+  return {
+    checkIns: visitors.filter(isOpenInspectionCheckIn),
+    interested: visitors.filter(isInterestedApplicant),
+  };
+}
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL ?? '/api'}/v1`;
 
