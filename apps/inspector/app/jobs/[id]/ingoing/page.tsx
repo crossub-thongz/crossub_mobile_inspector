@@ -12,6 +12,7 @@ import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area
 import { InspectionInspectChrome } from '@/components/inspector/inspection-inspect-chrome';
 import {
   InspectionSectionPhotos,
+  markAllItemsEmpty,
   markAllItemsGood,
 } from '@/components/inspector/inspection-section-photos';
 import { InspectionWorkspaceHeader } from '@/components/inspector/inspection-workspace-header';
@@ -898,6 +899,22 @@ export default function IngoingInspectionPage() {
     });
   };
 
+  const unmarkAll = () => {
+    setDraft((prev) => {
+      const current = prev.entries[area] ?? emptyEntry(area, prev.customAreas);
+      return {
+        ...prev,
+        entries: {
+          ...prev.entries,
+          [area]: {
+            ...current,
+            itemMarks: markAllItemsEmpty(current.activeSections),
+          },
+        },
+      };
+    });
+  };
+
   const progressTone = (index: number, areaName: string) => {
     const rec = entries[areaName];
     if (index === areaIndex) return 'bg-primary';
@@ -1018,6 +1035,7 @@ export default function IngoingInspectionPage() {
                 onChangeMarks={changeMarks}
                 onFillColumn={fillColumn}
                 onMarkAllGood={markAllGood}
+                onUnmarkAll={unmarkAll}
                 onChangeComment={changeItemComment}
                 onAddFiles={(section, files) => addLocalPhotos(section, files)}
                 onAddDataUrl={(section, dataUrl) =>

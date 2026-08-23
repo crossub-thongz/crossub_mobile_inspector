@@ -1176,7 +1176,8 @@ export function InspectorDataProvider({
             toast.error('Finish the inspection before completing this task.');
             return prev;
           }
-          if (!isKeyReturnComplete(job)) {
+          const awaitingReview = job.type === 'ingoing' || job.type === 'outgoing';
+          if (!awaitingReview && !isKeyReturnComplete(job)) {
             toast.error('Complete key return before finishing this task.');
             return prev;
           }
@@ -1380,7 +1381,9 @@ export function InspectorDataProvider({
       if (isApiJob && phase === 'return') {
         try {
           const job = jobs.find((j) => j.id === id);
-          if (job?.status !== 'completed') {
+          const alreadyFiled =
+            job?.status === 'completed' || job?.status === 'awaiting_approval';
+          if (!alreadyFiled) {
             const endTime = new Date();
             const startTime = new Date(
               endTime.getTime() -
@@ -1396,12 +1399,18 @@ export function InspectorDataProvider({
           apiInspectionIds.current.add(id);
           const serverWorkflow = keyWorkflowFromCustody(custody);
           const keyWorkflow = mergeKeyPhaseExtras(serverWorkflow, record, 'return');
+          const keepAwaitingReview =
+            (job?.type === 'ingoing' || job?.type === 'outgoing') &&
+            job?.status !== 'completed' &&
+            !job?.approvedAt;
           setJobs((prev) => {
             const next = prev.map((j) => {
               if (j.id !== id) return j;
               return {
                 ...j,
-                status: 'completed' as const,
+                status: keepAwaitingReview
+                  ? ('awaiting_approval' as const)
+                  : ('completed' as const),
                 workflowData: {
                   ...j.workflowData,
                   keyWorkflow,
@@ -1454,6 +1463,8 @@ export function InspectorDataProvider({
       const job = jobs.find((j) => j.id === id);
       if (!job) return 'completed';
 
+      const awaitingReview = job.type === 'ingoing' || job.type === 'outgoing';
+
       if (!job.keyAccess) {
         completeJob(id);
         return 'completed';
@@ -1476,11 +1487,12 @@ export function InspectorDataProvider({
         data: patch,
       });
 
-      if (isKeyReturnComplete(withFinished)) {
+      const keysReturned = isKeyReturnComplete(withFinished);
+      if (awaitingReview || keysReturned) {
         setTimeout(() => completeJob(id), 0);
-        return 'completed';
       }
 
+      if (keysReturned) return 'completed';
       return 'needs_key_return';
     },
     [jobs, completeJob, mutateWithOffline],

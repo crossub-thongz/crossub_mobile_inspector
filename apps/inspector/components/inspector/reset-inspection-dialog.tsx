@@ -7,6 +7,8 @@ export function ResetInspectionDialog({
   title = 'Reset inspection?',
   description = 'This clears your area checklist, section progress, and uploaded photos for this inspection on this device. You will start again from area setup.',
   confirmLabel = 'Reset inspection',
+  cancelLabel = 'Keep progress',
+  confirmVariant = 'destructive',
   busy = false,
   onClose,
   onConfirm,
@@ -15,6 +17,8 @@ export function ResetInspectionDialog({
   title?: string;
   description?: string;
   confirmLabel?: string;
+  cancelLabel?: string;
+  confirmVariant?: 'default' | 'destructive';
   busy?: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -34,15 +38,15 @@ export function ResetInspectionDialog({
         <p className="text-muted-foreground mt-2 text-sm">{description}</p>
         <div className="mt-4 flex gap-2">
           <Button variant="outline" className="flex-1" disabled={busy} onClick={onClose}>
-            Keep progress
+            {cancelLabel}
           </Button>
           <Button
-            variant="destructive"
+            variant={confirmVariant}
             className="flex-1"
             disabled={busy}
             onClick={onConfirm}
           >
-            {busy ? 'Resetting…' : confirmLabel}
+            {busy ? (confirmLabel === 'Reset inspection' ? 'Resetting…' : confirmLabel) : confirmLabel}
           </Button>
         </div>
       </div>

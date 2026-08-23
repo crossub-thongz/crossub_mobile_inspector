@@ -96,9 +96,13 @@ function mapInspectionJobStatus(
   type: InspectionType,
 ): JobStatus {
   const approvedAt = asString((dto as { approvedAt?: unknown }).approvedAt);
+  const declineReason = asString(
+    (dto as { reportDeclineReason?: unknown }).reportDeclineReason,
+  );
   const pendingReview =
     (type === 'ingoing' || type === 'outgoing') &&
     !approvedAt &&
+    !declineReason &&
     (dto.status === INSPECTION_STATUS.COMPLETED ||
       dto.status === INSPECTION_STATUS.FIRST_REVIEW ||
       dto.status === INSPECTION_STATUS.SECOND_REVIEW);

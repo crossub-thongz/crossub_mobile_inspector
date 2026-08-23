@@ -1,7 +1,7 @@
 'use client';
 
 import { EllipsisVertical, MessageSquare, Play, Plus } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import { AddCustomAreaDialog } from '@/components/inspector/add-custom-area-dialog';
 import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
@@ -63,6 +63,14 @@ export function InspectionAreaSetupPanel({
   const [addOpen, setAddOpen] = useState(false);
   const [renameFrom, setRenameFrom] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!menuFor) return;
+    const close = () => setMenuFor(null);
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [menuFor]);
+
   const selectedSet = new Set(selectedAreaNames.map((name) => name.toLowerCase()));
   const availableExisting = existingAreaNames.filter(
     (name) => !selectedSet.has(name.toLowerCase()),
@@ -133,7 +141,7 @@ export function InspectionAreaSetupPanel({
             : 'Confirm the areas before starting the inspection.'}
         </p>
 
-        <ul className="border-border bg-card divide-y overflow-hidden rounded-2xl border">
+        <ul className="border-border bg-card divide-y overflow-visible rounded-2xl border">
           {selectedAreaNames.length === 0 ? (
             <li className="text-muted-foreground px-4 py-6 text-center text-xs">
               Add at least one area, then start the inspection.
@@ -146,7 +154,10 @@ export function InspectionAreaSetupPanel({
               renderItem={(name) => (
                 <>
                   <p className="text-foreground min-w-0 flex-1 text-sm font-medium">{name}</p>
-                  <div className="relative shrink-0">
+                  <div
+                    className="relative shrink-0"
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
                     <button
                       type="button"
                       className="text-muted-foreground hover:text-foreground flex size-9 items-center justify-center rounded-md"
@@ -159,7 +170,7 @@ export function InspectionAreaSetupPanel({
                       <EllipsisVertical className="size-4" />
                     </button>
                     {menuFor === name ? (
-                      <div className="border-border bg-card absolute top-9 right-0 z-20 min-w-[8.5rem] overflow-hidden rounded-lg border shadow-lg">
+                      <div className="border-border bg-card absolute right-0 bottom-full z-50 mb-1 min-w-[8.5rem] overflow-hidden rounded-lg border shadow-lg">
                         <button
                           type="button"
                           className="hover:bg-secondary w-full px-3 py-2 text-left text-xs"
@@ -192,7 +203,7 @@ export function InspectionAreaSetupPanel({
 
       <Button
         type="button"
-        className="w-full"
+        className="mt-2 w-full"
         disabled={busy || selectedAreaNames.length === 0}
         onClick={onComplete}
       >

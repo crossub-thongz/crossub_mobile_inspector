@@ -114,18 +114,18 @@ export default function JobDetailPage() {
         : workflowHref;
   const ctaLabel = paymentBlocked
     ? 'Waiting for agency payment'
-    : job.status === 'awaiting_approval'
-      ? 'Pending Approval'
-      : job.status === 'completed'
-        ? 'View inspection report'
-        : returnPending
-          ? 'Return keys'
+    : returnPending
+      ? 'Return keys'
+      : job.status === 'awaiting_approval'
+        ? 'Pending Approval'
+        : job.status === 'completed'
+          ? 'View inspection report'
           : handoverNext
             ? 'Continue to Handover'
             : primaryAction.label;
   const ctaDisabled =
     paymentBlocked ||
-    job.status === 'awaiting_approval' ||
+    (job.status === 'awaiting_approval' && !returnPending) ||
     (handoverNext ? false : keysBlocked);
 
   return (

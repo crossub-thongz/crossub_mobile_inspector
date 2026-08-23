@@ -138,6 +138,11 @@ export function useInspectionFinishedGate(
         redirected.current = false;
         return;
       }
+      // Workflow screens own the first hop (celebration overlay → keys or home).
+      if (WORKFLOW_PATH.test(pathname)) {
+        redirected.current = false;
+        return;
+      }
       if (redirected.current) return;
       redirected.current = true;
       router.replace(ROUTES.DASHBOARD);

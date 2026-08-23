@@ -1,14 +1,14 @@
 'use client';
 
-import { Check, ListFilter } from 'lucide-react';
+import { ListFilter } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { AddSectionControl } from '@/components/inspector/add-section-control';
 import { BeforeAfterPhotoColumn } from '@/components/inspector/before-after-photo-column';
 import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
 import { InspectionItemAccordion } from '@/components/inspector/inspection-item-accordion';
+import { MarkAllItemsControl } from '@/components/inspector/inspection-section-photos';
 import { RenameLabelDialog } from '@/components/inspector/rename-label-dialog';
-import { Button } from '@/components/ui/button';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
 import {
   emptyItemMarks,
@@ -43,6 +43,7 @@ type OutgoingSectionPhotosProps = {
   onChangeMarks: (section: string, marks: ItemConditionMarks) => void;
   onFillColumn: (key: ItemConditionKey, value: boolean) => void;
   onMarkAllGood?: () => void;
+  onUnmarkAll?: () => void;
   onChangeComment: (section: string, comment: string) => void;
   onAddFiles: (
     section: string,
@@ -83,6 +84,7 @@ export function OutgoingSectionPhotos({
   onChangeMarks,
   onFillColumn: _onFillColumn,
   onMarkAllGood,
+  onUnmarkAll,
   onChangeComment,
   onAddFiles,
   onAddDataUrl,
@@ -108,25 +110,13 @@ export function OutgoingSectionPhotos({
   return (
     <div className="space-y-4">
       {onMarkAllGood && activeSections.length > 0 ? (
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium">Mark all items</p>
-            <p className="text-muted-foreground text-[11px]">
-              Quickly mark all items in this room.
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-emerald-400 h-8 px-2 text-xs"
-            disabled={busy}
-            onClick={onMarkAllGood}
-          >
-            <Check className="size-3.5" />
-            All good
-          </Button>
-        </div>
+        <MarkAllItemsControl
+          activeSections={activeSections}
+          itemMarks={itemMarks}
+          busy={busy}
+          onMarkAllGood={onMarkAllGood}
+          onUnmarkAll={onUnmarkAll}
+        />
       ) : null}
 
       {activeSections.length === 0 ? (

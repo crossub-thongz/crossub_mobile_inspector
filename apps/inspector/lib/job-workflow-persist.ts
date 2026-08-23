@@ -20,7 +20,11 @@ export interface JobProgressSnapshot {
   status?: JobStatus;
 }
 
-function preferStatus(incoming: JobStatus, local?: JobStatus): JobStatus {
+function preferStatus(
+  incoming: JobStatus,
+  local?: JobStatus,
+  incomingJob?: Pick<InspectionJob, 'reportDeclineReason'>,
+): JobStatus {
   if (!local) return incoming;
   // Server-cancelled jobs must not resurrect from device-local workflow progress.
   if (incoming === 'declined') return incoming;
@@ -35,7 +39,9 @@ function preferStatus(incoming: JobStatus, local?: JobStatus): JobStatus {
     return incoming;
   }
   if (incoming === 'in_progress' && local === 'awaiting_approval') {
-    return incoming;
+    // Account manager rejected the report — reopen. A stale IN_PROGRESS poll
+    // after Finalise must not wipe the local awaiting-approval state.
+    return incomingJob?.reportDeclineReason ? incoming : local;
   }
   return STATUS_RANK[local] >= STATUS_RANK[incoming] ? local : incoming;
 }
@@ -180,6 +186,7 @@ export function mergeJobWithLocalProgress(
     status: preferStatus(
       incoming.status,
       'status' in local ? local.status : incoming.status,
+      incoming,
     ),
   };
 }

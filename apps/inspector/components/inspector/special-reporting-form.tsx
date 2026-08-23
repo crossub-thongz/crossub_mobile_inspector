@@ -19,27 +19,35 @@ function YesNo({
   value,
   onChange,
   unset,
+  disabled,
 }: {
   value: boolean | null;
   onChange: (value: boolean) => void;
   unset?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex shrink-0 items-center gap-3">
       {([true, false] as const).map((option) => {
-        const selected = value === option;
+        const selected = !disabled && value === option;
         return (
           <label key={String(option)} className="flex items-center gap-1.5 text-xs">
             <input
               type="radio"
               checked={selected}
-              onChange={() => onChange(option)}
-              className="accent-primary size-4"
+              disabled={disabled}
+              onChange={() => {
+                if (disabled) return;
+                onChange(option);
+              }}
+              className="accent-primary size-4 disabled:opacity-50"
             />
             <span
               className={cn(
-                unset && value == null && 'text-muted-foreground',
-                selected ? 'text-foreground font-medium' : 'text-muted-foreground',
+                'text-muted-foreground',
+                !disabled && unset && value == null && 'text-muted-foreground',
+                !disabled && selected && 'text-foreground font-medium',
+                disabled && 'text-muted-foreground',
               )}
             >
               {option ? 'Yes' : 'No'}
@@ -296,9 +304,10 @@ export function SpecialReportingForm({
         </QuestionRow>
         <QuestionRow label="5. Does the tenant agree with all of the above?">
           <YesNo
+            disabled
             unset
-            value={value.minStandardTenantAgrees}
-            onChange={(minStandardTenantAgrees) => patch({ minStandardTenantAgrees })}
+            value={null}
+            onChange={() => undefined}
           />
         </QuestionRow>
         <div className="space-y-1 pb-2">
@@ -308,11 +317,10 @@ export function SpecialReportingForm({
           <textarea
             id="min-standard-disagree"
             rows={3}
-            value={value.minStandardTenantDisagreeNote}
-            onChange={(event) =>
-              patch({ minStandardTenantDisagreeNote: event.target.value })
-            }
-            className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+            disabled
+            value=""
+            readOnly
+            className="border-input bg-background text-muted-foreground w-full rounded-md border px-3 py-2 text-sm disabled:opacity-60"
           />
         </div>
       </section>
@@ -460,9 +468,10 @@ export function SpecialReportingForm({
         </QuestionRow>
         <QuestionRow label="4. Does the tenant agree with all of the above?">
           <YesNo
+            disabled
             unset
-            value={value.safetyTenantAgrees}
-            onChange={(safetyTenantAgrees) => patch({ safetyTenantAgrees })}
+            value={null}
+            onChange={() => undefined}
           />
         </QuestionRow>
         <div className="space-y-1 pb-2">
@@ -472,11 +481,10 @@ export function SpecialReportingForm({
           <textarea
             id="safety-disagree"
             rows={3}
-            value={value.safetyTenantDisagreeNote}
-            onChange={(event) =>
-              patch({ safetyTenantDisagreeNote: event.target.value })
-            }
-            className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+            disabled
+            value=""
+            readOnly
+            className="border-input bg-background text-muted-foreground w-full rounded-md border px-3 py-2 text-sm disabled:opacity-60"
           />
         </div>
       </section>

@@ -7,6 +7,7 @@ import { AddSectionControl } from '@/components/inspector/add-section-control';
 import { DraggableNamedList } from '@/components/inspector/draggable-named-list';
 import { InspectionItemAccordion } from '@/components/inspector/inspection-item-accordion';
 import { RenameLabelDialog } from '@/components/inspector/rename-label-dialog';
+import { ResetInspectionDialog } from '@/components/inspector/reset-inspection-dialog';
 import { Button } from '@/components/ui/button';
 import type { InspectionAreaDefinition } from '@/constants/inspection-areas';
 import {
@@ -37,12 +38,83 @@ type InspectionSectionPhotosProps = {
   onChangeMarks: (section: string, marks: ItemConditionMarks) => void;
   onFillColumn: (key: ItemConditionKey, value: boolean) => void;
   onMarkAllGood?: () => void;
+  onUnmarkAll?: () => void;
   onChangeComment: (section: string, comment: string) => void;
   onAddFiles: (section: string, files: File[]) => void | Promise<void>;
   onAddDataUrl: (section: string, dataUrl: string) => void | Promise<void>;
   onAddDataUrls?: (section: string, dataUrls: string[]) => void | Promise<void>;
   onRemovePhoto: (section: string, index: number) => void;
 };
+
+export function MarkAllItemsControl({
+  activeSections,
+  itemMarks,
+  busy = false,
+  onMarkAllGood,
+  onUnmarkAll,
+}: {
+  activeSections: string[];
+  itemMarks?: Record<string, ItemConditionMarks>;
+  busy?: boolean;
+  onMarkAllGood: () => void;
+  onUnmarkAll?: () => void;
+}) {
+  const [confirm, setConfirm] = useState<'mark' | 'unmark' | null>(null);
+  const allMarkedGood =
+    activeSections.length > 0 &&
+    activeSections.every((section) => marksAreAllGood(itemMarks?.[section]));
+  const canUnmark = allMarkedGood && Boolean(onUnmarkAll);
+
+  return (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">Mark all items</p>
+          <p className="text-muted-foreground text-[11px]">
+            Quickly mark all items in this room. Tap again to unmark.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-emerald-400 h-8 px-2 text-xs"
+          disabled={busy}
+          onClick={() => setConfirm(canUnmark ? 'unmark' : 'mark')}
+        >
+          <Check className="size-3.5" />
+          {canUnmark ? 'Unmark all' : 'All good'}
+        </Button>
+      </div>
+      <ResetInspectionDialog
+        open={confirm === 'mark'}
+        title="Mark all items as good?"
+        description="This marks Clean, Undamaged, and Working as yes for every item in this room."
+        confirmLabel="Mark all good"
+        cancelLabel="Cancel"
+        confirmVariant="default"
+        onClose={() => setConfirm(null)}
+        onConfirm={() => {
+          onMarkAllGood();
+          setConfirm(null);
+        }}
+      />
+      <ResetInspectionDialog
+        open={confirm === 'unmark'}
+        title="Unmark all items?"
+        description="This clears Clean, Undamaged, and Working for every item in this room."
+        confirmLabel="Unmark all"
+        cancelLabel="Cancel"
+        confirmVariant="destructive"
+        onClose={() => setConfirm(null)}
+        onConfirm={() => {
+          onUnmarkAll?.();
+          setConfirm(null);
+        }}
+      />
+    </>
+  );
+}
 
 export function InspectionSectionPhotos({
   definition,
@@ -59,6 +131,7 @@ export function InspectionSectionPhotos({
   onChangeMarks,
   onFillColumn: _onFillColumn,
   onMarkAllGood,
+  onUnmarkAll,
   onChangeComment,
   onAddFiles,
   onAddDataUrl,
@@ -90,25 +163,13 @@ export function InspectionSectionPhotos({
   return (
     <div className="space-y-4">
       {onMarkAllGood && activeSections.length > 0 ? (
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium">Mark all items</p>
-            <p className="text-muted-foreground text-[11px]">
-              Quickly mark all items in this room.
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-emerald-400 h-8 px-2 text-xs"
-            disabled={busy}
-            onClick={onMarkAllGood}
-          >
-            <Check className="size-3.5" />
-            All good
-          </Button>
-        </div>
+        <MarkAllItemsControl
+          activeSections={activeSections}
+          itemMarks={itemMarks}
+          busy={busy}
+          onMarkAllGood={onMarkAllGood}
+          onUnmarkAll={onUnmarkAll}
+        />
       ) : null}
 
       {activeSections.length === 0 ? (
@@ -214,5 +275,13 @@ export function markAllItemsGood(
 ): Record<string, ItemConditionMarks> {
   const next: Record<string, ItemConditionMarks> = {};
   for (const section of sections) next[section] = allGoodMarks();
+  return next;
+}
+
+export function markAllItemsEmpty(
+  sections: readonly string[],
+): Record<string, ItemConditionMarks> {
+  const next: Record<string, ItemConditionMarks> = {};
+  for (const section of sections) next[section] = emptyItemMarks();
   return next;
 }

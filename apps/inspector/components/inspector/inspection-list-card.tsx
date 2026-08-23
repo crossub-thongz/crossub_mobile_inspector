@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { JobTypeBadge } from '@/components/inspector/status-badge';
 import { jobHistory } from '@/constants/routes';
 import { CORE_INSPECTION_TYPES, type CoreInspectionType } from '@/constants/inspection';
-import { jobPrimaryAction } from '@/lib/inspection-job-cta';
+import { jobInspectionStarted, jobPrimaryAction } from '@/lib/inspection-job-cta';
 import { writeLastInspectionsType } from '@/lib/inspections-list-prefs';
 import { buildMapUrl } from '@/lib/navigation';
 import { formatJobRefId } from '@/lib/job-cancellation';
@@ -34,7 +34,7 @@ export function InspectionListCard({
     job.propertyAddress,
   );
   const paymentBlocked = Boolean(job.awaitingAgentPayment);
-  const action = jobPrimaryAction(job, false);
+  const action = jobPrimaryAction(job, jobInspectionStarted(job));
   const actionHref = completed ? jobHistory(job.id) : action.href;
 
   return (

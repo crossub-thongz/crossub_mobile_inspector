@@ -13,7 +13,7 @@ import {
   OutgoingSectionPhotos,
   type SectionBeforeAfter,
 } from '@/components/inspector/outgoing-section-photos';
-import { markAllItemsGood } from '@/components/inspector/inspection-section-photos';
+import { markAllItemsEmpty, markAllItemsGood } from '@/components/inspector/inspection-section-photos';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { InspectorShell } from '@/components/layout/inspector-shell';
@@ -1135,6 +1135,22 @@ export default function RoutineInspectionPage() {
     });
   };
 
+  const unmarkAll = () => {
+    setDraft((prev) => {
+      const current = prev.issues[area] ?? emptyAreaIssue(area);
+      return {
+        ...prev,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            itemMarks: markAllItemsEmpty(current.activeSections),
+          },
+        },
+      };
+    });
+  };
+
   const checkedCount = issue.activeSections.filter((section) =>
     marksAreComplete(issue.itemMarks?.[section]),
   ).length;
@@ -1229,6 +1245,7 @@ export default function RoutineInspectionPage() {
                 onChangeMarks={changeMarks}
                 onFillColumn={fillColumn}
                 onMarkAllGood={markAllGood}
+                onUnmarkAll={unmarkAll}
                 onChangeComment={changeItemComment}
                 onAddFiles={(section, side, files) =>
                   addLocalPhotos(section, side, files)

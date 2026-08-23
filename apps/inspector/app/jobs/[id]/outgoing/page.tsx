@@ -76,7 +76,7 @@ import {
   sectionsForAvailableArea,
   seedAreasForInspectionStart,
 } from '@/lib/inspection-area-workflow';
-import { markAllItemsGood } from '@/components/inspector/inspection-section-photos';
+import { markAllItemsEmpty, markAllItemsGood } from '@/components/inspector/inspection-section-photos';
 import { findingsAreaFromSections } from '@/lib/inspection-findings-items';
 import {
   applyColumnMark,
@@ -1145,6 +1145,23 @@ export default function OutgoingInspectionPage() {
     });
   };
 
+  const unmarkAll = () => {
+    setDraft((prev) => {
+      const current =
+        prev.issues[area] ?? emptyAreaIssue(area, undefined, prev.customAreas);
+      return {
+        ...prev,
+        issues: {
+          ...prev.issues,
+          [area]: {
+            ...current,
+            itemMarks: markAllItemsEmpty(current.activeSections),
+          },
+        },
+      };
+    });
+  };
+
   const progressTone = (index: number, areaName: string) => {
     const rec = issues[areaName];
     if (index === areaIndex) return 'bg-primary';
@@ -1271,6 +1288,7 @@ export default function OutgoingInspectionPage() {
                 onChangeMarks={changeMarks}
                 onFillColumn={fillColumn}
                 onMarkAllGood={markAllGood}
+                onUnmarkAll={unmarkAll}
                 onChangeComment={changeItemComment}
                 onAddFiles={(section, side, files) =>
                   addLocalPhotos(section, side, files)

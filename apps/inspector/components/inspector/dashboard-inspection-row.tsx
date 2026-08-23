@@ -11,7 +11,7 @@ import {
 } from '@/constants/inspection';
 import { jobDetail } from '@/constants/routes';
 import { writeLastInspectionsType } from '@/lib/inspections-list-prefs';
-import { jobPrimaryAction } from '@/lib/inspection-job-cta';
+import { jobInspectionStarted, jobPrimaryAction } from '@/lib/inspection-job-cta';
 import type { InspectionJob } from '@/lib/types';
 
 const TIME_FMT = new Intl.DateTimeFormat('en-AU', {
@@ -42,17 +42,8 @@ function typeLabel(job: InspectionJob): string {
   return `${core} Inspection`;
 }
 
-function isStarted(job: InspectionJob): boolean {
-  return (
-    job.status === 'in_progress' ||
-    job.status === 'arrived' ||
-    job.status === 'on_the_way' ||
-    (job.workflowStep ?? 0) > 0
-  );
-}
-
 export function DashboardInspectionRow({ job }: { job: InspectionJob }) {
-  const started = isStarted(job);
+  const started = jobInspectionStarted(job);
   const action = jobPrimaryAction(job, started);
   const agent = job.agentCompany || job.agentName || '—';
 

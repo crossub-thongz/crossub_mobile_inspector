@@ -9,7 +9,7 @@ import {
   type CoreInspectionType,
 } from '@/constants/inspection';
 import { jobDetail, jobHistory } from '@/constants/routes';
-import { jobPrimaryAction } from '@/lib/inspection-job-cta';
+import { jobInspectionStarted, jobPrimaryAction } from '@/lib/inspection-job-cta';
 import { writeLastInspectionsType } from '@/lib/inspections-list-prefs';
 import {
   formatInspectDuration,
@@ -40,7 +40,7 @@ export function InspectJobRow({
       ? { latitude: job.latitude, longitude: job.longitude }
       : null;
   const travel = computeTravelEstimate(origin, destination);
-  const action = jobPrimaryAction(job, job.status === 'in_progress');
+  const action = jobPrimaryAction(job, jobInspectionStarted(job));
   const href = completed ? jobHistory(job.id) : jobDetail(job.id);
   const rememberType = () => {
     if (CORE_INSPECTION_TYPES.includes(job.type as CoreInspectionType)) {

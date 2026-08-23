@@ -265,8 +265,6 @@ export function specialReportingMissing(
 const yesNo = (value: boolean) => (value ? 'Yes' : 'No');
 const yesNoNa = (value: YesNoNa) =>
   value === 'yes' ? 'Yes' : value === 'no' ? 'No' : 'N/A';
-const yesNoUnset = (value: boolean | null) =>
-  value == null ? 'Not answered' : yesNo(value);
 
 function item(
   name: string,
@@ -312,17 +310,8 @@ export function specialReportingAsFindings(
     }),
     item(
       'Tenant agrees with minimum standard',
-      yesNoUnset(draft.minStandardTenantAgrees),
+      'Not answered',
     ),
-    ...(draft.minStandardTenantDisagreeNote.trim()
-      ? [
-          item(
-            'Minimum standard — tenant disagrees',
-            draft.minStandardTenantDisagreeNote,
-            { flagged: true },
-          ),
-        ]
-      : []),
 
     item('Signs of mould and dampness', yesNo(draft.mouldDampness), {
       flagged: draft.mouldDampness,
@@ -376,17 +365,8 @@ export function specialReportingAsFindings(
     }),
     item(
       'Tenant agrees with other safety issues',
-      yesNoUnset(draft.safetyTenantAgrees),
+      'Not answered',
     ),
-    ...(draft.safetyTenantDisagreeNote.trim()
-      ? [
-          item(
-            'Other safety issues — tenant disagrees',
-            draft.safetyTenantDisagreeNote,
-            { flagged: true },
-          ),
-        ]
-      : []),
 
     item('Telephone line connected', yesNo(draft.telephoneLine), {
       flagged: !draft.telephoneLine,

@@ -1,5 +1,7 @@
 import { jobAreas, jobInspect, jobDetail, jobHistory } from '@/constants/routes';
+import { hasInspectionExecutionDraft } from '@/lib/inspection-execution-draft';
 import { jobStartCta } from '@/lib/inspection-start-flow';
+import { isKeyCollectComplete } from '@/lib/key-access-workflow';
 import type { InspectionJob } from '@/lib/types';
 
 export function needsAgentReportApproval(job: Pick<InspectionJob, 'type'>): boolean {
@@ -12,6 +14,11 @@ export function isAwaitingApproval(job: Pick<InspectionJob, 'status'>): boolean 
 
 export function canReopenInspection(job: InspectionJob): boolean {
   return Boolean(job.reportDeclineReason) && job.status !== 'completed';
+}
+
+/** Field work has begun — accept alone maps to in_progress on the API. */
+export function jobInspectionStarted(job: InspectionJob): boolean {
+  return (job.workflowStep ?? 0) > 0 || hasInspectionExecutionDraft(job);
 }
 
 export type JobPrimaryAction = {
@@ -28,6 +35,9 @@ export function jobPrimaryAction(
   if (job.status === 'completed') {
     return { label: 'View report', href: jobHistory(job.id), disabled: false };
   }
+  if (canReopenInspection(job)) {
+    return { label: 'Re-Open', href: jobInspect(job.id, job.type), disabled: false };
+  }
   if (isAwaitingApproval(job)) {
     return {
       label: 'Pending Approval',
@@ -35,9 +45,6 @@ export function jobPrimaryAction(
       disabled: true,
       muted: true,
     };
-  }
-  if (canReopenInspection(job)) {
-    return { label: 'Re-Open', href: jobInspect(job.id, job.type), disabled: false };
   }
   if (job.awaitingAgentPayment) {
     return {
@@ -47,12 +54,20 @@ export function jobPrimaryAction(
       muted: true,
     };
   }
+  // First Start Inspection after accept must open Job Details. Accept sets
+  // IN_PROGRESS on the API, which used to skip details and land on Handover
+  // via the key-collect gate on Areas/Inspect.
+  const href =
+    job.type === 'open'
+      ? jobInspect(job.id, job.type)
+      : job.keyAccess && !isKeyCollectComplete(job)
+        ? jobDetail(job.id)
+        : started
+          ? jobInspect(job.id, job.type)
+          : jobAreas(job.id, job.type);
   return {
     label: started ? 'View' : jobStartCta(job.type, started),
-    href:
-      started || job.type === 'open'
-        ? jobInspect(job.id, job.type)
-        : jobAreas(job.id, job.type),
+    href,
     disabled: false,
   };
 }
