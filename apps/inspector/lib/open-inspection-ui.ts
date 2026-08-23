@@ -1,4 +1,5 @@
 import type { InspectorOpenViewingVisitor } from '@/lib/inspector-open-viewing';
+import { formatDateTime } from '@/lib/utils';
 
 export type OpenInspectionCheckInSort = 'time' | 'name';
 
@@ -55,4 +56,35 @@ export function openInspectionRemainingRatio(
   const end = new Date(endIso).getTime();
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
   return Math.min(1, Math.max(0, (end - nowMs) / (end - start)));
+}
+
+export type OpenInspectionEarlyTiming = {
+  startedEarly?: boolean;
+  startedEarlyAt?: string | null;
+  originalScheduledStart?: string | null;
+  finishedAt?: string | null;
+  scheduledEnd?: string | null;
+};
+
+/** Early start + finish, with date and time. */
+export function formatOpenInspectionEarlyTimingNotice(
+  source: OpenInspectionEarlyTiming,
+): string | null {
+  if (!source.startedEarly) return null;
+  const parts: string[] = [];
+  if (source.startedEarlyAt) {
+    let line = `Started early ${formatDateTime(source.startedEarlyAt)}`;
+    if (source.originalScheduledStart) {
+      line += ` (originally scheduled ${formatDateTime(source.originalScheduledStart)})`;
+    }
+    parts.push(line);
+  } else {
+    parts.push('Started early');
+  }
+  if (source.finishedAt) {
+    parts.push(`Job finished ${formatDateTime(source.finishedAt)}`);
+  } else if (source.scheduledEnd) {
+    parts.push(`Scheduled to finish ${formatDateTime(source.scheduledEnd)}`);
+  }
+  return parts.join('. ');
 }

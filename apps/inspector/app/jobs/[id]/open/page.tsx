@@ -2,7 +2,7 @@
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FileText, Loader2, Radio, Star, Users } from 'lucide-react';
+import { FileText, KeyRound, Loader2, Radio, Star, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { JobWorkspaceShell } from '@/components/inspector/job-workspace-shell';
@@ -14,7 +14,7 @@ import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
-import { jobInspect, ROUTES } from '@/constants/routes';
+import { jobInspect, jobKeys, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import {
   useAwaitingAgentPaymentGate,
@@ -30,9 +30,14 @@ import {
 } from '@/lib/inspector-open-viewing';
 import {
   formatOpenInspectionClock,
+  formatOpenInspectionEarlyTimingNotice,
   openInspectionRemainingRatio,
 } from '@/lib/open-inspection-ui';
 import { cn, formatTime } from '@/lib/utils';
+import {
+  isInspectionWorkflowFinished,
+  isKeyReturnComplete,
+} from '@/lib/key-access-workflow';
 import { jobLookupMiss } from '@/lib/job-lookup';
 
 type Tab = 'checkins' | 'qr';
@@ -52,6 +57,8 @@ export default function OpenInspectionPage() {
     getJob,
     updateJobStatus,
     completeOpenInspectionJob,
+    finishInspectionWorkflow,
+    updateJobWorkflow,
     refresh,
     jobsHydrated,
   } = useInspectorData();
@@ -119,11 +126,20 @@ export default function OpenInspectionPage() {
   );
 
   const isCompleted = job?.status === 'completed';
-  const canCompleteEarly = Boolean(viewing?.canCompleteEarly) && !isCompleted;
+  const workflowFinished = job ? isInspectionWorkflowFinished(job) : false;
+  const returnPending =
+    Boolean(job?.keyAccess) &&
+    workflowFinished &&
+    !isKeyReturnComplete(job) &&
+    !isCompleted;
+  const canCompleteEarly =
+    Boolean(viewing?.canCompleteEarly) && !isCompleted && !workflowFinished;
   const isLive =
     Boolean(viewing) &&
     !viewing?.canStart &&
-    (canCompleteEarly || viewing?.sessionStatus === 'open' || isCompleted);
+    !workflowFinished &&
+    !isCompleted &&
+    (canCompleteEarly || viewing?.sessionStatus === 'open');
 
   const { checkIns, interested } = useMemo(
     () => splitOpenInspectionVisitors(viewing?.visitors ?? []),
@@ -141,12 +157,40 @@ export default function OpenInspectionPage() {
       )
     : 0;
 
+  const finishedAt =
+    viewing?.closedAt ??
+    (typeof job?.workflowData?.inspectionFinishedAt === 'string'
+      ? job.workflowData.inspectionFinishedAt
+      : null);
+  const earlyTimingNotice = formatOpenInspectionEarlyTimingNotice({
+    startedEarly: viewing?.startedEarly,
+    startedEarlyAt: viewing?.startedEarlyAt,
+    originalScheduledStart: viewing?.originalScheduledStart,
+    finishedAt,
+    scheduledEnd: viewing?.endTime,
+  });
+
   const runComplete = useCallback(
     async (early: boolean) => {
-      if (!viewing || completing || isCompleted) return false;
+      if (!viewing || completing || isCompleted || workflowFinished) return false;
 
       setCompleting(true);
       try {
+        const needsKeyReturn =
+          Boolean(job?.keyAccess) && !isKeyReturnComplete(job);
+
+        if (needsKeyReturn) {
+          const outcome = finishInspectionWorkflow(id);
+          if (outcome === 'needs_key_return') {
+            celebrate(
+              'Return the keys to complete this task.',
+              'keys',
+              'Viewing ended',
+            );
+            return true;
+          }
+        }
+
         const endTime = early ? new Date().toISOString() : viewing.endTime;
         const ok = await completeOpenInspectionJob(
           id,
@@ -171,6 +215,9 @@ export default function OpenInspectionPage() {
       viewing,
       completing,
       isCompleted,
+      workflowFinished,
+      job,
+      finishInspectionWorkflow,
       completeOpenInspectionJob,
       id,
       celebrate,
@@ -190,6 +237,13 @@ export default function OpenInspectionPage() {
     try {
       const session = await startOpenViewing(id);
       setViewing(session);
+      if (session.startedEarly) {
+        updateJobWorkflow(id, job?.workflowStep ?? 1, {
+          startedEarly: true,
+          startedEarlyAt: session.startedEarlyAt,
+          originalScheduledStart: session.originalScheduledStart,
+        });
+      }
       toast.success(
         session.startedEarly
           ? 'Open inspection started early — end time unchanged'
@@ -233,6 +287,36 @@ export default function OpenInspectionPage() {
   return (
     <>
       <JobWorkspaceShell job={job} active="start">
+        {returnPending ? (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+              <KeyRound
+                className="text-primary mt-0.5 size-5 shrink-0"
+                aria-hidden="true"
+              />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Return the keys to complete</p>
+                <p className="text-muted-foreground text-sm">
+                  The viewing has ended. Hand the keys back — the job is only
+                  complete after that handover is recorded.
+                </p>
+                {earlyTimingNotice ? (
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    {earlyTimingNotice}.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            <Button
+              type="button"
+              className="w-full"
+              onClick={() => window.location.assign(jobKeys(id, 'return'))}
+            >
+              Continue to handover
+            </Button>
+          </div>
+        ) : (
+        <>
         <div className={cn('space-y-4', isLive ? 'pb-28' : 'pb-6')}>
           {viewing?.awaitingAgentPayment ? (
             <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
@@ -282,10 +366,9 @@ export default function OpenInspectionPage() {
                   <p className="text-foreground text-lg font-semibold leading-tight">
                     {formatTime(viewing.startTime)} – {formatTime(viewing.endTime)}
                   </p>
-                  {viewing.startedEarly && viewing.originalScheduledStart ? (
-                    <p className="text-muted-foreground text-xs">
-                      Started early — scheduled{' '}
-                      {formatTime(viewing.originalScheduledStart)}
+                  {earlyTimingNotice ? (
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      {earlyTimingNotice}.
                     </p>
                   ) : null}
                 </div>
@@ -436,6 +519,8 @@ export default function OpenInspectionPage() {
             </div>
           </div>
         ) : null}
+        </>
+        )}
       </JobWorkspaceShell>
       {Celebration}
     </>

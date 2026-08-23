@@ -12,6 +12,7 @@ import type { KeyPhaseRecord } from '@/lib/key-access-workflow';
 import { buildJobHistoryReport } from '@/lib/job-history';
 import { isDemoJobId } from '@/lib/inspector-job-filters';
 import type { InspectionJob, RoomInspectionEntry } from '@/lib/types';
+import { formatOpenInspectionEarlyTimingNotice } from '@/lib/open-inspection-ui';
 import { formatDateTime } from '@/lib/utils';
 
 function KeyPhaseSection({
@@ -92,6 +93,15 @@ export function JobHistoryReport({ job }: { job: InspectionJob }) {
   const report = buildJobHistoryReport(job);
   const serverBacked = !isDemoJobId(job.id);
   const [findings, setFindings] = useState<RoomInspectionEntry[]>([]);
+  const earlyTimingNotice =
+    job.type === 'open'
+      ? formatOpenInspectionEarlyTimingNotice({
+          startedEarly: report.startedEarly,
+          startedEarlyAt: report.startedEarlyAt,
+          originalScheduledStart: report.originalScheduledStart,
+          finishedAt: report.completedAt,
+        })
+      : null;
 
   useEffect(() => {
     if (!serverBacked) return;
@@ -112,6 +122,11 @@ export function JobHistoryReport({ job }: { job: InspectionJob }) {
           Report submitted {formatDateTime(report.completedAt)}
         </p>
       )}
+      {earlyTimingNotice ? (
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          {earlyTimingNotice}.
+        </p>
+      ) : null}
 
       {job.keyAccess && (
         <>

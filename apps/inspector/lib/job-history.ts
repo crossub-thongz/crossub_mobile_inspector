@@ -22,6 +22,9 @@ export interface LabeledPhoto {
 export interface JobHistoryReport {
   hasReport: boolean;
   completedAt?: string;
+  startedEarly?: boolean;
+  startedEarlyAt?: string;
+  originalScheduledStart?: string;
   comments?: string;
   readyToLease?: boolean | null;
   keyCollect?: KeyPhaseRecord;
@@ -164,6 +167,13 @@ export function buildJobHistoryReport(job: InspectionJob): JobHistoryReport {
       typeof data.inspectionFinishedAt === 'string'
         ? data.inspectionFinishedAt
         : loadCompletedJobHistory(job.id)?.savedAt,
+    startedEarly: data.startedEarly === true || typeof data.startedEarlyAt === 'string',
+    startedEarlyAt:
+      typeof data.startedEarlyAt === 'string' ? data.startedEarlyAt : undefined,
+    originalScheduledStart:
+      typeof data.originalScheduledStart === 'string'
+        ? data.originalScheduledStart
+        : undefined,
     comments: typeof data.comments === 'string' ? data.comments : undefined,
     readyToLease:
       typeof data.readyToLease === 'boolean' ? data.readyToLease : null,

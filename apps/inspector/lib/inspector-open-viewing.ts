@@ -5,6 +5,7 @@ export type InspectorOpenViewing = {
   endTime: string;
   sessionStatus: string;
   openedAt?: string | null;
+  closedAt?: string | null;
   startedEarly?: boolean;
   startedEarlyAt?: string | null;
   originalScheduledStart?: string | null;
