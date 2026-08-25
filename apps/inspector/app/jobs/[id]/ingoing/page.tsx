@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 import { InspectionAreaActionBar } from '@/components/inspector/inspection-area-action-bar';
 import { InspectionAreaPhotosField } from '@/components/inspector/inspection-area-photos-field';
-import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
+import { InspectionAreaNav, inspectionAreaProgressBarClass } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel } from '@/components/inspector/inspection-area-setup-panel';
 import { InspectionInspectChrome } from '@/components/inspector/inspection-inspect-chrome';
 import {
@@ -923,13 +923,19 @@ export default function IngoingInspectionPage() {
 
   const progressTone = (index: number, areaName: string) => {
     const rec = entries[areaName];
-    if (index === areaIndex) return 'bg-primary';
-    if (rec?.available === false) return 'bg-muted-foreground/40';
-    if (rec?.available === true && !firstIncompleteSection(rec.activeSections, rec.itemMarks)) {
-      return 'bg-primary/70';
-    }
-    if (index < areaIndex) return 'bg-primary/40';
-    return 'bg-secondary';
+    const skipped = rec?.available === false;
+    const photographed =
+      (rec?.areaPhotos?.length ?? 0) > 0 ||
+      (rec?.activeSections ?? []).some(
+        (section) => (rec?.photosBySection[section]?.length ?? 0) > 0,
+      );
+    const complete =
+      skipped ||
+      (rec?.available === true &&
+        (rec.activeSections?.length ?? 0) > 0 &&
+        !firstIncompleteSection(rec.activeSections, rec.itemMarks) &&
+        photographed);
+    return inspectionAreaProgressBarClass(index === areaIndex, complete);
   };
 
   const checkedCount = entry.activeSections.filter((section) =>
