@@ -1,12 +1,14 @@
 'use client';
 
-import { WifiOff } from 'lucide-react';
+import Link from 'next/link';
+import { Lock, WifiOff } from 'lucide-react';
 
 import { InspectorWeeklyTimetableCard } from '@/components/inspector/weekly-timetable-card';
 import { InspectorShell } from '@/components/layout/inspector-shell';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ROUTES } from '@/constants/routes';
 
 export default function SettingsPage() {
   const { pendingSync, syncOfflineQueue } = useInspectorData();
@@ -14,6 +16,25 @@ export default function SettingsPage() {
   return (
     <InspectorShell title="Settings">
       <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="size-4" />
+              Account security
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Change the password you use to sign in to the Inspector app.
+            </p>
+            <Link href={`${ROUTES.CHANGE_PASSWORD}?from=settings`}>
+              <Button variant="outline" className="w-full">
+                Change password
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
         <InspectorWeeklyTimetableCard />
 
         <Card>

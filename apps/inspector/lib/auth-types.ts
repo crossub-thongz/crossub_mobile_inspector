@@ -17,4 +17,6 @@ export interface AuthUser {
   phone?: string | null;
   department?: string | null;
   jobTitle?: string | null;
+  mustChangePassword?: boolean;
+  mustChangePasswordWithoutCurrent?: boolean;
 }

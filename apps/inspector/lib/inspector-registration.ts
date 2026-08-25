@@ -121,3 +121,43 @@ export function clearInspectorRegistration(email: string): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(storageKey(email));
 }
+
+/** Office-created roster fields, used when the server has no registration application. */
+export function registrationFromRosterProfile(profile: {
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+  roster?: {
+    licenceNumber?: string | null;
+    licenceType?: string | null;
+    licenceExpiry?: string | Date | null;
+    serviceRegions?: string[];
+    tribunalQualified?: boolean;
+  } | null;
+}): InspectorRegistration | null {
+  if (!profile.roster) return null;
+  const expiry = profile.roster.licenceExpiry;
+  return {
+    firstName: profile.firstName ?? '',
+    lastName: profile.lastName ?? '',
+    email: profile.email,
+    mobile: profile.phone ?? '',
+    dateOfBirth: '',
+    residentialAddress: '',
+    licenceNumber: profile.roster.licenceNumber ?? undefined,
+    licenceType: profile.roster.licenceType ?? '',
+    licenceExpiry:
+      typeof expiry === 'string'
+        ? expiry.slice(0, 10)
+        : expiry
+          ? expiry.toISOString().slice(0, 10)
+          : undefined,
+    serviceRegions: profile.roster.serviceRegions ?? [],
+    tribunalQualified: profile.roster.tribunalQualified,
+    bankAccountName: '',
+    bankBsb: '',
+    bankAccountNumber: '',
+    registrationStatus: 'approved',
+  };
+}

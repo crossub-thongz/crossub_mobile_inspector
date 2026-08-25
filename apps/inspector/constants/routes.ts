@@ -29,10 +29,11 @@ export const ROUTES = {
   FORGOT_PASSWORD: '/forgot-password',
   SYSTEM_ACCESS_AGREEMENT: '/system-access-agreement',
   RESET_PASSWORD: '/reset-password',
+  CHANGE_PASSWORD: '/change-password',
 } as const;
 
 export const PUBLIC_ROUTE_PATTERNS = [
-  /^\/login\/?$/,
+  /^\/login(\/|$)/,
   /^\/signup\/?$/,
   /^\/forgot-password\/?$/,
   /^\/reset-password(\/|$)/,
@@ -42,6 +43,7 @@ export const PUBLIC_ROUTE_PATTERNS = [
 export const ONBOARDING_ROUTE_PATTERNS = [
   /^\/register\/?$/,
   /^\/system-access-agreement\/?$/,
+  /^\/change-password\/?$/,
 ];
 
 export const isPublicRoute = (pathname: string): boolean =>

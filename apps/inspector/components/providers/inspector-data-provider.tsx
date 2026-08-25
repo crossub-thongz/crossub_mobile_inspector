@@ -110,6 +110,7 @@ import {
 import {
   isInspectorOnboardingComplete,
   loadInspectorRegistration,
+  registrationFromRosterProfile,
   saveInspectorRegistration,
 } from '@/lib/inspector-registration';
 import {
@@ -402,7 +403,7 @@ export function InspectorDataProvider({
   }, [status, user?.email]);
 
   const syncServerProfile = useCallback(async (): Promise<void> => {
-    if (status !== 'authed' || !user?.email) return;
+    if (status !== 'authed' || !user?.email || user.mustChangePassword) return;
 
     const profile = await fetchInspectorProfile();
     setServerProfile(profile);
@@ -420,17 +421,30 @@ export function InspectorDataProvider({
     }
 
     const serverReg = profile.registration;
-    if (!serverReg) return;
+    const fallback = serverReg
+      ? null
+      : registrationFromRosterProfile(profile);
+    if (!serverReg && !fallback) return;
 
     setRegistration((prev) => {
-      const merged = mapInspectorRegistration(
-        serverReg,
-        prev ?? loadInspectorRegistration(user.email),
-      );
+      const merged = serverReg
+        ? mapInspectorRegistration(
+            serverReg,
+            prev ?? loadInspectorRegistration(user.email),
+          )
+        : {
+            ...(prev ?? loadInspectorRegistration(user.email) ?? fallback!),
+            ...fallback!,
+            dateOfBirth: prev?.dateOfBirth ?? '',
+            residentialAddress: prev?.residentialAddress ?? '',
+            bankAccountName: prev?.bankAccountName ?? '',
+            bankBsb: prev?.bankBsb ?? '',
+            bankAccountNumber: prev?.bankAccountNumber ?? '',
+          };
       saveInspectorRegistration(user.email, merged);
       return merged;
     });
-  }, [status, user?.email]);
+  }, [status, user?.email, user?.mustChangePassword]);
 
   useEffect(() => {
     if (status === 'loading') {
@@ -534,6 +548,11 @@ export function InspectorDataProvider({
       // Auth still settling means nothing has been decided yet — a job screen
       // must keep waiting. Signed out, the empty list is the final answer.
       setJobsHydrated(status !== 'loading');
+      return;
+    }
+    if (user?.mustChangePassword) {
+      setLoading(false);
+      setJobsHydrated(true);
       return;
     }
     if (refreshInFlight.current) {
@@ -766,12 +785,25 @@ export function InspectorDataProvider({
       setServerProfile(profileRes.value);
       setRosterLinked(Boolean(profileRes.value.roster));
       const serverReg = profileRes.value.registration;
-      if (serverReg && user?.email) {
+      const fallback = serverReg
+        ? null
+        : registrationFromRosterProfile(profileRes.value);
+      if ((serverReg || fallback) && user?.email) {
         setRegistration((prev) => {
-          const merged = mapInspectorRegistration(
-            serverReg,
-            prev ?? loadInspectorRegistration(user.email),
-          );
+          const merged = serverReg
+            ? mapInspectorRegistration(
+                serverReg,
+                prev ?? loadInspectorRegistration(user.email),
+              )
+            : {
+                ...(prev ?? loadInspectorRegistration(user.email) ?? fallback!),
+                ...fallback!,
+                dateOfBirth: prev?.dateOfBirth ?? '',
+                residentialAddress: prev?.residentialAddress ?? '',
+                bankAccountName: prev?.bankAccountName ?? '',
+                bankBsb: prev?.bankBsb ?? '',
+                bankAccountNumber: prev?.bankAccountNumber ?? '',
+              };
           saveInspectorRegistration(user.email, merged);
           return merged;
         });
@@ -809,7 +841,7 @@ export function InspectorDataProvider({
       refreshInFlight.current = null;
     });
     return refreshInFlight.current;
-  }, [status, user?.email, refreshPendingSync]);
+  }, [status, user?.email, user?.mustChangePassword, refreshPendingSync]);
 
   const toggleReceivingJobs = useCallback(() => {
     if (!user?.email) return;

@@ -7,7 +7,7 @@ import { useAuth } from '@/components/providers/auth-provider';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { ROUTES, isPublicRoute } from '@/constants/routes';
 
-const REGISTRATION_EXEMPT = [ROUTES.REGISTER, ROUTES.PROFILE];
+const REGISTRATION_EXEMPT = [ROUTES.REGISTER, ROUTES.PROFILE, ROUTES.CHANGE_PASSWORD];
 
 export function RegistrationGate({ children }: { children: React.ReactNode }) {
   const { status } = useAuth();

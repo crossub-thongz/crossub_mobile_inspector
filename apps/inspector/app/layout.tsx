@@ -7,6 +7,7 @@ import { ProviderErrorBoundary } from '@/components/providers/provider-error-bou
 import { RegistrationGate } from '@/components/inspector/registration-gate';
 import { PoolUrgentAlerts } from '@/components/inspector/pool-urgent-alerts';
 import { SystemAccessAgreementGate } from '@/components/auth/system-access-agreement-gate';
+import { MustChangePasswordGate } from '@/components/auth/must-change-password-gate';
 import { Toaster } from '@/components/ui/sonner';
 
 import './globals.css';
@@ -50,10 +51,12 @@ export default function RootLayout({
           <ProviderErrorBoundary>
             <InspectorDataProvider>
               <SystemAccessAgreementGate>
-                <RegistrationGate>
-                  <PoolUrgentAlerts />
-                  {children}
-                </RegistrationGate>
+                <MustChangePasswordGate>
+                  <RegistrationGate>
+                    <PoolUrgentAlerts />
+                    {children}
+                  </RegistrationGate>
+                </MustChangePasswordGate>
               </SystemAccessAgreementGate>
             </InspectorDataProvider>
           </ProviderErrorBoundary>

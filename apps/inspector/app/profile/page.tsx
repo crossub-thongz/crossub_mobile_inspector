@@ -5,6 +5,7 @@ import {
   CalendarClock,
   CreditCard,
   FileText,
+  Lock,
   MapPin,
   Shield,
   User,
@@ -200,6 +201,25 @@ export default function ProfilePage() {
             ) : null}
           </>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="size-4" />
+              Password
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-muted-foreground text-sm">
+              Change the password you use to sign in to the Inspector app.
+            </p>
+            <Link href={`${ROUTES.CHANGE_PASSWORD}?from=profile`}>
+              <Button variant="outline" className="w-full">
+                Change password
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
         {needsRegistration ? (
           <Link href={ROUTES.REGISTER}>
