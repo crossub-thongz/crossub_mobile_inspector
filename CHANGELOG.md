@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-26
+
+### Changed
+- **Re-vendored `@crossub-thongz/api-contract` 0.16.0 → 0.17.0: 252 → 266 paths, 323 → 348 schemas, and this app type-checks with exactly the error set it had before.** The before/after `tsc --noEmit` output is byte-identical, so the sync introduced nothing — every call this app makes is still a call the API serves. Fifteen paths arrived (the chunked `photos/upload-session` + `upload-complete` pairs for maintenance requests, key return and leasing key collection; `/auth/login-with-token`; tenant ingoing `special-reporting` and `return-report`; routine `self-draft`; public listing document uploads). One path left, and no schema did.
+- ⭐ **The version string was lying, which is why the bump is the point of this change.** All three vendoring repos carried a `package.json` that said `0.16.0` and was byte-identical to the API's — while the spec beside it was fourteen paths behind. That happens because the API's CI regenerates the contract and commits it back to `main` on every push, but publishing is a manual `workflow_dispatch` with its own version. Content moves; the version does not. So "0.16.0" named three different documents at once and nothing in the toolchain could tell them apart. 0.17.0 is what makes this copy identifiable.
+- ⭐ **`dist/` is gitignored, and `package.json#types` points into it — so vendoring the spec without rebuilding is a no-op the compiler never sees.** The API repo's own `dist/` was ten days stale against its own `src/types.ts` (`upload-session` appeared 6 times in the built types and 12 in the source). The rebuild here takes `dist/index.d.ts` from 720 KB to 742 KB; that rebuild, not the file copy, is what actually moved this app's types.
+
 ## 2026-08-18
 
 ### Fixed

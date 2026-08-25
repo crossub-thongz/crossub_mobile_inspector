@@ -33,6 +33,38 @@
         ]
       }
     },
+    "/auth/login-with-token": {
+      "post": {
+        "operationId": "AuthV1Controller_loginWithToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginWithTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated — tokens in the body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileAuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Mobile one-time login — consumes an invite token and returns body tokens.",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/auth/refresh": {
       "post": {
         "operationId": "AuthV1Controller_refresh",
@@ -241,6 +273,99 @@
           }
         ],
         "summary": "Stage a repair-evidence photo (base64-through-API → R2) before creating.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/maintenance-requests/photos/upload-session": {
+      "post": {
+        "description": "Returns a presigned PUT URL so bytes never pass through the API. Local dev without R2 returns `{ mode: \"inline\" }` — use POST .../photos/upload with base64.",
+        "operationId": "TenantMaintenanceController_beginPhotoUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BeginTenantPhotoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TenantPaymentProofInlineUploadSessionDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TenantPaymentProofDirectUploadSessionDto"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Begin a repair-evidence photo upload (presigned direct-to-R2 when configured).",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/maintenance-requests/photos/upload-complete": {
+      "post": {
+        "description": "Call after the browser PUT to the presigned URL succeeds.",
+        "operationId": "TenantMaintenanceController_completePhotoUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTenantPhotoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPhotoUploadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPhotoUploadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Finalize a direct-to-R2 repair-evidence photo upload.",
         "tags": [
           "tenant"
         ]
@@ -1181,6 +1306,100 @@
         ]
       }
     },
+    "/tenant/ingoing-inspections/{inspectionId}/special-reporting": {
+      "patch": {
+        "operationId": "TenantAccountController_submitIngoingSpecialReporting",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantIngoingSpecialReportingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantIngoingInspectionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit Yes/No answers on the NSW special-conditions page.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/ingoing-inspections/{inspectionId}/return-report": {
+      "post": {
+        "operationId": "TenantAccountController_submitIngoingReturnedReport",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantIngoingReturnReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantIngoingInspectionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload the tenant-completed ingoing report (filled sections + signature) and submit it back.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
     "/tenant/ingoing-inspections/{inspectionId}/approve": {
       "patch": {
         "operationId": "TenantAccountController_approveIngoingInspection",
@@ -1540,6 +1759,53 @@
         ]
       }
     },
+    "/tenant/routine-inspections/{id}/self-draft": {
+      "patch": {
+        "operationId": "TenantAccountController_saveRoutineSelfInspectionDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveTenantRoutineSelfDraftDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantRoutineInspectionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save in-progress tenant self-inspection photos so they restore after logout or reconnect.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
     "/tenant/routine-inspections/{id}/submit-self": {
       "post": {
         "operationId": "TenantAccountController_submitRoutineSelfInspection",
@@ -1721,45 +1987,6 @@
           }
         ],
         "summary": "Download the NSW Notice of Rent Increase PDF for a dispatched rent review.",
-        "tags": [
-          "tenant"
-        ]
-      }
-    },
-    "/tenant/rent-reviews/{reviewId}/notice-of-rent-review.html": {
-      "get": {
-        "operationId": "TenantAccountController_getRentReviewNoticeOfRentReviewHtml",
-        "parameters": [
-          {
-            "name": "reviewId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          },
-          "401": {
-            "description": "Missing/invalid/expired token, or the user is not active."
-          },
-          "403": {
-            "description": "Caller is not a TENANT, or has no tenant profile anchor."
-          },
-          "404": {
-            "description": "Rent review not found or formal notice has not been dispatched."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Download the CROSSUB notice of rent review summary for a dispatched rent review.",
         "tags": [
           "tenant"
         ]
@@ -2494,6 +2721,117 @@
         ]
       }
     },
+    "/tenant/vacating-cases/{caseId}/key-return/photos/upload-session": {
+      "post": {
+        "operationId": "TenantAccountController_beginVacatingKeyReturnPhotoUpload",
+        "parameters": [
+          {
+            "name": "caseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BeginTenantPhotoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TenantPaymentProofInlineUploadSessionDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TenantPaymentProofDirectUploadSessionDto"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Begin a key-return photo upload (presigned direct-to-R2 when configured).",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/vacating-cases/{caseId}/key-return/photos/upload-complete": {
+      "post": {
+        "operationId": "TenantAccountController_completeVacatingKeyReturnPhotoUpload",
+        "parameters": [
+          {
+            "name": "caseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTenantPhotoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPhotoUploadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPhotoUploadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Finalize a direct-to-R2 key-return photo upload.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
     "/tenant/vacating-cases/{caseId}/key-return": {
       "patch": {
         "operationId": "TenantAccountController_submitVacatingKeyReturn",
@@ -3024,6 +3362,97 @@
           }
         ],
         "summary": "Upload a key-collection proof photo before submitting the key-collection report.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/leasing/onboarding/key-collection/photos/upload-session": {
+      "post": {
+        "operationId": "TenantAccountController_beginKeyCollectionPhotoUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BeginTenantPhotoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TenantPaymentProofInlineUploadSessionDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TenantPaymentProofDirectUploadSessionDto"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Begin a key-collection photo upload (presigned direct-to-R2 when configured).",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/leasing/onboarding/key-collection/photos/upload-complete": {
+      "post": {
+        "operationId": "TenantAccountController_completeKeyCollectionPhotoUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTenantPhotoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPhotoUploadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPhotoUploadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Finalize a direct-to-R2 key-collection photo upload.",
         "tags": [
           "tenant"
         ]
@@ -3747,6 +4176,102 @@
           }
         },
         "summary": "Get a single listable property",
+        "tags": [
+          "public-listings"
+        ]
+      }
+    },
+    "/public/listings/{propertyId}/documents/upload-session": {
+      "post": {
+        "description": "Returns a presigned PUT URL so document bytes never pass through the API. Local dev without R2 returns `{ mode: \"inline\" }` — include contentBase64 on the application submit.",
+        "operationId": "PublicListingsController_beginApplicationDocumentUpload",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BeginPublicApplicationDocumentUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TenantPaymentProofInlineUploadSessionDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TenantPaymentProofDirectUploadSessionDto"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or property not accepting applications."
+          },
+          "404": {
+            "description": "Property not found."
+          }
+        },
+        "summary": "Begin a guest application document upload (presigned direct-to-R2 when configured).",
+        "tags": [
+          "public-listings"
+        ]
+      }
+    },
+    "/public/listings/{propertyId}/documents/upload-complete": {
+      "post": {
+        "operationId": "PublicListingsController_completeApplicationDocumentUpload",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTenantPaymentProofUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPhotoUploadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Finalize a direct-to-R2 guest application document upload.",
         "tags": [
           "public-listings"
         ]
@@ -6800,6 +7325,69 @@
         ]
       }
     },
+    "/inspector/inspections/{inspectionId}/execution-draft": {
+      "post": {
+        "description": "Two people (or two phones) can inspect the same job. Each device writes its own overlay; GET detail returns every overlay so the apps can merge photos, marks, and rooms instead of last-write-wins.",
+        "operationId": "InspectorInspectionsController_saveExecutionDraft",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveInspectorExecutionDraftDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorInspectionDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "inspectionId is not a valid UUID, or the body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR, or has no inspector roster record."
+          },
+          "404": {
+            "description": "inspectionId does not exist or is not assigned to this inspector."
+          },
+          "409": {
+            "description": "The inspection is in a state where drafts can no longer be edited."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save this device’s in-progress inspection draft.",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
     "/inspector/inspections/{inspectionId}/complete": {
       "post": {
         "description": "Records the attendance window; the server computes the billable hours + amount and posts a PENDING BillableAttendance through the shared billing intake (staff still gate the invoice/payment).",
@@ -6907,6 +7495,46 @@
           }
         ],
         "summary": "Get the findings tree (areas, items, photos) of an assigned inspection.",
+        "tags": [
+          "inspector"
+        ]
+      }
+    },
+    "/inspector/inspections/{inspectionId}/report/pdf": {
+      "get": {
+        "description": "Returns the same Ingoing, Outgoing, or Routine report officers approve on the admin site. Generates from synced findings when a PDF has not been stored yet.",
+        "operationId": "InspectorInspectionsController_downloadReportPdf",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an INSPECTOR, or has no inspector roster record."
+          },
+          "404": {
+            "description": "Inspection not assigned to this inspector, or the report is not available yet."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download the filed inspection report PDF.",
         "tags": [
           "inspector"
         ]
@@ -7867,7 +8495,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Available calendar dates (Australia/Sydney)."
+            "description": "Available calendar dates (Australia/Sydney).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorCalendarAvailabilityView"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7895,7 +8530,14 @@
         },
         "responses": {
           "200": {
-            "description": "Updated calendar availability."
+            "description": "Updated calendar availability.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectorCalendarAvailabilityView"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -9018,6 +9660,9 @@
           },
           "403": {
             "description": "Caller is not an ACCOUNT_MANAGER, or no agency is assigned."
+          },
+          "409": {
+            "description": "A non-archived property with the same address and suburb already exists for this agency."
           }
         },
         "security": [
@@ -11337,6 +11982,62 @@
         ]
       }
     },
+    "/agent/properties/{propertyId}/workflows/inspection/outgoing/{inspectionId}/cancel": {
+      "post": {
+        "operationId": "AgentPortalController_cancelOutgoingInspection",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelAgentOpenInspectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowCreateResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel an outgoing (move-out) inspection with a recorded reason.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/inspection/ingoing/{inspectionId}/cancel": {
       "post": {
         "operationId": "AgentPortalController_cancelIngoingInspection",
@@ -13266,6 +13967,18 @@
           "user"
         ]
       },
+      "LoginWithTokenDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 16
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
       "RefreshTokenDto": {
         "type": "object",
         "properties": {
@@ -13277,6 +13990,46 @@
         },
         "required": [
           "refreshToken"
+        ]
+      },
+      "TenantPaymentProofInlineUploadSessionDto": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "inline"
+            ],
+            "example": "inline"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "TenantPaymentProofDirectUploadSessionDto": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "direct"
+            ],
+            "example": "direct"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned PUT URL (valid ~1 hour). Send the raw file bytes with Content-Type."
+          },
+          "storageKey": {
+            "type": "string",
+            "description": "Storage key to pass to the matching proof/upload-complete endpoint."
+          }
+        },
+        "required": [
+          "mode",
+          "uploadUrl",
+          "storageKey"
         ]
       },
       "CreateTenantMaintenanceRequestDto": {
@@ -13411,6 +14164,68 @@
         },
         "required": [
           "url"
+        ]
+      },
+      "BeginTenantPhotoUploadDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "leaking-tap.jpg"
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 150,
+            "pattern": "/^(image|video)\\//",
+            "example": "image/jpeg",
+            "description": "An image/* or video/* MIME type."
+          },
+          "sizeBytes": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 104857600,
+            "example": 184321,
+            "description": "Raw file size in bytes (≤ 100 MB)."
+          }
+        },
+        "required": [
+          "fileName",
+          "mimeType",
+          "sizeBytes"
+        ]
+      },
+      "CompleteTenantPhotoUploadDto": {
+        "type": "object",
+        "properties": {
+          "storageKey": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Object key returned from the matching photos/upload-session endpoint."
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "leaking-tap.jpg"
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 150,
+            "pattern": "/^(image|video)\\//",
+            "example": "image/jpeg"
+          },
+          "sizeBytes": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 104857600,
+            "example": 184321
+          }
+        },
+        "required": [
+          "storageKey",
+          "fileName",
+          "mimeType",
+          "sizeBytes"
         ]
       },
       "MaintenancePropertyContactDto": {
@@ -13713,46 +14528,6 @@
         },
         "required": [
           "decision"
-        ]
-      },
-      "TenantPaymentProofInlineUploadSessionDto": {
-        "type": "object",
-        "properties": {
-          "mode": {
-            "type": "string",
-            "enum": [
-              "inline"
-            ],
-            "example": "inline"
-          }
-        },
-        "required": [
-          "mode"
-        ]
-      },
-      "TenantPaymentProofDirectUploadSessionDto": {
-        "type": "object",
-        "properties": {
-          "mode": {
-            "type": "string",
-            "enum": [
-              "direct"
-            ],
-            "example": "direct"
-          },
-          "uploadUrl": {
-            "type": "string",
-            "description": "Presigned PUT URL (valid ~1 hour). Send the raw file bytes with Content-Type."
-          },
-          "storageKey": {
-            "type": "string",
-            "description": "Storage key to pass to the matching proof/upload-complete endpoint."
-          }
-        },
-        "required": [
-          "mode",
-          "uploadUrl",
-          "storageKey"
         ]
       },
       "VoiceSessionResponseDto": {
@@ -14669,6 +15444,59 @@
           "disputeComment"
         ]
       },
+      "TenantIngoingSpecialReportingQuestionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "inspectorAnswer": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "no",
+              "n/a"
+            ],
+            "nullable": true
+          },
+          "tenantAnswer": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "no"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "prompt",
+          "inspectorAnswer",
+          "tenantAnswer"
+        ]
+      },
+      "TenantIngoingSpecialReportingPageDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "NSW special conditions"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantIngoingSpecialReportingQuestionDto"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "questions"
+        ]
+      },
       "TenantIngoingInspectionResponseDto": {
         "type": "object",
         "properties": {
@@ -14697,6 +15525,20 @@
           "reportUrl": {
             "type": "string",
             "nullable": true
+          },
+          "tenantReturnedReportUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Tenant-uploaded signed copy of the ingoing report."
+          },
+          "tenantReturnedSignedName": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantReturnedSubmittedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
           },
           "status": {
             "type": "string",
@@ -14732,6 +15574,22 @@
             "items": {
               "$ref": "#/components/schemas/TenantIngoingInspectionSectionDto"
             }
+          },
+          "returnStatus": {
+            "type": "string",
+            "enum": [
+              "awaiting_return",
+              "returned",
+              "unreturned"
+            ],
+            "nullable": true
+          },
+          "signingClosed": {
+            "type": "boolean",
+            "description": "True when the 7-day signing window has closed without this tenant signing."
+          },
+          "specialReporting": {
+            "$ref": "#/components/schemas/TenantIngoingSpecialReportingPageDto"
           }
         },
         "required": [
@@ -14793,6 +15651,73 @@
         },
         "required": [
           "status"
+        ]
+      },
+      "TenantIngoingSpecialReportingAnswerDto": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "no"
+            ]
+          }
+        },
+        "required": [
+          "questionId",
+          "answer"
+        ]
+      },
+      "TenantIngoingSpecialReportingDto": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantIngoingSpecialReportingAnswerDto"
+            }
+          }
+        },
+        "required": [
+          "answers"
+        ]
+      },
+      "TenantIngoingReturnReportDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "ingoing-report-signed.pdf"
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 150,
+            "example": "application/pdf"
+          },
+          "sizeBytes": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
+            "example": 184321,
+            "description": "Decoded byte size (≤ 25 MB)."
+          },
+          "contentBase64": {
+            "type": "string",
+            "format": "base64",
+            "description": "The file contents, base64-encoded (no data: URI prefix)."
+          }
+        },
+        "required": [
+          "fileName",
+          "mimeType",
+          "sizeBytes",
+          "contentBase64"
         ]
       },
       "TenantIngoingRejectDto": {
@@ -15023,6 +15948,82 @@
           "sections"
         ]
       },
+      "TenantRoutineReferenceIngoingAreaDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Kitchen"
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "photos"
+        ]
+      },
+      "TenantRoutineSelfDraftAreaDto": {
+        "type": "object",
+        "properties": {
+          "areaName": {
+            "type": "string",
+            "example": "Kitchen"
+          },
+          "skipped": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "maintenanceRequest": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "photoUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "areaName",
+          "photoUrls"
+        ]
+      },
+      "TenantRoutineSelfDraftDto": {
+        "type": "object",
+        "properties": {
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "areaIndex": {
+            "type": "number"
+          },
+          "areaOrder": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantRoutineSelfDraftAreaDto"
+            }
+          }
+        },
+        "required": [
+          "updatedAt",
+          "areas"
+        ]
+      },
       "TenantRoutineInspectionResponseDto": {
         "type": "object",
         "properties": {
@@ -15099,22 +16100,24 @@
             }
           },
           "referenceIngoingAreas": {
-            "type": "array",
             "description": "Latest completed ingoing report areas for baseline photo comparison during self-inspection.",
+            "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "photos": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              }
+              "$ref": "#/components/schemas/TenantRoutineReferenceIngoingAreaDto"
             }
+          },
+          "bedrooms": {
+            "type": "number",
+            "nullable": true,
+            "description": "Bedroom count from the property record, used to seed the self-routine room template."
+          },
+          "selfDraft": {
+            "description": "In-progress self-inspection draft (hosted photo URLs per area) so progress survives logout and reconnect.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TenantRoutineSelfDraftDto"
+              }
+            ]
           }
         },
         "required": [
@@ -15128,6 +16131,67 @@
           "reportUrl",
           "status",
           "tenantActionRequired"
+        ]
+      },
+      "SaveTenantRoutineSelfDraftAreaDto": {
+        "type": "object",
+        "properties": {
+          "areaName": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Kitchen"
+          },
+          "skipped": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "maintenanceRequest": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the tenant reported a maintenance request for this area."
+          },
+          "photoUrls": {
+            "maxItems": 40,
+            "description": "Hosted photo URLs already uploaded.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "areaName",
+          "photoUrls"
+        ]
+      },
+      "SaveTenantRoutineSelfDraftDto": {
+        "type": "object",
+        "properties": {
+          "areaIndex": {
+            "type": "number",
+            "minimum": 0
+          },
+          "areaOrder": {
+            "maxItems": 80,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "areas": {
+            "maxItems": 80,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaveTenantRoutineSelfDraftAreaDto"
+            }
+          }
+        },
+        "required": [
+          "areas"
         ]
       },
       "SubmitTenantRoutineSelfInspectionSectionDto": {
@@ -15148,11 +16212,35 @@
             "type": "string",
             "maxLength": 2000
           },
+          "maintenanceRequest": {
+            "type": "boolean",
+            "description": "Whether the tenant reported a maintenance request for this area."
+          },
           "photoUrls": {
             "description": "Hosted photo URLs staged via tenant upload.",
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "itemName": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Walls / Picture Hooks",
+            "description": "Item name within the room. When set, this section is stored as an inspection item (same as the inspector app) instead of a composite area name."
+          },
+          "conditionTags": {
+            "maxItems": 10,
+            "example": [
+              "Clean",
+              "Undamaged",
+              "Working"
+            ],
+            "description": "Clean / Undamaged / Working tags from the tenant walk.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 100
             }
           }
         },
@@ -16840,6 +17928,40 @@
           "items"
         ]
       },
+      "BeginPublicApplicationDocumentUploadDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "drivers-licence.pdf"
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 150,
+            "pattern": "/^(image\\/|application\\/pdf)/",
+            "example": "application/pdf",
+            "description": "image/* or application/pdf"
+          },
+          "sizeBytes": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
+            "example": 184321,
+            "description": "Raw file size in bytes (≤ 25 MB)."
+          },
+          "viewingSessionId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Open inspection session — required when the listing is apply-via-inspection only."
+          }
+        },
+        "required": [
+          "fileName",
+          "mimeType",
+          "sizeBytes"
+        ]
+      },
       "PublicApplicationDocumentDto": {
         "type": "object",
         "properties": {
@@ -16885,9 +18007,14 @@
             "example": 184321,
             "description": "Decoded byte size (≤ 25 MB)."
           },
+          "storageKey": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Object key from POST /public/listings/:id/documents/upload-session. Prefer this over contentBase64."
+          },
           "contentBase64": {
             "type": "string",
-            "description": "File contents, base64-encoded (no data: URI prefix)."
+            "description": "File contents, base64-encoded (no data: URI prefix). Required only when storageKey is omitted."
           }
         },
         "required": [
@@ -16896,8 +18023,7 @@
           "label",
           "fileName",
           "mimeType",
-          "sizeBytes",
-          "contentBase64"
+          "sizeBytes"
         ]
       },
       "PublicApplicationCoApplicantDto": {
@@ -19214,6 +20340,26 @@
             "nullable": true,
             "description": "WGS84 longitude of the inspection site (when geocoded on the property)."
           },
+          "propertyBedrooms": {
+            "type": "number",
+            "nullable": true,
+            "description": "Bedroom count from the property record — picks the inspector layout template."
+          },
+          "propertyBathrooms": {
+            "type": "number",
+            "nullable": true,
+            "description": "Bathroom count from the property record."
+          },
+          "propertyParking": {
+            "type": "number",
+            "nullable": true,
+            "description": "Parking count from the property record."
+          },
+          "propertyType": {
+            "type": "string",
+            "nullable": true,
+            "description": "Property type (APARTMENT, HOUSE, …)."
+          },
           "scheduledDate": {
             "type": "string",
             "nullable": true,
@@ -19247,6 +20393,17 @@
             "nullable": true,
             "description": "When an agent declined the last submitted report — inspector must redo and resubmit."
           },
+          "approvedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When an account manager approved the submitted report. Null while awaiting review."
+          },
+          "reportUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Filed inspection report PDF (object-storage URL). Null until the report is generated or uploaded."
+          },
           "awaitingAgentPayment": {
             "type": "boolean",
             "example": false,
@@ -19256,6 +20413,49 @@
             "type": "boolean",
             "example": false,
             "description": "True when CROSSUB staff manually assigned this job (no accept step) — surface under “Assigned by CROSSUB” in the inspector app."
+          },
+          "propertyImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Listing / cover photo for the property. Null when none is on file."
+          },
+          "tenantName": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "agentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "agentCompany": {
+            "type": "string",
+            "nullable": true
+          },
+          "agentEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "agentPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "leaseStart": {
+            "type": "string",
+            "nullable": true,
+            "description": "Lease start date from the property record (ISO)."
+          },
+          "leaseEnd": {
+            "type": "string",
+            "nullable": true,
+            "description": "Lease end date from the property record (ISO)."
           }
         },
         "required": [
@@ -19267,6 +20467,10 @@
           "propertySuburb",
           "propertyLatitude",
           "propertyLongitude",
+          "propertyBedrooms",
+          "propertyBathrooms",
+          "propertyParking",
+          "propertyType",
           "scheduledDate",
           "inspectionDate",
           "completedDate",
@@ -19274,8 +20478,20 @@
           "availableInspectorCount",
           "createdAt",
           "reportDeclineReason",
+          "approvedAt",
+          "reportUrl",
           "awaitingAgentPayment",
-          "assignedByStaff"
+          "assignedByStaff",
+          "propertyImageUrl",
+          "tenantName",
+          "tenantPhone",
+          "tenantEmail",
+          "agentName",
+          "agentCompany",
+          "agentEmail",
+          "agentPhone",
+          "leaseStart",
+          "leaseEnd"
         ]
       },
       "PaginatedInspectorInspectionsDto": {
@@ -19818,8 +21034,18 @@
           "registrationSource": {
             "type": "string"
           },
+          "attendanceStatus": {
+            "type": "string",
+            "description": "registered | attended | no_show"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this prospect was recorded (check-in or application)."
+          },
           "hasApplication": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "True when they already applied via the application form."
           }
         },
         "required": [
@@ -19852,6 +21078,11 @@
           "openedAt": {
             "type": "string",
             "nullable": true
+          },
+          "closedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the viewing session actually closed (job finished)."
           },
           "startedEarly": {
             "type": "boolean",
@@ -20239,6 +21470,37 @@
           "areaPlan"
         ]
       },
+      "InspectorDeviceDraftDto": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "example": "device-a1b2"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ingoing",
+              "routine",
+              "outgoing"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "draft": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "deviceId",
+          "kind",
+          "updatedAt",
+          "draft"
+        ]
+      },
       "InspectorInspectionDetailDto": {
         "type": "object",
         "properties": {
@@ -20267,6 +21529,13 @@
                 "$ref": "#/components/schemas/InspectorReferenceIngoingDto"
               }
             ]
+          },
+          "executionDrafts": {
+            "description": "Per-device in-progress drafts so two phones can merge one inspection.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InspectorDeviceDraftDto"
+            }
           }
         },
         "required": [
@@ -20274,6 +21543,39 @@
           "areas",
           "photos",
           "referenceIngoing"
+        ]
+      },
+      "SaveInspectorExecutionDraftDto": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "maxLength": 80,
+            "example": "device-a1b2c3"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ingoing",
+              "routine",
+              "outgoing"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "maxLength": 40,
+            "format": "date-time"
+          },
+          "draft": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "In-progress walk state for this device (photos as hosted URLs only)."
+          }
+        },
+        "required": [
+          "deviceId",
+          "kind",
+          "draft"
         ]
       },
       "CompleteInspectorInspectionDto": {
@@ -20990,6 +22292,11 @@
           "tribunalQualified": {
             "type": "boolean"
           },
+          "accessLevel": {
+            "type": "number",
+            "example": 4,
+            "description": "1–5 capability tag assigned by staff. New inspectors start at 1. 1 outgoing/ingoing; 2 +routine; 3 +open; 4 outgoing/ingoing/routine/open; 5 = 4 + tribunal."
+          },
           "approvedStates": {
             "description": "Tribunal-eligibility states.",
             "type": "array",
@@ -21039,6 +22346,7 @@
           "insuranceExpiry",
           "serviceRegions",
           "tribunalQualified",
+          "accessLevel",
           "approvedStates",
           "receivingPoolJobs",
           "averageRating",
@@ -21315,6 +22623,71 @@
         },
         "required": [
           "receivingPoolJobs"
+        ]
+      },
+      "InspectorDateAvailabilityEntry": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Sydney date key, YYYY-MM-DD.",
+            "example": "2026-08-18"
+          },
+          "startMinute": {
+            "type": "number",
+            "description": "Start of the available window, minutes from local midnight.",
+            "example": 540,
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "endMinute": {
+            "type": "number",
+            "description": "End of the available window, minutes from local midnight. Always after start.",
+            "example": 1020,
+            "minimum": 0,
+            "maximum": 1440
+          }
+        },
+        "required": [
+          "date",
+          "startMinute",
+          "endMinute"
+        ]
+      },
+      "InspectorCalendarAvailabilityView": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "IANA zone the dates and minute offsets are expressed in.",
+            "example": "Australia/Sydney"
+          },
+          "from": {
+            "type": "string",
+            "description": "First date of the queried window (YYYY-MM-DD)."
+          },
+          "to": {
+            "type": "string",
+            "description": "Last date of the queried window (YYYY-MM-DD)."
+          },
+          "entries": {
+            "description": "Only the days with published availability, ascending. Absent days are unworkable.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InspectorDateAvailabilityEntry"
+            }
+          },
+          "configured": {
+            "type": "boolean",
+            "description": "Whether this inspector has ever published availability, anywhere on the calendar. An empty `entries` with `configured: false` means the timetable was never set up; with `true` it means this particular window is genuinely unavailable."
+          }
+        },
+        "required": [
+          "timezone",
+          "from",
+          "to",
+          "entries",
+          "configured"
         ]
       },
       "InspectorDateAvailabilityEntryDto": {
@@ -22347,12 +23720,13 @@
           },
           "portalServiceLevel": {
             "type": "string",
+            "nullable": true,
             "enum": [
               "LEVEL_1_INSPECTION_ONLY",
               "LEVEL_2_FULL_MANAGEMENT"
             ],
             "example": "LEVEL_2_FULL_MANAGEMENT",
-            "description": "Agent portal service tier for this client agency — Level 1 is inspection and tribunal; Level 2 is full property management."
+            "description": "Agent portal service tier for this client agency — Level 1 is inspection and tribunal; Level 2 is full property management. Null until the agent chooses a plan."
           },
           "membershipTier": {
             "type": "string",
@@ -22388,6 +23762,30 @@
           "bankAccountNumber": {
             "type": "string",
             "nullable": true
+          },
+          "accountManagerName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The CROSSUB staff account manager for this agency (assigned officer; agency-dominant fallback). Null when no officer is assigned anywhere in the agency.",
+            "example": "Miara Lin"
+          },
+          "accountManagerEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Email of the CROSSUB staff account manager for this agency (assigned officer; agency-dominant fallback). Null when no officer is assigned anywhere in the agency.",
+            "example": "miara.lin@crossub.com.au"
+          },
+          "accountManagerPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Number to call the CROSSUB account manager on: their own Australian direct line when they publish one, otherwise the shared agency line (in which case accountManagerExtension carries the menu key that reaches them). Never a tenant-facing, foreign or placeholder number.",
+            "example": "+61 468 037 966"
+          },
+          "accountManagerExtension": {
+            "type": "string",
+            "nullable": true,
+            "description": "Keypad digit to send once accountManagerPhone answers, so the caller reaches this account manager instead of the line's menu. Null when accountManagerPhone is the manager own direct line (there is no menu on it), or when no digit is configured — either way, dial the number on its own.",
+            "example": "1"
           }
         },
         "required": [
@@ -22406,7 +23804,11 @@
           "bankName",
           "bankAccountName",
           "bankBsb",
-          "bankAccountNumber"
+          "bankAccountNumber",
+          "accountManagerName",
+          "accountManagerEmail",
+          "accountManagerPhone",
+          "accountManagerExtension"
         ]
       },
       "PaginatedAgentAgenciesDto": {
@@ -23220,6 +24622,30 @@
             "format": "uuid",
             "description": "User id of the assigned property manager, when known."
           },
+          "accountManagerName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The CROSSUB staff account manager for this property (assigned officer; agency-dominant fallback). Null when no officer is assigned anywhere in the agency.",
+            "example": "Miara Lin"
+          },
+          "accountManagerEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Email of the CROSSUB staff account manager for this property (assigned officer; agency-dominant fallback). Null when no officer is assigned anywhere in the agency.",
+            "example": "miara.lin@crossub.com.au"
+          },
+          "accountManagerPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Number to call the CROSSUB account manager on: their own Australian direct line when they publish one, otherwise the shared agency line (in which case accountManagerExtension carries the menu key that reaches them). Never a tenant-facing, foreign or placeholder number.",
+            "example": "+61 468 037 966"
+          },
+          "accountManagerExtension": {
+            "type": "string",
+            "nullable": true,
+            "description": "Keypad digit to send once accountManagerPhone answers, so the caller reaches this account manager instead of the line's menu. Null when accountManagerPhone is the manager own direct line (there is no menu on it), or when no digit is configured — either way, dial the number on its own.",
+            "example": "1"
+          },
           "endOfManagementDate": {
             "type": "string",
             "nullable": true,
@@ -23230,6 +24656,33 @@
             "type": "boolean",
             "description": "False while the agent create-property wizard is still in progress; true once intake is complete.",
             "example": true
+          },
+          "approvalStatus": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "PENDING",
+              "DECLINED"
+            ],
+            "description": "Whether CROSSUB has confirmed it services this address. PENDING blocks every workflow on the property (leasing, inspections, maintenance, rent reviews) until staff approve it; the registry record stays editable. DECLINED is terminal — see approvalDeclineReason. Properties registered by staff are APPROVED on creation.",
+            "example": "APPROVED"
+          },
+          "approvalRequestedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When intake completed and the property entered the staff review queue."
+          },
+          "approvalDecidedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When staff approved or declined."
+          },
+          "approvalDeclineReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why staff declined — shown to the agent verbatim, e.g. \"outside our service area\"."
           },
           "registryDraft": {
             "type": "object",
@@ -23301,8 +24754,16 @@
           "agencyName",
           "propertyManager",
           "propertyManagerId",
+          "accountManagerName",
+          "accountManagerEmail",
+          "accountManagerPhone",
+          "accountManagerExtension",
           "endOfManagementDate",
           "registryIntakeComplete",
+          "approvalStatus",
+          "approvalRequestedAt",
+          "approvalDecidedAt",
+          "approvalDeclineReason",
           "registryDraft",
           "paymentReference"
         ]
@@ -24342,6 +25803,233 @@
           "research"
         ]
       },
+      "RentReviewRiskFindingView": {
+        "type": "object",
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "sentence": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "severity",
+          "sentence"
+        ]
+      },
+      "RentReviewRiskView": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "BLOCKER",
+              "EXPOSURE",
+              "CLEAR"
+            ]
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewRiskFindingView"
+            }
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "findings",
+          "summary"
+        ]
+      },
+      "RentReviewReportGapView": {
+        "type": "object",
+        "properties": {
+          "gap": {
+            "type": "string",
+            "enum": [
+              "NO_CURRENT_RENT",
+              "NO_PROPOSED_FIGURE",
+              "FIGURE_NOT_RESEARCHED",
+              "NO_RESEARCH_ON_FILE",
+              "NO_PROPERTY_ADDRESS",
+              "NO_TENANT_NAME",
+              "NO_EFFECTIVE_DATE",
+              "NO_LEASE_DATES"
+            ]
+          },
+          "sentence": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "gap",
+          "sentence"
+        ]
+      },
+      "RentReviewReportReadinessView": {
+        "type": "object",
+        "properties": {
+          "readiness": {
+            "type": "string",
+            "enum": [
+              "COMPLETE",
+              "PROVISIONAL",
+              "INSUFFICIENT"
+            ]
+          },
+          "gaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewReportGapView"
+            }
+          },
+          "summary": {
+            "type": "string"
+          },
+          "researchedSourceCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "readiness",
+          "gaps",
+          "summary",
+          "researchedSourceCount"
+        ]
+      },
+      "RentReviewIncreaseEligibilityView": {
+        "type": "object",
+        "properties": {
+          "anchorDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "anchorSource": {
+            "type": "string",
+            "enum": [
+              "last_increase",
+              "lease_start",
+              "none"
+            ]
+          },
+          "earliestLawfulDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "sentence": {
+            "type": "string",
+            "nullable": true
+          },
+          "allowed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "anchorDate",
+          "anchorSource",
+          "earliestLawfulDate",
+          "sentence",
+          "allowed"
+        ]
+      },
+      "TenantCounterNoteView": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "TENANT_APP",
+              "STAFF",
+              "EMAIL_EXTRACTION"
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "text"
+        ]
+      },
+      "TenantCounterSummaryView": {
+        "type": "object",
+        "properties": {
+          "proposedWeekly": {
+            "type": "number",
+            "nullable": true
+          },
+          "currentWeekly": {
+            "type": "number",
+            "nullable": true
+          },
+          "gapWeekly": {
+            "type": "number",
+            "nullable": true
+          },
+          "gapAnnual": {
+            "type": "number",
+            "nullable": true
+          },
+          "increasePercentOnCurrent": {
+            "type": "number",
+            "nullable": true
+          },
+          "position": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "STILL_AN_INCREASE",
+              "NO_INCREASE",
+              "BELOW_CURRENT",
+              "AT_OR_ABOVE_PROPOSED"
+            ]
+          },
+          "note": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TenantCounterNoteView"
+              }
+            ]
+          },
+          "sentences": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "counterWeekly": {
+            "type": "number"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "proposedWeekly",
+          "currentWeekly",
+          "gapWeekly",
+          "gapAnnual",
+          "increasePercentOnCurrent",
+          "position",
+          "note",
+          "sentences",
+          "counterWeekly",
+          "summary"
+        ]
+      },
       "RentReviewPricingMilestoneView": {
         "type": "object",
         "properties": {
@@ -24552,6 +26240,23 @@
           "ai": {
             "$ref": "#/components/schemas/RentReviewAi"
           },
+          "risk": {
+            "$ref": "#/components/schemas/RentReviewRiskView"
+          },
+          "reportReadiness": {
+            "$ref": "#/components/schemas/RentReviewReportReadinessView"
+          },
+          "rentIncreaseEligibility": {
+            "$ref": "#/components/schemas/RentReviewIncreaseEligibilityView"
+          },
+          "tenantCounter": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TenantCounterSummaryView"
+              }
+            ]
+          },
           "tenantCounterWeekly": {
             "type": "number",
             "nullable": true
@@ -24633,6 +26338,10 @@
           "agentConfirmedDate",
           "completedDate",
           "ai",
+          "risk",
+          "reportReadiness",
+          "rentIncreaseEligibility",
+          "tenantCounter",
           "tenantCounterWeekly",
           "tenantMoveOutDate",
           "negotiationNote",
@@ -25039,6 +26748,9 @@
             "type": "string",
             "maxLength": 2000,
             "description": "Anything CROSSUB should know when scheduling — access, tenant availability, urgency. Read by a person; never parsed into a date."
+          },
+          "platformChargeId": {
+            "type": "string"
           }
         }
       },
@@ -25411,7 +27123,33 @@
           },
           "reportUrl": {
             "type": "string",
+            "nullable": true,
+            "description": "PDF URL after CROSSUB has approved the report. Null while review is pending."
+          },
+          "tenantReturnedReportUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Tenant-uploaded signed copy of the ingoing report."
+          },
+          "tenantReturnedSignedName": {
+            "type": "string",
             "nullable": true
+          },
+          "tenantReturnedSubmittedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "approvedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the account manager approved the inspector report. Null while the report is awaiting review."
+          },
+          "reportDeclineReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Active CROSSUB rejection reason. Set while the inspector must redo and resubmit the report."
           },
           "urgent": {
             "type": "boolean",
@@ -25420,6 +27158,16 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "inspectorConfirmDeadlineAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the 48-hour inspector-confirm window ends. Null once an inspector has accepted."
+          },
+          "unacceptedRefunded": {
+            "type": "boolean",
+            "description": "True when the case was closed and refunded because no inspector confirmed in 48 hours."
           }
         },
         "required": [
