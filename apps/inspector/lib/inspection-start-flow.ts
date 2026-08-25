@@ -34,12 +34,12 @@ const START_COPY: Record<
   },
   routine: {
     title: 'Start routine',
-    body: 'Arrange rooms first. After you start, each room opens with its items ready — skip any area that is in order.',
+    body: 'Arrange rooms first. After you start, photograph each room overall — skip any area that is in order.',
     startLabel: 'Start routine',
     continueLabel: 'Continue routine',
     sectionsHint: 'Exception-based: skip rooms that are fine, photograph issues only.',
     firstRoomHint:
-      'Is there anything to note? Yes to photograph issues. No if this area is in order.',
+      'Photograph the room as it is now. Add notes if anything needs attention.',
   },
 };
 

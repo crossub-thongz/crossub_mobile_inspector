@@ -1,7 +1,4 @@
-import {
-  buildEffectiveAreaCatalog,
-  type CustomAreaDefinition,
-} from '@/lib/custom-inspection-areas';
+import { type CustomAreaDefinition } from '@/lib/custom-inspection-areas';
 import { INSPECTION_AREA_CATALOG, parseSectionAreaName } from '@/constants/inspection-areas';
 import type { InspectorInspectionDetail } from '@/lib/crossub-api/inspector-client';
 import { parseItemMarks, mergeItemMarks, stripItemMarksSummaryFromComment, type ItemConditionMarks } from '@/lib/item-condition-marks';
@@ -34,6 +31,13 @@ function mergeMarks(
     next[section] = mergeItemMarks(next[section], marks);
   }
   return next;
+}
+
+function preferSelectedAreaNames(
+  saved: string[] | undefined,
+  baseline: string[] | undefined,
+): string[] | undefined {
+  return saved !== undefined ? saved : baseline;
 }
 
 function unionNames(base: string[] | undefined, overlay: string[] | undefined): string[] {
@@ -259,9 +263,6 @@ export function applyIngoingDetailPhotos(
   customAreas: CustomAreaDefinition[] = [],
 ): Record<string, IngoingAreaEntryDraft> {
   const next = { ...entries };
-  for (const def of buildEffectiveAreaCatalog(customAreas)) {
-    if (!next[def.name]) next[def.name] = emptyIngoingEntry(def.name, customAreas);
-  }
 
   for (const area of detail.areas) {
     const rawName = area.name?.trim() ?? '';
@@ -338,27 +339,13 @@ export function applyRoutineDetailPhotos(
         .trim();
       const parsed = parseSectionAreaName(stripped);
       const room = parsed?.area ?? stripped;
-      const section = parsed?.section;
       if (!room) continue;
 
       const current = next[room] ?? emptyRoutineIssue(room);
-      const photosBySection = { ...current.photosBySection };
-      const sectionKey = section ?? current.activeSections[0] ?? 'General';
-      const sectionPhotos = photosBySection[sectionKey] ?? emptySectionPhotos();
-      const key = INGOING_SUFFIX.test(rawName)
-        ? 'ingoingPhotoUrls'
-        : 'outgoingPhotoUrls';
-      photosBySection[sectionKey] = {
-        ...sectionPhotos,
-        [key]: mergePhotoUrlLists(sectionPhotos[key], photos),
-      };
       next[room] = {
         ...current,
         available: current.available ?? true,
-        activeSections: section
-          ? [...new Set([...current.activeSections, section])]
-          : current.activeSections,
-        photosBySection,
+        areaPhotos: mergePhotoUrlLists(current.areaPhotos, photos),
       };
       continue;
     }
@@ -366,17 +353,10 @@ export function applyRoutineDetailPhotos(
     const parsed = parseSectionAreaName(rawName);
     if (parsed) {
       const current = next[parsed.area] ?? emptyRoutineIssue(parsed.area);
-      const photosBySection = { ...current.photosBySection };
-      const sectionPhotos = photosBySection[parsed.section] ?? emptySectionPhotos();
-      photosBySection[parsed.section] = {
-        ...sectionPhotos,
-        outgoingPhotoUrls: mergePhotoUrlLists(sectionPhotos.outgoingPhotoUrls, photos),
-      };
       next[parsed.area] = {
         ...current,
         available: current.available ?? true,
-        activeSections: [...new Set([...current.activeSections, parsed.section])],
-        photosBySection,
+        areaPhotos: mergePhotoUrlLists(current.areaPhotos, photos),
       };
       continue;
     }
@@ -481,18 +461,20 @@ export function mergeIngoingExecutionDraft(
 ): IngoingExecutionDraft {
   if (!saved) return baseline;
   const customAreas = saved.customAreas ?? baseline.customAreas ?? [];
-  const entries = { ...baseline.entries };
-  for (const def of buildEffectiveAreaCatalog(customAreas)) {
-    entries[def.name] = mergeIngoingEntry(
-      baseline.entries[def.name] ?? emptyIngoingEntry(def.name, customAreas),
-      saved.entries?.[def.name],
-    );
-  }
-  for (const [name, entry] of Object.entries(saved.entries ?? {})) {
-    if (entries[name]) continue;
+  const selectedAreaNames = preferSelectedAreaNames(
+    saved.selectedAreaNames,
+    baseline.selectedAreaNames,
+  );
+  const names = new Set([
+    ...(selectedAreaNames ?? []),
+    ...Object.keys(baseline.entries),
+    ...Object.keys(saved.entries ?? {}),
+  ]);
+  const entries: Record<string, IngoingAreaEntryDraft> = {};
+  for (const name of names) {
     entries[name] = mergeIngoingEntry(
-      emptyIngoingEntry(name, customAreas),
-      entry,
+      baseline.entries[name] ?? emptyIngoingEntry(name, customAreas),
+      saved.entries?.[name],
     );
   }
   return {
@@ -501,7 +483,7 @@ export function mergeIngoingExecutionDraft(
       typeof saved.areaIndex === 'number' ? saved.areaIndex : baseline.areaIndex,
     entries,
     customAreas,
-    selectedAreaNames: unionNames(saved.selectedAreaNames, baseline.selectedAreaNames),
+    selectedAreaNames,
     areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
     specialReporting: mergeSpecialReporting(
       saved.specialReporting ?? baseline.specialReporting,
@@ -515,16 +497,21 @@ export function mergeRoutineExecutionDraft(
   saved: Partial<RoutineExecutionDraft> | null | undefined,
 ): RoutineExecutionDraft {
   if (!saved) return baseline;
-  const issues = { ...baseline.issues };
-  for (const def of INSPECTION_AREA_CATALOG) {
-    issues[def.name] = mergeRoutineIssue(
-      baseline.issues[def.name] ?? emptyRoutineIssue(def.name),
-      saved.issues?.[def.name],
+  const selectedAreaNames = preferSelectedAreaNames(
+    saved.selectedAreaNames,
+    baseline.selectedAreaNames,
+  );
+  const names = new Set([
+    ...(selectedAreaNames ?? []),
+    ...Object.keys(baseline.issues),
+    ...Object.keys(saved.issues ?? {}),
+  ]);
+  const issues: Record<string, RoutineAreaIssueDraft> = {};
+  for (const name of names) {
+    issues[name] = mergeRoutineIssue(
+      baseline.issues[name] ?? emptyRoutineIssue(name),
+      saved.issues?.[name],
     );
-  }
-  for (const [name, issue] of Object.entries(saved.issues ?? {})) {
-    if (issues[name]) continue;
-    issues[name] = mergeRoutineIssue(emptyRoutineIssue(name), issue);
   }
   return {
     kind: 'routine',
@@ -533,7 +520,7 @@ export function mergeRoutineExecutionDraft(
     method: saved.method ?? baseline.method,
     issues,
     customAreas: saved.customAreas ?? baseline.customAreas,
-    selectedAreaNames: unionNames(saved.selectedAreaNames, baseline.selectedAreaNames),
+    selectedAreaNames,
     areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
   };
 }
@@ -547,10 +534,21 @@ export function mergeDeviceExecutionDrafts<T extends InspectionExecutionDraft>(
   const sorted = overlays
     .filter((overlay) => overlay.kind === kind && overlay.draft && typeof overlay.draft === 'object')
     .sort((a, b) => (a.updatedAt ?? '').localeCompare(b.updatedAt ?? ''));
-  return sorted.reduce(
-    (current, overlay) => merge(current, overlay.draft as Partial<T>),
-    baseline,
-  );
+  return sorted.reduce((current, overlay) => {
+    const overlayTime = overlay.updatedAt ?? '';
+    const currentTime = current.updatedAt ?? '';
+    if (overlayTime && currentTime && overlayTime < currentTime) {
+      return current;
+    }
+    const merged = merge(current, overlay.draft as Partial<T>);
+    return {
+      ...merged,
+      updatedAt:
+        overlayTime && (!currentTime || overlayTime >= currentTime)
+          ? overlay.updatedAt
+          : current.updatedAt,
+    };
+  }, baseline);
 }
 
 export function mergeOutgoingExecutionDraft(
@@ -559,22 +557,20 @@ export function mergeOutgoingExecutionDraft(
 ): OutgoingExecutionDraft {
   if (!saved) return baseline;
   const customAreas = saved.customAreas ?? baseline.customAreas ?? [];
-  const issues = { ...baseline.issues };
-  for (const def of buildEffectiveAreaCatalog(customAreas)) {
-    issues[def.name] = mergeOutgoingIssue(
-      baseline.issues[def.name] ??
-        emptyOutgoingIssue(def.name, {
-          available: null,
-          activeSections: [...def.defaultSections],
-        }, customAreas),
-      saved.issues?.[def.name],
-    );
-  }
-  for (const [name, issue] of Object.entries(saved.issues ?? {})) {
-    if (issues[name]) continue;
+  const selectedAreaNames = preferSelectedAreaNames(
+    saved.selectedAreaNames,
+    baseline.selectedAreaNames,
+  );
+  const names = new Set([
+    ...(selectedAreaNames ?? []),
+    ...Object.keys(baseline.issues),
+    ...Object.keys(saved.issues ?? {}),
+  ]);
+  const issues: Record<string, OutgoingAreaIssueDraft> = {};
+  for (const name of names) {
     issues[name] = mergeOutgoingIssue(
-      emptyOutgoingIssue(name, undefined, customAreas),
-      issue,
+      baseline.issues[name] ?? emptyOutgoingIssue(name, undefined, customAreas),
+      saved.issues?.[name],
     );
   }
   return {
@@ -583,11 +579,10 @@ export function mergeOutgoingExecutionDraft(
       typeof saved.areaIndex === 'number' ? saved.areaIndex : baseline.areaIndex,
     issues,
     customAreas,
-    selectedAreaNames: unionNames(saved.selectedAreaNames, baseline.selectedAreaNames),
+    selectedAreaNames,
     areaSetupComplete: saved.areaSetupComplete ?? baseline.areaSetupComplete,
     specialReporting: mergeSpecialReporting(
       saved.specialReporting ?? baseline.specialReporting,
     ),
-    workflowStep: saved.workflowStep ?? baseline.workflowStep,
   };
 }

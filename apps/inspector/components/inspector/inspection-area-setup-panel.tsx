@@ -66,7 +66,16 @@ export function InspectionAreaSetupPanel({
 
   useEffect(() => {
     if (!menuFor) return;
-    const close = () => setMenuFor(null);
+    const close = (event: PointerEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.closest('[data-area-menu]')
+      ) {
+        return;
+      }
+      setMenuFor(null);
+    };
     document.addEventListener('pointerdown', close);
     return () => document.removeEventListener('pointerdown', close);
   }, [menuFor]);
@@ -156,6 +165,7 @@ export function InspectionAreaSetupPanel({
                   <p className="text-foreground min-w-0 flex-1 text-sm font-medium">{name}</p>
                   <div
                     className="relative shrink-0"
+                    data-area-menu
                     onPointerDown={(event) => event.stopPropagation()}
                   >
                     <button

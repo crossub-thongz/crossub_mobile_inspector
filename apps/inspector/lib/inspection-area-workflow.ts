@@ -65,6 +65,9 @@ export function sectionsForAvailableArea(
   ingoingAreaPlan: IngoingAreaPlan | null,
   kind: InspectionAreaKind,
 ): string[] {
+  // Routine is overall-room photos only — Walls / Windows live on ingoing & outgoing.
+  if (kind === 'routine') return [];
+
   if (kind !== 'ingoing') {
     const fromPlan = outgoingSectionsForRoom(ingoingAreaPlan, areaName);
     if (fromPlan.length > 0) return fromPlan;
@@ -111,6 +114,15 @@ export function seedAreasForInspectionStart<T extends AreaRecordBase>(
   for (const name of areaNames) {
     const current = next[name] ?? options.emptyEntry(name);
     if (current.available === false) {
+      if (!next[name]) {
+        next[name] = current;
+        changed = true;
+      }
+      continue;
+    }
+
+    // Once the room is available, do not refill Walls/Windows the inspector deleted.
+    if (current.available === true) {
       if (!next[name]) {
         next[name] = current;
         changed = true;

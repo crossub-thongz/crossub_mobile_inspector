@@ -140,8 +140,34 @@ export function effectiveSelectedAreaNames(
   record: Record<string, unknown>,
   customAreas: CustomAreaDefinition[] = [],
 ): string[] {
-  if (selected && selected.length > 0) return selected;
+  // An explicit array (including empty) is the inspector's room list. Only infer
+  // from leftover entry keys when a legacy draft never stored selectedAreaNames.
+  if (Array.isArray(selected)) return selected;
   return inferSelectedAreaNamesFromDraft(record, customAreas);
+}
+
+export function omitNamedRecordKey<T>(
+  record: Record<string, T>,
+  name: string,
+): Record<string, T> {
+  const key = name.trim().toLowerCase();
+  const next = { ...record };
+  for (const existing of Object.keys(next)) {
+    if (existing.trim().toLowerCase() === key) delete next[existing];
+  }
+  return next;
+}
+
+export function removeSelectedAreaName(
+  selected: string[] | undefined,
+  name: string,
+  record: Record<string, unknown>,
+  customAreas: CustomAreaDefinition[] = [],
+): string[] {
+  const key = name.trim().toLowerCase();
+  return effectiveSelectedAreaNames(selected, record, customAreas).filter(
+    (item) => item.trim().toLowerCase() !== key,
+  );
 }
 
 export function appendSelectedAreaName(

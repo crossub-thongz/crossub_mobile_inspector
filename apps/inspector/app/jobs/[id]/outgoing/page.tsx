@@ -57,6 +57,8 @@ import {
   buildExecutionAreaCatalog,
   classifyAddedAreaName,
   effectiveSelectedAreaNames,
+  omitNamedRecordKey,
+  removeSelectedAreaName,
   type CustomAreaSectionMode,
 } from '@/lib/custom-inspection-areas';
 import {
@@ -142,7 +144,6 @@ export default function OutgoingInspectionPage() {
       areaIndex: 0,
       issues: {},
       customAreas: [],
-      selectedAreaNames: [],
       areaSetupComplete: false,
     }), keysCollected);
   const photoInflight = useRef(0);
@@ -471,15 +472,20 @@ export default function OutgoingInspectionPage() {
 
   const handleRemoveSetupArea = (name: string) => {
     setDraft((prev) => {
-      const nextSelected = (prev.selectedAreaNames ?? []).filter((item) => item !== name);
-      const nextIssues = { ...prev.issues };
-      delete nextIssues[name];
-      const nextCustom = (prev.customAreas ?? []).filter((item) => item.name !== name);
+      const nextSelected = removeSelectedAreaName(
+        prev.selectedAreaNames,
+        name,
+        prev.issues,
+        prev.customAreas ?? [],
+      );
+      const nextCustom = (prev.customAreas ?? []).filter(
+        (item) => item.name.trim().toLowerCase() !== name.trim().toLowerCase(),
+      );
       return {
         ...prev,
         selectedAreaNames: nextSelected,
         customAreas: nextCustom,
-        issues: nextIssues,
+        issues: omitNamedRecordKey(prev.issues, name),
         areaIndex: Math.min(prev.areaIndex, Math.max(nextSelected.length - 1, 0)),
       };
     });

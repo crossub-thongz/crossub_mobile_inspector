@@ -121,20 +121,31 @@ export function layoutTemplateFromProperty(
 /** Copy & merge: outgoing / routine inherit the last ingoing rooms and items. */
 export function layoutFromIngoingPlan(
   plan: IngoingAreaPlan | null | undefined,
+  options?: { includeSections?: boolean },
 ): InspectionLayout | null {
   if (!plan?.rooms.length) return null;
+  const includeSections = options?.includeSections !== false;
   const names: string[] = [];
   const customAreas: CustomAreaDefinition[] = [];
   for (const room of plan.rooms) {
     const name = room.name.trim();
     if (!name) continue;
     names.push(name);
-    customAreas.push({
-      name,
-      sectionMode: room.sections.length > 0 ? 'standard' : 'manual',
-      defaultSections: [...room.sections],
-      optionalSections: ['Custom / Other'],
-    });
+    customAreas.push(
+      includeSections
+        ? {
+            name,
+            sectionMode: room.sections.length > 0 ? 'standard' : 'manual',
+            defaultSections: [...room.sections],
+            optionalSections: ['Custom / Other'],
+          }
+        : {
+            name,
+            sectionMode: 'manual',
+            defaultSections: [],
+            optionalSections: [],
+          },
+    );
   }
   if (names.length === 0) return null;
   return { names, customAreas };
@@ -148,8 +159,11 @@ export function draftNeedsLayoutSeed(
   templateNames?: string[],
 ): boolean {
   if (draft.areaSetupComplete === true) return false;
-  const selected = draft.selectedAreaNames ?? [];
-  if (selected.length === 0) return true;
+  // undefined = never seeded. [] = inspector deleted every room — do not bounce
+  // the bedroom template back.
+  if (draft.selectedAreaNames == null) return true;
+  const selected = draft.selectedAreaNames;
+  if (selected.length === 0) return false;
   if (templateNames && sameLayout(selected, templateNames)) return false;
   return isLegacyGeneratedLayout(selected);
 }

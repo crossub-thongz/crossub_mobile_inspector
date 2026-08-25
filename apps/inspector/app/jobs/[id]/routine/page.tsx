@@ -9,11 +9,6 @@ import { InspectionAreaPhotosField } from '@/components/inspector/inspection-are
 import { InspectionAreaNav } from '@/components/inspector/inspection-area-nav';
 import { InspectionAreaSetupPanel, RoutinePreInspectionSmsButton } from '@/components/inspector/inspection-area-setup-panel';
 import { InspectionInspectChrome } from '@/components/inspector/inspection-inspect-chrome';
-import {
-  OutgoingSectionPhotos,
-  type SectionBeforeAfter,
-} from '@/components/inspector/outgoing-section-photos';
-import { markAllItemsEmpty, markAllItemsGood } from '@/components/inspector/inspection-section-photos';
 import { JobLookupFallback } from '@/components/inspector/job-lookup-fallback';
 import { KeyCollectionRequired } from '@/components/inspector/key-collection-required';
 import { InspectorShell } from '@/components/layout/inspector-shell';
@@ -24,19 +19,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  sectionAreaName,
-} from '@/constants/inspection-areas';
-import {
   appendSelectedAreaName,
   buildExecutionAreaCatalog,
   classifyAddedAreaName,
   effectiveSelectedAreaNames,
+  omitNamedRecordKey,
+  removeSelectedAreaName,
   type CustomAreaSectionMode,
 } from '@/lib/custom-inspection-areas';
 import { jobDetail, jobInspect, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
-import { inspectionAreaOverallPhotoLabel, inspectionPhotoAreaLabel } from '@/lib/inspection-area-photos';
+import { inspectionAreaOverallPhotoLabel } from '@/lib/inspection-area-photos';
 import {
   useAwaitingAgentPaymentGate,
   useInspectionFinishedGate,
@@ -69,25 +63,16 @@ import {
   referenceIngoingAreaPlan,
   type IngoingAreaPlan,
 } from '@/lib/ingoing-area-plan';
-import { matchReferenceSectionPhotos } from '@/lib/outgoing-reference-photos';
 import { findingsAreaFromSections } from '@/lib/inspection-findings-items';
-import {
-  applyColumnMark,
-  firstIncompleteSection,
-  marksAreComplete,
-  marksHaveNo,
-  type ItemConditionKey,
-  type ItemConditionMarks,
-} from '@/lib/item-condition-marks';
 import { moveIndex, rekeyRecord, renameCustomArea } from '@/lib/inspection-layout-edit';
 import { jobLookupMiss } from '@/lib/job-lookup';
 import { parseJobWorkspaceView } from '@/lib/job-workspace-view';
 
 type AreaIssue = RoutineAreaIssueDraft;
 
-const emptySectionPhotos = (): SectionBeforeAfter => ({
-  ingoingPhotoUrls: [],
-  outgoingPhotoUrls: [],
+const emptySectionPhotos = () => ({
+  ingoingPhotoUrls: [] as string[],
+  outgoingPhotoUrls: [] as string[],
 });
 
 function emptyAreaIssue(areaName: string): AreaIssue {
@@ -121,7 +106,6 @@ export default function RoutineInspectionPage() {
       method: 'physical',
       issues: {},
       customAreas: [],
-      selectedAreaNames: [],
       areaSetupComplete: false,
     }), keysCollected);
   const photoInflight = useRef(0);
@@ -140,10 +124,6 @@ export default function RoutineInspectionPage() {
   };
   const [resetOpen, setResetOpen] = useState(false);
   const [loadingReference, setLoadingReference] = useState(apiConnected);
-  const [ingoingFromReference, setIngoingFromReference] = useState(false);
-  const [referenceAreas, setReferenceAreas] = useState<
-    Array<{ name: string; photos: Array<{ url: string }> }>
-  >([]);
   const [ingoingAreaPlan, setIngoingAreaPlan] = useState<IngoingAreaPlan | null>(
     null,
   );
@@ -175,7 +155,6 @@ export default function RoutineInspectionPage() {
         if (cancelled) return;
         const reference = detail.referenceIngoing;
         const refAreas = reference?.areas ?? [];
-        setReferenceAreas(refAreas);
         const plan = resolveIngoingAreaPlan(
           referenceIngoingAreaPlan(detail),
           refAreas,
@@ -183,7 +162,7 @@ export default function RoutineInspectionPage() {
         setIngoingAreaPlan(plan);
 
         setDraft((prev) => {
-          const copied = layoutFromIngoingPlan(plan);
+          const copied = layoutFromIngoingPlan(plan, { includeSections: false });
           const hasUserProgress =
             prev.areaSetupComplete === true ||
             (prev.selectedAreaNames?.length ?? 0) > 0 ||
@@ -227,7 +206,6 @@ export default function RoutineInspectionPage() {
           return merged;
         });
 
-        setIngoingFromReference(Boolean(reference) || refAreas.length > 0);
         if (plan?.rooms.length) {
           toast.success(
             `Loaded ${plan.rooms.length} area(s) from the ingoing report`,
@@ -253,7 +231,7 @@ export default function RoutineInspectionPage() {
     if (!job || loadingReference || !localDraftLoaded.current) return;
     setDraft((prev) => {
       const layout =
-        layoutFromIngoingPlan(ingoingAreaPlan) ??
+        layoutFromIngoingPlan(ingoingAreaPlan, { includeSections: false }) ??
         layoutTemplateFromProperty(job.property);
       if (!draftNeedsLayoutSeed(prev, layout.names)) return prev;
       const nextCustom = mergeCustomAreas(prev.customAreas ?? [], layout.customAreas);
@@ -445,15 +423,20 @@ export default function RoutineInspectionPage() {
 
   const handleRemoveSetupArea = (name: string) => {
     setDraft((prev) => {
-      const nextSelected = (prev.selectedAreaNames ?? []).filter((item) => item !== name);
-      const nextIssues = { ...prev.issues };
-      delete nextIssues[name];
-      const nextCustom = (prev.customAreas ?? []).filter((item) => item.name !== name);
+      const nextSelected = removeSelectedAreaName(
+        prev.selectedAreaNames,
+        name,
+        prev.issues,
+        prev.customAreas ?? [],
+      );
+      const nextCustom = (prev.customAreas ?? []).filter(
+        (item) => item.name.trim().toLowerCase() !== name.trim().toLowerCase(),
+      );
       return {
         ...prev,
         selectedAreaNames: nextSelected,
         customAreas: nextCustom,
-        issues: nextIssues,
+        issues: omitNamedRecordKey(prev.issues, name),
         areaIndex: Math.min(prev.areaIndex, Math.max(nextSelected.length - 1, 0)),
       };
     });
@@ -495,7 +478,9 @@ export default function RoutineInspectionPage() {
     );
     if (names.length === 0) return;
     setDraft((prev) => {
-      const extras = layoutFromIngoingPlan(ingoingAreaPlan)?.customAreas ?? [];
+      const extras = layoutFromIngoingPlan(ingoingAreaPlan, {
+        includeSections: false,
+      })?.customAreas ?? [];
       const nextCustom = mergeCustomAreas(prev.customAreas ?? [], extras);
       const nextSelected = [...(prev.selectedAreaNames ?? []), ...names];
       const nextIssues = { ...prev.issues };
@@ -535,11 +520,6 @@ export default function RoutineInspectionPage() {
       };
     });
   };
-
-  function seedSectionIngoingForArea(areaName: string, section: string): string[] {
-    if (!ingoingFromReference || referenceAreas.length === 0) return [];
-    return matchReferenceSectionPhotos(areaName, section, referenceAreas);
-  }
 
   if (!job) {
     return (
@@ -675,9 +655,6 @@ export default function RoutineInspectionPage() {
     scrollInspectionWorkspaceToTop();
   };
 
-  const seedSectionIngoing = (section: string): string[] =>
-    seedSectionIngoingForArea(area, section);
-
   const markAvailable = (available: boolean) => {
     if (!available) {
       setDraft((prev) => ({
@@ -696,259 +673,9 @@ export default function RoutineInspectionPage() {
       return;
     }
 
-    const sections = sectionsForAvailableArea(
-      area,
-      customAreas,
-      ingoingAreaPlan,
-      'routine',
-    );
-    const photosBySection: Record<string, SectionBeforeAfter> = {
-      ...(issue.photosBySection ?? {}),
-    };
-    for (const section of sections) {
-      if (!photosBySection[section]) {
-        photosBySection[section] = {
-          ...emptySectionPhotos(),
-          ingoingPhotoUrls: seedSectionIngoing(section),
-        };
-      } else if (
-        photosBySection[section].ingoingPhotoUrls.length === 0 &&
-        ingoingFromReference
-      ) {
-        photosBySection[section] = {
-          ...photosBySection[section],
-          ingoingPhotoUrls: seedSectionIngoing(section),
-        };
-      }
-    }
     updateIssue({
       available: true,
-      activeSections: [...sections],
-      photosBySection,
-    });
-  };
-
-  const addLocalPhotos = async (
-    section: string,
-    side: 'ingoing' | 'outgoing',
-    sources: Array<File | string>,
-  ) => {
-    if (sources.length === 0) return;
-    const current = issues[area] ?? emptyAreaIssue(area);
-    const sectionPhotos = current.photosBySection[section] ?? emptySectionPhotos();
-    if (
-      side === 'ingoing' &&
-      ingoingFromReference &&
-      sectionPhotos.ingoingPhotoUrls.length > 0
-    ) {
-      return;
-    }
-    beginPhotoUpload();
-    try {
-      const uploadedUrls = await uploadInspectionPhotos(
-        id,
-        sources,
-        inspectionPhotoAreaLabel(area, section, side === 'ingoing' ? 'ingoing' : 'single'),
-      );
-      setDraft((prev) => {
-        const rec = prev.issues[area] ?? emptyAreaIssue(area);
-        const existing = rec.photosBySection[section] ?? emptySectionPhotos();
-        const key = side === 'ingoing' ? 'ingoingPhotoUrls' : 'outgoingPhotoUrls';
-        return {
-          ...prev,
-          issues: {
-            ...prev.issues,
-            [area]: {
-              ...rec,
-              photosBySection: {
-                ...rec.photosBySection,
-                [section]: {
-                  ...existing,
-                  [key]: [...existing[key], ...uploadedUrls],
-                },
-              },
-            },
-          },
-        };
-      });
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Could not upload photo',
-      );
-    } finally {
-      endPhotoUpload();
-    }
-  };
-
-  const removePhoto = (
-    section: string,
-    side: 'ingoing' | 'outgoing',
-    index: number,
-  ) => {
-    const current = issues[area] ?? emptyAreaIssue(area);
-    const sectionPhotos = current.photosBySection[section] ?? emptySectionPhotos();
-    if (
-      side === 'ingoing' &&
-      ingoingFromReference &&
-      sectionPhotos.ingoingPhotoUrls.length > 0
-    ) {
-      return;
-    }
-    setDraft((prev) => {
-      const rec = prev.issues[area] ?? emptyAreaIssue(area);
-      const existing = rec.photosBySection[section] ?? emptySectionPhotos();
-      const key = side === 'ingoing' ? 'ingoingPhotoUrls' : 'outgoingPhotoUrls';
-      return {
-        ...prev,
-        issues: {
-          ...prev.issues,
-          [area]: {
-            ...rec,
-            photosBySection: {
-              ...rec.photosBySection,
-              [section]: {
-                ...existing,
-                [key]: existing[key].filter((_, i) => i !== index),
-              },
-            },
-          },
-        },
-      };
-    });
-  };
-
-  const addSection = (section: string) => {
-    setDraft((prev) => {
-      const current = prev.issues[area] ?? emptyAreaIssue(area);
-      if (current.activeSections.includes(section)) return prev;
-      return {
-        ...prev,
-        issues: {
-          ...prev.issues,
-          [area]: {
-            ...current,
-            activeSections: [...current.activeSections, section],
-            photosBySection: {
-              ...current.photosBySection,
-              [section]: {
-                ...emptySectionPhotos(),
-                ingoingPhotoUrls: seedSectionIngoing(section),
-              },
-            },
-          },
-        },
-      };
-    });
-  };
-
-  const removeSection = (section: string) => {
-    setDraft((prev) => {
-      const current = prev.issues[area] ?? emptyAreaIssue(area);
-      const nextPhotos = { ...current.photosBySection };
-      delete nextPhotos[section];
-      const nextMarks = { ...(current.itemMarks ?? {}) };
-      delete nextMarks[section];
-      const nextComments = { ...(current.itemComments ?? {}) };
-      delete nextComments[section];
-      return {
-        ...prev,
-        issues: {
-          ...prev.issues,
-          [area]: {
-            ...current,
-            activeSections: current.activeSections.filter((s) => s !== section),
-            photosBySection: nextPhotos,
-            itemMarks: nextMarks,
-            itemComments: nextComments,
-          },
-        },
-      };
-    });
-  };
-
-  const renameSection = (from: string, to: string) => {
-    if (from === to) return;
-    setDraft((prev) => {
-      const current = prev.issues[area] ?? emptyAreaIssue(area);
-      return {
-        ...prev,
-        issues: {
-          ...prev.issues,
-          [area]: {
-            ...current,
-            activeSections: current.activeSections.map((name) =>
-              name === from ? to : name,
-            ),
-            photosBySection: rekeyRecord(current.photosBySection, from, to),
-            itemMarks: rekeyRecord(current.itemMarks ?? {}, from, to),
-            itemComments: rekeyRecord(current.itemComments ?? {}, from, to),
-          },
-        },
-      };
-    });
-  };
-
-  const moveSection = (from: number, to: number) => {
-    setDraft((prev) => {
-      const current = prev.issues[area] ?? emptyAreaIssue(area);
-      return {
-        ...prev,
-        issues: {
-          ...prev.issues,
-          [area]: {
-            ...current,
-            activeSections: moveIndex(current.activeSections, from, to),
-          },
-        },
-      };
-    });
-  };
-
-  const changeMarks = (section: string, marks: ItemConditionMarks) => {
-    setDraft((prev) => {
-      const current = prev.issues[area] ?? emptyAreaIssue(area);
-      return {
-        ...prev,
-        issues: {
-          ...prev.issues,
-          [area]: {
-            ...current,
-            itemMarks: { ...(current.itemMarks ?? {}), [section]: marks },
-          },
-        },
-      };
-    });
-  };
-
-  const fillColumn = (key: ItemConditionKey, value: boolean) => {
-    setDraft((prev) => {
-      const current = prev.issues[area] ?? emptyAreaIssue(area);
-      return {
-        ...prev,
-        issues: {
-          ...prev.issues,
-          [area]: {
-            ...current,
-            itemMarks: applyColumnMark(current.itemMarks, current.activeSections, key, value),
-          },
-        },
-      };
-    });
-  };
-
-  const changeItemComment = (section: string, comment: string) => {
-    setDraft((prev) => {
-      const current = prev.issues[area] ?? emptyAreaIssue(area);
-      return {
-        ...prev,
-        issues: {
-          ...prev.issues,
-          [area]: {
-            ...current,
-            itemComments: { ...(current.itemComments ?? {}), [section]: comment },
-          },
-        },
-      };
+      activeSections: [],
     });
   };
 
@@ -1004,9 +731,7 @@ export default function RoutineInspectionPage() {
         const rec = finalIssues[def.name];
         return findingsAreaFromSections({
           name: def.name,
-          sections: rec.activeSections,
-          marksBySection: rec.itemMarks,
-          commentsBySection: rec.itemComments,
+          sections: [],
           notes: rec.notes,
         });
       }),
@@ -1030,48 +755,13 @@ export default function RoutineInspectionPage() {
       toast.error('Confirm whether this area is available');
       return;
     }
-    if (issue.activeSections.length === 0) {
-      toast.error('Add at least one item, or skip this area');
-      return;
-    }
-    const incomplete = firstIncompleteSection(
-      issue.activeSections,
-      issue.itemMarks,
-    );
-    if (incomplete) {
-      toast.error(`Mark Clean, Undamaged and Working for “${incomplete}”`);
-      return;
-    }
-    const hasAreaPhotos = (issue.areaPhotos?.length ?? 0) > 0;
-    const hasItemPhotos = issue.activeSections.some(
-      (section) =>
-        (issue.photosBySection[section]?.outgoingPhotoUrls.length ?? 0) > 0,
-    );
-    if (!hasAreaPhotos && !hasItemPhotos) {
-      toast.error('Snap at least one photo for this area');
+    if ((issue.areaPhotos?.length ?? 0) === 0) {
+      toast.error('Snap at least one photo of this room');
       return;
     }
 
     setFormBusy(true);
     try {
-      const nextPhotos: Record<string, SectionBeforeAfter> = {
-        ...issue.photosBySection,
-      };
-      for (const section of issue.activeSections) {
-        const photos = issue.photosBySection[section] ?? emptySectionPhotos();
-        const uploaded =
-          photos.outgoingPhotoUrls.length > 0
-            ? await commitInspectionAreaPhotos(
-                id,
-                sectionAreaName(area, section),
-                photos.outgoingPhotoUrls,
-              )
-            : photos.outgoingPhotoUrls;
-        nextPhotos[section] = {
-          ...photos,
-          outgoingPhotoUrls: uploaded,
-        };
-      }
       const areaPhotos = await commitInspectionAreaPhotos(
         id,
         inspectionAreaOverallPhotoLabel(area),
@@ -1079,7 +769,7 @@ export default function RoutineInspectionPage() {
       );
       const committed: AreaIssue = {
         ...issue,
-        photosBySection: nextPhotos,
+        activeSections: [],
         areaPhotos,
       };
       const nextIssues = { ...issues, [area]: committed };
@@ -1119,45 +809,6 @@ export default function RoutineInspectionPage() {
     return 'bg-secondary';
   };
 
-  const markAllGood = () => {
-    setDraft((prev) => {
-      const current = prev.issues[area] ?? emptyAreaIssue(area);
-      return {
-        ...prev,
-        issues: {
-          ...prev.issues,
-          [area]: {
-            ...current,
-            itemMarks: markAllItemsGood(current.activeSections),
-          },
-        },
-      };
-    });
-  };
-
-  const unmarkAll = () => {
-    setDraft((prev) => {
-      const current = prev.issues[area] ?? emptyAreaIssue(area);
-      return {
-        ...prev,
-        issues: {
-          ...prev.issues,
-          [area]: {
-            ...current,
-            itemMarks: markAllItemsEmpty(current.activeSections),
-          },
-        },
-      };
-    });
-  };
-
-  const checkedCount = issue.activeSections.filter((section) =>
-    marksAreComplete(issue.itemMarks?.[section]),
-  ).length;
-  const issueCount = issue.activeSections.filter((section) =>
-    marksHaveNo(issue.itemMarks?.[section]),
-  ).length;
-
   return (
     <>
       <JobWorkspaceShell job={job} active="start">
@@ -1172,9 +823,13 @@ export default function RoutineInspectionPage() {
           }
           footer={
             <InspectionAreaActionBar
-              checked={issue.available === false ? 0 : checkedCount}
-              total={issue.available === false ? 0 : issue.activeSections.length}
-              issues={issue.available === false ? 0 : issueCount}
+              checked={
+                issue.available === true && (issue.areaPhotos?.length ?? 0) > 0
+                  ? 1
+                  : 0
+              }
+              total={issue.available === false ? 0 : 1}
+              issues={0}
               busy={busy || loadingReference}
               isLast={isLast}
               onNext={() =>
@@ -1226,37 +881,6 @@ export default function RoutineInspectionPage() {
                     areaPhotos: (issue.areaPhotos ?? []).filter((_, i) => i !== index),
                   })
                 }
-              />
-
-              <OutgoingSectionPhotos
-                definition={areaDef}
-                activeSections={issue.activeSections}
-                photosBySection={issue.photosBySection}
-                itemMarks={issue.itemMarks}
-                itemComments={issue.itemComments}
-                busy={formBusy || loadingReference}
-                photoUploading={photoBusy}
-                ingoingReadOnly={ingoingFromReference}
-                currentLabel="Routine"
-                onAddSection={addSection}
-                onRemoveSection={removeSection}
-                onRenameSection={renameSection}
-                onMoveSection={moveSection}
-                onChangeMarks={changeMarks}
-                onFillColumn={fillColumn}
-                onMarkAllGood={markAllGood}
-                onUnmarkAll={unmarkAll}
-                onChangeComment={changeItemComment}
-                onAddFiles={(section, side, files) =>
-                  addLocalPhotos(section, side, files)
-                }
-                onAddDataUrl={(section, side, dataUrl) =>
-                  addLocalPhotos(section, side, [dataUrl])
-                }
-                onAddDataUrls={(section, side, urls) =>
-                  addLocalPhotos(section, side, urls)
-                }
-                onRemovePhoto={removePhoto}
               />
 
               <div className="space-y-2">
