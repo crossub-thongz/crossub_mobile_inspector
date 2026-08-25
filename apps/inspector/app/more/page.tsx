@@ -20,6 +20,7 @@ import { useInspectorData } from '@/components/providers/inspector-data-provider
 import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
 import { REGISTRATION_STATUS_LABEL } from '@/constants/inspector-registration';
 import { ROUTES } from '@/constants/routes';
+import { inspectorLevelAllows } from '@/lib/inspector-access-level';
 import { displayName, formatCurrency, formatDate } from '@/lib/utils';
 
 const MENU = [
@@ -66,9 +67,11 @@ export default function MorePage() {
   const { profile, registration, summary } = useInspectorData();
   const name = user ? displayName(user) : profile.name;
   const approved = registration?.registrationStatus === 'approved';
+  const showTribunal = inspectorLevelAllows(profile.accessLevel, 'tribunal');
   const tribunalCertified = Boolean(
     registration?.tribunalQualified || profile.tribunalQualified,
   );
+  const menu = MENU.filter((item) => item.href !== ROUTES.TRIBUNAL || showTribunal);
 
   return (
     <InspectorShell>
@@ -134,7 +137,7 @@ export default function MorePage() {
         </section>
 
         <nav className="divide-border divide-y rounded-2xl border border-border bg-card">
-          {MENU.map((item) => (
+          {menu.map((item) => (
             <Link
               key={`${item.href}-${item.title}`}
               href={item.href}

@@ -26,11 +26,11 @@ import { inspectorLevelAllows } from '@/lib/inspector-access-level';
 import { cn, displayName, personInitials } from '@/lib/utils';
 
 const PRIMARY_NAV = [
-  { href: ROUTES.DASHBOARD, label: 'Home', icon: LayoutDashboard },
-  { href: ROUTES.JOB_POOL, label: 'Pool', icon: Briefcase },
-  { href: ROUTES.INSPECTIONS, label: 'Inspect', icon: ClipboardCheck },
-  { href: ROUTES.TRIBUNAL, label: 'Tribunal', icon: Scale },
-  { href: ROUTES.MORE, label: 'More', icon: Ellipsis },
+  { href: ROUTES.DASHBOARD, label: 'Home', icon: LayoutDashboard, need: null },
+  { href: ROUTES.JOB_POOL, label: 'Pool', icon: Briefcase, need: null },
+  { href: ROUTES.INSPECTIONS, label: 'Inspect', icon: ClipboardCheck, need: null },
+  { href: ROUTES.TRIBUNAL, label: 'Tribunal', icon: Scale, need: 'tribunal' as const },
+  { href: ROUTES.MORE, label: 'More', icon: Ellipsis, need: null },
 ] as const;
 
 const MORE_NAV_BASE = [
@@ -58,10 +58,10 @@ function navigateFromWorkflow(href: string) {
   window.location.assign(href);
 }
 
-function roleLabel(role: string): string {
+function headerBadge(role: string, accessLevel: number): string {
   if (role === Role.SUPER_ADMIN) return 'Admin';
   if (role === Role.HR) return 'HR';
-  return 'Staff';
+  return `Level ${accessLevel}`;
 }
 
 function greetingForHour(date = new Date()): string {
@@ -170,7 +170,10 @@ export function InspectorShell({
   const [headerHeight, setHeaderHeight] = useState(56);
   const { notifications, messages, poolJobs, todaysJobs, profile } = useInspectorData();
   const showOpen = inspectorLevelAllows(profile.accessLevel, 'open');
-  const primaryNav = PRIMARY_NAV;
+  const showTribunal = inspectorLevelAllows(profile.accessLevel, 'tribunal');
+  const primaryNav = PRIMARY_NAV.filter(
+    (item) => item.need !== 'tribunal' || showTribunal,
+  );
   const moreNav = MORE_NAV_BASE.filter(
     (item) => item.need !== 'open' || showOpen,
   );
@@ -259,7 +262,7 @@ export function InspectorShell({
                     </span>
                   </div>
                   <span className="border-primary text-primary inline-flex rounded-full border px-1.5 py-px text-[10px] font-medium leading-tight">
-                    {roleLabel(user.role)}
+                    {headerBadge(user.role, profile.accessLevel)}
                   </span>
                 </div>
                 <div className="min-w-0 pt-0.5">
