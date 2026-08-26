@@ -25,6 +25,7 @@ import {
   INSPECTOR_HOURLY_RATE_AUD,
   TRIBUNAL_OUTCOMES,
 } from '@/constants/inspection';
+import { inspectionAwaitingOfficerApproval } from '@/constants/inspection-approval';
 import { calculateJobPay } from '@/lib/inspector-pay';
 import type { LabeledPhoto } from '@/lib/job-history';
 import type {
@@ -99,13 +100,17 @@ function mapInspectionJobStatus(
   const declineReason = asString(
     (dto as { reportDeclineReason?: unknown }).reportDeclineReason,
   );
+  const completedAt =
+    asString((dto as { completedDate?: unknown }).completedDate) ??
+    asString((dto as { inspectionDate?: unknown }).inspectionDate);
   const pendingReview =
     (type === 'ingoing' || type === 'outgoing') &&
     !approvedAt &&
     !declineReason &&
     (dto.status === INSPECTION_STATUS.COMPLETED ||
       dto.status === INSPECTION_STATUS.FIRST_REVIEW ||
-      dto.status === INSPECTION_STATUS.SECOND_REVIEW);
+      dto.status === INSPECTION_STATUS.SECOND_REVIEW) &&
+    inspectionAwaitingOfficerApproval({ completedAt, approvedAt: null });
   if (pendingReview) return 'awaiting_approval';
   return INSPECTION_STATUS_VIEW[dto.status] ?? 'assigned';
 }
@@ -253,7 +258,9 @@ export function toPoolInspectionJob(dto: InspectorInspection): InspectionJob {
 }
 
 export function mapPoolInspections(dtos: InspectorInspection[]): InspectionJob[] {
-  return dtos.map(toPoolInspectionJob);
+  return dtos
+    .filter((dto) => !Boolean((dto as { assignedByStaff?: unknown }).assignedByStaff))
+    .map(toPoolInspectionJob);
 }
 
 /** Map one billable attendance (thin facade DTO) onto the app's EarningsRecord. */

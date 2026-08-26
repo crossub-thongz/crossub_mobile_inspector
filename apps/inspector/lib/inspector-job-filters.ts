@@ -13,13 +13,17 @@ export function isApiInspectionId(id: string): boolean {
   );
 }
 
-/** Jobs on the pool board (unclaimed rows + assigned drafts awaiting accept). */
+/**
+ * Jobs on the public Job Pool (unclaimed rows + non-staff drafts awaiting accept).
+ *
+ * Office dispatch stamps `assignedBy: CROSSUB` and must never reappear as Accept Job,
+ * even if a pool payload still marks the row `available`.
+ */
 export function isPoolJob(job: InspectionJob): boolean {
+  if (job.assignedBy === 'CROSSUB') return false;
   return (
     job.status === 'available' ||
-    (job.source === 'assigned' &&
-      job.status === 'assigned' &&
-      job.assignedBy !== 'CROSSUB')
+    (job.source === 'assigned' && job.status === 'assigned')
   );
 }
 
