@@ -1,6 +1,25 @@
 import type { InspectionJob } from '@/lib/types';
 import { isToday } from '@/lib/utils';
 
+function jobScheduleIso(job: InspectionJob): string {
+  return job.scheduledTime || job.scheduledDate;
+}
+
+function startOfLocalDay(from = new Date()): Date {
+  const day = new Date(from);
+  day.setHours(0, 0, 0, 0);
+  return day;
+}
+
+/** Assigned work the inspector still has to do — not pool, not finished, not declined. */
+function isActiveInspectJob(job: InspectionJob): boolean {
+  return (
+    job.status !== 'completed' &&
+    job.status !== 'declined' &&
+    !isPoolJob(job)
+  );
+}
+
 /** Demo seed ids — removed once live inspection/pool data loads. */
 export function isDemoJobId(id: string): boolean {
   return id.startsWith('job-');
@@ -32,42 +51,34 @@ export function isStaffAssignedJob(job: InspectionJob): boolean {
   return job.assignedBy === 'CROSSUB' && job.source === 'assigned';
 }
 
-/** Accepted/active inspection work scheduled for today (Inspect tab). */
+/** Accepted/active inspection work scheduled for today (Inspect → Today). */
 export function isTodaysInspection(job: InspectionJob): boolean {
-  return (
-    isToday(job.scheduledDate) &&
-    job.status !== 'completed' &&
-    job.status !== 'declined' &&
-    !isPoolJob(job)
-  );
+  return isActiveInspectJob(job) && isToday(jobScheduleIso(job));
 }
 
-/** Accepted/active inspection work scheduled after today. */
+/** Accepted/active inspection work scheduled on a later calendar day. */
 export function isUpcomingInspection(job: InspectionJob): boolean {
-  return (
-    !isToday(job.scheduledDate) &&
-    new Date(job.scheduledDate) > new Date() &&
-    job.status !== 'completed' &&
-    job.status !== 'declined' &&
-    !isPoolJob(job)
-  );
+  if (!isActiveInspectJob(job)) return false;
+  const scheduled = new Date(jobScheduleIso(job));
+  if (Number.isNaN(scheduled.getTime())) return false;
+  const day = new Date(scheduled);
+  day.setHours(0, 0, 0, 0);
+  return day.getTime() > startOfLocalDay().getTime();
 }
 
-/** Assigned work whose scheduled day has already passed. */
+/**
+ * Assigned work whose scheduled day has already passed and is not finished.
+ *
+ * `awaiting_approval` is omitted: the inspector has already submitted, so it is
+ * not a job they still owe on the Overdue list.
+ */
 export function isOverdueInspection(job: InspectionJob): boolean {
-  if (
-    job.status === 'completed' ||
-    job.status === 'declined' ||
-    job.status === 'awaiting_approval' ||
-    isPoolJob(job)
-  ) {
+  if (!isActiveInspectJob(job) || job.status === 'awaiting_approval') {
     return false;
   }
-  const scheduled = new Date(job.scheduledDate);
+  const scheduled = new Date(jobScheduleIso(job));
   if (Number.isNaN(scheduled.getTime())) return false;
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  return scheduled < startOfToday;
+  return scheduled < startOfLocalDay();
 }
 
 export function filterPoolJobs(jobs: InspectionJob[]): InspectionJob[] {

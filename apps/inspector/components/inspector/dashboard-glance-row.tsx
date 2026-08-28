@@ -25,7 +25,7 @@ export function DashboardGlanceRow({
       iconClass: 'text-primary',
     },
     {
-      href: `${ROUTES.INSPECTIONS}?when=upcoming`,
+      href: `${ROUTES.INSPECTIONS}?tab=upcoming`,
       value: upcoming,
       label: 'Upcoming Inspections',
       icon: Calendar,
@@ -33,7 +33,7 @@ export function DashboardGlanceRow({
       iconClass: 'text-blue-400',
     },
     {
-      href: `${ROUTES.INSPECTIONS}?when=overdue`,
+      href: `${ROUTES.INSPECTIONS}?tab=overdue`,
       value: overdue,
       label: 'Overdue Inspections',
       icon: AlertCircle,

@@ -13,13 +13,23 @@ import {
   CORE_INSPECTION_TYPES,
   type CoreInspectionType,
 } from '@/constants/inspection';
+import {
+  isOverdueInspection,
+  isTodaysInspection,
+  isUpcomingInspection,
+} from '@/lib/inspector-job-filters';
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-type ScheduleTab = 'today' | 'upcoming' | 'completed';
+type ScheduleTab = 'today' | 'upcoming' | 'overdue' | 'completed';
 
 function parseTab(value: string | null): ScheduleTab {
-  if (value === 'upcoming' || value === 'completed' || value === 'today') {
+  if (
+    value === 'upcoming' ||
+    value === 'overdue' ||
+    value === 'completed' ||
+    value === 'today'
+  ) {
     return value;
   }
   return 'today';
@@ -33,19 +43,6 @@ function isAssignedInspection(job: InspectionJob): boolean {
   );
 }
 
-function scheduledDay(job: InspectionJob): number {
-  const date = new Date(job.scheduledDate || job.scheduledTime);
-  if (Number.isNaN(date.getTime())) return Number.POSITIVE_INFINITY;
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
-}
-
-function todayStart(): number {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
-}
-
 function byScheduleTime(a: InspectionJob, b: InspectionJob): number {
   return (
     new Date(a.scheduledTime || a.scheduledDate).getTime() -
@@ -56,13 +53,14 @@ function byScheduleTime(a: InspectionJob, b: InspectionJob): number {
 export default function InspectionsPageClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const tab = parseTab(searchParams.get('tab'));
+  const tab = parseTab(searchParams.get('tab') ?? searchParams.get('when'));
   const { jobs, completedJobs, deviceLocation } = useInspectorData();
 
   const setTab = (next: ScheduleTab) => {
     const params = new URLSearchParams(searchParams.toString());
     if (next === 'today') params.delete('tab');
     else params.set('tab', next);
+    params.delete('when');
     params.delete('type');
     params.delete('section');
     router.replace(
@@ -74,12 +72,15 @@ export default function InspectionsPageClient() {
   useEffect(() => {
     const legacyType = searchParams.get('type');
     const legacySection = searchParams.get('section');
-    if (!legacyType && !legacySection) return;
+    const legacyWhen = searchParams.get('when');
+    if (!legacyType && !legacySection && !legacyWhen) return;
     const params = new URLSearchParams(searchParams.toString());
     params.delete('type');
     params.delete('section');
-    const nextTab = parseTab(params.get('tab'));
+    params.delete('when');
+    const nextTab = parseTab(legacyWhen ?? params.get('tab'));
     if (nextTab === 'today') params.delete('tab');
+    else params.set('tab', nextTab);
     router.replace(
       params.toString() ? `/inspections?${params.toString()}` : '/inspections',
       { scroll: false },
@@ -92,18 +93,17 @@ export default function InspectionsPageClient() {
   );
 
   const todayJobs = useMemo(
-    () =>
-      pendingJobs
-        .filter((j) => scheduledDay(j) <= todayStart())
-        .sort(byScheduleTime),
+    () => pendingJobs.filter(isTodaysInspection).sort(byScheduleTime),
     [pendingJobs],
   );
 
   const upcomingJobs = useMemo(
-    () =>
-      pendingJobs
-        .filter((j) => scheduledDay(j) > todayStart())
-        .sort(byScheduleTime),
+    () => pendingJobs.filter(isUpcomingInspection).sort(byScheduleTime),
+    [pendingJobs],
+  );
+
+  const overdueJobs = useMemo(
+    () => pendingJobs.filter(isOverdueInspection).sort(byScheduleTime),
     [pendingJobs],
   );
 
@@ -128,7 +128,13 @@ export default function InspectionsPageClient() {
   }, [todayJobs]);
 
   const listJobs =
-    tab === 'today' ? todayJobs : tab === 'upcoming' ? upcomingJobs : doneJobs;
+    tab === 'today'
+      ? todayJobs
+      : tab === 'upcoming'
+        ? upcomingJobs
+        : tab === 'overdue'
+          ? overdueJobs
+          : doneJobs;
   const listWithoutHero =
     tab === 'today' && nextJob
       ? listJobs.filter((job) => job.id !== nextJob.id)
@@ -139,13 +145,17 @@ export default function InspectionsPageClient() {
       ? 'No inspections today'
       : tab === 'upcoming'
         ? 'No upcoming inspections'
-        : 'No completed inspections';
+        : tab === 'overdue'
+          ? 'No overdue inspections'
+          : 'No completed inspections';
   const emptyDescription =
     tab === 'today'
       ? 'Accepted jobs scheduled for today will show here.'
       : tab === 'upcoming'
         ? 'Jobs scheduled after today will show here.'
-        : 'Finished inspections will show here.';
+        : tab === 'overdue'
+          ? 'Jobs that were not finished after their scheduled date will show here.'
+          : 'Finished inspections will show here.';
 
   return (
     <InspectorShell title="My Inspections" variant="workspace">
@@ -160,9 +170,9 @@ export default function InspectionsPageClient() {
                 count: upcomingJobs.length,
               },
               {
-                id: 'completed' as const,
-                label: 'Completed',
-                count: doneJobs.length,
+                id: 'overdue' as const,
+                label: 'Overdue',
+                count: overdueJobs.length,
               },
             ] as const
           ).map(({ id, label, count }) => (
@@ -209,7 +219,9 @@ export default function InspectionsPageClient() {
                 <p className="text-muted-foreground px-0.5 text-[11px] font-semibold tracking-wide uppercase">
                   {tab === 'today'
                     ? `Today • ${todayJobs.length} inspection${todayJobs.length === 1 ? '' : 's'}`
-                    : `Upcoming • ${upcomingJobs.length} inspection${upcomingJobs.length === 1 ? '' : 's'}`}
+                    : tab === 'upcoming'
+                      ? `Upcoming • ${upcomingJobs.length} inspection${upcomingJobs.length === 1 ? '' : 's'}`
+                      : `Overdue • ${overdueJobs.length} inspection${overdueJobs.length === 1 ? '' : 's'}`}
                 </p>
               ) : null}
               {(tab === 'today' ? listWithoutHero : listJobs).map((job) => (
