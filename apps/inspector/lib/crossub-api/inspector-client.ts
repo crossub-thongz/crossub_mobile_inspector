@@ -332,18 +332,36 @@ export async function fetchOpenBatch(): Promise<OpenBatchOverview> {
   return data;
 }
 
+function isEmptyJsonError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error && 'message' in error
+        ? String((error as { message?: unknown }).message)
+        : '';
+  return /unexpected end of json input/i.test(message);
+}
+
 /**
  * The routed Saturday awaiting confirmation, or null when nothing is selected.
  *
  * The API returns the PERSISTED plan rather than re-planning on read, so the times shown
- * here are exactly the ones a confirm will write.
+ * here are exactly the ones a confirm will write. "No plan" is JSON `null` — Nest used
+ * to omit the body entirely, and `response.json()` then threw Unexpected end of JSON input
+ * which blanked the whole Open Task Pool even though the pool list itself had loaded.
  */
 export async function fetchOpenBatchPlan(): Promise<OpenBatchPlan | null> {
-  const { data, error } = await crossub.GET('/inspector/inspections/open-batch/plan');
-  if (error) {
-    throw new Error(crossubErrorMessage(error, 'Could not load your open plan.'));
+  try {
+    const { data, error } = await crossub.GET('/inspector/inspections/open-batch/plan');
+    if (error) {
+      if (isEmptyJsonError(error)) return null;
+      throw new Error(crossubErrorMessage(error, 'Could not load your open plan.'));
+    }
+    return data ?? null;
+  } catch (err) {
+    if (isEmptyJsonError(err)) return null;
+    throw err;
   }
-  return data ?? null;
 }
 
 /** Submit the selection and get the routed day back (steps 3 + 4). */
@@ -383,14 +401,20 @@ export async function confirmOpenBatch(
 export async function releaseOpenBatch(
   inspectionIds: string[],
 ): Promise<OpenBatchPlan | null> {
-  const { data, error } = await crossub.POST(
-    '/inspector/inspections/open-batch/release',
-    { body: { inspectionIds } },
-  );
-  if (error) {
-    throw new Error(crossubErrorMessage(error, 'Could not release those opens.'));
+  try {
+    const { data, error } = await crossub.POST(
+      '/inspector/inspections/open-batch/release',
+      { body: { inspectionIds } },
+    );
+    if (error) {
+      if (isEmptyJsonError(error)) return null;
+      throw new Error(crossubErrorMessage(error, 'Could not release those opens.'));
+    }
+    return data ?? null;
+  } catch (err) {
+    if (isEmptyJsonError(err)) return null;
+    throw err;
   }
-  return data ?? null;
 }
 
 /** Claim a pool inspection (`POST /api/v1/inspector/inspections/{inspectionId}/claim`). */

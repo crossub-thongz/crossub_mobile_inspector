@@ -77,10 +77,14 @@ export default function OpenBatchPage() {
 
   const load = useCallback(async () => {
     try {
-      const [batch, current] = await Promise.all([
-        fetchOpenBatch(),
-        fetchOpenBatchPlan(),
-      ]);
+      const batch = await fetchOpenBatch();
+      let current: OpenBatchPlan | null = null;
+      try {
+        current = await fetchOpenBatchPlan();
+      } catch {
+        // A missing plan must not hide the pool — selection is the empty state, not a crash.
+        current = null;
+      }
       setOverview(batch);
       setPlan(current);
       setError(null);
