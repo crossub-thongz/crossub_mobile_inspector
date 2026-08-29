@@ -121,6 +121,21 @@ const BILLING_SOURCE_VIEW: Record<InspectorJob['source'], InspectionType> = {
   [BILLING_SOURCE.TRIBUNAL]: 'tribunal',
 };
 
+/**
+ * BillableAttendance.source is ROUTINE_INSPECTION for every field inspection type
+ * (open / ingoing / outgoing / routine). The real type lives in sourceLabel:
+ * "Open Inspection — …", "Ingoing Inspection — …", etc.
+ */
+function earningsTypeFromJob(dto: InspectorJob): InspectionType {
+  if (dto.source === BILLING_SOURCE.TRIBUNAL) return 'tribunal';
+  const label = asString(dto.sourceLabel)?.toLowerCase() ?? '';
+  if (label.startsWith('open inspection')) return 'open';
+  if (label.startsWith('ingoing inspection')) return 'ingoing';
+  if (label.startsWith('outgoing inspection')) return 'outgoing';
+  if (label.startsWith('routine inspection')) return 'routine';
+  return BILLING_SOURCE_VIEW[dto.source] ?? 'routine';
+}
+
 const DEFAULT_REGION: ServiceRegionKey = 'cbd_inner';
 
 function propertySpecFromDto(dto: InspectorInspection): PropertyInspectionSpec {
@@ -271,7 +286,7 @@ export function toEarningsRecord(dto: InspectorJob): EarningsRecord {
   return {
     id: dto.id,
     jobId: dto.id,
-    type: BILLING_SOURCE_VIEW[dto.source] ?? 'routine',
+    type: earningsTypeFromJob(dto),
     propertyAddress: asString(dto.propertyLabel) ?? dto.sourceLabel,
     completedAt: asString(dto.submittedAt) ?? asString(dto.endTime) ?? '',
     hoursWorked: hours,

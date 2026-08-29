@@ -40,10 +40,20 @@ export function isApiInspectionId(id: string): boolean {
  */
 export function isPoolJob(job: InspectionJob): boolean {
   if (job.assignedBy === 'CROSSUB') return false;
-  return (
-    job.status === 'available' ||
-    (job.source === 'assigned' && job.status === 'assigned')
-  );
+  // We-inspect ROUTINE is only claimable from the public pool API (`source: pool`).
+  if (job.type === 'routine' && job.source !== 'pool') return false;
+  if (job.status === 'available') return true;
+  // Named on the row but not yet accepted — only types that use Accept Job this way.
+  // We-inspect ROUTINE is always `source: pool`. Ward rounds map to `routine` in the
+  // UI but are assigned work, not public pool rows.
+  if (job.source === 'assigned' && job.status === 'assigned') {
+    return (
+      job.type === 'open' ||
+      job.type === 'ingoing' ||
+      job.type === 'outgoing'
+    );
+  }
+  return false;
 }
 
 /** Staff-manual assignments — no accept step; shown under “Assigned by CROSSUB”. */

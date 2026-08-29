@@ -6,8 +6,8 @@ import type { InspectionType, PropertyInspectionSpec } from '@/lib/types';
 
 export const GST_PERCENT = 10;
 
-/** Routine / open — PDF: $50 + 10% GST = $55. */
-export const ROUTINE_INSPECTION_EX_GST_AUD = 50;
+/** Routine / open — $40.91 ex GST + 10% GST = $45 inc GST (matches inspector $45/hr card). */
+export const ROUTINE_INSPECTION_EX_GST_AUD = 40.91;
 export const OPEN_INSPECTION_EX_GST_AUD = ROUTINE_INSPECTION_EX_GST_AUD;
 
 function applyGst(exGst: number): number {
