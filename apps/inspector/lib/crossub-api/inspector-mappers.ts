@@ -23,6 +23,7 @@ import {
 } from '@/constants/api-enums';
 import {
   INSPECTOR_HOURLY_RATE_AUD,
+  ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD,
   TRIBUNAL_OUTCOMES,
 } from '@/constants/inspection';
 import { inspectionAwaitingOfficerApproval } from '@/constants/inspection-approval';
@@ -280,21 +281,27 @@ export function mapPoolInspections(dtos: InspectorInspection[]): InspectionJob[]
 
 /** Map one billable attendance (thin facade DTO) onto the app's EarningsRecord. */
 export function toEarningsRecord(dto: InspectorJob): EarningsRecord {
-  const amount = asNumber(dto.totalAmount) ?? 0;
-  const hours = asNumber(dto.billableHours) ?? 0;
+  const type = earningsTypeFromJob(dto);
+  const apiAmount = asNumber(dto.totalAmount) ?? 0;
+  const apiHours = asNumber(dto.billableHours) ?? 0;
   const rate = asNumber(dto.hourlyRate) ?? INSPECTOR_HOURLY_RATE_AUD;
+  const flatRoutineOpen = type === 'routine' || type === 'open';
+  const laborAmount = flatRoutineOpen
+    ? ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD
+    : apiAmount;
+  const hoursWorked = flatRoutineOpen ? 1 : apiHours;
   return {
     id: dto.id,
     jobId: dto.id,
-    type: earningsTypeFromJob(dto),
+    type,
     propertyAddress: asString(dto.propertyLabel) ?? dto.sourceLabel,
     completedAt: asString(dto.submittedAt) ?? asString(dto.endTime) ?? '',
-    hoursWorked: hours,
+    hoursWorked,
     hourlyRate: rate,
     travelKmOneWay: 0,
     fuelAllowance: 0,
-    laborAmount: amount,
-    amount,
+    laborAmount,
+    amount: laborAmount,
     // PENDING = not yet pushed to accounting; INVOICED/PAID = synced.
     accountingSynced: dto.invoiceStatus !== INVOICE_STATUS.PENDING,
   };

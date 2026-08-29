@@ -5,8 +5,8 @@ import { Wallet } from 'lucide-react';
 import { EmptyState } from '@/components/inspector/empty-state';
 import { JobTypeBadge } from '@/components/inspector/status-badge';
 import { InspectorShell } from '@/components/layout/inspector-shell';
+import { ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD } from '@/constants/inspection-rates';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
-import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 export default function EarningsPage() {
@@ -50,7 +50,7 @@ export default function EarningsPage() {
         </div>
 
         <p className="text-muted-foreground text-center text-[10px]">
-          ${INSPECTOR_HOURLY_RATE_AUD}/hr · Inspection time per property guidelines
+          Routine &amp; open: ${ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD} inc GST · Ingoing/outgoing: agent price list
         </p>
 
         <section className="space-y-1">

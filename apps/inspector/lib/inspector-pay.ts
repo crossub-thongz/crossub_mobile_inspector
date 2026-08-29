@@ -1,6 +1,7 @@
 import {
   FUEL_RATE_PER_KM_AUD,
   INSPECTOR_HOURLY_RATE_AUD,
+  ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD,
 } from '@/constants/inspection-rates';
 import { agentCatalogFeeIncGst } from '@/lib/agent-inspection-pricing';
 import {
@@ -25,6 +26,13 @@ export function calculateFuelAllowance(travelKmOneWay: number): number {
   return Math.round(travelKmOneWay * FUEL_RATE_PER_KM_AUD * 100) / 100;
 }
 
+function inspectorFlatFeeIncGst(type: InspectionType): number | null {
+  if (type === 'routine' || type === 'open') {
+    return ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD;
+  }
+  return null;
+}
+
 export function calculateJobPay(
   spec: PropertyInspectionSpec,
   travelKmOneWay: number,
@@ -34,14 +42,16 @@ export function calculateJobPay(
     type === 'tribunal'
       ? tribunalInspectionHours()
       : calculateInspectionDuration(spec);
-  const catalogFee = agentCatalogFeeIncGst(type, spec);
-  const laborAmount =
-    catalogFee ?? calculateLaborFee(estimatedHours);
+  const flatFee = inspectorFlatFeeIncGst(type);
+  const catalogFee = flatFee ?? agentCatalogFeeIncGst(type, spec);
+  const laborAmount = catalogFee ?? calculateLaborFee(estimatedHours);
+  const displayHours =
+    flatFee != null ? 1 : estimatedHours;
   const fuelAllowance =
     type === 'tribunal' ? 0 : calculateFuelAllowance(travelKmOneWay);
 
   return {
-    estimatedHours,
+    estimatedHours: displayHours,
     laborAmount,
     travelKmOneWay,
     fuelAllowance,

@@ -2,6 +2,9 @@
 
 export const INSPECTOR_HOURLY_RATE_AUD = 45;
 
+/** Routine / open inspector pay — flat fee inc GST (not the agent catalogue rate). */
+export const ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD = 45;
+
 /** Fuel reimbursed one-way from regional midpoint → property ($/km). */
 export const FUEL_RATE_PER_KM_AUD = 0.8;
 

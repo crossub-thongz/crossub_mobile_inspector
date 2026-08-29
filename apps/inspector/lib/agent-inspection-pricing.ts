@@ -1,14 +1,13 @@
 /**
- * Agent APP inspection price list (ex-GST), then +GST for the inspector Est. Fee.
+ * Agent APP ingoing/outgoing price list (ex-GST), then +GST for the inspector Est. Fee.
  * Keep in lockstep with `crossub_web/apps/api/src/modules/billing/billing-pricing.util.ts`.
+ *
+ * Routine / open inspector pay is separate — see `ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD`
+ * in `constants/inspection-rates.ts` (flat $45 inc GST per job).
  */
 import type { InspectionType, PropertyInspectionSpec } from '@/lib/types';
 
 export const GST_PERCENT = 10;
-
-/** Routine / open — $40.91 ex GST + 10% GST = $45 inc GST (matches inspector $45/hr card). */
-export const ROUTINE_INSPECTION_EX_GST_AUD = 40.91;
-export const OPEN_INSPECTION_EX_GST_AUD = ROUTINE_INSPECTION_EX_GST_AUD;
 
 function applyGst(exGst: number): number {
   return Math.round(exGst * (1 + GST_PERCENT / 100) * 100) / 100;
@@ -39,13 +38,11 @@ export function fieldInspectionExGstAud(
   return compactRow[band] ?? 75;
 }
 
-/** Catalog fee the inspector should see as Est. Fee (inc GST). */
+/** Agent catalogue fee for ingoing/outgoing Est. Fee (inc GST). */
 export function agentCatalogFeeIncGst(
   type: InspectionType,
   spec: PropertyInspectionSpec,
 ): number | null {
-  if (type === 'routine') return applyGst(ROUTINE_INSPECTION_EX_GST_AUD);
-  if (type === 'open') return applyGst(OPEN_INSPECTION_EX_GST_AUD);
   if (type === 'ingoing' || type === 'outgoing') {
     const exGst = fieldInspectionExGstAud(type, spec);
     return exGst == null ? null : applyGst(exGst);

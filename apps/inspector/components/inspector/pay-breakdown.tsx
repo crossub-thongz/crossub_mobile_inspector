@@ -1,5 +1,6 @@
 'use client';
 
+import { ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD } from '@/constants/inspection-rates';
 import { formatCurrency } from '@/lib/utils';
 
 export function PayBreakdown({
@@ -32,7 +33,9 @@ export function PayBreakdown({
         {formatCurrency(laborAmount)}
       </p>
       <p className="text-muted-foreground text-[10px] leading-relaxed">
-        Agent APP price list{hours > 0 ? ` · ~${hours}h on site` : ''}
+        {hours === 1 && laborAmount === ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD
+          ? `$${ROUTINE_OPEN_INSPECTOR_FEE_INC_GST_AUD} inc GST per routine / open job`
+          : `Agent APP price list${hours > 0 ? ` · ~${hours}h on site` : ''}`}
       </p>
     </div>
   );
