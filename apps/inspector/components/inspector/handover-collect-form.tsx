@@ -19,6 +19,7 @@ import { KeyPhasePhotoField } from '@/components/inspector/key-phase-photo-field
 import { NoImageDialog } from '@/components/inspector/no-image-dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { stripEmojis } from '@/lib/strip-emojis';
 import type {
   HandoverParty,
   KeyCondition,
@@ -360,7 +361,7 @@ export function HandoverCollectForm({
               rows={3}
               placeholder="Add any notes about the handover..."
               value={notes}
-              onChange={(e) => setNotes(e.target.value.slice(0, NOTES_MAX))}
+              onChange={(e) => setNotes(stripEmojis(e.target.value).slice(0, NOTES_MAX))}
               className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
             />
             <p className="text-muted-foreground text-right text-[10px]">

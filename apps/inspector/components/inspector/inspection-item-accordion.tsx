@@ -15,6 +15,7 @@ import {
   type ItemConditionMarks,
   emptyItemMarks,
 } from '@/lib/item-condition-marks';
+import { stripEmojis } from '@/lib/strip-emojis';
 import { cn } from '@/lib/utils';
 
 const COMMENT_MAX = 200;
@@ -207,7 +208,7 @@ export function InspectionItemAccordion({
               disabled={busy}
               placeholder="Describe the issue or leave blank if all good…"
               value={comment}
-              onChange={(event) => onChangeComment(event.target.value.slice(0, COMMENT_MAX))}
+              onChange={(event) => onChangeComment(stripEmojis(event.target.value).slice(0, COMMENT_MAX))}
               className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
             />
             <p className="text-muted-foreground mt-1 text-right text-[10px]">

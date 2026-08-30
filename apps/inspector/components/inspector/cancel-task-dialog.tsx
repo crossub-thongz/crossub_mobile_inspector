@@ -13,6 +13,7 @@ import {
   type CancelTaskMode,
 } from '@/constants/job-cancellation';
 import { emergencyCancelBonus } from '@/lib/job-cancellation';
+import { stripEmojis } from '@/lib/strip-emojis';
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -61,7 +62,7 @@ export function CancelTaskDialog({
           <textarea
             id="cancel-reason"
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={(e) => setReason(stripEmojis(e.target.value))}
             placeholder="Describe why this task cannot be completed (min. 10 characters)"
             className="border-input bg-background min-h-[88px] w-full rounded-lg border px-3 py-2 text-sm"
           />

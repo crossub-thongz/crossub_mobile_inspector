@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { SpecialReportingDraft, YesNoNa } from '@/lib/special-reporting';
 import { specialReportingMissing } from '@/lib/special-reporting';
+import { stripEmojis } from '@/lib/strip-emojis';
 import { cn } from '@/lib/utils';
 
 function RequiredMark() {
@@ -613,7 +614,7 @@ export function SpecialReportingForm({
             id="special-notes"
             rows={4}
             value={value.additionalComments}
-            onChange={(event) => patch({ additionalComments: event.target.value })}
+            onChange={(event) => patch({ additionalComments: stripEmojis(event.target.value) })}
             className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
           />
         </div>
@@ -662,7 +663,7 @@ export function SpecialReportingForm({
             id="landlord-work"
             rows={4}
             value={value.landlordWork}
-            onChange={(event) => patch({ landlordWork: event.target.value })}
+            onChange={(event) => patch({ landlordWork: stripEmojis(event.target.value) })}
             className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
           />
         </div>
