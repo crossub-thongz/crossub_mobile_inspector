@@ -95,6 +95,13 @@ export default function SignupPage() {
           toast.error('An account with this email already exists. Sign in instead.');
           return;
         }
+        if (err.status === 403) {
+          toast.error(
+            err.message ||
+              'This email is not invited to register. Ask Operations to send you an invite.',
+          );
+          return;
+        }
         if (err.status === 400) {
           toast.error('Check your details — password must be at least 10 characters.');
           return;
@@ -128,7 +135,7 @@ export default function SignupPage() {
         <div className="mb-6 space-y-1 text-center">
           <h1 className="text-xl font-semibold">Create account</h1>
           <p className="text-sm text-muted-foreground">
-            Choose an email and password — use the same details to sign in next time
+            Use the email Operations invited, or the one already on your inspector registration
           </p>
         </div>
 
