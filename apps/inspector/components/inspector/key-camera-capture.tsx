@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type Touch, type TouchEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, X } from 'lucide-react';
 
 import { compressCanvasToDataUrl } from '@/lib/compress-image';
@@ -148,6 +149,16 @@ export function KeyCameraCapture({
   const [digitalZoom, setDigitalZoom] = useState(1);
 
   const stopStream = useCallback(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.srcObject = null;
+      try {
+        video.load();
+      } catch {
+        // iOS still holds the camera if srcObject is left attached.
+      }
+    }
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setReady(false);
@@ -156,9 +167,12 @@ export function KeyCameraCapture({
   const attachStream = useCallback(async (stream: MediaStream) => {
     const video = videoRef.current;
     if (!video) return false;
+    video.setAttribute('playsinline', 'true');
+    video.muted = true;
     video.srcObject = stream;
     try {
       await video.play();
+      if (video.videoWidth === 0) return false;
       setReady(true);
       return true;
     } catch {
@@ -184,17 +198,20 @@ export function KeyCameraCapture({
 
     const start = async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setError('Camera not available here. Use Upload to pick a photo.');
+        setError('Camera not available here. Use Upload to pick a photo you have already taken.');
         return;
       }
+      stopStream();
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+      if (cancelled) return;
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: deviceId
-            ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+            ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
             : {
                 facingMode: { ideal: 'environment' },
-                width: { ideal: 1920 },
-                height: { ideal: 1080 },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
               },
           audio: false,
         });
@@ -215,22 +232,39 @@ export function KeyCameraCapture({
             setHardwareZoom(settings.zoom ?? Math.min(Math.max(1, zoom.min), zoom.max));
           }
         }
-        if (!(await attachStream(stream))) {
-          window.requestAnimationFrame(() => {
-            if (!cancelled) void attachStream(stream);
-          });
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          if (cancelled) return;
+          if (await attachStream(stream)) return;
+          await new Promise((resolve) => window.setTimeout(resolve, 50));
+        }
+        if (!cancelled) {
+          stopStream();
+          setError(
+            'Camera preview did not start. Use Phone camera or Upload to add photos you have already taken.',
+          );
         }
       } catch {
         setError(
-          'Could not open the camera. Allow camera access in browser settings, or use the phone camera.',
+          'Could not open the camera. Allow camera access in browser settings, or use Phone camera / Upload.',
         );
       }
     };
 
     void start();
 
+    const watchdog = window.setTimeout(() => {
+      if (cancelled) return;
+      const video = videoRef.current;
+      if (video && video.videoWidth > 0) return;
+      stopStream();
+      setError(
+        'Camera preview did not start. Use Phone camera or Upload to add photos you have already taken.',
+      );
+    }, 3500);
+
     return () => {
       cancelled = true;
+      window.clearTimeout(watchdog);
       stopStream();
     };
   }, [attachStream, deviceId, open, stopStream]);
@@ -289,12 +323,14 @@ export function KeyCameraCapture({
       return;
     }
     onCapture(dataUrl);
+    stopStream();
     onClose();
   };
 
   const finishBurst = () => {
     if (burstShots.length === 0) return;
     onBurstComplete?.(burstShots);
+    stopStream();
     onClose();
   };
 
@@ -319,7 +355,7 @@ export function KeyCameraCapture({
     pinchRef.current = null;
   };
 
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
 
   const zoomLabel = zoomCaps
     ? `${hardwareZoom.toFixed(hardwareZoom >= 10 ? 0 : 1)}×`
@@ -327,11 +363,16 @@ export function KeyCameraCapture({
       ? `${digitalZoom.toFixed(1)}×`
       : null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex h-[100dvh] flex-col bg-black">
+  const closeCamera = () => {
+    stopStream();
+    onClose();
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex h-[100dvh] w-full flex-col bg-black">
       <button
         type="button"
-        onClick={onClose}
+        onClick={closeCamera}
         className="absolute top-4 right-4 z-30 flex size-14 items-center justify-center rounded-full bg-black/45 text-white shadow-lg backdrop-blur-sm"
         aria-label="Close camera"
       >
@@ -341,7 +382,7 @@ export function KeyCameraCapture({
       {nativeInputId ? (
         <label
           htmlFor={nativeInputId}
-          onClick={onClose}
+          onClick={closeCamera}
           className="absolute top-5 left-4 z-30 rounded-full bg-black/45 px-3 py-2 text-xs font-medium text-white backdrop-blur-sm"
         >
           Phone camera
@@ -354,34 +395,33 @@ export function KeyCameraCapture({
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          onLoadedData={() => setReady(true)}
+          className={cn('h-full w-full object-contain', error && 'invisible')}
+          style={
+            digitalZoom > 1.01
+              ? { transform: `scale(${digitalZoom})`, transformOrigin: 'center center' }
+              : undefined
+          }
+        />
         {error ? (
-          <div className="flex h-full flex-col items-center justify-center space-y-4 px-6 text-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 px-6 text-center">
             <p className="text-sm text-white/80">{error}</p>
             {nativeInputId ? (
               <label
                 htmlFor={nativeInputId}
-                onClick={onClose}
+                onClick={closeCamera}
                 className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
               >
                 Open phone camera
               </label>
             ) : null}
           </div>
-        ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            onLoadedData={() => setReady(true)}
-            className="h-full w-full object-contain"
-            style={
-              digitalZoom > 1.01
-                ? { transform: `scale(${digitalZoom})`, transformOrigin: 'center center' }
-                : undefined
-            }
-          />
-        )}
+        ) : null}
 
         {!error && lenses.length > 1 ? (
           <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full bg-black/45 p-1 backdrop-blur-sm">
@@ -478,6 +518,7 @@ export function KeyCameraCapture({
           ) : null}
         </div>
       ) : null}
-    </div>
+    </div>,
+    document.body,
   );
 }
