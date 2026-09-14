@@ -3620,6 +3620,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent/properties/{propertyId}/workflows/leasing-cycle/{cycleId}/relet-decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm the re-let for a leasing cycle (proceed / do_not_relet / decide_later). */
+        post: operations["AgentPortalController_setReletDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent/properties/{propertyId}/workflows/leasing-cycle/{cycleId}/cancel": {
         parameters: {
             query?: never;
@@ -9934,6 +9951,17 @@ export interface components {
             archiveOnBondRelease?: boolean;
         };
         AgentCreateLeasingCycleDto: {
+            desiredStartDate?: string;
+            furnished?: boolean;
+            furnitureNotes?: string;
+            parkingSpaces?: number;
+            parkingNotes?: string;
+            storageIncluded?: boolean;
+            storageNotes?: string;
+            /** @enum {string} */
+            advertisingOwner?: "crossub" | "agent";
+            /** Format: uuid */
+            defaultInspectorId?: string;
             agentName?: string;
             agentCompany?: string;
             /** Format: email */
@@ -9952,10 +9980,30 @@ export interface components {
             skipOpenInspection?: boolean;
             agentConductsOpenInspection?: boolean;
             agentInitiated?: boolean;
+            /** @enum {string} */
+            reletDecision?: "proceed" | "decide_later";
         };
         AgentWorkflowCreateResultDto: {
             id: string;
             openInspectionId?: string;
+        };
+        AgentSetReletDecisionDto: {
+            desiredStartDate?: string;
+            furnished?: boolean;
+            furnitureNotes?: string;
+            parkingSpaces?: number;
+            parkingNotes?: string;
+            storageIncluded?: boolean;
+            storageNotes?: string;
+            /** @enum {string} */
+            advertisingOwner?: "crossub" | "agent";
+            /** Format: uuid */
+            defaultInspectorId?: string;
+            /** @enum {string} */
+            decision: "proceed" | "do_not_relet" | "decide_later";
+            /** @enum {string} */
+            openProvider?: "crossub" | "agency";
+            reason?: string;
         };
         CancelAgentLeasingCycleDto: {
             /** @example Landlord decided not to lease anymore */
@@ -20608,6 +20656,32 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentWorkflowCreateResultDto"];
+                };
+            };
+        };
+    };
+    AgentPortalController_setReletDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+                cycleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentSetReletDecisionDto"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -10407,7 +10407,7 @@
     },
     "/users/{id}/module-access": {
       "put": {
-        "description": "Replaces the module-access keys the person holds directly. Only the module-access keys (ACCESS_HR_MODULE, ACCESS_ACCOUNTING_MODULE, ACCESS_INSPECTOR_REGISTRY) are accepted; keys the role or department already gives are reported under `inherited` and cannot be removed here. Live on the next request — no re-login.",
+        "description": "Replaces the module-access keys the person holds directly. Only the module-access keys (ACCESS_HR_MODULE, ACCESS_ACCOUNTING_MODULE, ACCESS_INSPECTOR_REGISTRY, CREATE_PROPERTY) are accepted; keys the role or department already gives are reported under `inherited` and cannot be removed here. Live on the next request — no re-login.",
         "operationId": "UsersController_setModuleAccess",
         "parameters": [
           {
@@ -20907,6 +20907,48 @@
         ]
       }
     },
+    "/communication/conversations/{id}/email-recipient": {
+      "get": {
+        "description": "Resolved server-side exactly as `POST conversations/:id/messages` resolves it — the client never supplies the address. What the compose box prints as `To`. `email` absent means the send would be refused, and `reason` says why. A read; nothing is sent.",
+        "operationId": "CommHubController_replyRecipient",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Who an email reply on this conversation will be addressed to.",
+        "tags": [
+          "CommHub"
+        ]
+      }
+    },
     "/communication/conversations/{id}/read": {
       "patch": {
         "operationId": "CommHubController_markRead",
@@ -24829,6 +24871,113 @@
         ]
       }
     },
+    "/leasing/cycles/{id}/relet-decision": {
+      "patch": {
+        "description": "A cycle CROSSUB opens sits at AWAITING_CONFIRMATION until the managing agent decides. Proceed activates it (open order + weekly rerun); do_not_relet cancels it with the reason; decide_later defers and restarts the reminder ladder. Letting terms may be set in the same call.",
+        "operationId": "LeasingCycleController_setReletDecision",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetReletDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or a reason is required to decline."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The letting is already finished, or already proceeding."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record the agent re-let confirmation (Leasing L1).",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/letting-terms": {
+      "patch": {
+        "description": "Furnishing, parking, storage, advertising owner, default inspector and the desired start date. Changing the start date writes the move-in date and recalculates the ingoing due date.",
+        "operationId": "LeasingCycleController_updateLettingTerms",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLettingTermsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the default inspector is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit the letting terms of an open cycle (Leasing L1).",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
     "/leasing/cycles/{id}/withdraw-tenancy": {
       "post": {
         "description": "CRS-0157. Ends the household's signed-but-not-started agreements, files them under Previous tenancies as a non-restorable Archived row, and closes the case (without stamping it deleted). Distinct from \"Archive tenant\", which spares not-yet-started agreements by design (CRS-0116) and so leaves the incoming card standing. A household that has already moved in is refused — that is a current tenancy, archived with \"Archive tenant\" instead.",
@@ -27787,6 +27936,60 @@
           }
         ],
         "summary": "Send the rent-increase notice to the tenant.",
+        "tags": [
+          "RentReviewWorkflow"
+        ]
+      }
+    },
+    "/leasing/rent-reviews/{id}/tenant-notice/reserve": {
+      "post": {
+        "operationId": "RentReviewWorkflowController_reserveTenantNotice",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReserveTenantNoticeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, the body is invalid, the date gives less than 60 days from today, or no notice has been sent."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The review is not at TENANT_NOTIFIED."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Serve the rent-increase notice again on a review whose tenant already holds one. Restarts the 60-day count from today; the email tells the tenant it replaces the earlier notice.",
         "tags": [
           "RentReviewWorkflow"
         ]
@@ -47385,6 +47588,62 @@
         ]
       }
     },
+    "/agent/properties/{propertyId}/workflows/leasing-cycle/{cycleId}/relet-decision": {
+      "post": {
+        "operationId": "AgentPortalController_setReletDecision",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cycleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSetReletDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowCreateResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm the re-let for a leasing cycle (proceed / do_not_relet / decide_later).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/leasing-cycle/{cycleId}/cancel": {
       "post": {
         "operationId": "AgentPortalController_cancelLeasingCycle",
@@ -53868,7 +54127,8 @@
               "ACCESS_CONVERSATION_CONSOLE",
               "ACCESS_HR_MODULE",
               "ACCESS_ACCOUNTING_MODULE",
-              "ACCESS_INSPECTOR_REGISTRY"
+              "ACCESS_INSPECTOR_REGISTRY",
+              "CREATE_PROPERTY"
             ],
             "uniqueItems": true
           }
@@ -53927,7 +54187,8 @@
               "ACCESS_CONVERSATION_CONSOLE",
               "ACCESS_HR_MODULE",
               "ACCESS_ACCOUNTING_MODULE",
-              "ACCESS_INSPECTOR_REGISTRY"
+              "ACCESS_INSPECTOR_REGISTRY",
+              "CREATE_PROPERTY"
             ],
             "uniqueItems": true
           }
@@ -60373,16 +60634,18 @@
             "enum": [
               "ACCESS_HR_MODULE",
               "ACCESS_ACCOUNTING_MODULE",
-              "ACCESS_INSPECTOR_REGISTRY"
+              "ACCESS_INSPECTOR_REGISTRY",
+              "CREATE_PROPERTY"
             ],
             "uniqueItems": true,
-            "description": "Module-access keys this person holds directly (ACCESS_HR_MODULE, ACCESS_ACCOUNTING_MODULE). Send the complete set.",
+            "description": "Module-access keys this person holds directly (ACCESS_HR_MODULE, ACCESS_ACCOUNTING_MODULE, ACCESS_INSPECTOR_REGISTRY, CREATE_PROPERTY). Send the complete set.",
             "items": {
               "type": "string",
               "enum": [
                 "ACCESS_HR_MODULE",
                 "ACCESS_ACCOUNTING_MODULE",
-                "ACCESS_INSPECTOR_REGISTRY"
+                "ACCESS_INSPECTOR_REGISTRY",
+                "CREATE_PROPERTY"
               ]
             }
           }
@@ -60709,6 +60972,11 @@
           "contactId": {
             "type": "string",
             "description": "PropertyContact id (TENANT role). When omitted, uses the primary tenant contact or the property registry tenant email."
+          },
+          "personId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Person on one of this property's tenancies (the household card lists tenants from their agreements). Takes precedence over contactId; refused with 404 when the person is not on the property."
           }
         }
       },
@@ -65461,6 +65729,43 @@
       "CreateLeasingCycleDto": {
         "type": "object",
         "properties": {
+          "desiredStartDate": {
+            "type": "string"
+          },
+          "furnished": {
+            "type": "boolean"
+          },
+          "furnitureNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "parkingSpaces": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "parkingNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "storageIncluded": {
+            "type": "boolean"
+          },
+          "storageNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "advertisingOwner": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agent"
+            ]
+          },
+          "defaultInspectorId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "propertyId": {
             "type": "string"
           },
@@ -65525,6 +65830,13 @@
           },
           "agentInitiated": {
             "type": "boolean"
+          },
+          "reletDecision": {
+            "type": "string",
+            "enum": [
+              "proceed",
+              "decide_later"
+            ]
           }
         },
         "required": [
@@ -65703,6 +66015,112 @@
         "required": [
           "reason"
         ]
+      },
+      "SetReletDecisionDto": {
+        "type": "object",
+        "properties": {
+          "desiredStartDate": {
+            "type": "string"
+          },
+          "furnished": {
+            "type": "boolean"
+          },
+          "furnitureNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "parkingSpaces": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "parkingNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "storageIncluded": {
+            "type": "boolean"
+          },
+          "storageNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "advertisingOwner": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agent"
+            ]
+          },
+          "defaultInspectorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "proceed",
+              "do_not_relet",
+              "decide_later"
+            ]
+          },
+          "openProvider": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agency"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "UpdateLettingTermsDto": {
+        "type": "object",
+        "properties": {
+          "desiredStartDate": {
+            "type": "string"
+          },
+          "furnished": {
+            "type": "boolean"
+          },
+          "furnitureNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "parkingSpaces": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "parkingNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "storageIncluded": {
+            "type": "boolean"
+          },
+          "storageNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "advertisingOwner": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agent"
+            ]
+          },
+          "defaultInspectorId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
       },
       "WithdrawLeasingTenancyDto": {
         "type": "object",
@@ -66466,6 +66884,25 @@
             "type": "string"
           }
         }
+      },
+      "ReserveTenantNoticeDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "weekly": {
+            "type": "number",
+            "minimum": 0
+          },
+          "effectiveDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
       },
       "TenantResponseDto": {
         "type": "object",
@@ -80624,6 +81061,43 @@
       "AgentCreateLeasingCycleDto": {
         "type": "object",
         "properties": {
+          "desiredStartDate": {
+            "type": "string"
+          },
+          "furnished": {
+            "type": "boolean"
+          },
+          "furnitureNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "parkingSpaces": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "parkingNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "storageIncluded": {
+            "type": "boolean"
+          },
+          "storageNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "advertisingOwner": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agent"
+            ]
+          },
+          "defaultInspectorId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "agentName": {
             "type": "string",
             "maxLength": 120
@@ -80685,6 +81159,13 @@
           },
           "agentInitiated": {
             "type": "boolean"
+          },
+          "reletDecision": {
+            "type": "string",
+            "enum": [
+              "proceed",
+              "decide_later"
+            ]
           }
         },
         "required": [
@@ -80704,6 +81185,70 @@
         },
         "required": [
           "id"
+        ]
+      },
+      "AgentSetReletDecisionDto": {
+        "type": "object",
+        "properties": {
+          "desiredStartDate": {
+            "type": "string"
+          },
+          "furnished": {
+            "type": "boolean"
+          },
+          "furnitureNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "parkingSpaces": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "parkingNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "storageIncluded": {
+            "type": "boolean"
+          },
+          "storageNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "advertisingOwner": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agent"
+            ]
+          },
+          "defaultInspectorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "proceed",
+              "do_not_relet",
+              "decide_later"
+            ]
+          },
+          "openProvider": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agency"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "decision"
         ]
       },
       "CancelAgentLeasingCycleDto": {

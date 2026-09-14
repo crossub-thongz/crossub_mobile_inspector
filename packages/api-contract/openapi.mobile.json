@@ -10340,6 +10340,62 @@
         ]
       }
     },
+    "/agent/properties/{propertyId}/workflows/leasing-cycle/{cycleId}/relet-decision": {
+      "post": {
+        "operationId": "AgentPortalController_setReletDecision",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cycleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSetReletDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowCreateResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm the re-let for a leasing cycle (proceed / do_not_relet / decide_later).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/leasing-cycle/{cycleId}/cancel": {
       "post": {
         "operationId": "AgentPortalController_cancelLeasingCycle",
@@ -26441,6 +26497,43 @@
       "AgentCreateLeasingCycleDto": {
         "type": "object",
         "properties": {
+          "desiredStartDate": {
+            "type": "string"
+          },
+          "furnished": {
+            "type": "boolean"
+          },
+          "furnitureNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "parkingSpaces": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "parkingNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "storageIncluded": {
+            "type": "boolean"
+          },
+          "storageNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "advertisingOwner": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agent"
+            ]
+          },
+          "defaultInspectorId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "agentName": {
             "type": "string",
             "maxLength": 120
@@ -26502,6 +26595,13 @@
           },
           "agentInitiated": {
             "type": "boolean"
+          },
+          "reletDecision": {
+            "type": "string",
+            "enum": [
+              "proceed",
+              "decide_later"
+            ]
           }
         },
         "required": [
@@ -26521,6 +26621,70 @@
         },
         "required": [
           "id"
+        ]
+      },
+      "AgentSetReletDecisionDto": {
+        "type": "object",
+        "properties": {
+          "desiredStartDate": {
+            "type": "string"
+          },
+          "furnished": {
+            "type": "boolean"
+          },
+          "furnitureNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "parkingSpaces": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "parkingNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "storageIncluded": {
+            "type": "boolean"
+          },
+          "storageNotes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "advertisingOwner": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agent"
+            ]
+          },
+          "defaultInspectorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "proceed",
+              "do_not_relet",
+              "decide_later"
+            ]
+          },
+          "openProvider": {
+            "type": "string",
+            "enum": [
+              "crossub",
+              "agency"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "decision"
         ]
       },
       "CancelAgentLeasingCycleDto": {
