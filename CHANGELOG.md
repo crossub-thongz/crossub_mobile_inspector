@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-14
+
+### Changed
+- **Re-vendored `@crossub-thongz/api-contract` 0.17.0 → 0.21.0: 266 → 278 paths, 348 → 366 schemas.** 0.21.0 is the release that carries the maintenance AI redesign (issue questions and tenant answers, AI quote-review flags and quote purpose, the Handyman trade) plus three weeks of facade growth since 0.17.0. 0 of the new paths are on the inspector facade. `packages/api-contract/dist` was rebuilt so the compiler reads the new types, and `tsc --noEmit` on `apps/inspector` returns the same 12 app-internal errors as before (three `inspection-layout-template.ts` errors now print their union members in a different order; none is new and none is contract drift).
+
 ## 2026-08-26
 
 ### Changed

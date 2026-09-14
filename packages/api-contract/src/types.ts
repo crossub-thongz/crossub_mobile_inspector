@@ -213,6 +213,26 @@ export interface paths {
         patch: operations["TenantMaintenanceController_approveCompletion"];
         trace?: never;
     };
+    "/tenant/maintenance-requests/{requestId}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Answer the questions CROSSUB asked about a repair (Phase 1 §B).
+         * @description Records the tenant answers to an issue question round, then re-runs the AI triage with the answers so the job can progress. Questions to answer are on the request detail as `questions`.
+         */
+        patch: operations["TenantMaintenanceController_recordAnswers"];
+        trace?: never;
+    };
     "/tenant/maintenance-requests/{requestId}/schedule-response": {
         parameters: {
             query?: never;
@@ -449,8 +469,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List agent-scheduled ingoing inspections for the tenant.
-         * @description Ingoing inspections linked from agent-initiated leasing cycles on properties the tenant is applying for or leasing. Only appears after the agent schedules one.
+         * List agent-scheduled entry inspections for the tenant.
+         * @description Entry inspections linked from agent-initiated leasing cycles on properties the tenant is applying for or leasing. Only appears after the agent schedules one.
          */
         get: operations["TenantAccountController_listIngoingInspections"];
         put?: never;
@@ -468,7 +488,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get an agent-scheduled ingoing inspection with report sections. */
+        /** Get an agent-scheduled entry inspection with report sections. */
         get: operations["TenantAccountController_getIngoingInspection"];
         put?: never;
         post?: never;
@@ -487,7 +507,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Raise a dispute on an ingoing inspection section. */
+        /** Raise a dispute on an entry inspection section. */
         post: operations["TenantAccountController_disputeIngoingInspection"];
         delete?: never;
         options?: never;
@@ -504,7 +524,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Confirm or dispute one section of the ingoing report (with feedback). */
+        /** Confirm or dispute one section of the entry report (with feedback). */
         post: operations["TenantAccountController_submitIngoingSectionFeedback"];
         delete?: never;
         options?: never;
@@ -538,7 +558,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Upload the tenant-completed ingoing report (filled sections + signature) and submit it back. */
+        /** Upload the tenant-completed entry report (filled sections + signature) and submit it back. */
         post: operations["TenantAccountController_submitIngoingReturnedReport"];
         delete?: never;
         options?: never;
@@ -559,7 +579,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Approve the ingoing condition report after review. */
+        /** Approve the entry condition report after review. */
         patch: operations["TenantAccountController_approveIngoingInspection"];
         trace?: never;
     };
@@ -572,7 +592,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reject the whole ingoing condition report with a reason. */
+        /** Reject the whole entry condition report with a reason. */
         post: operations["TenantAccountController_rejectIngoingInspection"];
         delete?: never;
         options?: never;
@@ -588,8 +608,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List agent-scheduled outgoing inspections for the tenant.
-         * @description Outgoing inspections linked from agent-opened end-leasing cases on the property the tenant leases. Only appears after the agent schedules one.
+         * List agent-scheduled final inspections for the tenant.
+         * @description Final inspections linked from agent-opened end-leasing cases on the property the tenant leases. Only appears after the agent schedules one.
          */
         get: operations["TenantAccountController_listOutgoingInspections"];
         put?: never;
@@ -607,7 +627,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get an agent-scheduled outgoing inspection with report sections. */
+        /** Get an agent-scheduled final inspection with report sections. */
         get: operations["TenantAccountController_getOutgoingInspection"];
         put?: never;
         post?: never;
@@ -626,7 +646,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Raise a dispute on an outgoing inspection section. */
+        /** Raise a dispute on a final inspection section. */
         post: operations["TenantAccountController_disputeOutgoingInspection"];
         delete?: never;
         options?: never;
@@ -647,7 +667,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Approve the outgoing condition report after review. */
+        /** Approve the final condition report after review. */
         patch: operations["TenantAccountController_approveOutgoingInspection"];
         trace?: never;
     };
@@ -904,7 +924,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Record whether the tenant will attend the outgoing inspection. */
+        /** Record whether the tenant will attend the final inspection. */
         patch: operations["TenantAccountController_setVacatingOutgoingAttendance"];
         trace?: never;
     };
@@ -2418,7 +2438,7 @@ export interface paths {
         };
         /**
          * The routed Saturday this inspector is being asked to confirm.
-         * @description Step 5 of the open flow. Returns the persisted plan — the same times the selection returned, never re-planned on read, so what is confirmed is exactly what was shown. Null-bodied 200 when the inspector has selected nothing.
+         * @description Step 5 of the open flow. Returns the persisted plan — the same times the selection returned, never re-planned on read, so what is confirmed is exactly what was shown. JSON `null` when the inspector has selected nothing. Nest would otherwise omit the body, and the inspector app dies parsing empty JSON.
          */
         get: operations["InspectorInspectionsController_openBatchPlan"];
         put?: never;
@@ -2480,7 +2500,7 @@ export interface paths {
         put?: never;
         /**
          * Hand selected opens back to the pool before confirming.
-         * @description Returns them for anyone else in the same batch and re-plans whatever this inspector still holds — dropping a stop changes every time after it. Null-bodied 200 when nothing is left. A confirmed open cannot be released this way.
+         * @description Returns them for anyone else in the same batch and re-plans whatever this inspector still holds — dropping a stop changes every time after it. JSON `null` when nothing is left. A confirmed open cannot be released this way.
          */
         post: operations["InspectorInspectionsController_releaseOpenBatch"];
         delete?: never;
@@ -3168,7 +3188,7 @@ export interface paths {
         };
         /**
          * Agent portal welcome tour — eligibility and dismissal state.
-         * @description The in-app welcome modal is shown only when eligible is true and dismissed is false. Eligible means Sales onboarding is complete for at least one assigned agency.
+         * @description The in-app welcome modal is shown only when eligible is true and dismissed is false. Eligible means the agent has an assigned onboarding or live agency, or platform access is already granted — shown right after registration, not after listings are uploaded.
          */
         get: operations["AgentPortalController_getPortalWelcomeStatus"];
         put?: never;
@@ -3338,6 +3358,26 @@ export interface paths {
         patch: operations["AgentPortalController_updateAgencyBilling"];
         trace?: never;
     };
+    "/agent/agencies/{agencyId}/primary-contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set the agency primary contact (principal only).
+         * @description Null keeps the agency (company registry contact) as the default primary. A user id must be an active team member.
+         */
+        patch: operations["AgentPortalController_updateAgencyPrimaryContact"];
+        trace?: never;
+    };
     "/agent/invoices": {
         parameters: {
             query?: never;
@@ -3420,6 +3460,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent/properties/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check whether this agency already has a live property at the address
+         * @description Add-property wizard lookup. Matches create: same agency, live rows only, case/whitespace-insensitive address AND suburb. The agency is the signed-in agent’s — it is not accepted in the query. Pass excludePropertyId when resuming a draft so that row is not treated as a duplicate of itself.
+         */
+        get: operations["AgentPortalController_lookupDuplicateAddress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent/properties/{propertyId}": {
         parameters: {
             query?: never;
@@ -3433,7 +3493,7 @@ export interface paths {
         post?: never;
         /**
          * Remove a property permanently.
-         * @description Hard-deletes a property. Incomplete drafts are always removable. Completed properties are only removable when they have no workflow history; otherwise use end-management to archive.
+         * @description Hard-deletes a property. Incomplete drafts are always removable. Completed properties are only removable when they have no workflow history; otherwise archive it.
          */
         delete: operations["AgentPortalController_deleteDraftProperty"];
         options?: never;
@@ -3494,9 +3554,49 @@ export interface paths {
         put?: never;
         /**
          * End agency management on a property.
-         * @description Records the end-of-management date, archives the property, and removes it from the active agent list.
+         * @description Records the end-of-management date and closes the live Management row. The property stays on the active agent list until it is archived.
          */
         post: operations["AgentPortalController_endPropertyManagement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/properties/{propertyId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive a property.
+         * @description Moves the property to Admin Archived and removes it from the active agent list, keeping history. Open cases are force-closed as Agent Archived.
+         */
+        post: operations["AgentPortalController_archiveProperty"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/properties/{propertyId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore an archived property.
+         * @description Returns the property to the live agent list and reopens management. Closed Agent Archived cases stay closed.
+         */
+        post: operations["AgentPortalController_restoreProperty"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3985,6 +4085,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent/properties/{propertyId}/workflows/accounting/arrears/paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark recorded arrears as paid on a chosen date. */
+        post: operations["AgentPortalController_markPropertyArrearsPaid"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent/properties/{propertyId}/workflows/tribunal/rent-chasing": {
         parameters: {
             query?: never;
@@ -4271,6 +4388,26 @@ export interface paths {
          * @description Decodes the base64 body, puts it to object storage (R2), and returns its public URL for inclusion in the report’s photos.
          */
         post: operations["AgentPortalController_uploadKeyCollectionPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/properties/{propertyId}/image/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a property cover image (base64-through-API → object storage).
+         * @description Decodes the base64 body, stores it in object storage (R2), updates `Property.imageUrl`, and returns the public URL.
+         */
+        post: operations["AgentPortalController_uploadPropertyImage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4737,6 +4874,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent/maintenance/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read one maintenance job in full — the portfolio card plus the V2 spine.
+         * @description Returns the job with its quote-version chain (V1/V2… per contractor thread, derived from legacy quotes for pre-V2 jobs), the active or latest work order, and the latest invoice match.
+         */
+        get: operations["AgentPortalController_getMaintenanceDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/quotes/{quotationId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a specific submitted contractor quote through the maintenance workflow.
+         * @description Runs the same approval the staff console does (mints the approved quote, issues the work order, advances the job) as the agent. Only the current submitted version can be approved.
+         */
+        post: operations["AgentPortalController_approveMaintenanceQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/quotes/{quotationId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a specific submitted contractor quote, with a required reason. */
+        post: operations["AgentPortalController_rejectMaintenanceQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/quotes/{quotationId}/price-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a price-review counter-offer to the contractor on a submitted quote.
+         * @description The negotiation loop (§10.1): a counter price and optional message go to the contractor, who resubmits as the next version in the thread.
+         */
+        post: operations["AgentPortalController_priceReviewMaintenanceQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a maintenance job with a reason (manual close — bypasses the completion gates).
+         * @description For a job that should not proceed (duplicate, raised in error, resolved by the tenant…). A 409 lists outstanding commitments; re-send with acknowledgeCommitments: true to close anyway.
+         */
+        post: operations["AgentPortalController_closeMaintenance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent/maintenance/{requestId}/approve": {
         parameters: {
             query?: never;
@@ -4746,7 +4980,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Approve a contractor’s quote on a maintenance request (QUOTING → SCHEDULED), recording the agency approval. */
+        /**
+         * Approve the single current submitted quote on a maintenance job (through the workflow).
+         * @description Convenience over the quote-specific approve: resolves the one submitted quote and approves it as the agent. 409 when there is no submitted quote, or more than one to choose from.
+         */
         post: operations["AgentPortalController_approveMaintenance"];
         delete?: never;
         options?: never;
@@ -4763,7 +5000,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Decline a contractor’s quote on a maintenance request (QUOTING → OPEN), re-opening it for a fresh quote. */
+        /**
+         * Decline every submitted quote on a maintenance job (through the workflow).
+         * @description Declines each submitted quote with the reason, as the agent. 409 when there is no submitted quote to decline.
+         */
         post: operations["AgentPortalController_declineMaintenance"];
         delete?: never;
         options?: never;
@@ -5039,6 +5279,16 @@ export interface components {
             /** @example +61 2 9000 0000 */
             phone?: string;
         };
+        TenantMaintenanceQuestionDto: {
+            /** Format: uuid */
+            issueId: string;
+            /** @description Stable within the issue (q1, q2, …). */
+            questionKey: string;
+            question: string;
+            answer: string | null;
+            /** Format: date-time */
+            answeredAt: string | null;
+        };
         TenantMaintenanceRequestSummaryDto: {
             /** Format: uuid */
             id: string;
@@ -5138,6 +5388,8 @@ export interface components {
             buildingManager?: components["schemas"]["MaintenancePropertyContactDto"];
             /** @description Strata body contact from the linked property. */
             strataContact?: components["schemas"]["MaintenancePropertyContactDto"];
+            /** @description Questions CROSSUB asked about this repair and the tenant answers recorded (Phase 1 §B). Answer the still-unanswered ones via PATCH /:requestId/answers. */
+            questions?: components["schemas"]["TenantMaintenanceQuestionDto"][];
         };
         PaginatedTenantRequestsDto: {
             /**
@@ -5177,6 +5429,19 @@ export interface components {
              * @default true
              */
             approved: boolean;
+        };
+        MaintenanceIssueAnswerDto: {
+            /** @description The issue the answer belongs to. */
+            issueId: string;
+            /** @description The question key (q1, q2, …) being answered. */
+            questionKey: string;
+            /** @description The tenant's answer. */
+            answer: string;
+        };
+        RecordMaintenanceIssueAnswersDto: {
+            answers: components["schemas"]["MaintenanceIssueAnswerDto"][];
+            /** @description Optional note — ignored today, reserved. */
+            note?: string;
         };
         TenantScheduleResponseDto: {
             /** Format: uuid */
@@ -5302,7 +5567,7 @@ export interface components {
              * @example APARTMENT
              * @enum {string}
              */
-            propertyType: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
+            propertyType: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "DUPLEX" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
             /** @example 2 */
             bedrooms: number | null;
             /** @example 1 */
@@ -5621,7 +5886,7 @@ export interface components {
             /** Format: date-time */
             scheduledAt: string | null;
             reportUrl: string | null;
-            /** @description Tenant-uploaded signed copy of the ingoing report. */
+            /** @description Tenant-uploaded signed copy of the entry report. */
             tenantReturnedReportUrl?: string | null;
             tenantReturnedSignedName?: string | null;
             /** Format: date-time */
@@ -5691,7 +5956,7 @@ export interface components {
         };
         TenantIngoingRejectDto: {
             /**
-             * @description Reason the tenant is rejecting the whole ingoing report.
+             * @description Reason the tenant is rejecting the whole entry report.
              * @example Several rooms do not match the condition shown in the report.
              */
             reason: string;
@@ -5703,9 +5968,9 @@ export interface components {
             room: string;
             /** @example Benchtop has minor wear. */
             description: string;
-            /** @description Photos from the outgoing / current inspection. */
+            /** @description Photos from the final / current inspection. */
             photos: string[];
-            /** @description Photos from the latest completed ingoing inspection for the same section (side-by-side baseline). */
+            /** @description Photos from the latest completed entry inspection for the same section (side-by-side baseline). */
             referencePhotos: string[];
             /** @description Whether the tenant has disputed this section. */
             disputed: boolean;
@@ -5727,7 +5992,7 @@ export interface components {
             status: "scheduled" | "awaiting_report" | "awaiting_confirmation" | "confirmed";
             tenantApproved: boolean;
             /**
-             * @description Whether the tenant will attend the outgoing inspection.
+             * @description Whether the tenant will attend the final inspection.
              * @enum {string}
              */
             tenantOutgoingAttendance: "pending" | "yes" | "no";
@@ -5756,7 +6021,7 @@ export interface components {
             description: string;
             /** @description Photos from the routine inspection. */
             photos: string[];
-            /** @description Photos from the latest completed ingoing inspection for the same section. */
+            /** @description Photos from the latest completed entry inspection for the same section. */
             referencePhotos: string[];
         };
         TenantRoutineInspectionPreviousSubmissionDto: {
@@ -5812,8 +6077,9 @@ export interface components {
             declineReason?: string | null;
             /** @description The first tenant submission kept after staff decline — shown read-only while awaiting resubmit. */
             previousSubmission?: components["schemas"]["TenantRoutineInspectionPreviousSubmissionDto"];
+            /** @description The full room checklist on a self-inspection: every room in the property template, carrying its saved photos once the tenant has filled it, plus any room saved under a name the template does not hold. Rooms are never dropped as the walk progresses. */
             sections?: components["schemas"]["TenantRoutineInspectionSectionDto"][];
-            /** @description Latest completed ingoing report areas for baseline photo comparison during self-inspection. */
+            /** @description Latest completed entry report areas for baseline photo comparison during self-inspection. */
             referenceIngoingAreas?: components["schemas"]["TenantRoutineReferenceIngoingAreaDto"][];
             /** @description Bedroom count from the property record, used to seed the self-routine room template. */
             bedrooms?: number | null;
@@ -5836,7 +6102,7 @@ export interface components {
             areas: components["schemas"]["SaveTenantRoutineSelfDraftAreaDto"][];
         };
         SubmitTenantRoutineSelfInspectionSectionDto: {
-            /** @description Inspection area id, or a pre-start placeholder (`template-0`, `template-1`, …) resolved server-side after the checklist is spawned. */
+            /** @description Inspection area id, or a checklist placeholder (`template-0`, `template-1`, …) for a room that has no area row yet. A placeholder is numbered against the room template and is resolved — creating the room if needed — server-side. */
             areaId?: string;
             /**
              * @description Composite room section name (find-or-create). Use instead of areaId for subsection-level self inspections.
@@ -6058,20 +6324,20 @@ export interface components {
             tenantKeyReturnSubmittedAt: string | null;
             /**
              * Format: date-time
-             * @description Scheduled outgoing inspection date.
+             * @description Scheduled final inspection date.
              */
             inspectionDate: string | null;
             /**
              * Format: uuid
-             * @description Linked outgoing inspection id, when scheduled.
+             * @description Linked final inspection id, when scheduled.
              */
             outgoingInspectionId: string | null;
             /**
-             * @description Whether the tenant will attend the outgoing inspection.
+             * @description Whether the tenant will attend the final inspection.
              * @enum {string}
              */
             tenantOutgoingAttendance: "pending" | "yes" | "no";
-            /** @description Outgoing inspection report is available for review. */
+            /** @description Final inspection report is available for review. */
             inspectionReportAvailable: boolean;
             /**
              * @description Tenant response to proposed bond deductions.
@@ -6125,7 +6391,7 @@ export interface components {
         };
         TenantSetOutgoingAttendanceDto: {
             /**
-             * @description Whether the tenant will attend the outgoing inspection.
+             * @description Whether the tenant will attend the final inspection.
              * @enum {string}
              */
             attendance: "yes" | "no";
@@ -6408,7 +6674,7 @@ export interface components {
             agreement: components["schemas"]["TenantLeasingAgreementDto"];
             /**
              * Format: uuid
-             * @description Linked ingoing inspection id when the agent has scheduled one.
+             * @description Linked entry inspection id when the agent has scheduled one.
              */
             ingoingInspectionId: string | null;
             /** @description Documents uploaded with the NSW tenancy application — mirrored in new-leasing onboarding. */
@@ -6501,7 +6767,7 @@ export interface components {
              */
             acceptingApplications: boolean;
             /** @enum {string} */
-            propertyType: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
+            propertyType: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "DUPLEX" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
             /** @example 720 */
             rentWeekly?: number | null;
             /**
@@ -6692,7 +6958,7 @@ export interface components {
              * @example HOUSE
              * @enum {string}
              */
-            propertyType: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
+            propertyType: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "DUPLEX" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
             /**
              * @example OCCUPIED
              * @enum {string}
@@ -7724,7 +7990,7 @@ export interface components {
             /** @description Filed inspection report PDF (object-storage URL). Null until the report is generated or uploaded. */
             reportUrl: string | null;
             /**
-             * @description Level 1 prepaid: true until the agency pays at order create — inspector cannot start while this is true. Always false for Level 2 (postpaid).
+             * @description Level 1 prepaid and Level 2 extras / Open: true until the agency pays at order create — inspector cannot start while this is true. False for included Level 2 allowance jobs.
              * @example false
              */
             awaitingAgentPayment: boolean;
@@ -7969,7 +8235,7 @@ export interface components {
             /** @description Inspector may POST /open-viewing/start while accepted and not yet live. */
             canStart: boolean;
             /**
-             * @description Level 1 prepaid: true until the agent pays — Start stays disabled while awaiting payment. Always false for Level 2 (postpaid monthly invoice).
+             * @description Prepaid Open: true until the agent pays — Start stays disabled while awaiting payment. False for included jobs and legacy free-open agencies.
              * @example false
              */
             awaitingAgentPayment: boolean;
@@ -8099,11 +8365,11 @@ export interface components {
             inspectionId: string;
             /**
              * Format: uuid
-             * @description Property id (must match the outgoing inspection property).
+             * @description Property id (must match the final inspection property).
              */
             propertyId: string;
             areas: components["schemas"]["InspectorReferenceIngoingAreaDto"][];
-            /** @description Room/section layout from the ingoing walk-through — outgoing jobs inherit this scope. */
+            /** @description Room/section layout from the entry walk-through — final jobs inherit this scope. */
             areaPlan: components["schemas"]["InspectorIngoingAreaPlanDto"] | null;
         };
         InspectorDeviceDraftDto: {
@@ -8448,7 +8714,7 @@ export interface components {
             serviceRegions: string[];
             tribunalQualified: boolean;
             /**
-             * @description 1–5 capability tag assigned by staff. New inspectors start at 1. 1 outgoing/ingoing; 2 +routine; 3 +open; 4 outgoing/ingoing/routine/open; 5 = 4 + tribunal.
+             * @description 1–5 capability tag assigned by staff. New inspectors start at 1. 1 final/entry; 2 +routine; 3 +open; 4 final/entry/routine/open; 5 = 4 + tribunal.
              * @example 4
              */
             accessLevel: number;
@@ -8647,7 +8913,33 @@ export interface components {
             billArrears?: components["schemas"]["AgentTribunalBillArrearsRowDto"][];
             bondArrears?: components["schemas"]["AgentTribunalBondArrearsDto"];
         };
+        AgentMarkArrearsPaidItemDto: {
+            /** Format: uuid */
+            caseId: string;
+            /** @enum {string} */
+            kind: "rent" | "bill" | "bond";
+            /** @description When kind is bill, pay this snapshot row only. Omit to pay every bill on the case. */
+            billIndex?: number;
+        };
+        AgentMarkArrearsPaidDto: {
+            /**
+             * @description ISO date the arrears were paid.
+             * @example 2026-09-02
+             */
+            paidDate: string;
+            /**
+             * @description Arrears kinds to mark paid. Omit to mark every outstanding kind.
+             * @enum {array}
+             */
+            kinds?: "rent" | "bill" | "bond";
+            /** @description Specific stacked arrears rows to mark paid. Takes precedence over kinds. */
+            items?: components["schemas"]["AgentMarkArrearsPaidItemDto"][];
+        };
         AgentTribunalArrearRowDto: {
+            /** Format: uuid */
+            caseId?: string;
+            /** @description Index of this bill inside the arrears case snapshot, when kind is bill. */
+            billIndex?: number;
             /** @enum {string} */
             kind: "rent" | "bill" | "bond";
             /** @example Rent Arrears */
@@ -8724,6 +9016,10 @@ export interface components {
             arrears: components["schemas"]["AgentTribunalArrearRowDto"][];
             rentArrears?: components["schemas"]["AgentTribunalRentArrearsDto"] | null;
             billArrears: components["schemas"]["AgentTribunalBillArrearsRowDto"][];
+            /** @description Property agreement / lease end date — always populated from the property when known, including when there is no open bond arrears case. */
+            agreementEndDate?: string | null;
+            /** @description Property agreement / lease start date when known. */
+            leaseStartDate?: string | null;
             bondArrears?: components["schemas"]["AgentTribunalBondArrearsDto"] | null;
         };
         AgentUpdateTribunalRentChasingDto: {
@@ -8906,6 +9202,11 @@ export interface components {
             /** @example +61 400 000 000 */
             contactPhone: string | null;
             /**
+             * Format: uuid
+             * @description Portal agent designated as the primary contact. Null keeps the agency (registry contact) as the default primary.
+             */
+            primaryContactUserId: string | null;
+            /**
              * Format: date-time
              * @description When this agency was assigned to the signed-in agent. The earliest assignment is the profile agency.
              */
@@ -8915,7 +9216,7 @@ export interface components {
              * @example LEVEL_2_FULL_MANAGEMENT
              * @enum {string|null}
              */
-            portalServiceLevel: "LEVEL_1_INSPECTION_ONLY" | "LEVEL_2_FULL_MANAGEMENT" | null;
+            portalServiceLevel: "LEVEL_1_INSPECTION_ONLY" | "LEVEL_2_FULL_MANAGEMENT" | "LEVEL_3_LEGACY" | null;
             /**
              * @description Caller membership tier for this agency.
              * @example PRINCIPAL
@@ -8999,7 +9300,7 @@ export interface components {
             configuredInspectorCount: number;
         };
         AgentPortalWelcomeStatusDto: {
-            /** @description True when at least one assigned agency has completed Sales onboarding, or is an active/onboarding client (including self-registration) without a blocking sales handover. */
+            /** @description True when the agent has an assigned onboarding or live agency (or platform access is already granted). Used to show the first-login welcome video; not gated on listings uploaded. */
             eligible: boolean;
             /** @description True when this user has already dismissed the welcome tour. */
             dismissed: boolean;
@@ -9093,6 +9394,13 @@ export interface components {
             bankBsb?: string;
             bankAccountNumber?: string;
         };
+        AgentUpdateAgencyPrimaryContactDto: {
+            /**
+             * Format: uuid
+             * @description Portal agent user id. Null keeps the agency (company) as the primary contact.
+             */
+            primaryContactUserId: string | null;
+        };
         PaginatedAgentInvoicesDto: {
             /**
              * @description Total records matching the query.
@@ -9185,7 +9493,7 @@ export interface components {
              * @example APARTMENT
              * @enum {string}
              */
-            propertyType: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
+            propertyType: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "DUPLEX" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
             /**
              * @example OCCUPIED
              * @enum {string}
@@ -9308,6 +9616,18 @@ export interface components {
              */
             propertyManagerId: string | null;
             /**
+             * Format: uuid
+             * @description Portal agent responsible for this property. Null keeps it on the agency book (principal / unassigned).
+             */
+            assignedAgentUserId: string | null;
+            /** @description Display name of the assigned portal agent. */
+            assignedAgentName: string | null;
+            /**
+             * Format: uuid
+             * @description Portal user who registered this property.
+             */
+            createdById: string | null;
+            /**
              * @description The CROSSUB staff account manager for this property (assigned officer; agency-dominant fallback). Null when no officer is assigned anywhere in the agency.
              * @example Miara Lin
              */
@@ -9364,6 +9684,8 @@ export interface components {
              * @example DS633468
              */
             paymentReference: string | null;
+            /** @description Public cover image URL for listings and the property profile. */
+            imageUrl: string | null;
             /** @description Present on PATCH when a newly saved tenant email triggered an automatic Tenant app invite. */
             tenantPortalInvite?: components["schemas"]["AgentTenantPortalInviteDto"];
         };
@@ -9389,6 +9711,17 @@ export interface components {
              */
             hasMore: boolean;
             items: components["schemas"]["AgentPropertyResponseDto"][];
+        };
+        PropertyDuplicateMatchDto: {
+            /** Format: uuid */
+            id: string;
+            address: string;
+            suburb?: string | null;
+            registryIntakeComplete: boolean;
+        };
+        PropertyDuplicateCheckResponseDto: {
+            /** @description The live same-agency property at this address, or null when the address is free to register. */
+            duplicate?: components["schemas"]["PropertyDuplicateMatchDto"] | null;
         };
         AgentPropertyContactDto: {
             /** Format: uuid */
@@ -9436,6 +9769,27 @@ export interface components {
             /** @enum {string} */
             gst?: "" | "include" | "exclude";
         };
+        CreatePropertyPartyDto: {
+            /**
+             * @example TENANT
+             * @enum {string}
+             */
+            role: "TENANT" | "LANDLORD";
+            /** @example Jordan Nguyen */
+            name?: string;
+            /**
+             * Format: email
+             * @example jordan.nguyen@example.com
+             */
+            email?: string;
+            /** @example 0412 345 678 */
+            phone?: string;
+            /**
+             * @description The statutory-notice recipient for this role. At most one party per role is kept as primary; when none is flagged, the first one listed is used.
+             * @default false
+             */
+            isPrimary: boolean;
+        };
         CreateAgentPropertyDto: {
             name?: string;
             address: string;
@@ -9444,7 +9798,7 @@ export interface components {
             state?: "NSW" | "VIC" | "QLD" | "SA" | "WA" | "TAS" | "ACT" | "NT";
             postcode?: string;
             /** @enum {string} */
-            propertyType?: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
+            propertyType?: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "DUPLEX" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
             /** @enum {string} */
             status?: "OCCUPIED" | "VACANT" | "SHOWING" | "MAINTENANCE";
             bedrooms?: number;
@@ -9489,6 +9843,7 @@ export interface components {
             /** @enum {string} */
             managementRateGst?: "include" | "exclude";
             managementFees?: components["schemas"]["ManagementFeeRowDto"][];
+            contacts?: components["schemas"]["CreatePropertyPartyDto"][];
             registryIntakeComplete?: boolean;
             registryDraft?: {
                 [key: string]: unknown;
@@ -9504,7 +9859,7 @@ export interface components {
             state?: "NSW" | "VIC" | "QLD" | "SA" | "WA" | "TAS" | "ACT" | "NT";
             postcode?: string;
             /** @enum {string} */
-            propertyType?: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
+            propertyType?: "APARTMENT" | "HOUSE" | "TOWNHOUSE" | "UNIT" | "STUDIO" | "DUPLEX" | "COMMERCIAL" | "GRANNY_FLAT" | "BOARDING_HOUSE" | "OTHER";
             /** @enum {string} */
             status?: "OCCUPIED" | "VACANT" | "SHOWING" | "MAINTENANCE";
             bedrooms?: number;
@@ -9549,6 +9904,7 @@ export interface components {
             /** @enum {string} */
             managementRateGst?: "include" | "exclude";
             managementFees?: components["schemas"]["ManagementFeeRowDto"][];
+            contacts?: components["schemas"]["CreatePropertyPartyDto"][];
             registryIntakeComplete?: boolean;
             replaceLandlord?: boolean;
             registryDraft?: {
@@ -9573,7 +9929,7 @@ export interface components {
             endOfManagementDate: string;
             /**
              * @deprecated
-             * @description Deprecated — the server always archives on end management. Ignored.
+             * @description Deprecated — ignored. Use POST …/archive to move the property to Archived.
              */
             archiveOnBondRelease?: boolean;
         };
@@ -9645,6 +10001,7 @@ export interface components {
             reason: string;
         };
         RentReviewAgentRecipient: {
+            phone: string | null;
             name: string;
             email: string;
         };
@@ -9777,6 +10134,7 @@ export interface components {
             /** @enum {string} */
             createdBy: "agent" | "system";
             agentRecipient: components["schemas"]["RentReviewAgentRecipient"] | null;
+            agencyName: string | null;
             /** @enum {string|null} */
             preferredLeaseType: "fixed" | "periodic" | null;
             /** Format: date-time */
@@ -9837,6 +10195,7 @@ export interface components {
             inReplyToAuditId?: string;
             /** @enum {string} */
             channel?: "email" | "message";
+            skipRecipientEmail?: boolean;
         };
         AgentCreateTerminationCaseDto: {
             /** @enum {string} */
@@ -9889,6 +10248,8 @@ export interface components {
             tenant?: components["schemas"]["StaffMaintenanceTenantContactDto"];
             /** @description At least one already-uploaded photo or video URL (the app uploads each file first). */
             photos: string[];
+            /** @description Inspection id the finding was raised from. */
+            sourceInspectionId?: string;
         };
         CancelAgentMaintenanceDto: {
             /** @example Logged against the wrong property — duplicate case */
@@ -9937,6 +10298,8 @@ export interface components {
             /** @enum {string} */
             priority?: "normal" | "high" | "urgent";
             accessInstructions?: string;
+            /** @enum {string} */
+            accessMethod?: "AGENCY_KEY" | "TENANT_ACCESS" | "TENANT_KEY_RETURN" | "AGENT_KEY" | "LOCKBOX" | "OTHER" | "UNKNOWN";
             notes?: string;
             leaseApprovalRef?: string;
             platformChargeId?: string;
@@ -9950,6 +10313,8 @@ export interface components {
             tenantPhone?: string;
             inspectorName?: string;
             accessInstructions?: string;
+            /** @enum {string} */
+            accessMethod?: "AGENCY_KEY" | "TENANT_ACCESS" | "TENANT_KEY_RETURN" | "AGENT_KEY" | "LOCKBOX" | "OTHER" | "UNKNOWN";
             notes?: string;
             platformChargeId?: string;
         };
@@ -10061,12 +10426,12 @@ export interface components {
             completedDate: string | null;
             /**
              * Format: date-time
-             * @description Tenant move-in from ingoing workflow meta — used to derive the target schedule when scheduledDate is null.
+             * @description Tenant move-in from entry workflow meta — used to derive the target schedule when scheduledDate is null.
              */
             moveInDate: string | null;
             /** @description PDF URL after CROSSUB has approved the report. Null while review is pending. */
             reportUrl: string | null;
-            /** @description Tenant-uploaded signed copy of the ingoing report. */
+            /** @description Tenant-uploaded signed copy of the entry report. */
             tenantReturnedReportUrl?: string | null;
             tenantReturnedSignedName?: string | null;
             /** Format: date-time */
@@ -10087,8 +10452,23 @@ export interface components {
              * @description When the 48-hour inspector-confirm window ends. Null once an inspector has accepted.
              */
             inspectorConfirmDeadlineAt?: string | null;
+            /** @description True when a prepaid platform fee is still unpaid after a staff-created order. */
+            awaitingAgentPayment?: boolean;
             /** @description True when the case was closed and refunded because no inspector confirmed in 48 hours. */
             unacceptedRefunded?: boolean;
+        };
+        AgentMaintenanceTenantContactDto: {
+            /** @example Test NF2 */
+            name: string;
+            /** @example 0400 000 000 */
+            phone: string | null;
+            /** @example nf2@example.com */
+            email: string | null;
+            /**
+             * @description True for the primary contact the workflow addresses.
+             * @example true
+             */
+            isPrimary: boolean;
         };
         AgentMaintenanceQuoteLineItemDto: {
             /** @example Labour — replace mixer tap */
@@ -10144,6 +10524,24 @@ export interface components {
             comments?: string;
             /** @description Reason recorded if the quote was declined. */
             declineReason?: string;
+            /**
+             * @description Why the quote was requested. `diagnostic` is a paid call-out to identify the cause — quoted and approved like a standard quote, shown as “Diagnostic call-out”.
+             * @example standard
+             * @enum {string}
+             */
+            purpose: "standard" | "diagnostic";
+            /**
+             * @description Advisory flags from the AI quote review, shown as neutral badges. On a form-submitted quote the price-judgement flags are advisory only (recorded, never a hold).
+             * @example [
+             *       "ABOVE_TRADE_RANGE"
+             *     ]
+             */
+            reviewFlags: string[];
+            /**
+             * @description One-line summary from the AI quote review, or null when the review has not run.
+             * @example Total is 18% above the trade range for this job.
+             */
+            reviewSummary: string | null;
         };
         AgentTenantResponsibilityResponseDto: {
             /** @example false */
@@ -10170,6 +10568,8 @@ export interface components {
             propertyId: string | null;
             /** @example 12/45 Campbell Parade */
             propertyAddress: string;
+            /** @description The full current household, primary first. Built from live tenant contacts, else the joined registry name split with the shared phone/email on the primary. Empty when unknown. */
+            tenants: components["schemas"]["AgentMaintenanceTenantContactDto"][];
             /** @enum {string} */
             type: "TENANT_REQUEST" | "PROPERTY_MAINTENANCE" | "STRATA" | "UNKNOWN";
             /** @enum {string} */
@@ -10213,6 +10613,11 @@ export interface components {
             createdAt: string;
             /** @description Reason recorded when the job was deleted/cancelled. */
             closureReason: string | null;
+            /**
+             * @description True when this job was spawned from an End Leasing case. Agent Tasks should not list it as a standalone End of Lease job.
+             * @example false
+             */
+            endLeasingMaintenance: boolean;
             /** Format: date-time */
             updatedAt: string;
         };
@@ -10810,9 +11215,233 @@ export interface components {
              */
             propertyId?: string;
         };
+        AgentMaintenanceQuoteVersionDto: {
+            /** @description Version row id, or the workflow quote id when derived from a pre-V2 job with no version row. */
+            id: string;
+            /** @description The workflow Quotation id of this submission. */
+            quoteId: string;
+            /** @example Ace Plumbing */
+            contractorName: string | null;
+            /** @description `<contractorRef>::<optionLabel>` — one negotiation thread. */
+            threadKey: string;
+            /**
+             * @description 1-based version within the thread; oldest is V1.
+             * @example 1
+             */
+            versionNo: number;
+            previousVersionId: string | null;
+            /**
+             * @description GST-inclusive price, AUD.
+             * @example 480
+             */
+            priceIncGst: number;
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            validUntil: string | null;
+            /**
+             * @description CROSSUB validation outcome. Null for chains derived from pre-V2 jobs.
+             * @enum {string|null}
+             */
+            validationStatus: "PENDING" | "VALID" | "FLAGGED" | "HELD" | "SUPERSEDED" | null;
+            validationFlags: string[];
+            /** @enum {string|null} */
+            decision: "APPROVED" | "REJECTED" | "PRICE_REVIEW" | null;
+            /** Format: date-time */
+            decidedAt: string | null;
+            /**
+             * @description True for the live version in the thread — the one an approval acts on.
+             * @example true
+             */
+            isCurrent: boolean;
+        };
+        AgentMaintenanceWorkOrderIssuedByDto: {
+            /** @example PAVO Property */
+            companyName: string;
+            /** @example 12 345 678 901 */
+            abn: string | null;
+            /** @example 1 George St, Sydney NSW 2000 */
+            address: string | null;
+            /** @example office@pavo.com.au */
+            email: string | null;
+        };
+        AgentMaintenanceWorkOrderDto: {
+            /** @example WO-MR-00042-1 */
+            orderNumber: string;
+            /** @enum {string} */
+            orderType: "NORMAL" | "URGENT" | "EMERGENCY" | "LOW_COST_AUTO";
+            /** @enum {string} */
+            status: "ISSUED" | "SCHEDULED" | "IN_PROGRESS" | "BLOCKED" | "CONTRACTOR_COMPLETED" | "COMPLETED" | "CANCELLED";
+            /** @example Ace Plumbing */
+            contractorName: string | null;
+            /**
+             * @description GST-inclusive authorised amount, AUD.
+             * @example 480
+             */
+            amountIncGst: number | null;
+            /** Format: date-time */
+            deadlineAt: string | null;
+            /** Format: date-time */
+            scheduledFor: string | null;
+            /** Format: date-time */
+            completedAt: string | null;
+            /** @description The managing agency letterhead frozen onto the order (§11). Null on orders issued before this was captured, or when the agency named nothing. */
+            issuedBy?: components["schemas"]["AgentMaintenanceWorkOrderIssuedByDto"] | null;
+        };
+        AgentMaintenanceInvoiceMatchDto: {
+            /**
+             * @description Contractor invoice amount, AUD.
+             * @example 505
+             */
+            invoiceAmount: number;
+            /**
+             * @description Approved reference amount, AUD.
+             * @example 480
+             */
+            approvedAmount: number | null;
+            /** @example 25 */
+            varianceAmount: number | null;
+            /**
+             * @description Variance as a percentage of the approved amount.
+             * @example 5.21
+             */
+            variancePercent: number | null;
+            /** @enum {string} */
+            status: "MATCHED" | "VARIANCE" | "UNMATCHED" | "APPROVED" | "DISPUTED";
+            /**
+             * @description Read-only payment lane (§13, §20): PAYMENT_PENDING once handed to accounting, PAID / EXTERNAL_SETTLEMENT once staff settle it. An agent sees the state but can never set it.
+             * @enum {string}
+             */
+            paymentStatus: "NOT_READY" | "PAYMENT_PENDING" | "PAID" | "EXTERNAL_SETTLEMENT" | "BLOCKED";
+        };
+        AgentMaintenanceUrgentAuthorisationDto: {
+            /**
+             * @description 1..n per request; a re-authorisation is the next number.
+             * @example 1
+             */
+            sequenceNo: number;
+            /** @enum {string} */
+            decision: "CONFIRM_URGENT" | "CONVERT_TO_NORMAL" | "EMERGENCY_MAKE_SAFE" | "ESCALATE_EXTERNAL" | "CLOSE_NO_ACTION";
+            /** @enum {string} */
+            status: "ACTIVE" | "SUPERSEDED" | "EXCEEDED" | "CLOSED";
+            /** @example Ace Plumbing */
+            contractorName: string | null;
+            /** @description The work the Account Manager authorised, in their words. */
+            scope: string;
+            /**
+             * @description Authorised spending limit, AUD.
+             * @example 800
+             */
+            spendingLimit: number | null;
+            /** @description True when only the safety measure was authorised. */
+            makeSafeOnly: boolean;
+            /** Format: date-time */
+            authorisedAt: string;
+            /**
+             * @description The over-limit figure that re-paused the job.
+             * @example 950
+             */
+            exceededAmount: number | null;
+        };
+        AgentMaintenanceDetailDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example M78827 */
+            orderNumber: string | null;
+            /** Format: uuid */
+            propertyId: string | null;
+            /** @example 12/45 Campbell Parade */
+            propertyAddress: string;
+            /** @description The full current household, primary first. Built from live tenant contacts, else the joined registry name split with the shared phone/email on the primary. Empty when unknown. */
+            tenants: components["schemas"]["AgentMaintenanceTenantContactDto"][];
+            /** @enum {string} */
+            type: "TENANT_REQUEST" | "PROPERTY_MAINTENANCE" | "STRATA" | "UNKNOWN";
+            /** @enum {string} */
+            status: "OPEN" | "APPROVED" | "QUOTING" | "SCHEDULED" | "INVOICED" | "COMPLETED" | "CANCELLED";
+            /** @example false */
+            urgent: boolean;
+            /** @example Leaking kitchen tap */
+            description: string | null;
+            /** @example Plumbing */
+            categoryName: string | null;
+            /** @example Ace Plumbing */
+            contractorName: string | null;
+            /**
+             * @description Total of the latest quote, AUD. Kept for back-compat; see `quotes` for the full set.
+             * @example 480
+             */
+            quoteTotal: number | null;
+            /** @description Every quotation on the job (newest first), each with its line-item breakdown, so the agent can compare them instead of seeing a single total. Empty until a contractor quotes. */
+            quotes: components["schemas"]["AgentMaintenanceQuoteDto"][];
+            /** @example 420 */
+            ourPrice: number | null;
+            /** @example false */
+            agencyApproved: boolean;
+            /** @description The tenant’s answer on a tenant-responsibility job. Omitted on other lanes and on jobs answered before the answer was persisted. */
+            tenantResponsibilityResponse?: components["schemas"]["AgentTenantResponsibilityResponseDto"];
+            /** Format: date-time */
+            scheduledDate: string | null;
+            /** Format: date-time */
+            completedDate: string | null;
+            /**
+             * Format: uuid
+             * @description Set when this job was flagged a possible duplicate of another active job on the same property (item 9). Null when not a suspected duplicate.
+             */
+            duplicateOfId: string | null;
+            /**
+             * @description Order number of the job this one may duplicate (for display).
+             * @example MR-00042
+             */
+            duplicateOfOrderNumber: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Reason recorded when the job was deleted/cancelled. */
+            closureReason: string | null;
+            /**
+             * @description True when this job was spawned from an End Leasing case. Agent Tasks should not list it as a standalone End of Lease job.
+             * @example false
+             */
+            endLeasingMaintenance: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description Quote negotiation chain grouped by contractor/option thread, oldest first. Empty until a contractor quotes. */
+            quoteVersions: components["schemas"]["AgentMaintenanceQuoteVersionDto"][];
+            /** @description The active or latest authorised work order. Null before authorisation. */
+            workOrder: components["schemas"]["AgentMaintenanceWorkOrderDto"] | null;
+            /** @description The latest reconciled contractor invoice. Null before an invoice is uploaded. */
+            invoiceMatch: components["schemas"]["AgentMaintenanceInvoiceMatchDto"] | null;
+            /** @description Account-Manager authorisations on this urgent job, oldest first. Read-only for the agent. Empty for a normal job or an urgent job not yet authorised. */
+            urgentAuthorisations: components["schemas"]["AgentMaintenanceUrgentAuthorisationDto"][];
+        };
         DeclineMaintenanceQuoteDto: {
             /** @example Quote above budget — please re-quote with cheaper parts. */
             reason: string;
+        };
+        AgentMaintenanceQuotePriceReviewDto: {
+            /**
+             * @description Counter-offer price sent to the contractor, AUD (GST-inclusive). Must be positive.
+             * @example 420
+             */
+            counterPrice: number;
+            /**
+             * @description Optional note to the contractor explaining the counter-offer.
+             * @example Please requote excluding the after-hours call-out.
+             */
+            message?: string;
+        };
+        CloseAgentMaintenanceDto: {
+            /**
+             * @description Why the job is being closed. `OTHER` requires a note.
+             * @enum {string}
+             */
+            reason: "DUPLICATE" | "RAISED_IN_ERROR" | "RESOLVED_BY_TENANT" | "NO_LONGER_REQUIRED" | "NOT_OUR_RESPONSIBILITY" | "HANDLED_OUTSIDE_SYSTEM" | "HANDLED_BY_OWNER" | "OTHER";
+            /** @description Free-text note; mandatory when the reason is `OTHER`. */
+            note?: string;
+            /**
+             * @description Confirms the agent has seen the outstanding-commitment warning. Re-send with true to close anyway.
+             * @example false
+             */
+            acknowledgeCommitments?: boolean;
         };
         AgentTenantResponseDto: {
             /**
@@ -11401,7 +12030,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description A request with the same clientRequestId already exists. */
+            /** @description A request with the same clientRequestId already exists, or CROSSUB no longer manages the property (it, its agency, or the tenancy is archived) — CRS-0133. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11634,6 +12263,59 @@ export interface operations {
                 };
             };
             /** @description Completion evidence is missing or approval was already recorded. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not a TENANT. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description requestId does not exist or is not on a property this tenant leases. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TenantMaintenanceController_recordAnswers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordMaintenanceIssueAnswersDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantMaintenanceRequestSummaryDto"];
+                };
+            };
+            /** @description The request body is invalid. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12162,7 +12844,7 @@ export interface operations {
                     "application/json": components["schemas"]["TenantIngoingInspectionResponseDto"];
                 };
             };
-            /** @description Ingoing inspection not found. */
+            /** @description Entry inspection not found. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12370,7 +13052,7 @@ export interface operations {
                     "application/json": components["schemas"]["TenantOutgoingInspectionResponseDto"];
                 };
             };
-            /** @description Outgoing inspection not found. */
+            /** @description Final inspection not found. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12876,7 +13558,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description An active vacating case already exists. */
+            /** @description An active vacating case already exists, or CROSSUB no longer manages the property (it, its agency, or the tenancy is archived) — CRS-0133. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18970,6 +19652,59 @@ export interface operations {
             };
         };
     };
+    AgentPortalController_updateAgencyPrimaryContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentUpdateAgencyPrimaryContactDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentAgencyResponseDto"];
+                };
+            };
+            /** @description The request body is invalid or the user is not on the team. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description agencyId does not exist or the caller is not a principal of this agency. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AgentPortalController_listInvoices: {
         parameters: {
             query?: {
@@ -19409,6 +20144,43 @@ export interface operations {
             };
         };
     };
+    AgentPortalController_lookupDuplicateAddress: {
+        parameters: {
+            query: {
+                address: string;
+                suburb?: string;
+                excludePropertyId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropertyDuplicateCheckResponseDto"];
+                };
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER, or no agency is assigned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AgentPortalController_getProperty: {
         parameters: {
             query?: never;
@@ -19497,7 +20269,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Property has workflow history — use end-management to archive instead of deleting. */
+            /** @description Property has workflow history — archive it instead of deleting. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -19731,6 +20503,95 @@ export interface operations {
             };
         };
     };
+    AgentPortalController_archiveProperty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Property archived. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description propertyId does not exist or is not within an assigned agency. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The property is already archived. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_restoreProperty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Property restored. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description propertyId does not exist, is not archived, or is not within an assigned agency. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AgentPortalController_createLeasingCycle: {
         parameters: {
             query?: never;
@@ -19930,6 +20791,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AgentWorkflowCreateResultDto"];
                 };
+            };
+            /** @description A live rent review is already open on this property. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -20390,6 +21258,31 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentWorkflowCreateResultDto"];
+                };
+            };
+        };
+    };
+    AgentPortalController_markPropertyArrearsPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentMarkArrearsPaidDto"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20972,6 +21865,59 @@ export interface operations {
                 };
             };
             /** @description Invalid body (bad base64, oversized, non-image/video mime), or propertyId is not a valid UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Property not in the agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_uploadPropertyImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentUploadKeyPhotoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentKeyPhotoUploadResponseDto"];
+                };
+            };
+            /** @description Invalid body (bad base64, oversized, non-image mime), or propertyId is not a valid UUID. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -21931,6 +22877,294 @@ export interface operations {
             };
         };
     };
+    AgentPortalController_getMaintenanceDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description requestId is not a valid UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description requestId does not exist or is not within an assigned agency. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_approveMaintenanceQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+                quotationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDto"];
+                };
+            };
+            /** @description requestId or quotationId is not a valid UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request or quotation does not exist within an assigned agency. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The quotation is not a current submitted quote (e.g. a superseded version). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_rejectMaintenanceQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+                quotationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclineMaintenanceQuoteDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDto"];
+                };
+            };
+            /** @description requestId/quotationId is not a valid UUID, or the reason is missing/too short. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request or quotation does not exist within an assigned agency. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The quotation is not in a state it can be rejected from. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_priceReviewMaintenanceQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+                quotationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentMaintenanceQuotePriceReviewDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDto"];
+                };
+            };
+            /** @description requestId/quotationId is not a valid UUID, or the counter price is invalid. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request or quotation does not exist within an assigned agency. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The quotation is not in a state it can be negotiated from. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentPortalController_closeMaintenance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseAgentMaintenanceDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDto"];
+                };
+            };
+            /** @description requestId is not a valid UUID, or the reason/note is invalid. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid/expired token, or the user is not active. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an ACCOUNT_MANAGER. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description requestId does not exist or is not within an assigned agency. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is already closed, or has outstanding commitments to acknowledge first. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AgentPortalController_approveMaintenance: {
         parameters: {
             query?: never;
@@ -21986,7 +23220,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The request is not in a state a quote can be approved from. */
+            /** @description There is no submitted quote to approve, or more than one candidate. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -22054,7 +23288,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The request is not in a state a quote can be declined from. */
+            /** @description There is no submitted quote to decline. */
             409: {
                 headers: {
                     [name: string]: unknown;

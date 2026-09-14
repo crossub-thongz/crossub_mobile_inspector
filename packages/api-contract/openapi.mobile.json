@@ -161,7 +161,7 @@
             "description": "propertyId is not in the tenant's scope, or there is no active tenancy."
           },
           "409": {
-            "description": "A request with the same clientRequestId already exists."
+            "description": "A request with the same clientRequestId already exists, or CROSSUB no longer manages the property (it, its agency, or the tenancy is archived) — CRS-0133."
           }
         },
         "security": [
@@ -535,6 +535,66 @@
           }
         ],
         "summary": "Approve contractor completion evidence for a landlord/strata repair.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/maintenance-requests/{requestId}/answers": {
+      "patch": {
+        "description": "Records the tenant answers to an issue question round, then re-runs the AI triage with the answers so the job can progress. Questions to answer are on the request detail as `questions`.",
+        "operationId": "TenantMaintenanceController_recordAnswers",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordMaintenanceIssueAnswersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantMaintenanceRequestSummaryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not a TENANT."
+          },
+          "404": {
+            "description": "requestId does not exist or is not on a property this tenant leases."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Answer the questions CROSSUB asked about a repair (Phase 1 §B).",
         "tags": [
           "tenant"
         ]
@@ -1128,7 +1188,7 @@
     },
     "/tenant/ingoing-inspections": {
       "get": {
-        "description": "Ingoing inspections linked from agent-initiated leasing cycles on properties the tenant is applying for or leasing. Only appears after the agent schedules one.",
+        "description": "Entry inspections linked from agent-initiated leasing cycles on properties the tenant is applying for or leasing. Only appears after the agent schedules one.",
         "operationId": "TenantAccountController_listIngoingInspections",
         "parameters": [],
         "responses": {
@@ -1157,7 +1217,7 @@
             "bearer": []
           }
         ],
-        "summary": "List agent-scheduled ingoing inspections for the tenant.",
+        "summary": "List agent-scheduled entry inspections for the tenant.",
         "tags": [
           "tenant"
         ]
@@ -1189,7 +1249,7 @@
             }
           },
           "404": {
-            "description": "Ingoing inspection not found."
+            "description": "Entry inspection not found."
           }
         },
         "security": [
@@ -1197,7 +1257,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get an agent-scheduled ingoing inspection with report sections.",
+        "summary": "Get an agent-scheduled entry inspection with report sections.",
         "tags": [
           "tenant"
         ]
@@ -1244,7 +1304,7 @@
             "bearer": []
           }
         ],
-        "summary": "Raise a dispute on an ingoing inspection section.",
+        "summary": "Raise a dispute on an entry inspection section.",
         "tags": [
           "tenant"
         ]
@@ -1300,7 +1360,7 @@
             "bearer": []
           }
         ],
-        "summary": "Confirm or dispute one section of the ingoing report (with feedback).",
+        "summary": "Confirm or dispute one section of the entry report (with feedback).",
         "tags": [
           "tenant"
         ]
@@ -1394,7 +1454,7 @@
             "bearer": []
           }
         ],
-        "summary": "Upload the tenant-completed ingoing report (filled sections + signature) and submit it back.",
+        "summary": "Upload the tenant-completed entry report (filled sections + signature) and submit it back.",
         "tags": [
           "tenant"
         ]
@@ -1431,7 +1491,7 @@
             "bearer": []
           }
         ],
-        "summary": "Approve the ingoing condition report after review.",
+        "summary": "Approve the entry condition report after review.",
         "tags": [
           "tenant"
         ]
@@ -1478,7 +1538,7 @@
             "bearer": []
           }
         ],
-        "summary": "Reject the whole ingoing condition report with a reason.",
+        "summary": "Reject the whole entry condition report with a reason.",
         "tags": [
           "tenant"
         ]
@@ -1486,7 +1546,7 @@
     },
     "/tenant/outgoing-inspections": {
       "get": {
-        "description": "Outgoing inspections linked from agent-opened end-leasing cases on the property the tenant leases. Only appears after the agent schedules one.",
+        "description": "Final inspections linked from agent-opened end-leasing cases on the property the tenant leases. Only appears after the agent schedules one.",
         "operationId": "TenantAccountController_listOutgoingInspections",
         "parameters": [],
         "responses": {
@@ -1515,7 +1575,7 @@
             "bearer": []
           }
         ],
-        "summary": "List agent-scheduled outgoing inspections for the tenant.",
+        "summary": "List agent-scheduled final inspections for the tenant.",
         "tags": [
           "tenant"
         ]
@@ -1547,7 +1607,7 @@
             }
           },
           "404": {
-            "description": "Outgoing inspection not found."
+            "description": "Final inspection not found."
           }
         },
         "security": [
@@ -1555,7 +1615,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get an agent-scheduled outgoing inspection with report sections.",
+        "summary": "Get an agent-scheduled final inspection with report sections.",
         "tags": [
           "tenant"
         ]
@@ -1602,7 +1662,7 @@
             "bearer": []
           }
         ],
-        "summary": "Raise a dispute on an outgoing inspection section.",
+        "summary": "Raise a dispute on a final inspection section.",
         "tags": [
           "tenant"
         ]
@@ -1639,7 +1699,7 @@
             "bearer": []
           }
         ],
-        "summary": "Approve the outgoing condition report after review.",
+        "summary": "Approve the final condition report after review.",
         "tags": [
           "tenant"
         ]
@@ -2133,7 +2193,7 @@
             "description": "Caller is not a TENANT, or has no tenant profile anchor."
           },
           "409": {
-            "description": "An active vacating case already exists."
+            "description": "An active vacating case already exists, or CROSSUB no longer manages the property (it, its agency, or the tenancy is archived) — CRS-0133."
           }
         },
         "security": [
@@ -2362,7 +2422,7 @@
             "bearer": []
           }
         ],
-        "summary": "Record whether the tenant will attend the outgoing inspection.",
+        "summary": "Record whether the tenant will attend the final inspection.",
         "tags": [
           "tenant"
         ]
@@ -6657,7 +6717,7 @@
     },
     "/inspector/inspections/open-batch/plan": {
       "get": {
-        "description": "Step 5 of the open flow. Returns the persisted plan — the same times the selection returned, never re-planned on read, so what is confirmed is exactly what was shown. Null-bodied 200 when the inspector has selected nothing.",
+        "description": "Step 5 of the open flow. Returns the persisted plan — the same times the selection returned, never re-planned on read, so what is confirmed is exactly what was shown. JSON `null` when the inspector has selected nothing. Nest would otherwise omit the body, and the inspector app dies parsing empty JSON.",
         "operationId": "InspectorInspectionsController_openBatchPlan",
         "parameters": [],
         "responses": {
@@ -6797,7 +6857,7 @@
     },
     "/inspector/inspections/open-batch/release": {
       "post": {
-        "description": "Returns them for anyone else in the same batch and re-plans whatever this inspector still holds — dropping a stop changes every time after it. Null-bodied 200 when nothing is left. A confirmed open cannot be released this way.",
+        "description": "Returns them for anyone else in the same batch and re-plans whatever this inspector still holds — dropping a stop changes every time after it. JSON `null` when nothing is left. A confirmed open cannot be released this way.",
         "operationId": "InspectorInspectionsController_releaseOpenBatch",
         "parameters": [],
         "requestBody": {
@@ -8786,7 +8846,7 @@
     },
     "/agent/onboarding/welcome": {
       "get": {
-        "description": "The in-app welcome modal is shown only when eligible is true and dismissed is false. Eligible means Sales onboarding is complete for at least one assigned agency.",
+        "description": "The in-app welcome modal is shown only when eligible is true and dismissed is false. Eligible means the agent has an assigned onboarding or live agency, or platform access is already granted — shown right after registration, not after listings are uploaded.",
         "operationId": "AgentPortalController_getPortalWelcomeStatus",
         "parameters": [],
         "responses": {
@@ -9195,6 +9255,66 @@
           }
         ],
         "summary": "Update agency billing details used on tax invoices.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/agencies/{agencyId}/primary-contact": {
+      "patch": {
+        "description": "Null keeps the agency (company registry contact) as the default primary. A user id must be an active team member.",
+        "operationId": "AgentPortalController_updateAgencyPrimaryContact",
+        "parameters": [
+          {
+            "name": "agencyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentUpdateAgencyPrimaryContactDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentAgencyResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request body is invalid or the user is not on the team."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "agencyId does not exist or the caller is not a principal of this agency."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the agency primary contact (principal only).",
         "tags": [
           "agent"
         ]
@@ -9676,6 +9796,68 @@
         ]
       }
     },
+    "/agent/properties/duplicate": {
+      "get": {
+        "description": "Add-property wizard lookup. Matches create: same agency, live rows only, case/whitespace-insensitive address AND suburb. The agency is the signed-in agent’s — it is not accepted in the query. Pass excludePropertyId when resuming a draft so that row is not treated as a duplicate of itself.",
+        "operationId": "AgentPortalController_lookupDuplicateAddress",
+        "parameters": [
+          {
+            "name": "address",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 240,
+              "type": "string"
+            }
+          },
+          {
+            "name": "suburb",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxLength": 120,
+              "type": "string"
+            }
+          },
+          {
+            "name": "excludePropertyId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertyDuplicateCheckResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER, or no agency is assigned."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check whether this agency already has a live property at the address",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}": {
       "get": {
         "operationId": "AgentPortalController_getProperty",
@@ -9783,7 +9965,7 @@
         ]
       },
       "delete": {
-        "description": "Hard-deletes a property. Incomplete drafts are always removable. Completed properties are only removable when they have no workflow history; otherwise use end-management to archive.",
+        "description": "Hard-deletes a property. Incomplete drafts are always removable. Completed properties are only removable when they have no workflow history; otherwise archive it.",
         "operationId": "AgentPortalController_deleteDraftProperty",
         "parameters": [
           {
@@ -9810,7 +9992,7 @@
             "description": "propertyId does not exist or is not within an assigned agency."
           },
           "409": {
-            "description": "Property has workflow history — use end-management to archive instead of deleting."
+            "description": "Property has workflow history — archive it instead of deleting."
           }
         },
         "security": [
@@ -9977,7 +10159,7 @@
     },
     "/agent/properties/{propertyId}/end-management": {
       "post": {
-        "description": "Records the end-of-management date, archives the property, and removes it from the active agent list.",
+        "description": "Records the end-of-management date and closes the live Management row. The property stays on the active agent list until it is archived.",
         "operationId": "AgentPortalController_endPropertyManagement",
         "parameters": [
           {
@@ -10023,6 +10205,89 @@
           }
         ],
         "summary": "End agency management on a property.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/archive": {
+      "post": {
+        "description": "Moves the property to Admin Archived and removes it from the active agent list, keeping history. Open cases are force-closed as Agent Archived.",
+        "operationId": "AgentPortalController_archiveProperty",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Property archived."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "propertyId does not exist or is not within an assigned agency."
+          },
+          "409": {
+            "description": "The property is already archived."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a property.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/restore": {
+      "post": {
+        "description": "Returns the property to the live agent list and reopens management. Closed Agent Archived cases stay closed.",
+        "operationId": "AgentPortalController_restoreProperty",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Property restored."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "propertyId does not exist, is not archived, or is not within an assigned agency."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore an archived property.",
         "tags": [
           "agent"
         ]
@@ -10436,6 +10701,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "A live rent review is already open on this property."
           }
         },
         "security": [
@@ -11410,6 +11678,53 @@
         ]
       }
     },
+    "/agent/properties/{propertyId}/workflows/accounting/arrears/paid": {
+      "post": {
+        "operationId": "AgentPortalController_markPropertyArrearsPaid",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentMarkArrearsPaidDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowCreateResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark recorded arrears as paid on a chosen date.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/tribunal/rent-chasing": {
       "post": {
         "operationId": "AgentPortalController_createTribunalRentChasing",
@@ -12321,6 +12636,66 @@
           }
         ],
         "summary": "Upload a key-collection proof photo (base64-through-API → object storage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/image/upload": {
+      "post": {
+        "description": "Decodes the base64 body, stores it in object storage (R2), updates `Property.imageUrl`, and returns the public URL.",
+        "operationId": "AgentPortalController_uploadPropertyImage",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentUploadKeyPhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentKeyPhotoUploadResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body (bad base64, oversized, non-image mime), or propertyId is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "Property not in the agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a property cover image (base64-through-API → object storage).",
         "tags": [
           "agent"
         ]
@@ -13450,8 +13825,327 @@
         ]
       }
     },
+    "/agent/maintenance/{requestId}": {
+      "get": {
+        "description": "Returns the job with its quote-version chain (V1/V2… per contractor thread, derived from legacy quotes for pre-V2 jobs), the active or latest work order, and the latest invoice match.",
+        "operationId": "AgentPortalController_getMaintenanceDetail",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "requestId is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "requestId does not exist or is not within an assigned agency."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read one maintenance job in full — the portfolio card plus the V2 spine.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/quotes/{quotationId}/approve": {
+      "post": {
+        "description": "Runs the same approval the staff console does (mints the approved quote, issues the work order, advances the job) as the agent. Only the current submitted version can be approved.",
+        "operationId": "AgentPortalController_approveMaintenanceQuote",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "quotationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "requestId or quotationId is not a valid UUID."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "The request or quotation does not exist within an assigned agency."
+          },
+          "409": {
+            "description": "The quotation is not a current submitted quote (e.g. a superseded version)."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve a specific submitted contractor quote through the maintenance workflow.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/quotes/{quotationId}/reject": {
+      "post": {
+        "operationId": "AgentPortalController_rejectMaintenanceQuote",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "quotationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclineMaintenanceQuoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "requestId/quotationId is not a valid UUID, or the reason is missing/too short."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "The request or quotation does not exist within an assigned agency."
+          },
+          "409": {
+            "description": "The quotation is not in a state it can be rejected from."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject a specific submitted contractor quote, with a required reason.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/quotes/{quotationId}/price-review": {
+      "post": {
+        "description": "The negotiation loop (§10.1): a counter price and optional message go to the contractor, who resubmits as the next version in the thread.",
+        "operationId": "AgentPortalController_priceReviewMaintenanceQuote",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "quotationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentMaintenanceQuotePriceReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "requestId/quotationId is not a valid UUID, or the counter price is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "The request or quotation does not exist within an assigned agency."
+          },
+          "409": {
+            "description": "The quotation is not in a state it can be negotiated from."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a price-review counter-offer to the contractor on a submitted quote.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/close": {
+      "post": {
+        "description": "For a job that should not proceed (duplicate, raised in error, resolved by the tenant…). A 409 lists outstanding commitments; re-send with acknowledgeCommitments: true to close anyway.",
+        "operationId": "AgentPortalController_closeMaintenance",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseAgentMaintenanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "requestId is not a valid UUID, or the reason/note is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not an ACCOUNT_MANAGER."
+          },
+          "404": {
+            "description": "requestId does not exist or is not within an assigned agency."
+          },
+          "409": {
+            "description": "The job is already closed, or has outstanding commitments to acknowledge first."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Close a maintenance job with a reason (manual close — bypasses the completion gates).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/maintenance/{requestId}/approve": {
       "post": {
+        "description": "Convenience over the quote-specific approve: resolves the one submitted quote and approves it as the agent. 409 when there is no submitted quote, or more than one to choose from.",
         "operationId": "AgentPortalController_approveMaintenance",
         "parameters": [
           {
@@ -13498,7 +14192,7 @@
             "description": "requestId does not exist or is not within an assigned agency."
           },
           "409": {
-            "description": "The request is not in a state a quote can be approved from."
+            "description": "There is no submitted quote to approve, or more than one candidate."
           }
         },
         "security": [
@@ -13506,7 +14200,7 @@
             "bearer": []
           }
         ],
-        "summary": "Approve a contractor’s quote on a maintenance request (QUOTING → SCHEDULED), recording the agency approval.",
+        "summary": "Approve the single current submitted quote on a maintenance job (through the workflow).",
         "tags": [
           "agent"
         ]
@@ -13514,6 +14208,7 @@
     },
     "/agent/maintenance/{requestId}/decline": {
       "post": {
+        "description": "Declines each submitted quote with the reason, as the agent. 409 when there is no submitted quote to decline.",
         "operationId": "AgentPortalController_declineMaintenance",
         "parameters": [
           {
@@ -13570,7 +14265,7 @@
             "description": "requestId does not exist or is not within an assigned agency."
           },
           "409": {
-            "description": "The request is not in a state a quote can be declined from."
+            "description": "There is no submitted quote to decline."
           }
         },
         "security": [
@@ -13578,7 +14273,7 @@
             "bearer": []
           }
         ],
-        "summary": "Decline a contractor’s quote on a maintenance request (QUOTING → OPEN), re-opening it for a fresh quote.",
+        "summary": "Decline every submitted quote on a maintenance job (through the workflow).",
         "tags": [
           "agent"
         ]
@@ -14245,6 +14940,38 @@
           }
         }
       },
+      "TenantMaintenanceQuestionDto": {
+        "type": "object",
+        "properties": {
+          "issueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "questionKey": {
+            "type": "string",
+            "description": "Stable within the issue (q1, q2, …)."
+          },
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string",
+            "nullable": true
+          },
+          "answeredAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "issueId",
+          "questionKey",
+          "question",
+          "answer",
+          "answeredAt"
+        ]
+      },
       "TenantMaintenanceRequestSummaryDto": {
         "type": "object",
         "properties": {
@@ -14416,6 +15143,13 @@
                 "$ref": "#/components/schemas/MaintenancePropertyContactDto"
               }
             ]
+          },
+          "questions": {
+            "description": "Questions CROSSUB asked about this repair and the tenant answers recorded (Phase 1 §B). Answer the still-unanswered ones via PATCH /:requestId/answers.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantMaintenanceQuestionDto"
+            }
           }
         },
         "required": [
@@ -14505,6 +15239,52 @@
             "default": true
           }
         }
+      },
+      "MaintenanceIssueAnswerDto": {
+        "type": "object",
+        "properties": {
+          "issueId": {
+            "type": "string",
+            "description": "The issue the answer belongs to."
+          },
+          "questionKey": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "The question key (q1, q2, …) being answered."
+          },
+          "answer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "The tenant's answer."
+          }
+        },
+        "required": [
+          "issueId",
+          "questionKey",
+          "answer"
+        ]
+      },
+      "RecordMaintenanceIssueAnswersDto": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "minItems": 1,
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaintenanceIssueAnswerDto"
+            }
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Optional note — ignored today, reserved."
+          }
+        },
+        "required": [
+          "answers"
+        ]
       },
       "TenantScheduleResponseDto": {
         "type": "object",
@@ -14752,6 +15532,7 @@
               "TOWNHOUSE",
               "UNIT",
               "STUDIO",
+              "DUPLEX",
               "COMMERCIAL",
               "GRANNY_FLAT",
               "BOARDING_HOUSE",
@@ -15529,7 +16310,7 @@
           "tenantReturnedReportUrl": {
             "type": "string",
             "nullable": true,
-            "description": "Tenant-uploaded signed copy of the ingoing report."
+            "description": "Tenant-uploaded signed copy of the entry report."
           },
           "tenantReturnedSignedName": {
             "type": "string",
@@ -15728,7 +16509,7 @@
             "minLength": 3,
             "maxLength": 2000,
             "example": "Several rooms do not match the condition shown in the report.",
-            "description": "Reason the tenant is rejecting the whole ingoing report."
+            "description": "Reason the tenant is rejecting the whole entry report."
           }
         },
         "required": [
@@ -15751,14 +16532,14 @@
             "example": "Benchtop has minor wear."
           },
           "photos": {
-            "description": "Photos from the outgoing / current inspection.",
+            "description": "Photos from the final / current inspection.",
             "type": "array",
             "items": {
               "type": "string"
             }
           },
           "referencePhotos": {
-            "description": "Photos from the latest completed ingoing inspection for the same section (side-by-side baseline).",
+            "description": "Photos from the latest completed entry inspection for the same section (side-by-side baseline).",
             "type": "array",
             "items": {
               "type": "string"
@@ -15831,7 +16612,7 @@
               "yes",
               "no"
             ],
-            "description": "Whether the tenant will attend the outgoing inspection."
+            "description": "Whether the tenant will attend the final inspection."
           },
           "dueBy": {
             "type": "string",
@@ -15909,7 +16690,7 @@
             }
           },
           "referencePhotos": {
-            "description": "Photos from the latest completed ingoing inspection for the same section.",
+            "description": "Photos from the latest completed entry inspection for the same section.",
             "type": "array",
             "items": {
               "type": "string"
@@ -16094,13 +16875,14 @@
             ]
           },
           "sections": {
+            "description": "The full room checklist on a self-inspection: every room in the property template, carrying its saved photos once the tenant has filled it, plus any room saved under a name the template does not hold. Rooms are never dropped as the walk progresses.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TenantRoutineInspectionSectionDto"
             }
           },
           "referenceIngoingAreas": {
-            "description": "Latest completed ingoing report areas for baseline photo comparison during self-inspection.",
+            "description": "Latest completed entry report areas for baseline photo comparison during self-inspection.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TenantRoutineReferenceIngoingAreaDto"
@@ -16200,7 +16982,7 @@
           "areaId": {
             "type": "string",
             "maxLength": 64,
-            "description": "Inspection area id, or a pre-start placeholder (`template-0`, `template-1`, …) resolved server-side after the checklist is spawned."
+            "description": "Inspection area id, or a checklist placeholder (`template-0`, `template-1`, …) for a room that has no area row yet. A placeholder is numbered against the room template and is resolved — creating the room if needed — server-side."
           },
           "areaName": {
             "type": "string",
@@ -16705,13 +17487,13 @@
             "type": "string",
             "nullable": true,
             "format": "date-time",
-            "description": "Scheduled outgoing inspection date."
+            "description": "Scheduled final inspection date."
           },
           "outgoingInspectionId": {
             "type": "string",
             "nullable": true,
             "format": "uuid",
-            "description": "Linked outgoing inspection id, when scheduled."
+            "description": "Linked final inspection id, when scheduled."
           },
           "tenantOutgoingAttendance": {
             "type": "string",
@@ -16720,11 +17502,11 @@
               "yes",
               "no"
             ],
-            "description": "Whether the tenant will attend the outgoing inspection."
+            "description": "Whether the tenant will attend the final inspection."
           },
           "inspectionReportAvailable": {
             "type": "boolean",
-            "description": "Outgoing inspection report is available for review."
+            "description": "Final inspection report is available for review."
           },
           "tenantSettlementStatus": {
             "type": "string",
@@ -16882,7 +17664,7 @@
               "yes",
               "no"
             ],
-            "description": "Whether the tenant will attend the outgoing inspection."
+            "description": "Whether the tenant will attend the final inspection."
           }
         },
         "required": [
@@ -17582,7 +18364,7 @@
             "type": "string",
             "nullable": true,
             "format": "uuid",
-            "description": "Linked ingoing inspection id when the agent has scheduled one."
+            "description": "Linked entry inspection id when the agent has scheduled one."
           },
           "applicationDocuments": {
             "description": "Documents uploaded with the NSW tenancy application — mirrored in new-leasing onboarding.",
@@ -17810,6 +18592,7 @@
               "TOWNHOUSE",
               "UNIT",
               "STUDIO",
+              "DUPLEX",
               "COMMERCIAL",
               "GRANNY_FLAT",
               "BOARDING_HOUSE",
@@ -18204,6 +18987,7 @@
               "TOWNHOUSE",
               "UNIT",
               "STUDIO",
+              "DUPLEX",
               "COMMERCIAL",
               "GRANNY_FLAT",
               "BOARDING_HOUSE",
@@ -20407,7 +21191,7 @@
           "awaitingAgentPayment": {
             "type": "boolean",
             "example": false,
-            "description": "Level 1 prepaid: true until the agency pays at order create — inspector cannot start while this is true. Always false for Level 2 (postpaid)."
+            "description": "Level 1 prepaid and Level 2 extras / Open: true until the agency pays at order create — inspector cannot start while this is true. False for included Level 2 allowance jobs."
           },
           "assignedByStaff": {
             "type": "boolean",
@@ -21104,7 +21888,7 @@
           "awaitingAgentPayment": {
             "type": "boolean",
             "example": false,
-            "description": "Level 1 prepaid: true until the agent pays — Start stays disabled while awaiting payment. Always false for Level 2 (postpaid monthly invoice)."
+            "description": "Prepaid Open: true until the agent pays — Start stays disabled while awaiting payment. False for included jobs and legacy free-open agencies."
           },
           "canCompleteEarly": {
             "type": "boolean",
@@ -21445,7 +22229,7 @@
           "propertyId": {
             "type": "string",
             "format": "uuid",
-            "description": "Property id (must match the outgoing inspection property)."
+            "description": "Property id (must match the final inspection property)."
           },
           "areas": {
             "type": "array",
@@ -21455,7 +22239,7 @@
           },
           "areaPlan": {
             "nullable": true,
-            "description": "Room/section layout from the ingoing walk-through — outgoing jobs inherit this scope.",
+            "description": "Room/section layout from the entry walk-through — final jobs inherit this scope.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/InspectorIngoingAreaPlanDto"
@@ -22295,7 +23079,7 @@
           "accessLevel": {
             "type": "number",
             "example": 4,
-            "description": "1–5 capability tag assigned by staff. New inspectors start at 1. 1 outgoing/ingoing; 2 +routine; 3 +open; 4 outgoing/ingoing/routine/open; 5 = 4 + tribunal."
+            "description": "1–5 capability tag assigned by staff. New inspectors start at 1. 1 final/entry; 2 +routine; 3 +open; 4 final/entry/routine/open; 5 = 4 + tribunal."
           },
           "approvedStates": {
             "description": "Tribunal-eligibility states.",
@@ -22892,9 +23676,80 @@
           }
         }
       },
+      "AgentMarkArrearsPaidItemDto": {
+        "type": "object",
+        "properties": {
+          "caseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "rent",
+              "bill",
+              "bond"
+            ]
+          },
+          "billIndex": {
+            "type": "number",
+            "minimum": 0,
+            "description": "When kind is bill, pay this snapshot row only. Omit to pay every bill on the case."
+          }
+        },
+        "required": [
+          "caseId",
+          "kind"
+        ]
+      },
+      "AgentMarkArrearsPaidDto": {
+        "type": "object",
+        "properties": {
+          "paidDate": {
+            "type": "string",
+            "example": "2026-09-02",
+            "description": "ISO date the arrears were paid."
+          },
+          "kinds": {
+            "type": "array",
+            "enum": [
+              "rent",
+              "bill",
+              "bond"
+            ],
+            "description": "Arrears kinds to mark paid. Omit to mark every outstanding kind.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "rent",
+                "bill",
+                "bond"
+              ]
+            }
+          },
+          "items": {
+            "description": "Specific stacked arrears rows to mark paid. Takes precedence over kinds.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentMarkArrearsPaidItemDto"
+            }
+          }
+        },
+        "required": [
+          "paidDate"
+        ]
+      },
       "AgentTribunalArrearRowDto": {
         "type": "object",
         "properties": {
+          "caseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "billIndex": {
+            "type": "number",
+            "description": "Index of this bill inside the arrears case snapshot, when kind is bill."
+          },
           "kind": {
             "type": "string",
             "enum": [
@@ -23148,6 +24003,16 @@
             "items": {
               "$ref": "#/components/schemas/AgentTribunalBillArrearsRowDto"
             }
+          },
+          "agreementEndDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Property agreement / lease end date — always populated from the property when known, including when there is no open bond arrears case."
+          },
+          "leaseStartDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Property agreement / lease start date when known."
           },
           "bondArrears": {
             "nullable": true,
@@ -23712,6 +24577,12 @@
             "nullable": true,
             "example": "+61 400 000 000"
           },
+          "primaryContactUserId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Portal agent designated as the primary contact. Null keeps the agency (registry contact) as the default primary."
+          },
           "assignedAt": {
             "type": "string",
             "nullable": true,
@@ -23723,7 +24594,8 @@
             "nullable": true,
             "enum": [
               "LEVEL_1_INSPECTION_ONLY",
-              "LEVEL_2_FULL_MANAGEMENT"
+              "LEVEL_2_FULL_MANAGEMENT",
+              "LEVEL_3_LEGACY"
             ],
             "example": "LEVEL_2_FULL_MANAGEMENT",
             "description": "Agent portal service tier for this client agency — Level 1 is inspection and tribunal; Level 2 is full property management. Null until the agent chooses a plan."
@@ -23796,6 +24668,7 @@
           "contactName",
           "contactEmail",
           "contactPhone",
+          "primaryContactUserId",
           "assignedAt",
           "portalServiceLevel",
           "membershipTier",
@@ -23895,7 +24768,7 @@
         "properties": {
           "eligible": {
             "type": "boolean",
-            "description": "True when at least one assigned agency has completed Sales onboarding, or is an active/onboarding client (including self-registration) without a blocking sales handover."
+            "description": "True when the agent has an assigned onboarding or live agency (or platform access is already granted). Used to show the first-login welcome video; not gated on listings uploaded."
           },
           "dismissed": {
             "type": "boolean",
@@ -24131,6 +25004,20 @@
           }
         }
       },
+      "AgentUpdateAgencyPrimaryContactDto": {
+        "type": "object",
+        "properties": {
+          "primaryContactUserId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Portal agent user id. Null keeps the agency (company) as the primary contact."
+          }
+        },
+        "required": [
+          "primaryContactUserId"
+        ]
+      },
       "PaginatedAgentInvoicesDto": {
         "type": "object",
         "properties": {
@@ -24359,6 +25246,7 @@
               "TOWNHOUSE",
               "UNIT",
               "STUDIO",
+              "DUPLEX",
               "COMMERCIAL",
               "GRANNY_FLAT",
               "BOARDING_HOUSE",
@@ -24622,6 +25510,23 @@
             "format": "uuid",
             "description": "User id of the assigned property manager, when known."
           },
+          "assignedAgentUserId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Portal agent responsible for this property. Null keeps it on the agency book (principal / unassigned)."
+          },
+          "assignedAgentName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Display name of the assigned portal agent."
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Portal user who registered this property."
+          },
           "accountManagerName": {
             "type": "string",
             "nullable": true,
@@ -24696,6 +25601,11 @@
             "description": "Rent payment reference the tenant quotes on bank transfers (agency initials + property ref).",
             "example": "DS633468"
           },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Public cover image URL for listings and the property profile."
+          },
           "tenantPortalInvite": {
             "description": "Present on PATCH when a newly saved tenant email triggered an automatic Tenant app invite.",
             "allOf": [
@@ -24754,6 +25664,9 @@
           "agencyName",
           "propertyManager",
           "propertyManagerId",
+          "assignedAgentUserId",
+          "assignedAgentName",
+          "createdById",
           "accountManagerName",
           "accountManagerEmail",
           "accountManagerPhone",
@@ -24765,7 +25678,8 @@
           "approvalDecidedAt",
           "approvalDeclineReason",
           "registryDraft",
-          "paymentReference"
+          "paymentReference",
+          "imageUrl"
         ]
       },
       "PaginatedAgentPropertiesDto": {
@@ -24805,6 +25719,44 @@
           "hasMore",
           "items"
         ]
+      },
+      "PropertyDuplicateMatchDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "address": {
+            "type": "string"
+          },
+          "suburb": {
+            "type": "string",
+            "nullable": true
+          },
+          "registryIntakeComplete": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "address",
+          "registryIntakeComplete"
+        ]
+      },
+      "PropertyDuplicateCheckResponseDto": {
+        "type": "object",
+        "properties": {
+          "duplicate": {
+            "nullable": true,
+            "description": "The live same-agency property at this address, or null when the address is free to register.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PropertyDuplicateMatchDto"
+              }
+            ]
+          }
+        }
       },
       "AgentPropertyContactDto": {
         "type": "object",
@@ -24958,6 +25910,42 @@
           "amount"
         ]
       },
+      "CreatePropertyPartyDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "TENANT",
+              "LANDLORD"
+            ],
+            "example": "TENANT"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "Jordan Nguyen"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "jordan.nguyen@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 40,
+            "example": "0412 345 678"
+          },
+          "isPrimary": {
+            "type": "boolean",
+            "default": false,
+            "description": "The statutory-notice recipient for this role. At most one party per role is kept as primary; when none is flagged, the first one listed is used."
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
       "CreateAgentPropertyDto": {
         "type": "object",
         "properties": {
@@ -24998,6 +25986,7 @@
               "TOWNHOUSE",
               "UNIT",
               "STUDIO",
+              "DUPLEX",
               "COMMERCIAL",
               "GRANNY_FLAT",
               "BOARDING_HOUSE",
@@ -25164,6 +26153,12 @@
               "$ref": "#/components/schemas/ManagementFeeRowDto"
             }
           },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatePropertyPartyDto"
+            }
+          },
           "registryIntakeComplete": {
             "type": "boolean"
           },
@@ -25224,6 +26219,7 @@
               "TOWNHOUSE",
               "UNIT",
               "STUDIO",
+              "DUPLEX",
               "COMMERCIAL",
               "GRANNY_FLAT",
               "BOARDING_HOUSE",
@@ -25386,6 +26382,12 @@
               "$ref": "#/components/schemas/ManagementFeeRowDto"
             }
           },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatePropertyPartyDto"
+            }
+          },
           "registryIntakeComplete": {
             "type": "boolean"
           },
@@ -25429,7 +26431,7 @@
           "archiveOnBondRelease": {
             "type": "boolean",
             "deprecated": true,
-            "description": "Deprecated — the server always archives on end management. Ignored."
+            "description": "Deprecated — ignored. Use POST …/archive to move the property to Archived."
           }
         },
         "required": [
@@ -25673,6 +26675,10 @@
       "RentReviewAgentRecipient": {
         "type": "object",
         "properties": {
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
           "name": {
             "type": "string"
           },
@@ -25681,6 +26687,7 @@
           }
         },
         "required": [
+          "phone",
           "name",
           "email"
         ]
@@ -26219,6 +27226,10 @@
               }
             ]
           },
+          "agencyName": {
+            "type": "string",
+            "nullable": true
+          },
           "preferredLeaseType": {
             "type": "string",
             "enum": [
@@ -26334,6 +27345,7 @@
           "managingAgentLabel",
           "createdBy",
           "agentRecipient",
+          "agencyName",
           "preferredLeaseType",
           "agentConfirmedDate",
           "completedDate",
@@ -26472,6 +27484,9 @@
               "email",
               "message"
             ]
+          },
+          "skipRecipientEmail": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -26665,6 +27680,10 @@
               "type": "string",
               "format": "uri"
             }
+          },
+          "sourceInspectionId": {
+            "type": "string",
+            "description": "Inspection id the finding was raised from."
           }
         },
         "required": [
@@ -26788,6 +27807,18 @@
             "type": "string",
             "maxLength": 500
           },
+          "accessMethod": {
+            "type": "string",
+            "enum": [
+              "AGENCY_KEY",
+              "TENANT_ACCESS",
+              "TENANT_KEY_RETURN",
+              "AGENT_KEY",
+              "LOCKBOX",
+              "OTHER",
+              "UNKNOWN"
+            ]
+          },
           "notes": {
             "type": "string",
             "maxLength": 1000
@@ -26830,6 +27861,18 @@
           "accessInstructions": {
             "type": "string",
             "maxLength": 500
+          },
+          "accessMethod": {
+            "type": "string",
+            "enum": [
+              "AGENCY_KEY",
+              "TENANT_ACCESS",
+              "TENANT_KEY_RETURN",
+              "AGENT_KEY",
+              "LOCKBOX",
+              "OTHER",
+              "UNKNOWN"
+            ]
           },
           "notes": {
             "type": "string",
@@ -27119,7 +28162,7 @@
             "type": "string",
             "nullable": true,
             "format": "date-time",
-            "description": "Tenant move-in from ingoing workflow meta — used to derive the target schedule when scheduledDate is null."
+            "description": "Tenant move-in from entry workflow meta — used to derive the target schedule when scheduledDate is null."
           },
           "reportUrl": {
             "type": "string",
@@ -27129,7 +28172,7 @@
           "tenantReturnedReportUrl": {
             "type": "string",
             "nullable": true,
-            "description": "Tenant-uploaded signed copy of the ingoing report."
+            "description": "Tenant-uploaded signed copy of the entry report."
           },
           "tenantReturnedSignedName": {
             "type": "string",
@@ -27165,6 +28208,10 @@
             "format": "date-time",
             "description": "When the 48-hour inspector-confirm window ends. Null once an inspector has accepted."
           },
+          "awaitingAgentPayment": {
+            "type": "boolean",
+            "description": "True when a prepaid platform fee is still unpaid after a staff-created order."
+          },
           "unacceptedRefunded": {
             "type": "boolean",
             "description": "True when the case was closed and refunded because no inspector confirmed in 48 hours."
@@ -27184,6 +28231,36 @@
           "reportUrl",
           "urgent",
           "createdAt"
+        ]
+      },
+      "AgentMaintenanceTenantContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Test NF2"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "0400 000 000"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "example": "nf2@example.com"
+          },
+          "isPrimary": {
+            "type": "boolean",
+            "example": true,
+            "description": "True for the primary contact the workflow addresses."
+          }
+        },
+        "required": [
+          "name",
+          "phone",
+          "email",
+          "isPrimary"
         ]
       },
       "AgentMaintenanceQuoteLineItemDto": {
@@ -27285,6 +28362,31 @@
           "declineReason": {
             "type": "string",
             "description": "Reason recorded if the quote was declined."
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "diagnostic"
+            ],
+            "example": "standard",
+            "description": "Why the quote was requested. `diagnostic` is a paid call-out to identify the cause — quoted and approved like a standard quote, shown as “Diagnostic call-out”."
+          },
+          "reviewFlags": {
+            "example": [
+              "ABOVE_TRADE_RANGE"
+            ],
+            "description": "Advisory flags from the AI quote review, shown as neutral badges. On a form-submitted quote the price-judgement flags are advisory only (recorded, never a hold).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reviewSummary": {
+            "type": "string",
+            "nullable": true,
+            "example": "Total is 18% above the trade range for this job.",
+            "description": "One-line summary from the AI quote review, or null when the review has not run."
           }
         },
         "required": [
@@ -27297,7 +28399,10 @@
           "status",
           "isLowest",
           "submittedAt",
-          "lineItems"
+          "lineItems",
+          "purpose",
+          "reviewFlags",
+          "reviewSummary"
         ]
       },
       "AgentTenantResponsibilityResponseDto": {
@@ -27350,6 +28455,13 @@
           "propertyAddress": {
             "type": "string",
             "example": "12/45 Campbell Parade"
+          },
+          "tenants": {
+            "description": "The full current household, primary first. Built from live tenant contacts, else the joined registry name split with the shared phone/email on the primary. Empty when unknown.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentMaintenanceTenantContactDto"
+            }
           },
           "type": {
             "type": "string",
@@ -27452,6 +28564,11 @@
             "nullable": true,
             "description": "Reason recorded when the job was deleted/cancelled."
           },
+          "endLeasingMaintenance": {
+            "type": "boolean",
+            "example": false,
+            "description": "True when this job was spawned from an End Leasing case. Agent Tasks should not list it as a standalone End of Lease job."
+          },
           "updatedAt": {
             "type": "string",
             "format": "date-time"
@@ -27462,6 +28579,7 @@
           "orderNumber",
           "propertyId",
           "propertyAddress",
+          "tenants",
           "type",
           "status",
           "urgent",
@@ -27478,6 +28596,7 @@
           "duplicateOfOrderNumber",
           "createdAt",
           "closureReason",
+          "endLeasingMaintenance",
           "updatedAt"
         ]
       },
@@ -29069,6 +30188,535 @@
           "category"
         ]
       },
+      "AgentMaintenanceQuoteVersionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Version row id, or the workflow quote id when derived from a pre-V2 job with no version row."
+          },
+          "quoteId": {
+            "type": "string",
+            "description": "The workflow Quotation id of this submission."
+          },
+          "contractorName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Ace Plumbing"
+          },
+          "threadKey": {
+            "type": "string",
+            "description": "`<contractorRef>::<optionLabel>` — one negotiation thread."
+          },
+          "versionNo": {
+            "type": "number",
+            "description": "1-based version within the thread; oldest is V1.",
+            "example": 1
+          },
+          "previousVersionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "priceIncGst": {
+            "type": "number",
+            "description": "GST-inclusive price, AUD.",
+            "example": 480
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validUntil": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "validationStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "PENDING",
+              "VALID",
+              "FLAGGED",
+              "HELD",
+              "SUPERSEDED"
+            ],
+            "description": "CROSSUB validation outcome. Null for chains derived from pre-V2 jobs."
+          },
+          "validationFlags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "decision": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "APPROVED",
+              "REJECTED",
+              "PRICE_REVIEW"
+            ]
+          },
+          "decidedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "isCurrent": {
+            "type": "boolean",
+            "description": "True for the live version in the thread — the one an approval acts on.",
+            "example": true
+          }
+        },
+        "required": [
+          "id",
+          "quoteId",
+          "contractorName",
+          "threadKey",
+          "versionNo",
+          "previousVersionId",
+          "priceIncGst",
+          "submittedAt",
+          "validUntil",
+          "validationStatus",
+          "validationFlags",
+          "decision",
+          "decidedAt",
+          "isCurrent"
+        ]
+      },
+      "AgentMaintenanceWorkOrderIssuedByDto": {
+        "type": "object",
+        "properties": {
+          "companyName": {
+            "type": "string",
+            "example": "PAVO Property"
+          },
+          "abn": {
+            "type": "string",
+            "nullable": true,
+            "example": "12 345 678 901"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true,
+            "example": "1 George St, Sydney NSW 2000"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "example": "office@pavo.com.au"
+          }
+        },
+        "required": [
+          "companyName",
+          "abn",
+          "address",
+          "email"
+        ]
+      },
+      "AgentMaintenanceWorkOrderDto": {
+        "type": "object",
+        "properties": {
+          "orderNumber": {
+            "type": "string",
+            "example": "WO-MR-00042-1"
+          },
+          "orderType": {
+            "type": "string",
+            "enum": [
+              "NORMAL",
+              "URGENT",
+              "EMERGENCY",
+              "LOW_COST_AUTO"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ISSUED",
+              "SCHEDULED",
+              "IN_PROGRESS",
+              "BLOCKED",
+              "CONTRACTOR_COMPLETED",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "contractorName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Ace Plumbing"
+          },
+          "amountIncGst": {
+            "type": "number",
+            "nullable": true,
+            "description": "GST-inclusive authorised amount, AUD.",
+            "example": 480
+          },
+          "deadlineAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "scheduledFor": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "issuedBy": {
+            "nullable": true,
+            "description": "The managing agency letterhead frozen onto the order (§11). Null on orders issued before this was captured, or when the agency named nothing.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentMaintenanceWorkOrderIssuedByDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "orderNumber",
+          "orderType",
+          "status",
+          "contractorName",
+          "amountIncGst",
+          "deadlineAt",
+          "scheduledFor",
+          "completedAt"
+        ]
+      },
+      "AgentMaintenanceInvoiceMatchDto": {
+        "type": "object",
+        "properties": {
+          "invoiceAmount": {
+            "type": "number",
+            "description": "Contractor invoice amount, AUD.",
+            "example": 505
+          },
+          "approvedAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Approved reference amount, AUD.",
+            "example": 480
+          },
+          "varianceAmount": {
+            "type": "number",
+            "nullable": true,
+            "example": 25
+          },
+          "variancePercent": {
+            "type": "number",
+            "nullable": true,
+            "description": "Variance as a percentage of the approved amount.",
+            "example": 5.21
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "MATCHED",
+              "VARIANCE",
+              "UNMATCHED",
+              "APPROVED",
+              "DISPUTED"
+            ]
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "NOT_READY",
+              "PAYMENT_PENDING",
+              "PAID",
+              "EXTERNAL_SETTLEMENT",
+              "BLOCKED"
+            ],
+            "description": "Read-only payment lane (§13, §20): PAYMENT_PENDING once handed to accounting, PAID / EXTERNAL_SETTLEMENT once staff settle it. An agent sees the state but can never set it."
+          }
+        },
+        "required": [
+          "invoiceAmount",
+          "approvedAmount",
+          "varianceAmount",
+          "variancePercent",
+          "status",
+          "paymentStatus"
+        ]
+      },
+      "AgentMaintenanceUrgentAuthorisationDto": {
+        "type": "object",
+        "properties": {
+          "sequenceNo": {
+            "type": "number",
+            "example": 1,
+            "description": "1..n per request; a re-authorisation is the next number."
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "CONFIRM_URGENT",
+              "CONVERT_TO_NORMAL",
+              "EMERGENCY_MAKE_SAFE",
+              "ESCALATE_EXTERNAL",
+              "CLOSE_NO_ACTION"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SUPERSEDED",
+              "EXCEEDED",
+              "CLOSED"
+            ]
+          },
+          "contractorName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Ace Plumbing"
+          },
+          "scope": {
+            "type": "string",
+            "description": "The work the Account Manager authorised, in their words."
+          },
+          "spendingLimit": {
+            "type": "number",
+            "nullable": true,
+            "description": "Authorised spending limit, AUD.",
+            "example": 800
+          },
+          "makeSafeOnly": {
+            "type": "boolean",
+            "description": "True when only the safety measure was authorised."
+          },
+          "authorisedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "exceededAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "The over-limit figure that re-paused the job.",
+            "example": 950
+          }
+        },
+        "required": [
+          "sequenceNo",
+          "decision",
+          "status",
+          "contractorName",
+          "scope",
+          "spendingLimit",
+          "makeSafeOnly",
+          "authorisedAt",
+          "exceededAmount"
+        ]
+      },
+      "AgentMaintenanceDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string",
+            "nullable": true,
+            "example": "M78827"
+          },
+          "propertyId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "propertyAddress": {
+            "type": "string",
+            "example": "12/45 Campbell Parade"
+          },
+          "tenants": {
+            "description": "The full current household, primary first. Built from live tenant contacts, else the joined registry name split with the shared phone/email on the primary. Empty when unknown.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentMaintenanceTenantContactDto"
+            }
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TENANT_REQUEST",
+              "PROPERTY_MAINTENANCE",
+              "STRATA",
+              "UNKNOWN"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "APPROVED",
+              "QUOTING",
+              "SCHEDULED",
+              "INVOICED",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "urgent": {
+            "type": "boolean",
+            "example": false
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Leaking kitchen tap"
+          },
+          "categoryName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Plumbing"
+          },
+          "contractorName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Ace Plumbing"
+          },
+          "quoteTotal": {
+            "type": "number",
+            "nullable": true,
+            "description": "Total of the latest quote, AUD. Kept for back-compat; see `quotes` for the full set.",
+            "example": 480
+          },
+          "quotes": {
+            "description": "Every quotation on the job (newest first), each with its line-item breakdown, so the agent can compare them instead of seeing a single total. Empty until a contractor quotes.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentMaintenanceQuoteDto"
+            }
+          },
+          "ourPrice": {
+            "type": "number",
+            "nullable": true,
+            "example": 420
+          },
+          "agencyApproved": {
+            "type": "boolean",
+            "example": false
+          },
+          "tenantResponsibilityResponse": {
+            "description": "The tenant’s answer on a tenant-responsibility job. Omitted on other lanes and on jobs answered before the answer was persisted.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentTenantResponsibilityResponseDto"
+              }
+            ]
+          },
+          "scheduledDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "completedDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "duplicateOfId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Set when this job was flagged a possible duplicate of another active job on the same property (item 9). Null when not a suspected duplicate."
+          },
+          "duplicateOfOrderNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Order number of the job this one may duplicate (for display).",
+            "example": "MR-00042"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "closureReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Reason recorded when the job was deleted/cancelled."
+          },
+          "endLeasingMaintenance": {
+            "type": "boolean",
+            "example": false,
+            "description": "True when this job was spawned from an End Leasing case. Agent Tasks should not list it as a standalone End of Lease job."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "quoteVersions": {
+            "description": "Quote negotiation chain grouped by contractor/option thread, oldest first. Empty until a contractor quotes.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentMaintenanceQuoteVersionDto"
+            }
+          },
+          "workOrder": {
+            "nullable": true,
+            "description": "The active or latest authorised work order. Null before authorisation.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentMaintenanceWorkOrderDto"
+              }
+            ]
+          },
+          "invoiceMatch": {
+            "nullable": true,
+            "description": "The latest reconciled contractor invoice. Null before an invoice is uploaded.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentMaintenanceInvoiceMatchDto"
+              }
+            ]
+          },
+          "urgentAuthorisations": {
+            "description": "Account-Manager authorisations on this urgent job, oldest first. Read-only for the agent. Empty for a normal job or an urgent job not yet authorised.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentMaintenanceUrgentAuthorisationDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "propertyId",
+          "propertyAddress",
+          "tenants",
+          "type",
+          "status",
+          "urgent",
+          "description",
+          "categoryName",
+          "contractorName",
+          "quoteTotal",
+          "quotes",
+          "ourPrice",
+          "agencyApproved",
+          "scheduledDate",
+          "completedDate",
+          "duplicateOfId",
+          "duplicateOfOrderNumber",
+          "createdAt",
+          "closureReason",
+          "endLeasingMaintenance",
+          "updatedAt",
+          "quoteVersions",
+          "workOrder",
+          "invoiceMatch",
+          "urgentAuthorisations"
+        ]
+      },
       "DeclineMaintenanceQuoteDto": {
         "type": "object",
         "properties": {
@@ -29077,6 +30725,59 @@
             "minLength": 3,
             "maxLength": 500,
             "example": "Quote above budget — please re-quote with cheaper parts."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "AgentMaintenanceQuotePriceReviewDto": {
+        "type": "object",
+        "properties": {
+          "counterPrice": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "description": "Counter-offer price sent to the contractor, AUD (GST-inclusive). Must be positive.",
+            "example": 420
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Optional note to the contractor explaining the counter-offer.",
+            "example": "Please requote excluding the after-hours call-out."
+          }
+        },
+        "required": [
+          "counterPrice"
+        ]
+      },
+      "CloseAgentMaintenanceDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "DUPLICATE",
+              "RAISED_IN_ERROR",
+              "RESOLVED_BY_TENANT",
+              "NO_LONGER_REQUIRED",
+              "NOT_OUR_RESPONSIBILITY",
+              "HANDLED_OUTSIDE_SYSTEM",
+              "HANDLED_BY_OWNER",
+              "OTHER"
+            ],
+            "description": "Why the job is being closed. `OTHER` requires a note."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Free-text note; mandatory when the reason is `OTHER`."
+          },
+          "acknowledgeCommitments": {
+            "type": "boolean",
+            "description": "Confirms the agent has seen the outstanding-commitment warning. Re-send with true to close anyway.",
+            "example": false
           }
         },
         "required": [
