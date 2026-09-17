@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-18
+
+### Changed
+- **Vendored contract re-synced to 0.24.0 (was 0.22.0).** The mobile document goes 279 → 287 paths and 367 → 378 schemas; the eight new paths are rent review v2's negotiation loop — the agent's `landlord-offer`, `accept-offer`, `keep-landlord-offer`, `withdraw`, `review-later` and `follow-ups/{followUpId}/complete`, and the tenant's `questions`. Mechanical: the four tracked files copied from crossub_web at `d3ade964`, then `pnpm --filter @crossub-thongz/api-contract build`, because the app reads `dist/` and without the rebuild a type-check measures the old types. No app code changed here; `tsc` reports the same 12 errors as before, line for line, and zero `not assignable to type 'never'`, which is what says the leftovers are app-internal and not contract drift. This app does not use the v2 endpoints yet — the sync makes that possible and makes drift visible.
+
 ## 2026-09-14
 
 ### Changed

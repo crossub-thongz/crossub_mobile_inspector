@@ -1952,7 +1952,7 @@
     },
     "/tenant/rent-reviews/{reviewId}/respond": {
       "patch": {
-        "description": "Accept the proposed rent, decline and indicate move-out, or submit a counter-offer when the review is marked negotiable. The review must be on the tenant’s leased property and in the tenant-notified state.",
+        "description": "Accept the proposed rent; decline and move out (`reject`); decline without moving out (`decline`, the agent answers); or counter when the review is marked negotiable. The review must be on the tenant’s leased property and in the tenant-notified state. Send `respondingToOfferId` and `expectedVersion` to be refused (409) instead of answering a superseded offer.",
         "operationId": "TenantAccountController_respondToRentReview",
         "parameters": [
           {
@@ -2008,6 +2008,66 @@
           }
         ],
         "summary": "Respond to a dispatched rent-review notice.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/rent-reviews/{reviewId}/questions": {
+      "post": {
+        "description": "The offer stays open while the account manager answers. Allowed only while the offer is with the tenant. Send `respondingToOfferId` to be refused (409) if a newer offer arrived.",
+        "operationId": "TenantAccountController_askRentReviewQuestion",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantRentReviewQuestionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantRentReviewResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not a TENANT, or the review is not on their leased property."
+          },
+          "404": {
+            "description": "Rent review not found."
+          },
+          "409": {
+            "description": "The offer is not with the tenant, or is no longer current."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ask a question about the current rent offer.",
         "tags": [
           "tenant"
         ]
@@ -10773,6 +10833,415 @@
         ]
       }
     },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}": {
+      "get": {
+        "operationId": "AgentPortalController_getRentReview",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get one rent review with its offer versions, negotiation events and follow-ups.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/landlord-offer": {
+      "post": {
+        "operationId": "AgentPortalController_submitRentReviewLandlordOffer",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLandlordOfferDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record the landlord's new offer after a tenant counter or decline.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/accept-offer": {
+      "post": {
+        "operationId": "AgentPortalController_acceptRentReviewOffer",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptOfferDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept one exact offer version — usually the tenant's counter.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/keep-landlord-offer": {
+      "post": {
+        "operationId": "AgentPortalController_keepRentReviewLandlordOffer",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeepLandlordPositionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The landlord keeps their previous offer; it goes back to the tenant.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/withdraw": {
+      "post": {
+        "operationId": "AgentPortalController_withdrawRentReviewIncrease",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawRentIncreaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The landlord withdraws the increase — the rent stays unchanged.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/review-later": {
+      "post": {
+        "operationId": "AgentPortalController_setRentReviewReviewLater",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewLaterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "No landlord position yet — follow up by a date.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/follow-ups/{followUpId}/complete": {
+      "post": {
+        "operationId": "AgentPortalController_completeRentReviewFollowUp",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "followUpId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteFollowUpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a negotiation follow-up complete.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/cancel": {
       "post": {
         "operationId": "AgentPortalController_cancelRentReview",
@@ -17239,6 +17708,68 @@
           "kind"
         ]
       },
+      "TenantRentReviewOfferDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNo": {
+            "type": "number"
+          },
+          "offeredBy": {
+            "type": "string",
+            "enum": [
+              "LANDLORD",
+              "TENANT"
+            ]
+          },
+          "rentAmount": {
+            "type": "number",
+            "description": "Weekly rent offered."
+          },
+          "proposedEffectiveDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "REJECTED",
+              "SUPERSEDED",
+              "WITHDRAWN"
+            ]
+          },
+          "round": {
+            "type": "number",
+            "description": "Negotiation round this offer belongs to."
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "description": "The tenant's own note on their counter-offer."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "versionNo",
+          "offeredBy",
+          "rentAmount",
+          "proposedEffectiveDate",
+          "status",
+          "round",
+          "note",
+          "createdAt"
+        ]
+      },
       "TenantRentReviewResponseDto": {
         "type": "object",
         "properties": {
@@ -17343,6 +17874,41 @@
             "items": {
               "$ref": "#/components/schemas/TenantRentReviewEmailDto"
             }
+          },
+          "currentOffer": {
+            "nullable": true,
+            "description": "The offer on the table. Respond to this one and send its id as `respondingToOfferId`.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TenantRentReviewOfferDto"
+              }
+            ]
+          },
+          "offers": {
+            "description": "Every offer version, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantRentReviewOfferDto"
+            }
+          },
+          "negotiationRound": {
+            "type": "number",
+            "description": "Current negotiation round (0 before any offer)."
+          },
+          "waitingFor": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ACCOUNT_MANAGER",
+              "AGENT",
+              "TENANT",
+              "SYSTEM",
+              "NONE"
+            ]
+          },
+          "negotiationVersion": {
+            "type": "number",
+            "description": "Send back as `expectedVersion` when responding."
           }
         },
         "required": [
@@ -17361,7 +17927,12 @@
           "noticeDispatchedAt",
           "noticeTerms",
           "nextRentReviewOpensOn",
-          "emails"
+          "emails",
+          "currentOffer",
+          "offers",
+          "negotiationRound",
+          "waitingFor",
+          "negotiationVersion"
         ]
       },
       "TenantRentReviewRespondDto": {
@@ -17372,7 +17943,8 @@
             "enum": [
               "accept",
               "reject",
-              "counter"
+              "counter",
+              "decline"
             ]
           },
           "moveOutDate": {
@@ -17381,10 +17953,38 @@
           "counterWeekly": {
             "type": "number",
             "minimum": 0
+          },
+          "tenantNote": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "respondingToOfferId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0
           }
         },
         "required": [
           "decision"
+        ]
+      },
+      "TenantRentReviewQuestionDto": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "respondingToOfferId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "question"
         ]
       },
       "CreateTenantVacatingCaseDto": {
@@ -21261,15 +21861,18 @@
           },
           "tenantName": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Current household name(s). Joined when more than one tenant occupies."
           },
           "tenantPhone": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Tenant mobile for the assigned inspector to call or SMS about the visit. Filled from the property record, then the live tenant contact list."
           },
           "tenantEmail": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Tenant email for the assigned inspector to write about the visit. Filled from the property record, then the live tenant contact list."
           },
           "agentName": {
             "type": "string",
@@ -26823,19 +27426,6 @@
           "currentWeeklyRent"
         ]
       },
-      "CancelAgentRentReviewDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "maxLength": 500,
-            "example": "Opened in error — landlord not proceeding with increase"
-          }
-        },
-        "required": [
-          "reason"
-        ]
-      },
       "RentReviewAgentRecipient": {
         "type": "object",
         "properties": {
@@ -26854,6 +27444,208 @@
           "phone",
           "name",
           "email"
+        ]
+      },
+      "RentReviewOfferView": {
+        "type": "object",
+        "properties": {
+          "offeredBy": {
+            "type": "string",
+            "enum": [
+              "LANDLORD",
+              "TENANT"
+            ]
+          },
+          "submittedVia": {
+            "type": "string",
+            "enum": [
+              "AGENT",
+              "ACCOUNT_MANAGER",
+              "TENANT_APP",
+              "EMAIL",
+              "BACKFILL"
+            ]
+          },
+          "submittedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "frequency": {
+            "type": "string",
+            "enum": [
+              "WEEKLY",
+              "FORTNIGHTLY",
+              "MONTHLY"
+            ]
+          },
+          "proposedEffectiveDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "REJECTED",
+              "SUPERSEDED",
+              "WITHDRAWN"
+            ]
+          },
+          "statusChangedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "respondsToOfferId": {
+            "type": "string",
+            "nullable": true
+          },
+          "reactivatesOfferId": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "versionNo": {
+            "type": "number"
+          },
+          "rentAmount": {
+            "type": "number"
+          },
+          "round": {
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "offeredBy",
+          "submittedVia",
+          "submittedById",
+          "frequency",
+          "proposedEffectiveDate",
+          "note",
+          "status",
+          "statusChangedAt",
+          "respondsToOfferId",
+          "reactivatesOfferId",
+          "id",
+          "versionNo",
+          "rentAmount",
+          "round",
+          "createdAt"
+        ]
+      },
+      "RentReviewNegotiationEventView": {
+        "type": "object",
+        "properties": {
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "OFFER_SUBMITTED",
+              "OFFER_ACCEPTED",
+              "OFFER_REJECTED",
+              "OFFER_REACTIVATED",
+              "INCREASE_WITHDRAWN",
+              "REVIEW_LATER",
+              "FOLLOW_UP_COMPLETED",
+              "TENANT_QUESTION",
+              "NEGOTIATION_REOPENED"
+            ]
+          },
+          "actorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "offerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "actorType": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "eventType",
+          "actorId",
+          "offerId",
+          "note",
+          "id",
+          "actorType",
+          "createdAt"
+        ]
+      },
+      "RentReviewFollowUpView": {
+        "type": "object",
+        "properties": {
+          "waitingFor": {
+            "type": "string",
+            "enum": [
+              "ACCOUNT_MANAGER",
+              "AGENT",
+              "TENANT",
+              "SYSTEM",
+              "NONE"
+            ]
+          },
+          "assignedToId": {
+            "type": "string",
+            "nullable": true
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "overdueNotifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "dueAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "waitingFor",
+          "assignedToId",
+          "completedAt",
+          "overdueNotifiedAt",
+          "id",
+          "dueAt",
+          "reason",
+          "createdAt"
         ]
       },
       "RentPlatformResearch": {
@@ -27394,6 +28186,48 @@
             "type": "string",
             "nullable": true
           },
+          "waitingFor": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ACCOUNT_MANAGER",
+              "AGENT",
+              "TENANT",
+              "SYSTEM",
+              "NONE"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "RENT_INCREASED",
+              "NO_CHANGE",
+              "CANCELLED"
+            ]
+          },
+          "currentOfferId": {
+            "type": "string",
+            "nullable": true
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewOfferView"
+            }
+          },
+          "negotiationEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewNegotiationEventView"
+            }
+          },
+          "followUps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewFollowUpView"
+            }
+          },
           "preferredLeaseType": {
             "type": "string",
             "enum": [
@@ -27469,11 +28303,17 @@
               "$ref": "#/components/schemas/RentReviewAuditEntryView"
             }
           },
+          "negotiationRound": {
+            "type": "number"
+          },
           "id": {
             "type": "string"
           },
           "workflowState": {
             "type": "string"
+          },
+          "negotiationVersion": {
+            "type": "number"
           },
           "createdAt": {
             "format": "date-time",
@@ -27510,6 +28350,12 @@
           "createdBy",
           "agentRecipient",
           "agencyName",
+          "waitingFor",
+          "outcome",
+          "currentOfferId",
+          "offers",
+          "negotiationEvents",
+          "followUps",
           "preferredLeaseType",
           "agentConfirmedDate",
           "completedDate",
@@ -27526,8 +28372,10 @@
           "completeLedgerEntryId",
           "pricingMilestones",
           "auditLog",
+          "negotiationRound",
           "id",
           "workflowState",
+          "negotiationVersion",
           "createdAt",
           "updatedAt"
         ]
@@ -27541,6 +28389,143 @@
         },
         "required": [
           "review"
+        ]
+      },
+      "SubmitLandlordOfferDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0,
+            "description": "`negotiationVersion` as last read — 409 if the review moved since."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "respondingToOfferId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The offer on the table this answers — 409 if it is no longer current."
+          },
+          "weekly": {
+            "type": "number",
+            "minimum": 1
+          },
+          "effectiveDate": {
+            "type": "string"
+          },
+          "rentNegotiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "respondingToOfferId",
+          "weekly"
+        ]
+      },
+      "AcceptOfferDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0,
+            "description": "`negotiationVersion` as last read — 409 if the review moved since."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "offerId"
+        ]
+      },
+      "KeepLandlordPositionDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0,
+            "description": "`negotiationVersion` as last read — 409 if the review moved since."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "respondingToOfferId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lockNegotiation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "respondingToOfferId"
+        ]
+      },
+      "WithdrawRentIncreaseDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "ReviewLaterDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0,
+            "description": "`negotiationVersion` as last read — 409 if the review moved since."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "followUpDate": {
+            "type": "string",
+            "description": "When the agent expects the landlord's instruction (ISO-8601)."
+          }
+        },
+        "required": [
+          "followUpDate"
+        ]
+      },
+      "CompleteFollowUpDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "CancelAgentRentReviewDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Opened in error — landlord not proceeding with increase"
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "SetRecommendedRentDto": {
@@ -29151,6 +30136,29 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "mainStatus": {
+            "type": "string",
+            "enum": [
+              "awaiting_confirmation",
+              "preparation",
+              "active_leasing",
+              "offer_pending",
+              "onboarding",
+              "key_handover",
+              "completed",
+              "paused",
+              "cancelled"
+            ]
+          },
+          "reletDecision": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "proceed",
+              "do_not_relet",
+              "decide_later"
+            ]
           }
         },
         "required": [
@@ -29162,7 +30170,9 @@
           "onboardingStepId",
           "rentPerWeek",
           "availableFrom",
-          "createdAt"
+          "createdAt",
+          "mainStatus",
+          "reletDecision"
         ]
       },
       "AgentAccountingDto": {

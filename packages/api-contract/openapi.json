@@ -23182,6 +23182,868 @@
         ]
       }
     },
+    "/it-work/capabilities": {
+      "get": {
+        "operationId": "ItWorkController_capabilities",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkCapabilitiesDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "What the signed-in user may do on the IT work schedule",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/stats": {
+      "get": {
+        "operationId": "ItWorkController_stats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkStatsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Open / overdue / urgent / completed KPI counts",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/staff": {
+      "get": {
+        "operationId": "ItWorkController_listStaff",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkStaffListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Tony, Justin, Daniel, and IT staff who can be assigned a task",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/media": {
+      "post": {
+        "operationId": "ItWorkController_uploadMedia",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadItWorkMediaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkMediaUploadResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkMediaUploadResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a picture or video (max 10 per work item, 25 MB each)",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/seen": {
+      "post": {
+        "operationId": "ItWorkController_seen",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark IT work notifications as seen for the signed-in user",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work": {
+      "get": {
+        "operationId": "ItWorkController_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assignedToMe",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List IT work items",
+        "tags": [
+          "it-work"
+        ]
+      },
+      "post": {
+        "operationId": "ItWorkController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateItWorkItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "File an item for IT to review. Estimated completion date is optional; mark urgent to alert IT staff.",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/{id}": {
+      "get": {
+        "operationId": "ItWorkController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          },
+          "404": {
+            "description": "Work item not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "IT work item with comments",
+        "tags": [
+          "it-work"
+        ]
+      },
+      "patch": {
+        "operationId": "ItWorkController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateItWorkItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update title, description, estimated completion date, or urgency",
+        "tags": [
+          "it-work"
+        ]
+      },
+      "delete": {
+        "operationId": "ItWorkController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          },
+          "404": {
+            "description": "Work item not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a work item (Super Admin)",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/{id}/attachments": {
+      "post": {
+        "operationId": "ItWorkController_addAttachment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadItWorkMediaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a picture or video to an existing work item",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/{id}/claim": {
+      "post": {
+        "operationId": "ItWorkController_claim",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "IT staff claim an unassigned task",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/{id}/assign": {
+      "post": {
+        "operationId": "ItWorkController_assign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignItWorkItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Assign (or unassign) an IT staff member",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/{id}/status": {
+      "post": {
+        "operationId": "ItWorkController_setStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetItWorkStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change the workflow status (Open, In progress, Waiting, In review, Completed, Cancelled)",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/{id}/complete": {
+      "post": {
+        "operationId": "ItWorkController_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark the task complete",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/{id}/reopen": {
+      "post": {
+        "operationId": "ItWorkController_reopen",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reopen a completed task",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
+    "/it-work/{id}/comments": {
+      "post": {
+        "operationId": "ItWorkController_addComment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddItWorkCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItWorkItemDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not staff, or is an outside agency / portal login."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a comment",
+        "tags": [
+          "it-work"
+        ]
+      }
+    },
     "/leasing/applications": {
       "get": {
         "operationId": "LeasingController_listApplications",
@@ -25656,6 +26518,381 @@
         ]
       }
     },
+    "/leasing/cycles/{id}/applications/{applicationId}/negotiation": {
+      "post": {
+        "description": "Adds a numbered negotiation round. Any round still on the table is marked COUNTERED rather than edited, so the history reads in full. 400 when the proposal moves nothing; 409 once the holding deposit is confirmed, deposit proof is awaiting check, or the agreement has been sent.",
+        "operationId": "LeasingCycleController_addNegotiationRound",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applicationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddNegotiationRoundDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The terms can no longer be renegotiated on this letting."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record a counter offer on an application.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/applications/{applicationId}/negotiation/{roundId}": {
+      "patch": {
+        "description": "Accepting settles the terms: the round becomes the agreed rent, lease term and start date, written through to the contract draft. Declining records the answer and leaves the application where it was. 409 when the round is not the live one.",
+        "operationId": "LeasingCycleController_respondToNegotiationRound",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applicationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roundId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespondToNegotiationRoundDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "That round is not the one on the table."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept or decline the counter offer on the table.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/applications/{applicationId}/request-info": {
+      "post": {
+        "description": "Emails the applicant what is still needed and records the request on the task timeline. 400 when the applicant has no email on file, or when neither items nor a message is given.",
+        "operationId": "LeasingCycleController_requestApplicantInformation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applicationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestApplicantInformationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ask an applicant for the information their application is missing.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/offer/withdraw": {
+      "post": {
+        "description": "Withdraws every approved application on the offer and resets its decision, moving the letting back to application approval. 409 when there is no live offer, the holding deposit is confirmed, deposit proof is waiting to be checked, or the agreement has been sent.",
+        "operationId": "LeasingCycleController_withdrawOffer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawOfferDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The offer cannot be withdrawn in its current state."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Withdraw the live offer and return the letting to active leasing.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/applications/{applicationId}/withdrawal": {
+      "patch": {
+        "description": "withdrawn=true sets the application WITHDRAWN and unticks it for agent approval; an approved applicant cannot be withdrawn (409). withdrawn=false reinstates a WITHDRAWN application to DECLINED when the agent rejected it, otherwise SUBMITTED (400 when not withdrawn).",
+        "operationId": "LeasingCycleController_setApplicationWithdrawal",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applicationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetApplicationWithdrawalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, the request body is invalid, or the application is not withdrawn (reinstate)."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The applicant is approved and cannot be withdrawn."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Withdraw an application, or reinstate a withdrawn one.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
+    "/leasing/cycles/{id}/applications/{applicationId}/notes": {
+      "post": {
+        "description": "Recorded as a leasing cycle timeline event, which only staff surfaces read.",
+        "operationId": "LeasingCycleController_addApplicationNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applicationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddApplicationNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The resource is not in a valid state for this action."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a staff-only internal note to an application.",
+        "tags": [
+          "LeasingCycle"
+        ]
+      }
+    },
     "/leasing/cycles/{id}/applications/{applicationId}/applicant-profile": {
       "patch": {
         "operationId": "LeasingCycleController_setApplicantProfile",
@@ -28098,6 +29335,392 @@
           }
         ],
         "summary": "Resolve the rent-review negotiation outcome.",
+        "tags": [
+          "RentReviewWorkflow"
+        ]
+      }
+    },
+    "/leasing/rent-reviews/{id}/negotiation/landlord-offer": {
+      "post": {
+        "operationId": "RentReviewWorkflowController_submitLandlordOffer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLandlordOfferDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit a new landlord offer (v2 negotiation loop).",
+        "tags": [
+          "RentReviewWorkflow"
+        ]
+      }
+    },
+    "/leasing/rent-reviews/{id}/negotiation/accept-offer": {
+      "post": {
+        "operationId": "RentReviewWorkflowController_acceptOffer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptOfferDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept one exact offer version (tenant counter, or the landlord offer on the tenant’s behalf).",
+        "tags": [
+          "RentReviewWorkflow"
+        ]
+      }
+    },
+    "/leasing/rent-reviews/{id}/negotiation/keep-landlord-offer": {
+      "post": {
+        "operationId": "RentReviewWorkflowController_keepLandlordPosition",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeepLandlordPositionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Keep the landlord’s previous offer and return it to the tenant.",
+        "tags": [
+          "RentReviewWorkflow"
+        ]
+      }
+    },
+    "/leasing/rent-reviews/{id}/negotiation/withdraw": {
+      "post": {
+        "operationId": "RentReviewWorkflowController_withdrawRentIncrease",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawRentIncreaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Withdraw the rent increase — the rent stays unchanged.",
+        "tags": [
+          "RentReviewWorkflow"
+        ]
+      }
+    },
+    "/leasing/rent-reviews/{id}/negotiation/review-later": {
+      "post": {
+        "operationId": "RentReviewWorkflowController_setReviewLater",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewLaterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Review later — wait on the agent with a follow-up date.",
+        "tags": [
+          "RentReviewWorkflow"
+        ]
+      }
+    },
+    "/leasing/rent-reviews/{id}/negotiation/follow-ups/{followUpId}/complete": {
+      "post": {
+        "operationId": "RentReviewWorkflowController_completeFollowUp",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "followUpId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteFollowUpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Complete a negotiation follow-up.",
+        "tags": [
+          "RentReviewWorkflow"
+        ]
+      }
+    },
+    "/leasing/rent-reviews/{id}/negotiation/reopen": {
+      "post": {
+        "operationId": "RentReviewWorkflowController_reopenNegotiation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenNegotiationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "A path parameter is not a valid UUID, or the request body is invalid."
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller lacks the required permission or role."
+          },
+          "404": {
+            "description": "The requested resource was not found."
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reopen an agreed negotiation (CROSSUB staff only, reason recorded).",
         "tags": [
           "RentReviewWorkflow"
         ]
@@ -39161,7 +40784,7 @@
     },
     "/tenant/rent-reviews/{reviewId}/respond": {
       "patch": {
-        "description": "Accept the proposed rent, decline and indicate move-out, or submit a counter-offer when the review is marked negotiable. The review must be on the tenant’s leased property and in the tenant-notified state.",
+        "description": "Accept the proposed rent; decline and move out (`reject`); decline without moving out (`decline`, the agent answers); or counter when the review is marked negotiable. The review must be on the tenant’s leased property and in the tenant-notified state. Send `respondingToOfferId` and `expectedVersion` to be refused (409) instead of answering a superseded offer.",
         "operationId": "TenantAccountController_respondToRentReview",
         "parameters": [
           {
@@ -39217,6 +40840,66 @@
           }
         ],
         "summary": "Respond to a dispatched rent-review notice.",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/tenant/rent-reviews/{reviewId}/questions": {
+      "post": {
+        "description": "The offer stays open while the account manager answers. Allowed only while the offer is with the tenant. Send `respondingToOfferId` to be refused (409) if a newer offer arrived.",
+        "operationId": "TenantAccountController_askRentReviewQuestion",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantRentReviewQuestionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantRentReviewResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired token, or the user is not active."
+          },
+          "403": {
+            "description": "Caller is not a TENANT, or the review is not on their leased property."
+          },
+          "404": {
+            "description": "Rent review not found."
+          },
+          "409": {
+            "description": "The offer is not with the tenant, or is no longer current."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ask a question about the current rent offer.",
         "tags": [
           "tenant"
         ]
@@ -48021,6 +49704,415 @@
         ]
       }
     },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}": {
+      "get": {
+        "operationId": "AgentPortalController_getRentReview",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get one rent review with its offer versions, negotiation events and follow-ups.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/landlord-offer": {
+      "post": {
+        "operationId": "AgentPortalController_submitRentReviewLandlordOffer",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLandlordOfferDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record the landlord's new offer after a tenant counter or decline.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/accept-offer": {
+      "post": {
+        "operationId": "AgentPortalController_acceptRentReviewOffer",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptOfferDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept one exact offer version — usually the tenant's counter.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/keep-landlord-offer": {
+      "post": {
+        "operationId": "AgentPortalController_keepRentReviewLandlordOffer",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeepLandlordPositionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The landlord keeps their previous offer; it goes back to the tenant.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/withdraw": {
+      "post": {
+        "operationId": "AgentPortalController_withdrawRentReviewIncrease",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawRentIncreaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The landlord withdraws the increase — the rent stays unchanged.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/review-later": {
+      "post": {
+        "operationId": "AgentPortalController_setRentReviewReviewLater",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewLaterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "No landlord position yet — follow up by a date.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/negotiation/follow-ups/{followUpId}/complete": {
+      "post": {
+        "operationId": "AgentPortalController_completeRentReviewFollowUp",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "followUpId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteFollowUpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRentReviewResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The review is not in a valid state, the offer is no longer current, or the review changed since it was read."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a negotiation follow-up complete.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/rent-review/{reviewId}/cancel": {
       "post": {
         "operationId": "AgentPortalController_cancelRentReview",
@@ -54128,7 +56220,8 @@
               "ACCESS_HR_MODULE",
               "ACCESS_ACCOUNTING_MODULE",
               "ACCESS_INSPECTOR_REGISTRY",
-              "CREATE_PROPERTY"
+              "CREATE_PROPERTY",
+              "MANAGE_IT_WORK"
             ],
             "uniqueItems": true
           }
@@ -54188,7 +56281,8 @@
               "ACCESS_HR_MODULE",
               "ACCESS_ACCOUNTING_MODULE",
               "ACCESS_INSPECTOR_REGISTRY",
-              "CREATE_PROPERTY"
+              "CREATE_PROPERTY",
+              "MANAGE_IT_WORK"
             ],
             "uniqueItems": true
           }
@@ -60635,7 +62729,8 @@
               "ACCESS_HR_MODULE",
               "ACCESS_ACCOUNTING_MODULE",
               "ACCESS_INSPECTOR_REGISTRY",
-              "CREATE_PROPERTY"
+              "CREATE_PROPERTY",
+              "MANAGE_IT_WORK"
             ],
             "uniqueItems": true,
             "description": "Module-access keys this person holds directly (ACCESS_HR_MODULE, ACCESS_ACCOUNTING_MODULE, ACCESS_INSPECTOR_REGISTRY, CREATE_PROPERTY). Send the complete set.",
@@ -60645,7 +62740,8 @@
                 "ACCESS_HR_MODULE",
                 "ACCESS_ACCOUNTING_MODULE",
                 "ACCESS_INSPECTOR_REGISTRY",
-                "CREATE_PROPERTY"
+                "CREATE_PROPERTY",
+                "MANAGE_IT_WORK"
               ]
             }
           }
@@ -65726,6 +67822,619 @@
           }
         }
       },
+      "ItWorkCapabilitiesDto": {
+        "type": "object",
+        "properties": {
+          "isItStaff": {
+            "type": "boolean",
+            "description": "IT staff: Staff Access key or an active HR IT employee record."
+          },
+          "canSetDueDate": {
+            "type": "boolean",
+            "description": "IT staff or a high-level user may set the estimated completion date."
+          },
+          "canClaim": {
+            "type": "boolean"
+          },
+          "canAssign": {
+            "type": "boolean",
+            "description": "Anyone on staff may assign a person to an item."
+          },
+          "canOversee": {
+            "type": "boolean",
+            "description": "IT staff or a high-level user: complete / reopen beyond own assignment."
+          },
+          "canEdit": {
+            "type": "boolean",
+            "description": "Super Admin may edit title, description, estimate, and urgency."
+          },
+          "canDelete": {
+            "type": "boolean",
+            "description": "Super Admin may delete a work item."
+          }
+        },
+        "required": [
+          "isItStaff",
+          "canSetDueDate",
+          "canClaim",
+          "canAssign",
+          "canOversee",
+          "canEdit",
+          "canDelete"
+        ]
+      },
+      "ItWorkStatsDto": {
+        "type": "object",
+        "properties": {
+          "open": {
+            "type": "number"
+          },
+          "unassigned": {
+            "type": "number"
+          },
+          "overdue": {
+            "type": "number"
+          },
+          "urgent": {
+            "type": "number"
+          },
+          "completed": {
+            "type": "number"
+          },
+          "completedLate": {
+            "type": "number",
+            "description": "Completed after the estimated completion date."
+          }
+        },
+        "required": [
+          "open",
+          "unassigned",
+          "overdue",
+          "urgent",
+          "completed",
+          "completedLate"
+        ]
+      },
+      "ItWorkPersonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email"
+        ]
+      },
+      "ItWorkStaffListResponseDto": {
+        "type": "object",
+        "properties": {
+          "staff": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItWorkPersonDto"
+            }
+          }
+        },
+        "required": [
+          "staff"
+        ]
+      },
+      "UploadItWorkMediaDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "screenshot.png"
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 150,
+            "pattern": "/^(image|video)\\//",
+            "example": "image/jpeg"
+          },
+          "sizeBytes": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 26214400,
+            "description": "Decoded byte size (max 25 MB)."
+          },
+          "contentBase64": {
+            "type": "string",
+            "format": "base64",
+            "description": "File contents, base64-encoded (no data: URI prefix)."
+          }
+        },
+        "required": [
+          "fileName",
+          "mimeType",
+          "sizeBytes",
+          "contentBase64"
+        ]
+      },
+      "ItWorkMediaUploadResponseDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "url",
+          "fileName",
+          "mimeType",
+          "sizeBytes"
+        ]
+      },
+      "ItWorkAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "fileName",
+          "mimeType",
+          "sizeBytes"
+        ]
+      },
+      "ItWorkItemSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "urgent": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING",
+              "IN_REVIEW",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "assignee": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ItWorkPersonDto"
+              }
+            ]
+          },
+          "claimedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "completedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "completedBy": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ItWorkPersonDto"
+              }
+            ]
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/ItWorkPersonDto"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "commentCount": {
+            "type": "number"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItWorkAttachmentDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "urgent",
+          "status",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "commentCount",
+          "attachments"
+        ]
+      },
+      "ItWorkListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItWorkItemSummaryDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ]
+      },
+      "ItWorkCommentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/ItWorkPersonDto"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItWorkAttachmentDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "author",
+          "createdAt",
+          "attachments"
+        ]
+      },
+      "ItWorkStatusEventDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "example": "STATUS"
+          },
+          "fromStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING",
+              "IN_REVIEW",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "toStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING",
+              "IN_REVIEW",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "example": "Assigned to Ian Tech"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/ItWorkPersonDto"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "summary",
+          "actor",
+          "createdAt"
+        ]
+      },
+      "ItWorkItemDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "urgent": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING",
+              "IN_REVIEW",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "assignee": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ItWorkPersonDto"
+              }
+            ]
+          },
+          "claimedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "completedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "completedBy": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ItWorkPersonDto"
+              }
+            ]
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/ItWorkPersonDto"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "commentCount": {
+            "type": "number"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItWorkAttachmentDto"
+            }
+          },
+          "comments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItWorkCommentDto"
+            }
+          },
+          "statusLog": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItWorkStatusEventDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "urgent",
+          "status",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "commentCount",
+          "attachments",
+          "comments",
+          "statusLog"
+        ]
+      },
+      "ItWorkAttachmentInputDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 150,
+            "pattern": "/^(image|video)\\//",
+            "example": "image/jpeg"
+          },
+          "sizeBytes": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 26214400
+          }
+        },
+        "required": [
+          "url",
+          "fileName",
+          "mimeType",
+          "sizeBytes"
+        ]
+      },
+      "CreateItWorkItemDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Printer on level 2 is offline"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 8000
+          },
+          "dueDate": {
+            "type": "string",
+            "pattern": "/^\\d{4}-\\d{2}-\\d{2}$/",
+            "example": "2026-09-20",
+            "description": "Estimated completion date (YYYY-MM-DD). Set by the person who accepts the task."
+          },
+          "urgent": {
+            "type": "boolean",
+            "description": "Urgent requests alert IT staff immediately."
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "Optional first comment on the item."
+          },
+          "attachments": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItWorkAttachmentInputDto"
+            }
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "UpdateItWorkItemDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 8000
+          },
+          "dueDate": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "/^\\d{4}-\\d{2}-\\d{2}$/",
+            "description": "Estimated completion date (YYYY-MM-DD). Null clears it."
+          },
+          "urgent": {
+            "type": "boolean",
+            "description": "Urgent requests alert IT staff immediately."
+          }
+        }
+      },
+      "AssignItWorkItemDto": {
+        "type": "object",
+        "properties": {
+          "assigneeId": {
+            "type": "string",
+            "nullable": true,
+            "description": "IT staff user id. Null unassigns the item."
+          }
+        }
+      },
+      "SetItWorkStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING",
+              "IN_REVIEW",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "AddItWorkCommentDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "Optional when photos are attached."
+          },
+          "attachments": {
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItWorkAttachmentInputDto"
+            }
+          }
+        }
+      },
       "CreateLeasingCycleDto": {
         "type": "object",
         "properties": {
@@ -66264,6 +68973,122 @@
         },
         "required": [
           "decision"
+        ]
+      },
+      "AddNegotiationRoundDto": {
+        "type": "object",
+        "properties": {
+          "proposedBy": {
+            "type": "string",
+            "enum": [
+              "applicant",
+              "agent",
+              "officer"
+            ],
+            "description": "Who is proposing these terms."
+          },
+          "weeklyRent": {
+            "type": "number",
+            "minimum": 0,
+            "example": 845,
+            "description": "Proposed weekly rent."
+          },
+          "leaseTerm": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "52 weeks",
+            "description": "Proposed lease term."
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-10-01",
+            "description": "Proposed lease start date."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "proposedBy"
+        ]
+      },
+      "RespondToNegotiationRoundDto": {
+        "type": "object",
+        "properties": {
+          "response": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "declined"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "response"
+        ]
+      },
+      "RequestApplicantInformationDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 20,
+            "example": [
+              "Photo ID",
+              "Two recent payslips"
+            ],
+            "description": "What to ask for — usually the items the document check found missing.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1000,
+            "example": "Happy to take photos of the payslips if that is easier."
+          }
+        }
+      },
+      "WithdrawOfferDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Applicant pulled out before paying the holding deposit."
+          }
+        }
+      },
+      "SetApplicationWithdrawalDto": {
+        "type": "object",
+        "properties": {
+          "withdrawn": {
+            "type": "boolean",
+            "example": true,
+            "description": "true withdraws the application; false reinstates a withdrawn one."
+          }
+        },
+        "required": [
+          "withdrawn"
+        ]
+      },
+      "AddApplicationNoteDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 1000,
+            "example": "Called the employer — start date confirmed."
+          }
+        },
+        "required": [
+          "note"
         ]
       },
       "SetApplicantProfileDto": {
@@ -66912,8 +69737,17 @@
             "enum": [
               "accept",
               "reject",
-              "counter"
+              "counter",
+              "decline"
             ]
+          },
+          "respondingToOfferId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0
           },
           "moveOutDate": {
             "type": "string"
@@ -66934,6 +69768,18 @@
       "ResolveNegotiationDto": {
         "type": "object",
         "properties": {
+          "respondingToOfferId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
           "action": {
             "type": "string",
             "enum": [
@@ -66955,6 +69801,142 @@
         },
         "required": [
           "action"
+        ]
+      },
+      "SubmitLandlordOfferDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0,
+            "description": "`negotiationVersion` as last read — 409 if the review moved since."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "respondingToOfferId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The offer on the table this answers — 409 if it is no longer current."
+          },
+          "weekly": {
+            "type": "number",
+            "minimum": 1
+          },
+          "effectiveDate": {
+            "type": "string"
+          },
+          "rentNegotiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "respondingToOfferId",
+          "weekly"
+        ]
+      },
+      "AcceptOfferDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0,
+            "description": "`negotiationVersion` as last read — 409 if the review moved since."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "offerId"
+        ]
+      },
+      "KeepLandlordPositionDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0,
+            "description": "`negotiationVersion` as last read — 409 if the review moved since."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "respondingToOfferId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lockNegotiation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "respondingToOfferId"
+        ]
+      },
+      "WithdrawRentIncreaseDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "ReviewLaterDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0,
+            "description": "`negotiationVersion` as last read — 409 if the review moved since."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "followUpDate": {
+            "type": "string",
+            "description": "When the agent expects the landlord's instruction (ISO-8601)."
+          }
+        },
+        "required": [
+          "followUpDate"
+        ]
+      },
+      "CompleteFollowUpDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "ReopenNegotiationDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "ReviseLeaseAgreementDto": {
@@ -71913,6 +74895,68 @@
           "kind"
         ]
       },
+      "TenantRentReviewOfferDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNo": {
+            "type": "number"
+          },
+          "offeredBy": {
+            "type": "string",
+            "enum": [
+              "LANDLORD",
+              "TENANT"
+            ]
+          },
+          "rentAmount": {
+            "type": "number",
+            "description": "Weekly rent offered."
+          },
+          "proposedEffectiveDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "REJECTED",
+              "SUPERSEDED",
+              "WITHDRAWN"
+            ]
+          },
+          "round": {
+            "type": "number",
+            "description": "Negotiation round this offer belongs to."
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "description": "The tenant's own note on their counter-offer."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "versionNo",
+          "offeredBy",
+          "rentAmount",
+          "proposedEffectiveDate",
+          "status",
+          "round",
+          "note",
+          "createdAt"
+        ]
+      },
       "TenantRentReviewResponseDto": {
         "type": "object",
         "properties": {
@@ -72017,6 +75061,41 @@
             "items": {
               "$ref": "#/components/schemas/TenantRentReviewEmailDto"
             }
+          },
+          "currentOffer": {
+            "nullable": true,
+            "description": "The offer on the table. Respond to this one and send its id as `respondingToOfferId`.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TenantRentReviewOfferDto"
+              }
+            ]
+          },
+          "offers": {
+            "description": "Every offer version, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantRentReviewOfferDto"
+            }
+          },
+          "negotiationRound": {
+            "type": "number",
+            "description": "Current negotiation round (0 before any offer)."
+          },
+          "waitingFor": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ACCOUNT_MANAGER",
+              "AGENT",
+              "TENANT",
+              "SYSTEM",
+              "NONE"
+            ]
+          },
+          "negotiationVersion": {
+            "type": "number",
+            "description": "Send back as `expectedVersion` when responding."
           }
         },
         "required": [
@@ -72035,7 +75114,12 @@
           "noticeDispatchedAt",
           "noticeTerms",
           "nextRentReviewOpensOn",
-          "emails"
+          "emails",
+          "currentOffer",
+          "offers",
+          "negotiationRound",
+          "waitingFor",
+          "negotiationVersion"
         ]
       },
       "TenantRentReviewRespondDto": {
@@ -72046,7 +75130,8 @@
             "enum": [
               "accept",
               "reject",
-              "counter"
+              "counter",
+              "decline"
             ]
           },
           "moveOutDate": {
@@ -72055,10 +75140,38 @@
           "counterWeekly": {
             "type": "number",
             "minimum": 0
+          },
+          "tenantNote": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "respondingToOfferId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 0
           }
         },
         "required": [
           "decision"
+        ]
+      },
+      "TenantRentReviewQuestionDto": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "respondingToOfferId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "question"
         ]
       },
       "CreateTenantVacatingCaseDto": {
@@ -75944,15 +79057,18 @@
           },
           "tenantName": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Current household name(s). Joined when more than one tenant occupies."
           },
           "tenantPhone": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Tenant mobile for the assigned inspector to call or SMS about the visit. Filled from the property record, then the live tenant contact list."
           },
           "tenantEmail": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Tenant email for the assigned inspector to write about the visit. Filled from the property record, then the live tenant contact list."
           },
           "agentName": {
             "type": "string",
@@ -81387,19 +84503,6 @@
           "currentWeeklyRent"
         ]
       },
-      "CancelAgentRentReviewDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "maxLength": 500,
-            "example": "Opened in error — landlord not proceeding with increase"
-          }
-        },
-        "required": [
-          "reason"
-        ]
-      },
       "RentReviewAgentRecipient": {
         "type": "object",
         "properties": {
@@ -81418,6 +84521,208 @@
           "phone",
           "name",
           "email"
+        ]
+      },
+      "RentReviewOfferView": {
+        "type": "object",
+        "properties": {
+          "offeredBy": {
+            "type": "string",
+            "enum": [
+              "LANDLORD",
+              "TENANT"
+            ]
+          },
+          "submittedVia": {
+            "type": "string",
+            "enum": [
+              "AGENT",
+              "ACCOUNT_MANAGER",
+              "TENANT_APP",
+              "EMAIL",
+              "BACKFILL"
+            ]
+          },
+          "submittedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "frequency": {
+            "type": "string",
+            "enum": [
+              "WEEKLY",
+              "FORTNIGHTLY",
+              "MONTHLY"
+            ]
+          },
+          "proposedEffectiveDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "REJECTED",
+              "SUPERSEDED",
+              "WITHDRAWN"
+            ]
+          },
+          "statusChangedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "respondsToOfferId": {
+            "type": "string",
+            "nullable": true
+          },
+          "reactivatesOfferId": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "versionNo": {
+            "type": "number"
+          },
+          "rentAmount": {
+            "type": "number"
+          },
+          "round": {
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "offeredBy",
+          "submittedVia",
+          "submittedById",
+          "frequency",
+          "proposedEffectiveDate",
+          "note",
+          "status",
+          "statusChangedAt",
+          "respondsToOfferId",
+          "reactivatesOfferId",
+          "id",
+          "versionNo",
+          "rentAmount",
+          "round",
+          "createdAt"
+        ]
+      },
+      "RentReviewNegotiationEventView": {
+        "type": "object",
+        "properties": {
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "OFFER_SUBMITTED",
+              "OFFER_ACCEPTED",
+              "OFFER_REJECTED",
+              "OFFER_REACTIVATED",
+              "INCREASE_WITHDRAWN",
+              "REVIEW_LATER",
+              "FOLLOW_UP_COMPLETED",
+              "TENANT_QUESTION",
+              "NEGOTIATION_REOPENED"
+            ]
+          },
+          "actorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "offerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "actorType": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "eventType",
+          "actorId",
+          "offerId",
+          "note",
+          "id",
+          "actorType",
+          "createdAt"
+        ]
+      },
+      "RentReviewFollowUpView": {
+        "type": "object",
+        "properties": {
+          "waitingFor": {
+            "type": "string",
+            "enum": [
+              "ACCOUNT_MANAGER",
+              "AGENT",
+              "TENANT",
+              "SYSTEM",
+              "NONE"
+            ]
+          },
+          "assignedToId": {
+            "type": "string",
+            "nullable": true
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "overdueNotifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "dueAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "waitingFor",
+          "assignedToId",
+          "completedAt",
+          "overdueNotifiedAt",
+          "id",
+          "dueAt",
+          "reason",
+          "createdAt"
         ]
       },
       "RentPlatformResearch": {
@@ -81958,6 +85263,48 @@
             "type": "string",
             "nullable": true
           },
+          "waitingFor": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ACCOUNT_MANAGER",
+              "AGENT",
+              "TENANT",
+              "SYSTEM",
+              "NONE"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "RENT_INCREASED",
+              "NO_CHANGE",
+              "CANCELLED"
+            ]
+          },
+          "currentOfferId": {
+            "type": "string",
+            "nullable": true
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewOfferView"
+            }
+          },
+          "negotiationEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewNegotiationEventView"
+            }
+          },
+          "followUps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentReviewFollowUpView"
+            }
+          },
           "preferredLeaseType": {
             "type": "string",
             "enum": [
@@ -82033,11 +85380,17 @@
               "$ref": "#/components/schemas/RentReviewAuditEntryView"
             }
           },
+          "negotiationRound": {
+            "type": "number"
+          },
           "id": {
             "type": "string"
           },
           "workflowState": {
             "type": "string"
+          },
+          "negotiationVersion": {
+            "type": "number"
           },
           "createdAt": {
             "format": "date-time",
@@ -82074,6 +85427,12 @@
           "createdBy",
           "agentRecipient",
           "agencyName",
+          "waitingFor",
+          "outcome",
+          "currentOfferId",
+          "offers",
+          "negotiationEvents",
+          "followUps",
           "preferredLeaseType",
           "agentConfirmedDate",
           "completedDate",
@@ -82090,8 +85449,10 @@
           "completeLedgerEntryId",
           "pricingMilestones",
           "auditLog",
+          "negotiationRound",
           "id",
           "workflowState",
+          "negotiationVersion",
           "createdAt",
           "updatedAt"
         ]
@@ -82105,6 +85466,19 @@
         },
         "required": [
           "review"
+        ]
+      },
+      "CancelAgentRentReviewDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Opened in error — landlord not proceeding with increase"
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "AgentCreateTerminationCaseDto": {
@@ -83578,6 +86952,29 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "mainStatus": {
+            "type": "string",
+            "enum": [
+              "awaiting_confirmation",
+              "preparation",
+              "active_leasing",
+              "offer_pending",
+              "onboarding",
+              "key_handover",
+              "completed",
+              "paused",
+              "cancelled"
+            ]
+          },
+          "reletDecision": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "proceed",
+              "do_not_relet",
+              "decide_later"
+            ]
           }
         },
         "required": [
@@ -83589,7 +86986,9 @@
           "onboardingStepId",
           "rentPerWeek",
           "availableFrom",
-          "createdAt"
+          "createdAt",
+          "mainStatus",
+          "reletDecision"
         ]
       },
       "AgentAccountingDto": {
@@ -87871,36 +91270,6 @@
           "createdAt"
         ]
       },
-      "ConversationListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ConversationListItemDto"
-            }
-          },
-          "total": {
-            "type": "number"
-          },
-          "page": {
-            "type": "number"
-          },
-          "pageSize": {
-            "type": "number"
-          },
-          "truncated": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "items",
-          "total",
-          "page",
-          "pageSize",
-          "truncated"
-        ]
-      },
       "ConversationViewCountsDto": {
         "type": "object",
         "properties": {
@@ -87926,6 +91295,40 @@
           "WAITING",
           "AI_HANDLING",
           "RESOLVED"
+        ]
+      },
+      "ConversationListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConversationListItemDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "viewCounts": {
+            "$ref": "#/components/schemas/ConversationViewCountsDto"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize",
+          "truncated",
+          "viewCounts"
         ]
       },
       "ConversationHeaderDto": {
