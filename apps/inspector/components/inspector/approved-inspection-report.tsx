@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useInspectorData } from '@/components/providers/inspector-data-provider';
+import { approvalCopy } from '@/constants/inspection-approval';
 import { downloadInspectorReportPdf } from '@/lib/crossub-api/inspector-client';
 import type { InspectionJob } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
@@ -82,6 +84,7 @@ function Overlay({
 }
 
 export function ApprovedInspectionReportCard({ job }: { job: InspectionJob }) {
+  const { agencyMode } = useInspectorData();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -177,7 +180,7 @@ export function ApprovedInspectionReportCard({ job }: { job: InspectionJob }) {
               <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
                 {job.approvedAt
                   ? `Approved ${formatDateTime(job.approvedAt)} — same PDF as the admin site.`
-                  : 'The submitted report as filed for CROSSUB review.'}
+                  : approvalCopy(agencyMode).filedNote}
               </p>
             </div>
           </div>

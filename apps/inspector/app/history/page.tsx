@@ -22,7 +22,7 @@ import { isDemoJobId } from '@/lib/inspector-job-filters';
 import { formatDateTime } from '@/lib/utils';
 
 export default function HistoryPage() {
-  const { completedJobs } = useInspectorData();
+  const { completedJobs, agencyMode } = useInspectorData();
   const [query, setQuery] = useState('');
 
   const jobs = useMemo(() => {
@@ -84,7 +84,7 @@ export default function HistoryPage() {
                 >
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <JobTypeBadge type={job.type} />
-                    <JobStatusBadge status={job.status} />
+                    <JobStatusBadge status={job.status} agencyMode={agencyMode} />
                   </div>
                   <p className="text-sm font-semibold leading-snug">
                     {job.propertyAddress}

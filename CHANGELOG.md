@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-18
+
+### Added
+- Agency mode for Self-Manage agency inspectors, detected from `roster.agencyId` on `/inspector/profile`
+- `AgencyModeGate` redirects agency inspectors from Job Pool, Open batch, Earnings, Time Availability, Tribunal, Register and Signup to the dashboard
+- Agency name on the home header badge, More page and Profile (new Agency row; status shows Agency inspector)
+
+### Changed
+- Vendored contract re-synced to 0.31.0 (was 0.24.0); mobile document 287 → 316 paths, 378 → 412 schemas
+- Agency inspectors skip registration, pool and tribunal fetches, pool availability toggle, urgent pool alerts and location sync
+- Pool, Open task pool, Earnings, Registration, Time Availability and Tribunal links hidden from nav, More and Profile in agency mode
+- Earnings tiles and Payroll card hidden in agency mode
+- Approval copy reads "Pending agency approval" / "Awaiting agency approval" / "sent for agency review" in agency mode
+- Pool back links and cancel redirects go to Inspections in agency mode; cancel dialog drops "Release task back to job pool"
+
 ## 2026-09-18
 
 ### Changed

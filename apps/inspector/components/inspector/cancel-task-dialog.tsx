@@ -22,16 +22,22 @@ export function CancelTaskDialog({
   open,
   onClose,
   onConfirm,
+  allowReleaseToPool = true,
 }: {
   job: InspectionJob;
   open: boolean;
   onClose: () => void;
   onConfirm: (reason: string, mode: CancelTaskMode) => void;
+  /** False in agency mode — an agency job has no CROSSUB pool to go back to. */
+  allowReleaseToPool?: boolean;
 }) {
   const [reason, setReason] = useState('');
   const [mode, setMode] = useState<CancelTaskMode>(CANCEL_TASK_MODES.FLAG_ADMIN);
   const bonus = emergencyCancelBonus(job);
   const reasonOk = reason.trim().length >= MIN_CANCEL_REASON_LENGTH;
+  const modes = (Object.keys(CANCEL_TASK_MODE_LABEL) as CancelTaskMode[]).filter(
+    (key) => allowReleaseToPool || key !== CANCEL_TASK_MODES.RELEASE_POOL,
+  );
 
   if (!open) return null;
 
@@ -75,7 +81,7 @@ export function CancelTaskDialog({
           <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
             What should happen next?
           </p>
-          {(Object.keys(CANCEL_TASK_MODE_LABEL) as CancelTaskMode[]).map((key) => (
+          {modes.map((key) => (
             <button
               key={key}
               type="button"

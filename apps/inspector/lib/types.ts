@@ -135,6 +135,8 @@ export interface InspectorProfile {
   lateArrivals: number;
   registration?: InspectorRegistration | null;
   registrationComplete: boolean;
+  /** Set for a Self-Manage agency's own inspector (agency mode); null for CROSSUB. */
+  agency: { id: string; name: string } | null;
 }
 
 export interface InspectionJob {

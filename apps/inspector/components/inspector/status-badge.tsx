@@ -1,4 +1,6 @@
 import { INSPECTION_PAY_LABEL, INSPECTION_TYPE_LABEL } from '@/constants/inspection';
+import { approvalCopy } from '@/constants/inspection-approval';
+import { isAwaitingApproval } from '@/lib/inspection-job-cta';
 import type { InspectionType, JobPriority, JobStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -61,13 +63,19 @@ export function JobTypeBadge({ type }: { type: InspectionType }) {
   );
 }
 
-export function JobStatusBadge({ status }: { status: JobStatus }) {
-  return (
-    <StatusBadge
-      label={status.replace(/_/g, ' ')}
-      variant={status}
-    />
-  );
+export function JobStatusBadge({
+  status,
+  agencyMode = false,
+}: {
+  status: JobStatus;
+  /** Agency inspectors' reports are approved by their agency, not CROSSUB. */
+  agencyMode?: boolean;
+}) {
+  const label =
+    agencyMode && isAwaitingApproval({ status })
+      ? approvalCopy(agencyMode).awaitingLabel
+      : status.replace(/_/g, ' ');
+  return <StatusBadge label={label} variant={status} />;
 }
 
 export function PriorityBadge({ priority }: { priority: JobPriority }) {

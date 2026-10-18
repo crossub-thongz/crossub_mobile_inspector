@@ -17,6 +17,8 @@ import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
 import { INSPECTION_STATUS } from '@/constants/api-enums';
 import { ROUTES } from '@/constants/routes';
 import { TRIBUNAL_INSPECTION_HOURS } from '@/constants/inspection-rates';
+import { approvalCopy } from '@/constants/inspection-approval';
+import { agencyFromProfile, isAgencyInspector } from '@/lib/agency-mode';
 import { api, ApiError } from '@/lib/api';
 import {
   acceptInspection as apiAcceptInspection,
@@ -163,6 +165,11 @@ interface InspectorDataContextValue {
   poolError: string | null;
   /** True when GET /inspector/profile returned an approved roster row. */
   rosterLinked: boolean;
+  /**
+   * True for a Self-Manage agency's own inspector: no job pool, claim, open batch,
+   * pool availability, payout or registration — only their agency's assigned jobs.
+   */
+  agencyMode: boolean;
   pendingSync: number;
   /** True when the inspector is open to new pool jobs (green bubble). */
   receivingJobs: boolean;
@@ -307,6 +314,7 @@ const DEMO_PROFILE: InspectorProfile = {
   lateArrivals: 0,
   registration: null,
   registrationComplete: false,
+  agency: null,
 };
 
 /**
@@ -408,7 +416,7 @@ export function InspectorDataProvider({
     const profile = await fetchInspectorProfile();
     setServerProfile(profile);
 
-    if (user?.email && profile.roster) {
+    if (user?.email && profile.roster && !isAgencyInspector(profile)) {
       const rosterReceiving = (
         profile.roster as { receivingPoolJobs?: boolean }
       ).receivingPoolJobs;
@@ -473,14 +481,20 @@ export function InspectorDataProvider({
 
   const receivingJobsRef = useRef(receivingJobs);
   receivingJobsRef.current = receivingJobs;
+  const agencyMode = isAgencyInspector(serverProfile);
+  const agencyModeRef = useRef(agencyMode);
+  agencyModeRef.current = agencyMode;
 
-  const registrationComplete = isInspectorOnboardingComplete({
-    registration,
-    hasRoster: Boolean(serverProfile?.roster),
-    serverRegistrationStatus: serverProfile?.registration?.registrationStatus,
-    serverChecked: registrationResolved,
-    serverHasRegistration: Boolean(serverProfile?.registration),
-  });
+  // Agency staff never register as CROSSUB inspectors — their agency login is enough.
+  const registrationComplete =
+    agencyMode ||
+    isInspectorOnboardingComplete({
+      registration,
+      hasRoster: Boolean(serverProfile?.roster),
+      serverRegistrationStatus: serverProfile?.registration?.registrationStatus,
+      serverChecked: registrationResolved,
+      serverHasRegistration: Boolean(serverProfile?.registration),
+    });
 
   const saveRegistration = useCallback(
     async (data: InspectorRegistration): Promise<void> => {
@@ -582,7 +596,9 @@ export function InspectorDataProvider({
       /^\/jobs\/[^/]+\/(ingoing|routine|outgoing|open)\/?$/.test(path);
     const onJobPool =
       path === '/job-pool' || path.startsWith('/job-pool/');
+    // Agency inspectors have no pool (and no tribunal work) — never ask for either.
     const fetchPool =
+      !agencyModeRef.current &&
       receivingJobsRef.current &&
       !onWorkflowScreen &&
       (Boolean(opts?.includePool) || onJobPool || !background);
@@ -614,9 +630,16 @@ export function InspectorDataProvider({
         fetchInspectorJobs(),
         fetchInspectorMessages(),
         fetchInspectorNotifications(),
-        fetchInspectorTribunalCases(),
+        agencyModeRef.current
+          ? Promise.resolve([])
+          : fetchInspectorTribunalCases(),
         fetchInspectorProfile(),
       ]);
+    // The first load races the profile read, so decide agency mode from this response.
+    const agencyNow =
+      profileRes.status === 'fulfilled'
+        ? isAgencyInspector(profileRes.value)
+        : agencyModeRef.current;
 
     let assignedFromApi: InspectionJob[] = [];
     let poolFromApi: InspectionJob[] = [];
@@ -636,7 +659,7 @@ export function InspectorDataProvider({
       }
       connected = true;
       setApiConnected(true);
-    } else if (pool.status === 'rejected' && fetchPool) {
+    } else if (pool.status === 'rejected' && fetchPool && !agencyNow) {
       apiPoolIds.current = new Set();
       const reason = pool.reason;
       setPoolError(
@@ -844,7 +867,7 @@ export function InspectorDataProvider({
   }, [status, user?.email, user?.mustChangePassword, refreshPendingSync]);
 
   const toggleReceivingJobs = useCallback(() => {
-    if (!user?.email) return;
+    if (!user?.email || agencyMode) return;
     const previous = availability;
     const next: InspectorAvailability =
       previous === 'receiving' ? 'on_break' : 'receiving';
@@ -872,7 +895,7 @@ export function InspectorDataProvider({
         toast.error(message);
       }
     })();
-  }, [availability, refresh, user?.email]);
+  }, [agencyMode, availability, refresh, user?.email]);
 
   const syncOfflineQueue = useCallback(async () => {
     const queue = loadOfflineQueue();
@@ -1270,7 +1293,7 @@ export function InspectorDataProvider({
         }
         toast.success(
           job.type === 'ingoing' || job.type === 'outgoing'
-            ? 'Report submitted — awaiting approval'
+            ? approvalCopy(agencyModeRef.current).submittedToast
             : 'Inspection completed — report generated',
         );
 
@@ -1908,6 +1931,7 @@ export function InspectorDataProvider({
       lateArrivals: roster?.lateArrivals ?? 0,
       registration,
       registrationComplete,
+      agency: agencyFromProfile(serverProfile),
     };
   }, [
     registration,
@@ -1938,10 +1962,12 @@ export function InspectorDataProvider({
     [],
   );
 
+  // Agency inspectors are not dispatched, so their location is never pushed.
   useInspectorLocationSync(
     status === 'authed' &&
       apiConnected &&
-      Boolean(serverProfile?.roster),
+      Boolean(serverProfile?.roster) &&
+      !agencyMode,
     pushInspectorLocation,
   );
 
@@ -1954,6 +1980,7 @@ export function InspectorDataProvider({
     apiError,
     poolError,
     rosterLinked,
+    agencyMode,
     pendingSync,
     receivingJobs,
     deviceLocation,

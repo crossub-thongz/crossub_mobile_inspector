@@ -19,6 +19,8 @@ import {
   jobKeys,
   ROUTES,
 } from '@/constants/routes';
+import { approvalPendingLabel } from '@/constants/inspection-approval';
+import { poolReturnRoute } from '@/lib/agency-mode';
 import { isPoolJob } from '@/lib/inspector-job-filters';
 import { jobLookupMiss } from '@/lib/job-lookup';
 import {
@@ -31,22 +33,24 @@ import { jobInspectionStarted, jobPrimaryAction } from '@/lib/inspection-job-cta
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { getJob, acceptJob, declineJob, jobsHydrated } = useInspectorData();
+  const { getJob, acceptJob, declineJob, jobsHydrated, agencyMode } =
+    useInspectorData();
   const job = getJob(id);
+  const poolRoute = poolReturnRoute(agencyMode);
 
   if (!job) {
     return (
       <JobLookupFallback
         state={jobLookupMiss(jobsHydrated)}
-        backHref={ROUTES.JOB_POOL}
+        backHref={poolRoute}
       />
     );
   }
 
   const poolPreview = isPoolJob(job);
-  const backHref = poolPreview ? ROUTES.JOB_POOL : ROUTES.INSPECTIONS;
+  const backHref = poolPreview ? poolRoute : ROUTES.INSPECTIONS;
   const workflowStarted = jobInspectionStarted(job);
-  const primaryAction = jobPrimaryAction(job, workflowStarted);
+  const primaryAction = jobPrimaryAction(job, workflowStarted, agencyMode);
   const workflowHref = primaryAction.href;
   const keyCollectDone = isKeyCollectComplete(job);
   const keyReturnDone = isKeyReturnComplete(job);
@@ -88,7 +92,7 @@ export default function JobDetailPage() {
               variant="outline"
               onClick={() => {
                 declineJob(id);
-                router.push(ROUTES.JOB_POOL);
+                router.push(poolRoute);
               }}
             >
               Decline
@@ -113,7 +117,7 @@ export default function JobDetailPage() {
     : returnPending
       ? 'Return keys'
       : job.status === 'awaiting_approval'
-        ? 'Pending Approval'
+        ? approvalPendingLabel(agencyMode)
         : job.status === 'completed'
           ? 'View inspection report'
           : handoverNext

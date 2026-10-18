@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { MoreVertical, User } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import {
   CORE_INSPECTION_TYPES,
   INSPECTION_PAY_LABEL,
@@ -44,7 +45,8 @@ function typeLabel(job: InspectionJob): string {
 
 export function DashboardInspectionRow({ job }: { job: InspectionJob }) {
   const started = jobInspectionStarted(job);
-  const action = jobPrimaryAction(job, started);
+  const { agencyMode } = useInspectorData();
+  const action = jobPrimaryAction(job, started, agencyMode);
   const agent = job.agentCompany || job.agentName || '—';
 
   return (

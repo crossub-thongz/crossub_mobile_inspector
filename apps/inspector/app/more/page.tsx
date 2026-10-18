@@ -20,8 +20,9 @@ import { useInspectorData } from '@/components/providers/inspector-data-provider
 import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
 import { REGISTRATION_STATUS_LABEL } from '@/constants/inspector-registration';
 import { ROUTES } from '@/constants/routes';
+import { isAgencyHiddenRoute } from '@/lib/agency-mode';
 import { inspectorLevelAllows } from '@/lib/inspector-access-level';
-import { displayName, formatCurrency, formatDate } from '@/lib/utils';
+import { cn, displayName, formatCurrency, formatDate } from '@/lib/utils';
 
 const MENU = [
   {
@@ -64,14 +65,18 @@ const MENU = [
 
 export default function MorePage() {
   const { user } = useAuth();
-  const { profile, registration, summary } = useInspectorData();
+  const { profile, registration, summary, agencyMode } = useInspectorData();
   const name = user ? displayName(user) : profile.name;
   const approved = registration?.registrationStatus === 'approved';
   const showTribunal = inspectorLevelAllows(profile.accessLevel, 'tribunal');
   const tribunalCertified = Boolean(
     registration?.tribunalQualified || profile.tribunalQualified,
   );
-  const menu = MENU.filter((item) => item.href !== ROUTES.TRIBUNAL || showTribunal);
+  const menu = MENU.filter(
+    (item) =>
+      (item.href !== ROUTES.TRIBUNAL || showTribunal) &&
+      (!agencyMode || !isAgencyHiddenRoute(item.href)),
+  );
 
   return (
     <InspectorShell>
@@ -83,7 +88,11 @@ export default function MorePage() {
               {name}
             </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              {approved ? (
+              {agencyMode ? (
+                <span className="bg-primary text-primary-foreground inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium">
+                  {profile.agency?.name}
+                </span>
+              ) : approved ? (
                 <span className="bg-primary text-primary-foreground inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium">
                   {REGISTRATION_STATUS_LABEL.approved}
                 </span>
@@ -92,7 +101,9 @@ export default function MorePage() {
                   {REGISTRATION_STATUS_LABEL[registration.registrationStatus]}
                 </span>
               ) : null}
-              <TribunalQualifiedTag certified={tribunalCertified} />
+              {agencyMode ? null : (
+                <TribunalQualifiedTag certified={tribunalCertified} />
+              )}
             </div>
             <p className="text-muted-foreground mt-2 truncate text-xs">
               {registration?.email ?? profile.email}
@@ -103,19 +114,23 @@ export default function MorePage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl border border-border bg-card p-2.5">
-            <Wallet className="text-primary size-4" />
-            <p className="mt-2 text-lg font-bold tabular-nums">
-              {formatCurrency(summary.weeklyEarnings)}
-            </p>
-            <p className="text-muted-foreground mt-0.5 text-[10px] leading-snug">
-              This week
-            </p>
-            <p className="text-muted-foreground text-[10px]">
-              ${INSPECTOR_HOURLY_RATE_AUD}/hr guideline
-            </p>
-          </div>
+        <section
+          className={cn('grid gap-2', agencyMode ? 'grid-cols-1' : 'grid-cols-3')}
+        >
+          {agencyMode ? null : (
+            <div className="rounded-xl border border-border bg-card p-2.5">
+              <Wallet className="text-primary size-4" />
+              <p className="mt-2 text-lg font-bold tabular-nums">
+                {formatCurrency(summary.weeklyEarnings)}
+              </p>
+              <p className="text-muted-foreground mt-0.5 text-[10px] leading-snug">
+                This week
+              </p>
+              <p className="text-muted-foreground text-[10px]">
+                ${INSPECTOR_HOURLY_RATE_AUD}/hr guideline
+              </p>
+            </div>
+          )}
           <div className="rounded-xl border border-border bg-card p-2.5">
             <CalendarClock className="text-primary size-4" />
             <p className="mt-2 text-lg font-bold tabular-nums">
@@ -125,15 +140,17 @@ export default function MorePage() {
               Completed inspections
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-card p-2.5">
-            <Wallet className="size-4 text-amber-400" />
-            <p className="mt-2 text-lg font-bold tabular-nums text-amber-400">
-              {formatCurrency(summary.unclaimedEarnings)}
-            </p>
-            <p className="text-muted-foreground mt-0.5 text-[10px] leading-snug">
-              Unclaimed payments
-            </p>
-          </div>
+          {agencyMode ? null : (
+            <div className="rounded-xl border border-border bg-card p-2.5">
+              <Wallet className="size-4 text-amber-400" />
+              <p className="mt-2 text-lg font-bold tabular-nums text-amber-400">
+                {formatCurrency(summary.unclaimedEarnings)}
+              </p>
+              <p className="text-muted-foreground mt-0.5 text-[10px] leading-snug">
+                Unclaimed payments
+              </p>
+            </div>
+          )}
         </section>
 
         <nav className="divide-border divide-y rounded-2xl border border-border bg-card">
