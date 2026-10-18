@@ -1,6 +1,7 @@
 import { DoorOpen, Home, Users } from 'lucide-react';
 
 import { INSPECTION_TYPE_LABEL, type CoreInspectionType } from '@/constants/inspection';
+import { PROPERTY_TIME_ZONE } from '@/constants/time-zone';
 import type { InspectionType } from '@/lib/types';
 
 export const INSPECT_TYPE_VISUAL: Record<
@@ -67,6 +68,7 @@ export function formatInspectTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
   return new Intl.DateTimeFormat('en-AU', {
+    timeZone: PROPERTY_TIME_ZONE,
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,

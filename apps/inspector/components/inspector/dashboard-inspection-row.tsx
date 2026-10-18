@@ -11,17 +11,20 @@ import {
   type CoreInspectionType,
 } from '@/constants/inspection';
 import { jobDetail } from '@/constants/routes';
+import { PROPERTY_TIME_ZONE } from '@/constants/time-zone';
 import { writeLastInspectionsType } from '@/lib/inspections-list-prefs';
 import { jobInspectionStarted, jobPrimaryAction } from '@/lib/inspection-job-cta';
 import type { InspectionJob } from '@/lib/types';
 
 const TIME_FMT = new Intl.DateTimeFormat('en-AU', {
+  timeZone: PROPERTY_TIME_ZONE,
   hour: 'numeric',
   minute: '2-digit',
   hour12: true,
 });
 
 const SHORT_DATE_FMT = new Intl.DateTimeFormat('en-AU', {
+  timeZone: PROPERTY_TIME_ZONE,
   day: 'numeric',
   month: 'short',
 });

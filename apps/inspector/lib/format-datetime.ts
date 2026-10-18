@@ -6,8 +6,11 @@
  * - Date+time:   "13 Aug 2026, 8:00 pm"
  * - Time:        "8:00 pm"
  *
- * Implemented with Intl (no date-fns) — output matches the admin helpers.
+ * Implemented with Intl (no date-fns) — output matches the admin helpers. Every value is shown
+ * in Sydney time (`PROPERTY_TIME_ZONE`), whatever zone the handset is in.
  */
+
+import { PROPERTY_TIME_ZONE } from '@/constants/time-zone';
 
 function toValidDate(input: Date | string): Date | null {
   const d = typeof input === 'string' ? new Date(input) : input;
@@ -26,12 +29,14 @@ function lowerMeridiem(value: string): string {
 }
 
 const DATE_FMT = new Intl.DateTimeFormat('en-AU', {
+  timeZone: PROPERTY_TIME_ZONE,
   day: 'numeric',
   month: 'short',
   year: 'numeric',
 });
 
 const TIME_FMT = new Intl.DateTimeFormat('en-AU', {
+  timeZone: PROPERTY_TIME_ZONE,
   hour: 'numeric',
   minute: '2-digit',
   hour12: true,
@@ -64,11 +69,16 @@ export function formatDateTimeMedium(input: Date | string): string {
 
 export const formatDateTime = formatDateTimeMedium;
 
+const DAY_KEY_FMT = new Intl.DateTimeFormat('en-CA', {
+  timeZone: PROPERTY_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/** Sydney calendar day as `YYYY-MM-DD`; keys compare in date order as strings. */
 export function dayKey(input: Date | string): string {
   const d = toValidDate(input);
   if (!d) return typeof input === 'string' ? input.slice(0, 10) || 'unknown' : 'unknown';
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return DAY_KEY_FMT.format(d);
 }

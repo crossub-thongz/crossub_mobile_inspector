@@ -1,3 +1,4 @@
+import { dayKey } from '@/lib/format-datetime';
 import type { InspectionJob } from '@/lib/types';
 import { isToday } from '@/lib/utils';
 
@@ -5,10 +6,11 @@ function jobScheduleIso(job: InspectionJob): string {
   return job.scheduledTime || job.scheduledDate;
 }
 
-function startOfLocalDay(from = new Date()): Date {
-  const day = new Date(from);
-  day.setHours(0, 0, 0, 0);
-  return day;
+/** The job's Sydney calendar day (`YYYY-MM-DD`), or null when it has no valid time. */
+function jobScheduleDayKey(job: InspectionJob): string | null {
+  const scheduled = new Date(jobScheduleIso(job));
+  if (Number.isNaN(scheduled.getTime())) return null;
+  return dayKey(scheduled);
 }
 
 /** Assigned work the inspector still has to do — not pool, not finished, not declined. */
@@ -69,11 +71,8 @@ export function isTodaysInspection(job: InspectionJob): boolean {
 /** Accepted/active inspection work scheduled on a later calendar day. */
 export function isUpcomingInspection(job: InspectionJob): boolean {
   if (!isActiveInspectJob(job)) return false;
-  const scheduled = new Date(jobScheduleIso(job));
-  if (Number.isNaN(scheduled.getTime())) return false;
-  const day = new Date(scheduled);
-  day.setHours(0, 0, 0, 0);
-  return day.getTime() > startOfLocalDay().getTime();
+  const day = jobScheduleDayKey(job);
+  return day !== null && day > dayKey(new Date());
 }
 
 /**
@@ -86,9 +85,8 @@ export function isOverdueInspection(job: InspectionJob): boolean {
   if (!isActiveInspectJob(job) || job.status === 'awaiting_approval') {
     return false;
   }
-  const scheduled = new Date(jobScheduleIso(job));
-  if (Number.isNaN(scheduled.getTime())) return false;
-  return scheduled < startOfLocalDay();
+  const day = jobScheduleDayKey(job);
+  return day !== null && day < dayKey(new Date());
 }
 
 export function filterPoolJobs(jobs: InspectionJob[]): InspectionJob[] {

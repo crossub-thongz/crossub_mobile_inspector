@@ -22,6 +22,7 @@ import { useInspectorData } from '@/components/providers/inspector-data-provider
 import { Button } from '@/components/ui/button';
 import { ROUTES, isPublicRoute } from '@/constants/routes';
 import { Role } from '@/constants/roles';
+import { PROPERTY_TIME_ZONE } from '@/constants/time-zone';
 import { isAgencyHiddenRoute } from '@/lib/agency-mode';
 import { inspectorLevelAllows } from '@/lib/inspector-access-level';
 import { cn, displayName, personInitials } from '@/lib/utils';
@@ -78,6 +79,7 @@ function greetingForHour(date = new Date()): string {
 }
 
 const HOME_DATE_FMT = new Intl.DateTimeFormat('en-AU', {
+  timeZone: PROPERTY_TIME_ZONE,
   weekday: 'long',
   day: 'numeric',
   month: 'short',
