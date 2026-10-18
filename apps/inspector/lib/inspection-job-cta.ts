@@ -1,3 +1,4 @@
+import { approvalPendingLabel } from '@/constants/inspection-approval';
 import { jobAreas, jobInspect, jobDetail, jobHistory } from '@/constants/routes';
 import { hasInspectionExecutionDraft } from '@/lib/inspection-execution-draft';
 import { jobStartCta } from '@/lib/inspection-start-flow';
@@ -49,6 +50,7 @@ export function inspectListCtaLabel(
 export function jobPrimaryAction(
   job: InspectionJob,
   started: boolean,
+  agencyMode: boolean,
 ): JobPrimaryAction {
   if (job.status === 'completed') {
     return { label: 'View report', href: jobHistory(job.id), disabled: false };
@@ -58,7 +60,7 @@ export function jobPrimaryAction(
   }
   if (isAwaitingApproval(job)) {
     return {
-      label: 'Pending Approval',
+      label: approvalPendingLabel(agencyMode),
       href: jobDetail(job.id),
       disabled: true,
       muted: true,

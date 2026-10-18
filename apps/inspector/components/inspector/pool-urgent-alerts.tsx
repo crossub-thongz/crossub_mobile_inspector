@@ -40,7 +40,7 @@ function persistAlertedIds(ids: Set<string>): void {
  * Uses the same Sonner toaster as other inspector alerts.
  */
 export function PoolUrgentAlerts() {
-  const { poolJobs, receivingJobs, apiConnected, jobsHydrated } =
+  const { agencyMode, poolJobs, receivingJobs, apiConnected, jobsHydrated } =
     useInspectorData();
   const previousPriorityRef = useRef<Map<string, 'normal' | 'urgent'>>(
     new Map(),
@@ -49,7 +49,8 @@ export function PoolUrgentAlerts() {
   const hydratedRef = useRef(false);
 
   useEffect(() => {
-    if (!receivingJobs || !apiConnected || !jobsHydrated) return;
+    // Agency inspectors have no pool to be alerted about.
+    if (agencyMode || !receivingJobs || !apiConnected || !jobsHydrated) return;
 
     if (alertedRef.current == null) {
       alertedRef.current = loadAlertedIds();
@@ -118,7 +119,7 @@ export function PoolUrgentAlerts() {
         },
       );
     }
-  }, [poolJobs, receivingJobs, apiConnected, jobsHydrated]);
+  }, [agencyMode, poolJobs, receivingJobs, apiConnected, jobsHydrated]);
 
   return null;
 }

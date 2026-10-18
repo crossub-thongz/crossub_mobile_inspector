@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ChevronRight, Clock, MapPin, Play } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import {
   CORE_INSPECTION_TYPES,
   type CoreInspectionType,
@@ -40,7 +41,8 @@ export function InspectJobRow({
       ? { latitude: job.latitude, longitude: job.longitude }
       : null;
   const travel = computeTravelEstimate(origin, destination);
-  const action = jobPrimaryAction(job, jobInspectionStarted(job));
+  const { agencyMode } = useInspectorData();
+  const action = jobPrimaryAction(job, jobInspectionStarted(job), agencyMode);
   const href = completed ? jobHistory(job.id) : jobDetail(job.id);
   const rememberType = () => {
     if (CORE_INSPECTION_TYPES.includes(job.type as CoreInspectionType)) {

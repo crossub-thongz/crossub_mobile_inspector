@@ -18,6 +18,7 @@ import { useAuth } from '@/components/providers/auth-provider';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AGENCY_INSPECTOR_STATUS_LABEL } from '@/constants/agency-mode';
 import { REGISTRATION_STATUS_LABEL } from '@/constants/inspector-registration';
 import { INSPECTOR_HOURLY_RATE_AUD } from '@/constants/inspection';
 import { ROUTES } from '@/constants/routes';
@@ -35,9 +36,11 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { profile, registration, registrationComplete } = useInspectorData();
+  const { profile, registration, registrationComplete, agencyMode } =
+    useInspectorData();
   const reg = registration;
-  const needsRegistration = !registrationComplete;
+  // Agency staff never register as CROSSUB inspectors.
+  const needsRegistration = !agencyMode && !registrationComplete;
 
   return (
     <InspectorShell title="Inspector Information">
@@ -67,11 +70,14 @@ export default function ProfilePage() {
                 <InfoRow
                   label="Status"
                   value={
-                    reg
-                      ? REGISTRATION_STATUS_LABEL[reg.registrationStatus]
-                      : REGISTRATION_STATUS_LABEL.approved
+                    agencyMode
+                      ? AGENCY_INSPECTOR_STATUS_LABEL
+                      : reg
+                        ? REGISTRATION_STATUS_LABEL[reg.registrationStatus]
+                        : REGISTRATION_STATUS_LABEL.approved
                   }
                 />
+                <InfoRow label="Agency" value={profile.agency?.name} />
                 <InfoRow label="Email" value={reg?.email ?? profile.email} />
                 <InfoRow label="Mobile" value={reg?.mobile ?? profile.phone} />
                 <InfoRow
@@ -143,26 +149,28 @@ export default function ProfilePage() {
               </Card>
             )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CalendarClock className="size-4" />
-                  Time Availability
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-muted-foreground text-sm">
-                  Select the days and hours you can take inspection jobs.
-                </p>
-                <Link href={ROUTES.WEEKLY_AVAILABILITY}>
-                  <Button variant="outline" className="w-full">
-                    Set available times
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+            {agencyMode ? null : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CalendarClock className="size-4" />
+                    Time Availability
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-muted-foreground text-sm">
+                    Select the days and hours you can take inspection jobs.
+                  </p>
+                  <Link href={ROUTES.WEEKLY_AVAILABILITY}>
+                    <Button variant="outline" className="w-full">
+                      Set available times
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
 
-            {reg ? (
+            {reg && !agencyMode ? (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -221,7 +229,7 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {needsRegistration ? (
+        {agencyMode ? null : needsRegistration ? (
           <Link href={ROUTES.REGISTER}>
             <Button variant="outline" className="w-full">
               Start registration

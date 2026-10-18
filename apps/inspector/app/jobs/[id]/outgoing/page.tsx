@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import {
   sectionAreaName,
 } from '@/constants/inspection-areas';
+import { approvalCopy } from '@/constants/inspection-approval';
 import { jobDetail, jobInspect, ROUTES } from '@/constants/routes';
 import { useFinishInspection } from '@/hooks/use-finish-inspection';
 import { useInspectionExecutionDraft } from '@/hooks/use-inspection-execution-draft';
@@ -130,6 +131,7 @@ export default function OutgoingInspectionPage() {
     updateJobStatus,
     apiConnected,
     jobsHydrated,
+    agencyMode,
   } = useInspectorData();
   const job = getJob(id);
   const { finish: submitInspection, Celebration } = useFinishInspection(id);
@@ -1116,9 +1118,10 @@ export default function OutgoingInspectionPage() {
       return;
     }
     clearDraft();
+    const approval = approvalCopy(agencyMode);
     submitInspection(
-      'Outgoing report sent for account manager review',
-      'Awaiting approval',
+      `Outgoing report sent for ${approval.reviewer} review`,
+      approval.awaitingLabel,
     );
   };
 

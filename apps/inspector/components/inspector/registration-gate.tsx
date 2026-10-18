@@ -12,6 +12,7 @@ const REGISTRATION_EXEMPT = [ROUTES.REGISTER, ROUTES.PROFILE, ROUTES.CHANGE_PASS
 export function RegistrationGate({ children }: { children: React.ReactNode }) {
   const { status } = useAuth();
   const {
+    agencyMode,
     registrationComplete,
     registrationHydrated,
     registrationResolved,
@@ -29,6 +30,8 @@ export function RegistrationGate({ children }: { children: React.ReactNode }) {
     ) {
       return;
     }
+    // Agency staff never register — their agency login is their inspector account.
+    if (agencyMode) return;
     if (isPublicRoute(pathname)) return;
     if (REGISTRATION_EXEMPT.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
       return;
@@ -37,6 +40,7 @@ export function RegistrationGate({ children }: { children: React.ReactNode }) {
       router.replace(ROUTES.REGISTER);
     }
   }, [
+    agencyMode,
     status,
     loading,
     registrationHydrated,

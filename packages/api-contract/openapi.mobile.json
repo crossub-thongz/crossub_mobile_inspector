@@ -2952,6 +2952,53 @@
         ]
       }
     },
+    "/tenant/vacating-cases/{caseId}/cleaning": {
+      "patch": {
+        "operationId": "TenantAccountController_setVacatingCleaning",
+        "parameters": [
+          {
+            "name": "caseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantSetVacatingCleaningDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantVacatingCaseResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Choose how the end-of-lease clean is arranged (tenant arranges it, or CROSSUB books it).",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
     "/tenant/vacating-cases/{caseId}/key-return": {
       "patch": {
         "operationId": "TenantAccountController_submitVacatingKeyReturn",
@@ -9320,6 +9367,63 @@
         ]
       }
     },
+    "/agent/agencies/{agencyId}/service-level": {
+      "patch": {
+        "description": "Applies to the whole agency; a per-property service level override still wins. Only a Self-Manage agency can switch from the app; other plans are changed by CROSSUB.",
+        "operationId": "AgentPortalController_updateAgencyServiceLevel",
+        "parameters": [
+          {
+            "name": "agencyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentUpdateAgencyServiceLevelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentAgencyResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The plan is not one an agency may choose."
+          },
+          "403": {
+            "description": "The agency is not on Self-Manage."
+          },
+          "404": {
+            "description": "agencyId does not exist or the caller is not a principal of this agency."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Switch a Self-Manage agency to Inspection Only or Full Service (principal only).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/agencies/{agencyId}/primary-contact": {
       "patch": {
         "description": "Null keeps the agency (company registry contact) as the default primary. A user id must be an active team member.",
@@ -12459,6 +12563,200 @@
         ]
       }
     },
+    "/agent/tasks/{kind}/{taskId}/force-complete": {
+      "post": {
+        "operationId": "AgentPortalController_forceCompleteTask",
+        "parameters": [
+          {
+            "name": "kind",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "inspection",
+                "leasing",
+                "maintenance",
+                "rent_review",
+                "end_leasing",
+                "tribunal"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentTaskLifecycleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTaskLifecycleResultDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found for this agent."
+          },
+          "409": {
+            "description": "Task is already completed or deleted."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Force complete an agent task and close its remaining workflow chain.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/tasks/{kind}/{taskId}/force-delete": {
+      "post": {
+        "operationId": "AgentPortalController_forceDeleteTask",
+        "parameters": [
+          {
+            "name": "kind",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "inspection",
+                "leasing",
+                "maintenance",
+                "rent_review",
+                "end_leasing",
+                "tribunal"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentTaskLifecycleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTaskLifecycleResultDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found for this agent."
+          },
+          "409": {
+            "description": "Task is already deleted."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Force delete an agent task and close its remaining workflow chain.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/tasks/{kind}/{taskId}/audit-log": {
+      "get": {
+        "operationId": "AgentPortalController_listTaskAuditLog",
+        "parameters": [
+          {
+            "name": "kind",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "inspection",
+                "leasing",
+                "maintenance",
+                "rent_review",
+                "end_leasing",
+                "tribunal"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTaskAuditLogDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found for this agent."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Audit log for force-complete and force-delete of an agent task.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
     "/agent/properties/{propertyId}/workflows/end-leasing/{caseId}/cancel": {
       "post": {
         "operationId": "AgentPortalController_cancelTerminationCase",
@@ -14418,8 +14716,8 @@
             "name": "quotationId",
             "required": true,
             "in": "path",
+            "description": "The workflow quotation id as the maintenance board returns it (`Q-<timestamp>`), not a UUID.",
             "schema": {
-              "format": "uuid",
               "type": "string"
             }
           }
@@ -14436,7 +14734,7 @@
             }
           },
           "400": {
-            "description": "requestId or quotationId is not a valid UUID."
+            "description": "requestId is not a valid UUID."
           },
           "401": {
             "description": "Missing/invalid/expired token, or the user is not active."
@@ -14479,8 +14777,8 @@
             "name": "quotationId",
             "required": true,
             "in": "path",
+            "description": "The workflow quotation id as the maintenance board returns it (`Q-<timestamp>`), not a UUID.",
             "schema": {
-              "format": "uuid",
               "type": "string"
             }
           }
@@ -14507,7 +14805,7 @@
             }
           },
           "400": {
-            "description": "requestId/quotationId is not a valid UUID, or the reason is missing/too short."
+            "description": "requestId is not a valid UUID, or the reason is missing/too short."
           },
           "401": {
             "description": "Missing/invalid/expired token, or the user is not active."
@@ -14551,8 +14849,8 @@
             "name": "quotationId",
             "required": true,
             "in": "path",
+            "description": "The workflow quotation id as the maintenance board returns it (`Q-<timestamp>`), not a UUID.",
             "schema": {
-              "format": "uuid",
               "type": "string"
             }
           }
@@ -14579,7 +14877,7 @@
             }
           },
           "400": {
-            "description": "requestId/quotationId is not a valid UUID, or the counter price is invalid."
+            "description": "requestId is not a valid UUID, or the counter price is invalid."
           },
           "401": {
             "description": "Missing/invalid/expired token, or the user is not active."
@@ -15011,6 +15309,1418 @@
           }
         ],
         "summary": "Transcribe hold-to-talk audio for Gii",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/owner-decisions": {
+      "post": {
+        "description": "Self-Manage properties only. Records the decision and, when the property has an owner email, emails the owner a copy from the agency address; the copy carries no approve link.",
+        "operationId": "AgentOwnerDecisionController_record",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentCreateOwnerDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentOwnerDecisionDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage, or CROSSUB has not confirmed it services this property."
+          },
+          "404": {
+            "description": "The property is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record a decision on a property and email the owner a copy (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      },
+      "get": {
+        "operationId": "AgentOwnerDecisionController_list",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "caseType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "MAINTENANCE",
+                "INSPECTION",
+                "LEASING",
+                "RENT_REVIEW",
+                "END_LEASING",
+                "TRUST",
+                "GENERAL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "caseId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentOwnerDecisionListDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The property is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List decisions recorded on a property, newest first.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/urgent-authorisations": {
+      "post": {
+        "description": "CONFIRM_URGENT / EMERGENCY_MAKE_SAFE need a contractor, a scope and a spending limit above 0. CONVERT_TO_NORMAL / ESCALATE_EXTERNAL / CLOSE_NO_ACTION need a reason. A new decision supersedes the last.",
+        "operationId": "AgentSelfManagedMaintenanceController_authoriseUrgentWork",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthoriseUrgentWorkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required contractor, scope, spending limit or reason is missing."
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          },
+          "409": {
+            "description": "The job changed since it was opened."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Decide an urgent job: confirm, convert to normal, make safe, escalate or close (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/split": {
+      "post": {
+        "operationId": "AgentSelfManagedMaintenanceController_splitJob",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SplitMaintenanceFlowDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Split a separate fault off into its own job (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/combine-candidates": {
+      "get": {
+        "operationId": "AgentSelfManagedMaintenanceController_listCombineCandidates",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenanceCombineCandidatesResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Live jobs at the same property this one could be combined into (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/combine": {
+      "post": {
+        "description": "This job closes as a duplicate; returns the surviving job.",
+        "operationId": "AgentSelfManagedMaintenanceController_combineInto",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CombineMaintenanceCasesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          },
+          "409": {
+            "description": "The jobs cannot be combined, or commitments on them have not been acknowledged."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Combine this job into another one at the same property (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/issues/send-questions": {
+      "post": {
+        "operationId": "AgentSelfManagedMaintenanceController_sendQuestions",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMaintenanceQuestionsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Email the tenant questions about the reported faults (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/issues/answers": {
+      "post": {
+        "operationId": "AgentSelfManagedMaintenanceController_recordAnswers",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordMaintenanceIssueAnswersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record the tenant’s answers, e.g. from a phone call (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/issues/{issueId}/dismiss": {
+      "post": {
+        "operationId": "AgentSelfManagedMaintenanceController_dismissIssue",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DismissMaintenanceIssueDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Dismiss an extracted issue that is not a real fault (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/invite-contractors": {
+      "post": {
+        "operationId": "AgentSelfManagedMaintenanceController_inviteContractors",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSelfManagedInviteContractorsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ask the agency’s preferred tradies to quote (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/quotes": {
+      "post": {
+        "operationId": "AgentSelfManagedMaintenanceController_createQuote",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSelfManagedCreateQuoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The tradie was not invited to quote on this job."
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enter a quote on an invited tradie’s behalf (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/schedule/availability": {
+      "post": {
+        "operationId": "AgentSelfManagedMaintenanceController_submitScheduleAvailability",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSelfManagedScheduleAvailabilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The job is not at the scheduling step."
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enter the contractor’s visit times; the tenant confirms one (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/schedule/arranged": {
+      "post": {
+        "operationId": "AgentSelfManagedMaintenanceController_recordScheduleArranged",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSelfManagedScheduleArrangedDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The job is not at the scheduling step, or no contractor is assigned."
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record a visit the contractor and tenant arranged directly (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/invoice-matches/{matchId}/resolve": {
+      "post": {
+        "operationId": "AgentSelfManagedMaintenanceController_resolveInvoiceMatch",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "matchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveMaintenanceInvoiceMatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          },
+          "409": {
+            "description": "The invoice match was already resolved."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept an invoice variance or dispute the invoice (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/invoice-matches/{matchId}/payment": {
+      "post": {
+        "description": "Recorded as EXTERNAL_SETTLEMENT. PAID stays the CROSSUB accounting hand-off.",
+        "operationId": "AgentSelfManagedMaintenanceController_recordPayment",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "matchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSelfManagedRecordPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record that the agency paid the tradie itself (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/completion/files": {
+      "post": {
+        "description": "Each kind clears its completion gate. The job closes once every gate is met.",
+        "operationId": "AgentSelfManagedMaintenanceController_uploadCompletionFile",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSelfManagedUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The file is too large or of an unsupported type."
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a completion photo or the tradie’s invoice on their behalf (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/completion/tenant-sign-off": {
+      "post": {
+        "operationId": "AgentSelfManagedMaintenanceController_recordTenantSignOff",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record that the tenant confirmed the repair works (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/maintenance/{requestId}/completion/approve": {
+      "post": {
+        "description": "Needs completion evidence on the job. The job closes once its other gates are met.",
+        "operationId": "AgentSelfManagedMaintenanceController_approveCompletion",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMaintenanceDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No completion evidence has been uploaded."
+          },
+          "403": {
+            "description": "The property is not Self-Manage — CROSSUB runs this step on other plans."
+          },
+          "404": {
+            "description": "The job is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sign the completed work off and email the owner a copy (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/properties/{propertyId}/inspections/agency": {
+      "post": {
+        "description": "No prepaid gate and no CROSSUB charge. The inspector is assigned immediately and sees the job in the Inspector app. A routine booking makes the property’s routine schedule agency-conducted, so later cycles go to the same inspector.",
+        "operationId": "AgentSelfManagedInspectionController_createAgencyInspection",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentCreateAgencyInspectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentInspectionDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The user is not an active agency inspector, or the time is in the past / inside the routine notice period."
+          },
+          "403": {
+            "description": "This is available on Self-Manage properties only"
+          },
+          "404": {
+            "description": "The inspection or property is not in this agent’s book."
+          },
+          "409": {
+            "description": "A live inspection of this type already exists for the property."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Book an ingoing, outgoing or routine inspection with one of the agency’s own inspectors (Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/inspections/{inspectionId}": {
+      "get": {
+        "operationId": "AgentSelfManagedInspectionController_getInspection",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentInspectionDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The inspection or property is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "One inspection, with what the agent can do next.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/inspections/{inspectionId}/report/pdf": {
+      "get": {
+        "description": "An agency job’s report is available once the inspector finishes, so the principal can review it before signing off. A CROSSUB job’s report is available after CROSSUB approves it.",
+        "operationId": "AgentSelfManagedInspectionController_downloadReportPdf",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The PDF.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The inspection or property is not in this agent’s book."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The inspection report PDF.",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/inspections/{inspectionId}/agency-sign-off": {
+      "post": {
+        "description": "Approves the job, emails the tenant the ingoing/outgoing report now, and emails the owner a copy with the PDF from the agency address. A failed email is recorded on `ownerCopy`, not returned as an error.",
+        "operationId": "AgentSelfManagedInspectionController_signOff",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentInspectionDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "This is available on Self-Manage properties only Also for a CROSSUB job. Principal only — a team member gets the same 404 as for a job outside the book."
+          },
+          "404": {
+            "description": "The inspection or property is not in this agent’s book."
+          },
+          "409": {
+            "description": "The report is not submitted yet, or is already signed off."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sign off the agency inspector’s report (principal, Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/inspections/{inspectionId}/agency-reject-report": {
+      "post": {
+        "description": "Ingoing and outgoing reports. The inspector is told why and must resubmit.",
+        "operationId": "AgentSelfManagedInspectionController_rejectReport",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectInspectionReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentInspectionDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A reason is required; routine reports cannot be sent back."
+          },
+          "403": {
+            "description": "This is available on Self-Manage properties only Also for a CROSSUB job."
+          },
+          "404": {
+            "description": "The inspection or property is not in this agent’s book."
+          },
+          "409": {
+            "description": "No submitted report, or it is already signed off or tenant-signed."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send the agency inspector’s report back to redo (principal, Self-Manage).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/inspections/{inspectionId}/conducted-by": {
+      "patch": {
+        "operationId": "AgentSelfManagedInspectionController_reassign",
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentReassignAgencyInspectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentInspectionDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The user is not an active agency inspector."
+          },
+          "403": {
+            "description": "This is available on Self-Manage properties only Also for a CROSSUB job."
+          },
+          "404": {
+            "description": "The inspection or property is not in this agent’s book."
+          },
+          "409": {
+            "description": "The inspection is already completed."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Move an agency job to another of the agency’s inspectors (Self-Manage, before completion).",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/agencies/{agencyId}/inspectors/{userId}": {
+      "post": {
+        "description": "They sign in to the Inspector app with their existing login and see only the jobs the agency assigns them. Never in the CROSSUB pool, never paid by CROSSUB.",
+        "operationId": "AgentInspectorTeamController_addInspector",
+        "parameters": [
+          {
+            "name": "agencyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "The team member’s user id.",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTeamResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The user is not an active member of this agency team."
+          },
+          "403": {
+            "description": "This is available on Self-Manage properties only"
+          },
+          "404": {
+            "description": "The agency is not in the caller’s book, or the caller is not its principal."
+          },
+          "409": {
+            "description": "The member is already a CROSSUB (or another agency’s) inspector."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Make a team member an agency inspector (principal, Self-Manage agency).",
+        "tags": [
+          "agent"
+        ]
+      },
+      "delete": {
+        "description": "Deleted when they have no job history; otherwise deactivated, which keeps the history.",
+        "operationId": "AgentInspectorTeamController_removeInspector",
+        "parameters": [
+          {
+            "name": "agencyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "The team member’s user id.",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTeamResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The agency is not in the caller’s book, or the caller is not its principal."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove an agency inspector (principal).",
         "tags": [
           "agent"
         ]
@@ -17952,7 +19662,7 @@
           },
           "counterWeekly": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0.01
           },
           "tenantNote": {
             "type": "string",
@@ -18139,6 +19849,35 @@
             "format": "date-time",
             "description": "When the tenant submitted their key return report in the app."
           },
+          "cleaningArrangement": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "booked",
+              "declined",
+              "own_arrangement"
+            ],
+            "description": "How the end-of-lease clean is arranged: `own_arrangement` — the tenant does it; `booked` — CROSSUB books Brightness AU; `pending` — not chosen yet."
+          },
+          "cleaningChosenBy": {
+            "type": "string",
+            "enum": [
+              "tenant",
+              "agent"
+            ],
+            "nullable": true,
+            "description": "Who chose the arrangement — the tenant in the app, or the property manager."
+          },
+          "cleaningChoiceRequestedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the property manager asked the tenant to choose the cleaning arrangement."
+          },
+          "cleaningDone": {
+            "type": "boolean",
+            "description": "The end-of-lease clean is recorded as done."
+          },
           "inspectionDate": {
             "type": "string",
             "nullable": true,
@@ -18270,6 +20009,10 @@
           "keysReturnAddress",
           "keyReturnPhotoUrls",
           "tenantKeyReturnSubmittedAt",
+          "cleaningArrangement",
+          "cleaningChosenBy",
+          "cleaningChoiceRequestedAt",
+          "cleaningDone",
           "inspectionDate",
           "outgoingInspectionId",
           "tenantOutgoingAttendance",
@@ -18365,6 +20108,22 @@
           "reason"
         ]
       },
+      "TenantSetVacatingCleaningDto": {
+        "type": "object",
+        "properties": {
+          "choice": {
+            "type": "string",
+            "enum": [
+              "own_arrangement",
+              "booked"
+            ],
+            "description": "`own_arrangement` — the tenant arranges it; `booked` — CROSSUB books Brightness AU."
+          }
+        },
+        "required": [
+          "choice"
+        ]
+      },
       "TenantSubmitKeyReturnDto": {
         "type": "object",
         "properties": {
@@ -18418,7 +20177,9 @@
               "EMAIL",
               "VOICE",
               "INTERNAL_NOTE",
-              "PUSH"
+              "PUSH",
+              "SMS",
+              "WHATSAPP"
             ],
             "example": "APP",
             "description": "The channel the message was sent on (APP / EMAIL / …)."
@@ -18464,7 +20225,8 @@
               "TRIBUNAL",
               "GENERAL",
               "RENT_REVIEW",
-              "COMPLAINT"
+              "COMPLAINT",
+              "SALES"
             ],
             "example": "MAINTENANCE"
           },
@@ -18536,7 +20298,8 @@
               "TRIBUNAL",
               "GENERAL",
               "RENT_REVIEW",
-              "COMPLAINT"
+              "COMPLAINT",
+              "SALES"
             ],
             "default": "GENERAL",
             "description": "Staff queue to route the thread to. Defaults to GENERAL."
@@ -20573,7 +22336,8 @@
               "TRIBUNAL",
               "GENERAL",
               "RENT_REVIEW",
-              "COMPLAINT"
+              "COMPLAINT",
+              "SALES"
             ],
             "example": "ACCOUNTING"
           },
@@ -20645,7 +22409,8 @@
               "TRIBUNAL",
               "GENERAL",
               "RENT_REVIEW",
-              "COMPLAINT"
+              "COMPLAINT",
+              "SALES"
             ],
             "default": "GENERAL",
             "description": "Staff queue to route the thread to. Defaults to GENERAL."
@@ -21411,7 +23176,9 @@
               "EMAIL",
               "VOICE",
               "INTERNAL_NOTE",
-              "PUSH"
+              "PUSH",
+              "SMS",
+              "WHATSAPP"
             ],
             "example": "APP"
           }
@@ -23247,7 +25014,9 @@
               "EMAIL",
               "VOICE",
               "INTERNAL_NOTE",
-              "PUSH"
+              "PUSH",
+              "SMS",
+              "WHATSAPP"
             ],
             "example": "APP"
           },
@@ -23776,6 +25545,17 @@
             "format": "date-time",
             "type": "string",
             "nullable": true
+          },
+          "agencyId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Set for a Self-Manage agency inspector: they work only that agency’s jobs (no pool). Null for a CROSSUB inspector."
+          },
+          "agencyName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The agency name when `agencyId` is set."
           }
         },
         "required": [
@@ -23797,7 +25577,9 @@
           "lateArrivals",
           "lastKnownLatitude",
           "lastKnownLongitude",
-          "locationUpdatedAt"
+          "locationUpdatedAt",
+          "agencyId",
+          "agencyName"
         ]
       },
       "InspectorRegistrationStatusDto": {
@@ -24624,6 +26406,33 @@
           "createdAt"
         ]
       },
+      "AgentArrearsPaymentDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "example": 200
+          },
+          "paidDate": {
+            "type": "string",
+            "example": "2026-10-13"
+          },
+          "remaining": {
+            "type": "number",
+            "example": 0,
+            "description": "Balance left on the case after this receipt."
+          },
+          "caseId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "amount",
+          "paidDate",
+          "remaining"
+        ]
+      },
       "AgentTribunalRentChasingPrefillDto": {
         "type": "object",
         "properties": {
@@ -24647,6 +26456,13 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AgentTribunalArrearRowDto"
+            }
+          },
+          "payments": {
+            "description": "Receipts recorded against this property, newest first, including a case that is now paid in full.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentArrearsPaymentDto"
             }
           },
           "rentArrears": {
@@ -24688,6 +26504,7 @@
           "tenantName",
           "hasAccountingArrears",
           "arrears",
+          "payments",
           "billArrears"
         ]
       },
@@ -25254,7 +27071,8 @@
             "enum": [
               "LEVEL_1_INSPECTION_ONLY",
               "LEVEL_2_FULL_MANAGEMENT",
-              "LEVEL_3_LEGACY"
+              "LEVEL_3_LEGACY",
+              "SELF_MANAGED"
             ],
             "example": "LEVEL_2_FULL_MANAGEMENT",
             "description": "Agent portal service tier for this client agency — Level 1 is inspection and tribunal; Level 2 is full property management. Null until the agent chooses a plan."
@@ -25556,6 +27374,16 @@
             "type": "number",
             "description": "Properties explicitly assigned to this team member.",
             "example": 3
+          },
+          "isAgencyInspector": {
+            "type": "boolean",
+            "description": "Self-Manage: this member is an active agency inspector (works the agency’s inspections in the Inspector app)."
+          },
+          "inspectorId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Their agency inspector roster id when `isAgencyInspector`."
           }
         },
         "required": [
@@ -25565,7 +27393,9 @@
           "lastName",
           "tier",
           "assignedAt",
-          "assignedPropertyCount"
+          "assignedPropertyCount",
+          "isAgencyInspector",
+          "inspectorId"
         ]
       },
       "AgentTeamResponseDto": {
@@ -25662,6 +27492,25 @@
             "maxLength": 40
           }
         }
+      },
+      "AgentUpdateAgencyServiceLevelDto": {
+        "type": "object",
+        "properties": {
+          "portalServiceLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_1_INSPECTION_ONLY",
+              "LEVEL_2_FULL_MANAGEMENT",
+              "LEVEL_3_LEGACY",
+              "SELF_MANAGED"
+            ],
+            "example": "SELF_MANAGED",
+            "description": "Self-Manage, Inspection Only or Full Service. Legacy cannot be chosen."
+          }
+        },
+        "required": [
+          "portalServiceLevel"
+        ]
       },
       "AgentUpdateAgencyPrimaryContactDto": {
         "type": "object",
@@ -26635,7 +28484,7 @@
           },
           "postcode": {
             "type": "string",
-            "maxLength": 10
+            "pattern": "^\\d{4}$"
           },
           "propertyType": {
             "type": "string",
@@ -26734,7 +28583,7 @@
           },
           "rentWeekly": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0.01
           },
           "bondAmount": {
             "type": "number",
@@ -26868,7 +28717,7 @@
           },
           "postcode": {
             "type": "string",
-            "maxLength": 10
+            "pattern": "^\\d{4}$"
           },
           "propertyType": {
             "type": "string",
@@ -26966,7 +28815,7 @@
           },
           "rentWeekly": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0.01
           },
           "bondAmount": {
             "type": "number",
@@ -27364,7 +29213,7 @@
         "properties": {
           "currentWeeklyRent": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0.01
           },
           "tenantName": {
             "type": "string",
@@ -27405,7 +29254,7 @@
           },
           "proposedRent": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0.01
           },
           "rentPeriod": {
             "type": "string",
@@ -27654,6 +29503,7 @@
           "id": {
             "type": "string",
             "enum": [
+              "openai",
               "nsw_fair_trading",
               "rp_data",
               "rea"
@@ -28089,6 +29939,14 @@
             "type": "string",
             "nullable": true
           },
+          "reviewKind": {
+            "type": "string",
+            "enum": [
+              "rent_review",
+              "lease_renewal"
+            ],
+            "nullable": true
+          },
           "tenantName": {
             "type": "string",
             "nullable": true
@@ -28330,6 +30188,7 @@
           "orderNumber",
           "status",
           "agentDecision",
+          "reviewKind",
           "tenantName",
           "currentWeeklyRent",
           "proposedWeeklyRent",
@@ -28543,7 +30402,7 @@
         "properties": {
           "weekly": {
             "type": "number",
-            "minimum": 0,
+            "minimum": 0.01,
             "nullable": true
           },
           "effectiveDate": {
@@ -28755,6 +30614,111 @@
           "amount",
           "paymentDate",
           "paymentMethod"
+        ]
+      },
+      "AgentTaskLifecycleDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "AgentTaskLifecycleResultDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "inspection",
+              "leasing",
+              "maintenance",
+              "rent_review",
+              "end_leasing",
+              "tribunal"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "force_completed",
+              "force_deleted"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED",
+              "DELETED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "action",
+          "status"
+        ]
+      },
+      "AgentTaskAuditLogEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "force_completed",
+              "force_deleted"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "example": "Task force completed"
+          },
+          "sentence": {
+            "type": "string",
+            "example": "Daniel Zhou force completed this task on 18 Sep 2026 at 3:21 PM."
+          },
+          "actor": {
+            "type": "string"
+          },
+          "taskType": {
+            "type": "string"
+          },
+          "previousStatus": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "action",
+          "label",
+          "sentence",
+          "actor"
+        ]
+      },
+      "AgentTaskAuditLogDto": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentTaskAuditLogEntryDto"
+            }
+          }
+        },
+        "required": [
+          "entries"
         ]
       },
       "CancelAgentTerminationCaseDto": {
@@ -29316,7 +31280,7 @@
           "reportUrl": {
             "type": "string",
             "nullable": true,
-            "description": "PDF URL after CROSSUB has approved the report. Null while review is pending."
+            "description": "PDF URL after CROSSUB has approved the report. Null while review is pending — except on an agency job (`conductedByAgency`), where the agency reviews it before sign-off."
           },
           "tenantReturnedReportUrl": {
             "type": "string",
@@ -29364,6 +31328,28 @@
           "unacceptedRefunded": {
             "type": "boolean",
             "description": "True when the case was closed and refunded because no inspector confirmed in 48 hours."
+          },
+          "conductedByAgency": {
+            "type": "boolean",
+            "description": "Self-Manage: the agency’s own inspector conducts this job (no CROSSUB charge). Its report is visible before sign-off."
+          },
+          "conductedByUserId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "The team member conducting an agency job. Null on CROSSUB jobs."
+          },
+          "approvedByAgencyAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the agency principal signed off an agency job’s report."
+          },
+          "tenantReportSentAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the approved report was emailed to the tenant."
           }
         },
         "required": [
@@ -29379,7 +31365,11 @@
           "moveInDate",
           "reportUrl",
           "urgent",
-          "createdAt"
+          "createdAt",
+          "conductedByAgency",
+          "conductedByUserId",
+          "approvedByAgencyAt",
+          "tenantReportSentAt"
         ]
       },
       "AgentMaintenanceTenantContactDto": {
@@ -29506,7 +31496,7 @@
           },
           "comments": {
             "type": "string",
-            "description": "Contractor’s notes / caveats."
+            "description": "Notes on the quote — the contractor’s, or an officer’s rewrite. Absent until an officer has confirmed them or the quote is approved."
           },
           "declineReason": {
             "type": "string",
@@ -29520,22 +31510,6 @@
             ],
             "example": "standard",
             "description": "Why the quote was requested. `diagnostic` is a paid call-out to identify the cause — quoted and approved like a standard quote, shown as “Diagnostic call-out”."
-          },
-          "reviewFlags": {
-            "example": [
-              "ABOVE_TRADE_RANGE"
-            ],
-            "description": "Advisory flags from the AI quote review, shown as neutral badges. On a form-submitted quote the price-judgement flags are advisory only (recorded, never a hold).",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "reviewSummary": {
-            "type": "string",
-            "nullable": true,
-            "example": "Total is 18% above the trade range for this job.",
-            "description": "One-line summary from the AI quote review, or null when the review has not run."
           }
         },
         "required": [
@@ -29549,9 +31523,7 @@
           "isLowest",
           "submittedAt",
           "lineItems",
-          "purpose",
-          "reviewFlags",
-          "reviewSummary"
+          "purpose"
         ]
       },
       "AgentTenantResponsibilityResponseDto": {
@@ -29582,6 +31554,50 @@
           "respondedAt",
           "reason",
           "auto"
+        ]
+      },
+      "AgentMaintenanceScheduleProposalDto": {
+        "type": "object",
+        "properties": {
+          "availableTimes": {
+            "type": "string",
+            "example": "Tue 21 Oct 9–11am or Wed 22 Oct 1–3pm"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tenantDecision": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "declined"
+            ],
+            "nullable": true,
+            "description": "Null while the tenant has not answered."
+          },
+          "tenantDecidedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "tenantDeclineReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "arrangedDirectly": {
+            "type": "boolean",
+            "example": false,
+            "description": "True when the tradie and tenant arranged the time themselves and it was recorded."
+          }
+        },
+        "required": [
+          "availableTimes",
+          "submittedAt",
+          "tenantDecision",
+          "tenantDecidedAt",
+          "tenantDeclineReason",
+          "arrangedDirectly"
         ]
       },
       "AgentMaintenanceDto": {
@@ -29679,6 +31695,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/AgentTenantResponsibilityResponseDto"
+              }
+            ]
+          },
+          "scheduleProposal": {
+            "description": "The visit times last offered and the tenant’s answer. Omitted until times are sent.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentMaintenanceScheduleProposalDto"
               }
             ]
           },
@@ -30621,7 +32645,9 @@
               "EMAIL",
               "VOICE",
               "INTERNAL_NOTE",
-              "PUSH"
+              "PUSH",
+              "SMS",
+              "WHATSAPP"
             ],
             "example": "APP"
           }
@@ -30666,7 +32692,8 @@
               "TRIBUNAL",
               "GENERAL",
               "RENT_REVIEW",
-              "COMPLAINT"
+              "COMPLAINT",
+              "SALES"
             ],
             "example": "INSPECTION"
           },
@@ -30680,7 +32707,8 @@
               "LEASING",
               "RENT_REVIEW",
               "TRIBUNAL",
-              "ACCOUNTING"
+              "ACCOUNTING",
+              "SALES"
             ],
             "example": "INSPECTION"
           },
@@ -30878,7 +32906,8 @@
               "TRIBUNAL",
               "GENERAL",
               "RENT_REVIEW",
-              "COMPLAINT"
+              "COMPLAINT",
+              "SALES"
             ],
             "default": "GENERAL",
             "description": "Staff queue to route the thread to. Defaults to GENERAL."
@@ -30897,7 +32926,8 @@
               "LEASING",
               "RENT_REVIEW",
               "TRIBUNAL",
-              "ACCOUNTING"
+              "ACCOUNTING",
+              "SALES"
             ],
             "description": "Optional workflow case tag so staff can open the job in the admin portal from Communication Hub."
           },
@@ -31568,6 +33598,11 @@
       "AgentMaintenanceInvoiceMatchDto": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The match id — the target of the Self-Manage resolve and payment routes."
+          },
           "invoiceAmount": {
             "type": "number",
             "description": "Contractor invoice amount, AUD.",
@@ -31613,6 +33648,7 @@
           }
         },
         "required": [
+          "id",
           "invoiceAmount",
           "approvedAmount",
           "varianceAmount",
@@ -31688,6 +33724,110 @@
           "makeSafeOnly",
           "authorisedAt",
           "exceededAmount"
+        ]
+      },
+      "AgentMaintenanceIssueQuestionDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "q1",
+            "description": "Stable within the issue — the key an answer is recorded against."
+          },
+          "question": {
+            "type": "string",
+            "example": "Is the water hot at any other tap?"
+          },
+          "answer": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "key",
+          "question",
+          "answer"
+        ]
+      },
+      "AgentMaintenanceIssueDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequenceNo": {
+            "type": "number",
+            "example": 1
+          },
+          "description": {
+            "type": "string",
+            "example": "Kitchen mixer tap drips constantly."
+          },
+          "location": {
+            "type": "string",
+            "nullable": true,
+            "example": "Kitchen"
+          },
+          "trade": {
+            "type": "string",
+            "nullable": true,
+            "example": "Plumbing"
+          },
+          "urgency": {
+            "type": "string",
+            "nullable": true,
+            "example": "routine"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PROPOSED",
+              "CONFIRMED",
+              "MERGED",
+              "DISMISSED"
+            ]
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentMaintenanceIssueQuestionDto"
+            }
+          },
+          "questionsSentAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the questions were sent to the tenant. Null when never asked."
+          }
+        },
+        "required": [
+          "id",
+          "sequenceNo",
+          "description",
+          "location",
+          "trade",
+          "urgency",
+          "status",
+          "questions",
+          "questionsSentAt"
+        ]
+      },
+      "AgentMaintenanceContractorRefDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The workflow contractor key."
+          },
+          "name": {
+            "type": "string",
+            "example": "Ace Plumbing"
+          }
+        },
+        "required": [
+          "id",
+          "name"
         ]
       },
       "AgentMaintenanceDetailDto": {
@@ -31788,6 +33928,14 @@
               }
             ]
           },
+          "scheduleProposal": {
+            "description": "The visit times last offered and the tenant’s answer. Omitted until times are sent.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentMaintenanceScheduleProposalDto"
+              }
+            ]
+          },
           "scheduledDate": {
             "type": "string",
             "nullable": true,
@@ -31859,6 +34007,46 @@
             "items": {
               "$ref": "#/components/schemas/AgentMaintenanceUrgentAuthorisationDto"
             }
+          },
+          "issues": {
+            "description": "The faults extracted from the report, in report order.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentMaintenanceIssueDto"
+            }
+          },
+          "spendThreshold": {
+            "type": "number",
+            "nullable": true,
+            "description": "The agreed repair limit, AUD (property override, else agency default). A Self-Manage quote decision above it, or any decision when null, emails the owner a copy.",
+            "example": 500
+          },
+          "invitedContractors": {
+            "description": "Contractors invited to quote, in invite order.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentMaintenanceContractorRefDto"
+            }
+          },
+          "completionEvidenceUploaded": {
+            "type": "boolean",
+            "description": "Completion photos or documents are on the job."
+          },
+          "agentApprovalReceived": {
+            "type": "boolean",
+            "description": "The agency has signed the completed work off."
+          },
+          "tenantApprovalReceived": {
+            "type": "boolean",
+            "description": "The tenant has confirmed the repair works."
+          },
+          "invoiceUploaded": {
+            "type": "boolean",
+            "description": "The contractor invoice is on the job."
+          },
+          "selfManaged": {
+            "type": "boolean",
+            "description": "True when the property is Self-Manage: the agent runs triage, quotes, scheduling, invoices and completion. Other tiers keep today’s read-only view of those steps."
           }
         },
         "required": [
@@ -31888,7 +34076,15 @@
           "quoteVersions",
           "workOrder",
           "invoiceMatch",
-          "urgentAuthorisations"
+          "urgentAuthorisations",
+          "issues",
+          "spendThreshold",
+          "invitedContractors",
+          "completionEvidenceUploaded",
+          "agentApprovalReceived",
+          "tenantApprovalReceived",
+          "invoiceUploaded",
+          "selfManaged"
         ]
       },
       "DeclineMaintenanceQuoteDto": {
@@ -32501,7 +34697,7 @@
           "dailyRentDisplay": {
             "type": "string",
             "nullable": true,
-            "example": "142.857",
+            "example": "142.86",
             "description": "The daily rate as displayed. Render this verbatim; do not re-round."
           },
           "term": {
@@ -32765,6 +34961,866 @@
         },
         "required": [
           "text"
+        ]
+      },
+      "AgentCreateOwnerDecisionDto": {
+        "type": "object",
+        "properties": {
+          "caseType": {
+            "type": "string",
+            "enum": [
+              "MAINTENANCE",
+              "INSPECTION",
+              "LEASING",
+              "RENT_REVIEW",
+              "END_LEASING",
+              "TRUST",
+              "GENERAL"
+            ],
+            "example": "MAINTENANCE"
+          },
+          "caseId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The job this decision belongs to."
+          },
+          "decision": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "Quote approved"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 4000,
+            "example": "We approved the $420 quote from Ace Plumbing to replace the kitchen mixer tap."
+          }
+        },
+        "required": [
+          "caseType",
+          "decision",
+          "summary"
+        ]
+      },
+      "AgentOwnerDecisionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "propertyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "caseType": {
+            "type": "string",
+            "enum": [
+              "MAINTENANCE",
+              "INSPECTION",
+              "LEASING",
+              "RENT_REVIEW",
+              "END_LEASING",
+              "TRUST",
+              "GENERAL"
+            ]
+          },
+          "caseId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "decidedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who decided."
+          },
+          "ownerEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Owner address the copy went to. Null when no owner email is on file."
+          },
+          "emailStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "sent",
+              "not_configured",
+              "stub_recipient",
+              "blocked_recipient",
+              "blocked_landlord",
+              "blocked_archived_agency",
+              "withheld_template",
+              "failed"
+            ],
+            "description": "What became of the owner copy. Null when none was sent because the property has no owner email."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "propertyId",
+          "caseType",
+          "caseId",
+          "decision",
+          "summary",
+          "decidedByName",
+          "ownerEmail",
+          "emailStatus",
+          "createdAt"
+        ]
+      },
+      "AgentOwnerDecisionListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentOwnerDecisionDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AuthoriseUrgentWorkDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "CONFIRM_URGENT",
+              "CONVERT_TO_NORMAL",
+              "EMERGENCY_MAKE_SAFE",
+              "ESCALATE_EXTERNAL",
+              "CLOSE_NO_ACTION"
+            ],
+            "description": "What the Account Manager decided on this urgent job."
+          },
+          "contractorId": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "The contractor to carry out the work — required for CONFIRM_URGENT / EMERGENCY_MAKE_SAFE."
+          },
+          "scope": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "The work the AM is authorising, in their words."
+          },
+          "spendingLimit": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 10000000,
+            "description": "The immediate authorisation ceiling given to the contractor (AUD). Required for a work decision; there is no silent default limit (§15)."
+          },
+          "makeSafeOnly": {
+            "type": "boolean",
+            "description": "True to authorise only the safety measure (forced true for EMERGENCY_MAKE_SAFE)."
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Why — required for CONVERT_TO_NORMAL / ESCALATE_EXTERNAL / CLOSE_NO_ACTION."
+          },
+          "expectedFlowVersion": {
+            "type": "number",
+            "minimum": 0,
+            "description": "The flow version the officer acted on (§12.1 optimistic lock). A 409 is returned when it no longer matches the current flow version."
+          }
+        },
+        "required": [
+          "decision",
+          "scope"
+        ]
+      },
+      "SplitMaintenanceFlowDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 600,
+            "example": "The bathroom extractor fan is also dead — separate trade from the tap.",
+            "description": "What the new, separate job is. Becomes the split job’s description."
+          },
+          "issueType": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "Electrical",
+            "description": "Trade for the split job. A canonical trade is resolved directly; anything else becomes a hint the classifier may overrule."
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "example": "high",
+            "description": "Priority for the split job. `high`/`critical` mark it urgent."
+          }
+        },
+        "required": [
+          "description"
+        ]
+      },
+      "MaintenanceCombineCandidateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The candidate case id."
+          },
+          "orderNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Order number, when the job has one."
+          },
+          "reference": {
+            "type": "string",
+            "description": "How the case is referred to on screen — order number, else a short id."
+          },
+          "subject": {
+            "type": "string",
+            "description": "The tenant’s own words, derived from the description."
+          },
+          "issueType": {
+            "type": "string",
+            "nullable": true,
+            "description": "The stored `\"IssueType: body\"` prefix, when the description carries one."
+          },
+          "status": {
+            "type": "string",
+            "description": "Prisma workflow status of the candidate."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "When the candidate was reported (ISO 8601)."
+          },
+          "sameCategory": {
+            "type": "boolean",
+            "description": "Both jobs carry the same trade AND it is one this system determined — a migrated `Whir_U_ServiceType` id never counts, because those describe the fault at random."
+          },
+          "alreadyQuoted": {
+            "type": "boolean",
+            "description": "The candidate is already out with contractors, so combining changes the scope they are pricing. Not a refusal — the officer acknowledges and re-issues."
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "reference",
+          "subject",
+          "issueType",
+          "status",
+          "createdAt",
+          "sameCategory",
+          "alreadyQuoted"
+        ]
+      },
+      "MaintenanceCombineCandidatesResponseDto": {
+        "type": "object",
+        "properties": {
+          "candidates": {
+            "description": "Same-trade cases first, then newest first. Empty when the job itself is terminal.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaintenanceCombineCandidateDto"
+            }
+          }
+        },
+        "required": [
+          "candidates"
+        ]
+      },
+      "CombineMaintenanceCasesDto": {
+        "type": "object",
+        "properties": {
+          "intoRequestId": {
+            "type": "string",
+            "description": "The surviving case — the one that keeps its reference, its quotes and its SLA clock, and gains this job’s description and photos. Must be a live case at the same property.",
+            "example": "e1b2c3d4-0000-4000-8000-000000000001"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Same plumber, one visit — Angel confirmed with the tenant.",
+            "description": "Why these are one job. Recorded on the closed case’s `closureReason` after the surviving reference, so the decision is legible to whoever reads the case next. Internal only — the tenant’s close email never carries it."
+          },
+          "acknowledgeCommitments": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set once the officer has been shown what combining will disturb — commitments on the case being closed (an assigned contractor, an approved quote, a booked visit) and a surviving case whose scope is already out with contractors — and has confirmed anyway. Without it a combine carrying either is refused with 409 and the list, so a direct API call cannot skip the warning the dialog shows."
+          }
+        },
+        "required": [
+          "intoRequestId"
+        ]
+      },
+      "MaintenanceQuestionPickDto": {
+        "type": "object",
+        "properties": {
+          "issueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "issueId",
+          "key"
+        ]
+      },
+      "SendMaintenanceQuestionsDto": {
+        "type": "object",
+        "properties": {
+          "questions": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaintenanceQuestionPickDto"
+            }
+          },
+          "extraQuestions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            }
+          }
+        }
+      },
+      "DismissMaintenanceIssueDto": {
+        "type": "object",
+        "properties": {
+          "reasonText": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 600,
+            "description": "Why the issue is being dismissed — stored on the closed link and the override."
+          },
+          "reasonCode": {
+            "type": "string",
+            "enum": [
+              "AI_WRONG",
+              "POLICY",
+              "CLIENT_INSTRUCTION",
+              "SAFETY",
+              "DUPLICATE",
+              "DATA_CORRECTION",
+              "OTHER"
+            ],
+            "description": "Structured reason code (§12). Defaults to DATA_CORRECTION."
+          }
+        },
+        "required": [
+          "reasonText"
+        ]
+      },
+      "AgentSelfManagedInviteContractorsDto": {
+        "type": "object",
+        "properties": {
+          "preferredContractorIds": {
+            "minItems": 1,
+            "maxItems": 10,
+            "description": "Agency preferred-contractor ids (from `/agent/agencies/:id/preferred-contractors`).",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        },
+        "required": [
+          "preferredContractorIds"
+        ]
+      },
+      "AgentSelfManagedCreateQuoteDto": {
+        "type": "object",
+        "properties": {
+          "contractorId": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "The invited contractor the quote is from — an id from `invitedContractors`."
+          },
+          "price": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Quote total, AUD (GST-inclusive).",
+            "example": 480
+          },
+          "scope": {
+            "type": "string",
+            "maxLength": 600,
+            "description": "The work quoted for."
+          },
+          "availableSchedule": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "When the tradie said they can attend.",
+            "example": "Next Tuesday or Wednesday morning"
+          },
+          "comments": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Notes from the tradie."
+          }
+        },
+        "required": [
+          "contractorId",
+          "price",
+          "scope"
+        ]
+      },
+      "AgentSelfManagedScheduleAvailabilityDto": {
+        "type": "object",
+        "properties": {
+          "availableTimes": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "The times the contractor offered.",
+            "example": "Thu 08/10/2026 09:00 – 11:00 AEDT (2026-10-08 09:00)"
+          }
+        },
+        "required": [
+          "availableTimes"
+        ]
+      },
+      "AgentSelfManagedScheduleArrangedDto": {
+        "type": "object",
+        "properties": {
+          "availableTimes": {
+            "type": "string",
+            "maxLength": 500,
+            "pattern": "VISIT_ANCHOR_PATTERN",
+            "description": "The visit window, carrying the `(YYYY-MM-DD HH:mm)` property-time anchor.",
+            "example": "Thu 08/10/2026 09:00 – 11:00 AEDT (2026-10-08 09:00)"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "How the visit was arranged."
+          }
+        },
+        "required": [
+          "availableTimes"
+        ]
+      },
+      "ResolveMaintenanceInvoiceMatchDto": {
+        "type": "object",
+        "properties": {
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "approve_variance",
+              "dispute"
+            ],
+            "example": "approve_variance",
+            "description": "Accept the variance or dispute the invoice."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 600,
+            "example": "Extra materials were pre-approved by the owner over the phone.",
+            "description": "Optional note recorded on the resolution."
+          }
+        },
+        "required": [
+          "resolution"
+        ]
+      },
+      "AgentSelfManagedRecordPaymentDto": {
+        "type": "object",
+        "properties": {
+          "paidAmount": {
+            "type": "number",
+            "minimum": 1,
+            "example": 505,
+            "description": "The amount paid, AUD. Defaults to the invoice amount."
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 600,
+            "example": "EFT 17/10, ref 22841",
+            "description": "Remittance or bill reference."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 600
+          }
+        }
+      },
+      "AgentSelfManagedUploadDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "evidence",
+              "invoice"
+            ],
+            "description": "`evidence` (completion photos) or `invoice`. Each clears its completion gate."
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "tap-fixed.jpg"
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 150,
+            "example": "image/jpeg"
+          },
+          "sizeBytes": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 104857600,
+            "description": "Decoded byte size.",
+            "example": 184321
+          },
+          "contentBase64": {
+            "type": "string",
+            "format": "base64",
+            "description": "The file contents, base64-encoded (no data: URI prefix)."
+          }
+        },
+        "required": [
+          "kind",
+          "fileName",
+          "mimeType",
+          "sizeBytes",
+          "contentBase64"
+        ]
+      },
+      "AgentCreateAgencyInspectionDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "INGOING",
+              "OUTGOING",
+              "ROUTINE"
+            ]
+          },
+          "conductedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The team member (an active agency inspector) who conducts it."
+          },
+          "scheduledTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the visit happens — the agency sets the time. Routine needs the tenant’s notice period."
+          },
+          "tenantName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "tenantEmail": {
+            "type": "string",
+            "maxLength": 160,
+            "format": "email"
+          },
+          "tenantPhone": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "moveInDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Ingoing only: the tenant’s move-in date."
+          },
+          "accessInstructions": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Key pickup / access instructions for the inspector."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "type",
+          "conductedByUserId",
+          "scheduledTime"
+        ]
+      },
+      "AgentInspectionOwnerCopyDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "SENT",
+              "FAILED",
+              "SKIPPED"
+            ]
+          },
+          "sentAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "status",
+          "sentAt"
+        ]
+      },
+      "AgentInspectionDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "propertyId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "propertyAddress": {
+            "type": "string",
+            "example": "12/45 Campbell Parade"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CONDITION",
+              "ROUTINE",
+              "INGOING",
+              "OUTGOING",
+              "WARD_ROUND",
+              "OPEN"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "IN_PROGRESS",
+              "FIRST_REVIEW",
+              "SECOND_REVIEW",
+              "COMPLETED",
+              "PUBLISHED",
+              "CANCELLED"
+            ]
+          },
+          "inspectorName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Ivy Inspector"
+          },
+          "previousInspectorName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Prior inspector when staff reassigned this DRAFT job before work started.",
+            "example": "Alex Chen"
+          },
+          "scheduledDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "inspectionDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "completedDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "moveInDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "Tenant move-in from entry workflow meta — used to derive the target schedule when scheduledDate is null."
+          },
+          "reportUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "PDF URL after CROSSUB has approved the report. Null while review is pending — except on an agency job (`conductedByAgency`), where the agency reviews it before sign-off."
+          },
+          "tenantReturnedReportUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Tenant-uploaded signed copy of the entry report."
+          },
+          "tenantReturnedSignedName": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantReturnedSubmittedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "approvedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the account manager approved the inspector report. Null while the report is awaiting review."
+          },
+          "reportDeclineReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Active CROSSUB rejection reason. Set while the inspector must redo and resubmit the report."
+          },
+          "urgent": {
+            "type": "boolean",
+            "example": false
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inspectorConfirmDeadlineAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the 48-hour inspector-confirm window ends. Null once an inspector has accepted."
+          },
+          "awaitingAgentPayment": {
+            "type": "boolean",
+            "description": "True when a prepaid platform fee is still unpaid after a staff-created order."
+          },
+          "unacceptedRefunded": {
+            "type": "boolean",
+            "description": "True when the case was closed and refunded because no inspector confirmed in 48 hours."
+          },
+          "conductedByAgency": {
+            "type": "boolean",
+            "description": "Self-Manage: the agency’s own inspector conducts this job (no CROSSUB charge). Its report is visible before sign-off."
+          },
+          "conductedByUserId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "The team member conducting an agency job. Null on CROSSUB jobs."
+          },
+          "approvedByAgencyAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the agency principal signed off an agency job’s report."
+          },
+          "tenantReportSentAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the approved report was emailed to the tenant."
+          },
+          "agencyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "selfManaged": {
+            "type": "boolean",
+            "description": "The property’s resolved plan is Self-Manage."
+          },
+          "conductedByName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Jordan Lee"
+          },
+          "reportSubmittedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "When the inspector submitted the report (completed the job)."
+          },
+          "reportPdfPath": {
+            "type": "string",
+            "nullable": true,
+            "description": "API path of the report PDF (`/api/v1/agent/inspections/{id}/report/pdf`). Set on an agency job once the inspector has finished, so the principal can review it before signing off."
+          },
+          "ownerCopy": {
+            "nullable": true,
+            "description": "The owner copy sent on agency sign-off. Null until signed off.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentInspectionOwnerCopyDto"
+              }
+            ]
+          },
+          "canSignOff": {
+            "type": "boolean",
+            "description": "The caller (a principal) can sign the agency’s report off now."
+          },
+          "canReassign": {
+            "type": "boolean",
+            "description": "The caller (a principal) can move this agency job to another agency inspector."
+          }
+        },
+        "required": [
+          "id",
+          "propertyId",
+          "propertyAddress",
+          "type",
+          "status",
+          "inspectorName",
+          "scheduledDate",
+          "inspectionDate",
+          "completedDate",
+          "moveInDate",
+          "reportUrl",
+          "urgent",
+          "createdAt",
+          "conductedByAgency",
+          "conductedByUserId",
+          "approvedByAgencyAt",
+          "tenantReportSentAt",
+          "agencyId",
+          "selfManaged",
+          "conductedByName",
+          "reportSubmittedAt",
+          "reportPdfPath",
+          "ownerCopy",
+          "canSignOff",
+          "canReassign"
+        ]
+      },
+      "RejectInspectionReportDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Why the report was rejected and what the inspector must fix."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "AgentReassignAgencyInspectionDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The team member (an active agency inspector) taking over."
+          }
+        },
+        "required": [
+          "userId"
         ]
       },
       "MeProfileResponseDto": {

@@ -18,7 +18,7 @@ import { formatCurrency } from '@/lib/utils';
 
 export default function JobHistoryDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { getJob, jobsHydrated } = useInspectorData();
+  const { getJob, jobsHydrated, agencyMode } = useInspectorData();
   const raw = getJob(id);
   const job = raw
     ? mergeJobWithHistory(raw, { serverBacked: !isDemoJobId(raw.id) })
@@ -39,7 +39,7 @@ export default function JobHistoryDetailPage() {
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
           <JobTypeBadge type={job.type} />
-          <JobStatusBadge status={job.status} />
+          <JobStatusBadge status={job.status} agencyMode={agencyMode} />
         </div>
 
         <div className="flex items-start justify-between gap-3">

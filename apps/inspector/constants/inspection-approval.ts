@@ -29,3 +29,44 @@ export function inspectionAwaitingOfficerApproval(job: {
   if (!job.completedAt) return false;
   return isAfterInspectionApprovalGoLive(job.completedAt);
 }
+
+/**
+ * Who signs off a submitted ingoing/outgoing report. A CROSSUB inspector's report waits
+ * for a CROSSUB officer; an agency inspector's waits for their agency principal.
+ */
+export interface InspectionApprovalCopy {
+  /** Disabled CTA on a job waiting for sign-off. */
+  pendingLabel: string;
+  /** Status line / badge for a job waiting for sign-off. */
+  awaitingLabel: string;
+  /** Toast after the report is filed. */
+  submittedToast: string;
+  /** Who reviews the report, as in "Ingoing report sent for … review". */
+  reviewer: string;
+  /** Report card note before sign-off. */
+  filedNote: string;
+}
+
+export const CROSSUB_APPROVAL_COPY: InspectionApprovalCopy = {
+  pendingLabel: 'Pending Approval',
+  awaitingLabel: 'Awaiting approval',
+  submittedToast: 'Report submitted — awaiting approval',
+  reviewer: 'account manager',
+  filedNote: 'The submitted report as filed for CROSSUB review.',
+};
+
+export const AGENCY_APPROVAL_COPY: InspectionApprovalCopy = {
+  pendingLabel: 'Pending agency approval',
+  awaitingLabel: 'Awaiting agency approval',
+  submittedToast: 'Report submitted — awaiting agency approval',
+  reviewer: 'agency',
+  filedNote: 'The submitted report as filed for agency review.',
+};
+
+export function approvalCopy(agencyMode: boolean): InspectionApprovalCopy {
+  return agencyMode ? AGENCY_APPROVAL_COPY : CROSSUB_APPROVAL_COPY;
+}
+
+export function approvalPendingLabel(agencyMode: boolean): string {
+  return approvalCopy(agencyMode).pendingLabel;
+}

@@ -9,7 +9,11 @@ import { JobSummaryCard } from '@/components/inspector/job-summary-card';
 import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
-import type { CancelTaskMode } from '@/constants/job-cancellation';
+import {
+  CANCEL_TASK_MODES,
+  type CancelTaskMode,
+} from '@/constants/job-cancellation';
+import { poolReturnRoute } from '@/lib/agency-mode';
 import { formatJobRefId } from '@/lib/job-cancellation';
 import type { InspectionJob } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -22,13 +26,17 @@ export function JobWorkflowToolbar({
   summaryLabel?: string;
 }) {
   const router = useRouter();
-  const { cancelJob } = useInspectorData();
+  const { cancelJob, agencyMode } = useInspectorData();
   const [open, setOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
 
   const handleCancel = (reason: string, mode: CancelTaskMode) => {
     cancelJob(job.id, { reason, mode });
-    router.push(mode === 'release_pool' ? ROUTES.JOB_POOL : ROUTES.INSPECTIONS);
+    router.push(
+      mode === CANCEL_TASK_MODES.RELEASE_POOL
+        ? poolReturnRoute(agencyMode)
+        : ROUTES.INSPECTIONS,
+    );
   };
 
   return (
@@ -74,6 +82,7 @@ export function JobWorkflowToolbar({
         open={cancelOpen}
         onClose={() => setCancelOpen(false)}
         onConfirm={handleCancel}
+        allowReleaseToPool={!agencyMode}
       />
     </>
   );

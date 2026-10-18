@@ -1,6 +1,5 @@
 import { LAST_MINUTE_OF_DAY, MINUTES_PER_HOUR } from '@/constants/availability';
-
-const SYDNEY_TZ = 'Australia/Sydney';
+import { PROPERTY_TIME_ZONE as SYDNEY_TZ } from '@/constants/time-zone';
 
 export type InspectorDateAvailabilityEntry = {
   date: string;

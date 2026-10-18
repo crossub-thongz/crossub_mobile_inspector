@@ -22,6 +22,8 @@ import { useInspectorData } from '@/components/providers/inspector-data-provider
 import { Button } from '@/components/ui/button';
 import { ROUTES, isPublicRoute } from '@/constants/routes';
 import { Role } from '@/constants/roles';
+import { PROPERTY_TIME_ZONE } from '@/constants/time-zone';
+import { isAgencyHiddenRoute } from '@/lib/agency-mode';
 import { inspectorLevelAllows } from '@/lib/inspector-access-level';
 import { cn, displayName, personInitials } from '@/lib/utils';
 
@@ -58,9 +60,14 @@ function navigateFromWorkflow(href: string) {
   window.location.assign(href);
 }
 
-function headerBadge(role: string, accessLevel: number): string {
+function headerBadge(
+  role: string,
+  accessLevel: number,
+  agencyName: string | null,
+): string {
   if (role === Role.SUPER_ADMIN) return 'Admin';
   if (role === Role.HR) return 'HR';
+  if (agencyName) return agencyName;
   return `Level ${accessLevel}`;
 }
 
@@ -72,6 +79,7 @@ function greetingForHour(date = new Date()): string {
 }
 
 const HOME_DATE_FMT = new Intl.DateTimeFormat('en-AU', {
+  timeZone: PROPERTY_TIME_ZONE,
   weekday: 'long',
   day: 'numeric',
   month: 'short',
@@ -168,21 +176,26 @@ export function InspectorShell({
   const headerRef = useRef<HTMLElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
-  const { notifications, messages, poolJobs, todaysJobs, profile } = useInspectorData();
+  const { notifications, messages, poolJobs, todaysJobs, profile, agencyMode } =
+    useInspectorData();
   const showOpen = inspectorLevelAllows(profile.accessLevel, 'open');
   const showTribunal = inspectorLevelAllows(profile.accessLevel, 'tribunal');
+  const visibleInMode = (href: string) => !agencyMode || !isAgencyHiddenRoute(href);
   const primaryNav = PRIMARY_NAV.filter(
-    (item) => item.need !== 'tribunal' || showTribunal,
+    (item) =>
+      (item.need !== 'tribunal' || showTribunal) && visibleInMode(item.href),
   );
   const moreNav = MORE_NAV_BASE.filter(
-    (item) => item.need !== 'open' || showOpen,
+    (item) => (item.need !== 'open' || showOpen) && visibleInMode(item.href),
   );
+  const agencyName = agencyMode ? (profile.agency?.name ?? null) : null;
   const isMessageThread = /^\/messages\/[^/]+\/?$/.test(pathname);
   const showReceivingToggle =
     Boolean(user) &&
     !isPublicRoute(pathname) &&
     !isMessageThread &&
-    !hideAvailability;
+    !hideAvailability &&
+    !agencyMode;
   const showHeaderMessages =
     Boolean(user) &&
     !isPublicRoute(pathname) &&
@@ -261,8 +274,14 @@ export function InspectorShell({
                       })}
                     </span>
                   </div>
-                  <span className="border-primary text-primary inline-flex rounded-full border px-1.5 py-px text-[10px] font-medium leading-tight">
-                    {headerBadge(user.role, profile.accessLevel)}
+                  <span
+                    className={cn(
+                      'border-primary text-primary rounded-full border px-1.5 py-px text-[10px] font-medium leading-tight',
+                      agencyName ? 'block max-w-[4.5rem] truncate' : 'inline-flex',
+                    )}
+                    title={agencyName ?? undefined}
+                  >
+                    {headerBadge(user.role, profile.accessLevel, agencyName)}
                   </span>
                 </div>
                 <div className="min-w-0 pt-0.5">

@@ -5357,6 +5357,431 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent/maintenance/{requestId}/urgent-authorisations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide an urgent job: confirm, convert to normal, make safe, escalate or close (Self-Manage).
+         * @description CONFIRM_URGENT / EMERGENCY_MAKE_SAFE need a contractor, a scope and a spending limit above 0. CONVERT_TO_NORMAL / ESCALATE_EXTERNAL / CLOSE_NO_ACTION need a reason. A new decision supersedes the last.
+         */
+        post: operations["AgentSelfManagedMaintenanceController_authoriseUrgentWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/split": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Split a separate fault off into its own job (Self-Manage). */
+        post: operations["AgentSelfManagedMaintenanceController_splitJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/combine-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live jobs at the same property this one could be combined into (Self-Manage). */
+        get: operations["AgentSelfManagedMaintenanceController_listCombineCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/combine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Combine this job into another one at the same property (Self-Manage).
+         * @description This job closes as a duplicate; returns the surviving job.
+         */
+        post: operations["AgentSelfManagedMaintenanceController_combineInto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/issues/send-questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Email the tenant questions about the reported faults (Self-Manage). */
+        post: operations["AgentSelfManagedMaintenanceController_sendQuestions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/issues/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record the tenant’s answers, e.g. from a phone call (Self-Manage). */
+        post: operations["AgentSelfManagedMaintenanceController_recordAnswers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/issues/{issueId}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss an extracted issue that is not a real fault (Self-Manage). */
+        post: operations["AgentSelfManagedMaintenanceController_dismissIssue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/invite-contractors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask the agency’s preferred tradies to quote (Self-Manage). */
+        post: operations["AgentSelfManagedMaintenanceController_inviteContractors"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enter a quote on an invited tradie’s behalf (Self-Manage). */
+        post: operations["AgentSelfManagedMaintenanceController_createQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/schedule/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enter the contractor’s visit times; the tenant confirms one (Self-Manage). */
+        post: operations["AgentSelfManagedMaintenanceController_submitScheduleAvailability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/schedule/arranged": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a visit the contractor and tenant arranged directly (Self-Manage). */
+        post: operations["AgentSelfManagedMaintenanceController_recordScheduleArranged"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/invoice-matches/{matchId}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept an invoice variance or dispute the invoice (Self-Manage). */
+        post: operations["AgentSelfManagedMaintenanceController_resolveInvoiceMatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/invoice-matches/{matchId}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record that the agency paid the tradie itself (Self-Manage).
+         * @description Recorded as EXTERNAL_SETTLEMENT. PAID stays the CROSSUB accounting hand-off.
+         */
+        post: operations["AgentSelfManagedMaintenanceController_recordPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/completion/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a completion photo or the tradie’s invoice on their behalf (Self-Manage).
+         * @description Each kind clears its completion gate. The job closes once every gate is met.
+         */
+        post: operations["AgentSelfManagedMaintenanceController_uploadCompletionFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/completion/tenant-sign-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record that the tenant confirmed the repair works (Self-Manage). */
+        post: operations["AgentSelfManagedMaintenanceController_recordTenantSignOff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/maintenance/{requestId}/completion/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign the completed work off and email the owner a copy (Self-Manage).
+         * @description Needs completion evidence on the job. The job closes once its other gates are met.
+         */
+        post: operations["AgentSelfManagedMaintenanceController_approveCompletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/properties/{propertyId}/inspections/agency": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Book an ingoing, outgoing or routine inspection with one of the agency’s own inspectors (Self-Manage).
+         * @description No prepaid gate and no CROSSUB charge. The inspector is assigned immediately and sees the job in the Inspector app. A routine booking makes the property’s routine schedule agency-conducted, so later cycles go to the same inspector.
+         */
+        post: operations["AgentSelfManagedInspectionController_createAgencyInspection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/inspections/{inspectionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One inspection, with what the agent can do next. */
+        get: operations["AgentSelfManagedInspectionController_getInspection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/inspections/{inspectionId}/report/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The inspection report PDF.
+         * @description An agency job’s report is available once the inspector finishes, so the principal can review it before signing off. A CROSSUB job’s report is available after CROSSUB approves it.
+         */
+        get: operations["AgentSelfManagedInspectionController_downloadReportPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/inspections/{inspectionId}/agency-sign-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign off the agency inspector’s report (principal, Self-Manage).
+         * @description Approves the job, emails the tenant the ingoing/outgoing report now, and emails the owner a copy with the PDF from the agency address. A failed email is recorded on `ownerCopy`, not returned as an error.
+         */
+        post: operations["AgentSelfManagedInspectionController_signOff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/inspections/{inspectionId}/agency-reject-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send the agency inspector’s report back to redo (principal, Self-Manage).
+         * @description Ingoing and outgoing reports. The inspector is told why and must resubmit.
+         */
+        post: operations["AgentSelfManagedInspectionController_rejectReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/inspections/{inspectionId}/conducted-by": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Move an agency job to another of the agency’s inspectors (Self-Manage, before completion). */
+        patch: operations["AgentSelfManagedInspectionController_reassign"];
+        trace?: never;
+    };
+    "/agent/agencies/{agencyId}/inspectors/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a team member an agency inspector (principal, Self-Manage agency).
+         * @description They sign in to the Inspector app with their existing login and see only the jobs the agency assigns them. Never in the CROSSUB pool, never paid by CROSSUB.
+         */
+        post: operations["AgentInspectorTeamController_addInspector"];
+        /**
+         * Remove an agency inspector (principal).
+         * @description Deleted when they have no job history; otherwise deactivated, which keeps the history.
+         */
+        delete: operations["AgentInspectorTeamController_removeInspector"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -9062,6 +9487,13 @@ export interface components {
             lastKnownLongitude: number | null;
             /** Format: date-time */
             locationUpdatedAt: string | null;
+            /**
+             * Format: uuid
+             * @description Set for a Self-Manage agency inspector: they work only that agency’s jobs (no pool). Null for a CROSSUB inspector.
+             */
+            agencyId: string | null;
+            /** @description The agency name when `agencyId` is set. */
+            agencyName: string | null;
         };
         InspectorRegistrationStatusDto: {
             /** Format: uuid */
@@ -9707,6 +10139,13 @@ export interface components {
              * @example 3
              */
             assignedPropertyCount: number;
+            /** @description Self-Manage: this member is an active agency inspector (works the agency’s inspections in the Inspector app). */
+            isAgencyInspector: boolean;
+            /**
+             * Format: uuid
+             * @description Their agency inspector roster id when `isAgencyInspector`.
+             */
+            inspectorId: string | null;
         };
         AgentTeamResponseDto: {
             members: components["schemas"]["AgentTeamMemberDto"][];
@@ -10945,7 +11384,7 @@ export interface components {
              * @description Tenant move-in from entry workflow meta — used to derive the target schedule when scheduledDate is null.
              */
             moveInDate: string | null;
-            /** @description PDF URL after CROSSUB has approved the report. Null while review is pending. */
+            /** @description PDF URL after CROSSUB has approved the report. Null while review is pending — except on an agency job (`conductedByAgency`), where the agency reviews it before sign-off. */
             reportUrl: string | null;
             /** @description Tenant-uploaded signed copy of the entry report. */
             tenantReturnedReportUrl?: string | null;
@@ -10972,6 +11411,23 @@ export interface components {
             awaitingAgentPayment?: boolean;
             /** @description True when the case was closed and refunded because no inspector confirmed in 48 hours. */
             unacceptedRefunded?: boolean;
+            /** @description Self-Manage: the agency’s own inspector conducts this job (no CROSSUB charge). Its report is visible before sign-off. */
+            conductedByAgency: boolean;
+            /**
+             * Format: uuid
+             * @description The team member conducting an agency job. Null on CROSSUB jobs.
+             */
+            conductedByUserId: string | null;
+            /**
+             * Format: date-time
+             * @description When the agency principal signed off an agency job’s report.
+             */
+            approvedByAgencyAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the approved report was emailed to the tenant.
+             */
+            tenantReportSentAt: string | null;
         };
         AgentMaintenanceTenantContactDto: {
             /** @example Test NF2 */
@@ -11063,6 +11519,25 @@ export interface components {
              */
             auto: boolean;
         };
+        AgentMaintenanceScheduleProposalDto: {
+            /** @example Tue 21 Oct 9–11am or Wed 22 Oct 1–3pm */
+            availableTimes: string;
+            /** Format: date-time */
+            submittedAt: string;
+            /**
+             * @description Null while the tenant has not answered.
+             * @enum {string|null}
+             */
+            tenantDecision: "approved" | "declined" | null;
+            /** Format: date-time */
+            tenantDecidedAt: string | null;
+            tenantDeclineReason: string | null;
+            /**
+             * @description True when the tradie and tenant arranged the time themselves and it was recorded.
+             * @example false
+             */
+            arrangedDirectly: boolean;
+        };
         AgentMaintenanceDto: {
             /** Format: uuid */
             id: string;
@@ -11099,6 +11574,8 @@ export interface components {
             agencyApproved: boolean;
             /** @description The tenant’s answer on a tenant-responsibility job. Omitted on other lanes and on jobs answered before the answer was persisted. */
             tenantResponsibilityResponse?: components["schemas"]["AgentTenantResponsibilityResponseDto"];
+            /** @description The visit times last offered and the tenant’s answer. Omitted until times are sent. */
+            scheduleProposal?: components["schemas"]["AgentMaintenanceScheduleProposalDto"];
             /** Format: date-time */
             scheduledDate: string | null;
             /** Format: date-time */
@@ -11798,6 +12275,11 @@ export interface components {
         };
         AgentMaintenanceInvoiceMatchDto: {
             /**
+             * Format: uuid
+             * @description The match id — the target of the Self-Manage resolve and payment routes.
+             */
+            id: string;
+            /**
              * @description Contractor invoice amount, AUD.
              * @example 505
              */
@@ -11851,6 +12333,44 @@ export interface components {
              */
             exceededAmount: number | null;
         };
+        AgentMaintenanceIssueQuestionDto: {
+            /**
+             * @description Stable within the issue — the key an answer is recorded against.
+             * @example q1
+             */
+            key: string;
+            /** @example Is the water hot at any other tap? */
+            question: string;
+            answer: string | null;
+        };
+        AgentMaintenanceIssueDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example 1 */
+            sequenceNo: number;
+            /** @example Kitchen mixer tap drips constantly. */
+            description: string;
+            /** @example Kitchen */
+            location: string | null;
+            /** @example Plumbing */
+            trade: string | null;
+            /** @example routine */
+            urgency: string | null;
+            /** @enum {string} */
+            status: "PROPOSED" | "CONFIRMED" | "MERGED" | "DISMISSED";
+            questions: components["schemas"]["AgentMaintenanceIssueQuestionDto"][];
+            /**
+             * Format: date-time
+             * @description When the questions were sent to the tenant. Null when never asked.
+             */
+            questionsSentAt: string | null;
+        };
+        AgentMaintenanceContractorRefDto: {
+            /** @description The workflow contractor key. */
+            id: string;
+            /** @example Ace Plumbing */
+            name: string;
+        };
         AgentMaintenanceDetailDto: {
             /** Format: uuid */
             id: string;
@@ -11887,6 +12407,8 @@ export interface components {
             agencyApproved: boolean;
             /** @description The tenant’s answer on a tenant-responsibility job. Omitted on other lanes and on jobs answered before the answer was persisted. */
             tenantResponsibilityResponse?: components["schemas"]["AgentTenantResponsibilityResponseDto"];
+            /** @description The visit times last offered and the tenant’s answer. Omitted until times are sent. */
+            scheduleProposal?: components["schemas"]["AgentMaintenanceScheduleProposalDto"];
             /** Format: date-time */
             scheduledDate: string | null;
             /** Format: date-time */
@@ -11920,6 +12442,25 @@ export interface components {
             invoiceMatch: components["schemas"]["AgentMaintenanceInvoiceMatchDto"] | null;
             /** @description Account-Manager authorisations on this urgent job, oldest first. Read-only for the agent. Empty for a normal job or an urgent job not yet authorised. */
             urgentAuthorisations: components["schemas"]["AgentMaintenanceUrgentAuthorisationDto"][];
+            /** @description The faults extracted from the report, in report order. */
+            issues: components["schemas"]["AgentMaintenanceIssueDto"][];
+            /**
+             * @description The agreed repair limit, AUD (property override, else agency default). A Self-Manage quote decision above it, or any decision when null, emails the owner a copy.
+             * @example 500
+             */
+            spendThreshold: number | null;
+            /** @description Contractors invited to quote, in invite order. */
+            invitedContractors: components["schemas"]["AgentMaintenanceContractorRefDto"][];
+            /** @description Completion photos or documents are on the job. */
+            completionEvidenceUploaded: boolean;
+            /** @description The agency has signed the completed work off. */
+            agentApprovalReceived: boolean;
+            /** @description The tenant has confirmed the repair works. */
+            tenantApprovalReceived: boolean;
+            /** @description The contractor invoice is on the job. */
+            invoiceUploaded: boolean;
+            /** @description True when the property is Self-Manage: the agent runs triage, quotes, scheduling, invoices and completion. Other tiers keep today’s read-only view of those steps. */
+            selfManaged: boolean;
         };
         DeclineMaintenanceQuoteDto: {
             /** @example Quote above budget — please re-quote with cheaper parts. */
@@ -12336,6 +12877,323 @@ export interface components {
         };
         AgentOwnerDecisionListDto: {
             items: components["schemas"]["AgentOwnerDecisionDto"][];
+        };
+        AuthoriseUrgentWorkDto: {
+            /**
+             * @description What the Account Manager decided on this urgent job.
+             * @enum {string}
+             */
+            decision: "CONFIRM_URGENT" | "CONVERT_TO_NORMAL" | "EMERGENCY_MAKE_SAFE" | "ESCALATE_EXTERNAL" | "CLOSE_NO_ACTION";
+            /** @description The contractor to carry out the work — required for CONFIRM_URGENT / EMERGENCY_MAKE_SAFE. */
+            contractorId?: string;
+            /** @description The work the AM is authorising, in their words. */
+            scope: string;
+            /** @description The immediate authorisation ceiling given to the contractor (AUD). Required for a work decision; there is no silent default limit (§15). */
+            spendingLimit?: number;
+            /** @description True to authorise only the safety measure (forced true for EMERGENCY_MAKE_SAFE). */
+            makeSafeOnly?: boolean;
+            /** @description Why — required for CONVERT_TO_NORMAL / ESCALATE_EXTERNAL / CLOSE_NO_ACTION. */
+            reason?: string;
+            /** @description The flow version the officer acted on (§12.1 optimistic lock). A 409 is returned when it no longer matches the current flow version. */
+            expectedFlowVersion?: number;
+        };
+        SplitMaintenanceFlowDto: {
+            /**
+             * @description What the new, separate job is. Becomes the split job’s description.
+             * @example The bathroom extractor fan is also dead — separate trade from the tap.
+             */
+            description: string;
+            /**
+             * @description Trade for the split job. A canonical trade is resolved directly; anything else becomes a hint the classifier may overrule.
+             * @example Electrical
+             */
+            issueType?: string;
+            /**
+             * @description Priority for the split job. `high`/`critical` mark it urgent.
+             * @example high
+             * @enum {string}
+             */
+            priority?: "low" | "medium" | "high" | "critical";
+        };
+        MaintenanceCombineCandidateDto: {
+            /** @description The candidate case id. */
+            id: string;
+            /** @description Order number, when the job has one. */
+            orderNumber: string | null;
+            /** @description How the case is referred to on screen — order number, else a short id. */
+            reference: string;
+            /** @description The tenant’s own words, derived from the description. */
+            subject: string;
+            /** @description The stored `"IssueType: body"` prefix, when the description carries one. */
+            issueType: string | null;
+            /** @description Prisma workflow status of the candidate. */
+            status: string;
+            /** @description When the candidate was reported (ISO 8601). */
+            createdAt: string;
+            /** @description Both jobs carry the same trade AND it is one this system determined — a migrated `Whir_U_ServiceType` id never counts, because those describe the fault at random. */
+            sameCategory: boolean;
+            /** @description The candidate is already out with contractors, so combining changes the scope they are pricing. Not a refusal — the officer acknowledges and re-issues. */
+            alreadyQuoted: boolean;
+        };
+        MaintenanceCombineCandidatesResponseDto: {
+            /** @description Same-trade cases first, then newest first. Empty when the job itself is terminal. */
+            candidates: components["schemas"]["MaintenanceCombineCandidateDto"][];
+        };
+        CombineMaintenanceCasesDto: {
+            /**
+             * @description The surviving case — the one that keeps its reference, its quotes and its SLA clock, and gains this job’s description and photos. Must be a live case at the same property.
+             * @example e1b2c3d4-0000-4000-8000-000000000001
+             */
+            intoRequestId: string;
+            /**
+             * @description Why these are one job. Recorded on the closed case’s `closureReason` after the surviving reference, so the decision is legible to whoever reads the case next. Internal only — the tenant’s close email never carries it.
+             * @example Same plumber, one visit — Angel confirmed with the tenant.
+             */
+            note?: string;
+            /**
+             * @description Set once the officer has been shown what combining will disturb — commitments on the case being closed (an assigned contractor, an approved quote, a booked visit) and a surviving case whose scope is already out with contractors — and has confirmed anyway. Without it a combine carrying either is refused with 409 and the list, so a direct API call cannot skip the warning the dialog shows.
+             * @default false
+             */
+            acknowledgeCommitments: boolean;
+        };
+        MaintenanceQuestionPickDto: {
+            /** Format: uuid */
+            issueId: string;
+            key: string;
+        };
+        SendMaintenanceQuestionsDto: {
+            questions?: components["schemas"]["MaintenanceQuestionPickDto"][];
+            extraQuestions?: string[];
+        };
+        DismissMaintenanceIssueDto: {
+            /** @description Why the issue is being dismissed — stored on the closed link and the override. */
+            reasonText: string;
+            /**
+             * @description Structured reason code (§12). Defaults to DATA_CORRECTION.
+             * @enum {string}
+             */
+            reasonCode?: "AI_WRONG" | "POLICY" | "CLIENT_INSTRUCTION" | "SAFETY" | "DUPLICATE" | "DATA_CORRECTION" | "OTHER";
+        };
+        AgentSelfManagedInviteContractorsDto: {
+            /** @description Agency preferred-contractor ids (from `/agent/agencies/:id/preferred-contractors`). */
+            preferredContractorIds: string[];
+        };
+        AgentSelfManagedCreateQuoteDto: {
+            /** @description The invited contractor the quote is from — an id from `invitedContractors`. */
+            contractorId: string;
+            /**
+             * @description Quote total, AUD (GST-inclusive).
+             * @example 480
+             */
+            price: number;
+            /** @description The work quoted for. */
+            scope: string;
+            /**
+             * @description When the tradie said they can attend.
+             * @example Next Tuesday or Wednesday morning
+             */
+            availableSchedule?: string;
+            /** @description Notes from the tradie. */
+            comments?: string;
+        };
+        AgentSelfManagedScheduleAvailabilityDto: {
+            /**
+             * @description The times the contractor offered.
+             * @example Thu 08/10/2026 09:00 – 11:00 AEDT (2026-10-08 09:00)
+             */
+            availableTimes: string;
+        };
+        AgentSelfManagedScheduleArrangedDto: {
+            /**
+             * @description The visit window, carrying the `(YYYY-MM-DD HH:mm)` property-time anchor.
+             * @example Thu 08/10/2026 09:00 – 11:00 AEDT (2026-10-08 09:00)
+             */
+            availableTimes: string;
+            /** @description How the visit was arranged. */
+            note?: string;
+        };
+        ResolveMaintenanceInvoiceMatchDto: {
+            /**
+             * @description Accept the variance or dispute the invoice.
+             * @example approve_variance
+             * @enum {string}
+             */
+            resolution: "approve_variance" | "dispute";
+            /**
+             * @description Optional note recorded on the resolution.
+             * @example Extra materials were pre-approved by the owner over the phone.
+             */
+            note?: string;
+        };
+        AgentSelfManagedRecordPaymentDto: {
+            /**
+             * @description The amount paid, AUD. Defaults to the invoice amount.
+             * @example 505
+             */
+            paidAmount?: number;
+            /**
+             * @description Remittance or bill reference.
+             * @example EFT 17/10, ref 22841
+             */
+            reference?: string;
+            note?: string;
+        };
+        AgentSelfManagedUploadDto: {
+            /**
+             * @description `evidence` (completion photos) or `invoice`. Each clears its completion gate.
+             * @enum {string}
+             */
+            kind: "evidence" | "invoice";
+            /** @example tap-fixed.jpg */
+            fileName: string;
+            /** @example image/jpeg */
+            mimeType: string;
+            /**
+             * @description Decoded byte size.
+             * @example 184321
+             */
+            sizeBytes: number;
+            /**
+             * Format: base64
+             * @description The file contents, base64-encoded (no data: URI prefix).
+             */
+            contentBase64: string;
+        };
+        AgentCreateAgencyInspectionDto: {
+            /** @enum {string} */
+            type: "INGOING" | "OUTGOING" | "ROUTINE";
+            /**
+             * Format: uuid
+             * @description The team member (an active agency inspector) who conducts it.
+             */
+            conductedByUserId: string;
+            /**
+             * Format: date-time
+             * @description When the visit happens — the agency sets the time. Routine needs the tenant’s notice period.
+             */
+            scheduledTime: string;
+            tenantName?: string;
+            /** Format: email */
+            tenantEmail?: string;
+            tenantPhone?: string;
+            /**
+             * Format: date
+             * @description Ingoing only: the tenant’s move-in date.
+             */
+            moveInDate?: string;
+            /** @description Key pickup / access instructions for the inspector. */
+            accessInstructions?: string;
+            notes?: string;
+        };
+        AgentInspectionOwnerCopyDto: {
+            /** @enum {string} */
+            status: "SENT" | "FAILED" | "SKIPPED";
+            /** Format: date-time */
+            sentAt: string | null;
+        };
+        AgentInspectionDetailDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            propertyId: string | null;
+            /** @example 12/45 Campbell Parade */
+            propertyAddress: string;
+            /** @enum {string} */
+            type: "CONDITION" | "ROUTINE" | "INGOING" | "OUTGOING" | "WARD_ROUND" | "OPEN";
+            /** @enum {string} */
+            status: "DRAFT" | "IN_PROGRESS" | "FIRST_REVIEW" | "SECOND_REVIEW" | "COMPLETED" | "PUBLISHED" | "CANCELLED";
+            /** @example Ivy Inspector */
+            inspectorName: string | null;
+            /**
+             * @description Prior inspector when staff reassigned this DRAFT job before work started.
+             * @example Alex Chen
+             */
+            previousInspectorName?: string | null;
+            /** Format: date-time */
+            scheduledDate: string | null;
+            /** Format: date-time */
+            inspectionDate: string | null;
+            /** Format: date-time */
+            completedDate: string | null;
+            /**
+             * Format: date-time
+             * @description Tenant move-in from entry workflow meta — used to derive the target schedule when scheduledDate is null.
+             */
+            moveInDate: string | null;
+            /** @description PDF URL after CROSSUB has approved the report. Null while review is pending — except on an agency job (`conductedByAgency`), where the agency reviews it before sign-off. */
+            reportUrl: string | null;
+            /** @description Tenant-uploaded signed copy of the entry report. */
+            tenantReturnedReportUrl?: string | null;
+            tenantReturnedSignedName?: string | null;
+            /** Format: date-time */
+            tenantReturnedSubmittedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description When the account manager approved the inspector report. Null while the report is awaiting review.
+             */
+            approvedAt?: string | null;
+            /** @description Active CROSSUB rejection reason. Set while the inspector must redo and resubmit the report. */
+            reportDeclineReason?: string | null;
+            /** @example false */
+            urgent: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When the 48-hour inspector-confirm window ends. Null once an inspector has accepted.
+             */
+            inspectorConfirmDeadlineAt?: string | null;
+            /** @description True when a prepaid platform fee is still unpaid after a staff-created order. */
+            awaitingAgentPayment?: boolean;
+            /** @description True when the case was closed and refunded because no inspector confirmed in 48 hours. */
+            unacceptedRefunded?: boolean;
+            /** @description Self-Manage: the agency’s own inspector conducts this job (no CROSSUB charge). Its report is visible before sign-off. */
+            conductedByAgency: boolean;
+            /**
+             * Format: uuid
+             * @description The team member conducting an agency job. Null on CROSSUB jobs.
+             */
+            conductedByUserId: string | null;
+            /**
+             * Format: date-time
+             * @description When the agency principal signed off an agency job’s report.
+             */
+            approvedByAgencyAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the approved report was emailed to the tenant.
+             */
+            tenantReportSentAt: string | null;
+            /** Format: uuid */
+            agencyId: string;
+            /** @description The property’s resolved plan is Self-Manage. */
+            selfManaged: boolean;
+            /** @example Jordan Lee */
+            conductedByName: string | null;
+            /**
+             * Format: date-time
+             * @description When the inspector submitted the report (completed the job).
+             */
+            reportSubmittedAt: string | null;
+            /** @description API path of the report PDF (`/api/v1/agent/inspections/{id}/report/pdf`). Set on an agency job once the inspector has finished, so the principal can review it before signing off. */
+            reportPdfPath: string | null;
+            /** @description The owner copy sent on agency sign-off. Null until signed off. */
+            ownerCopy: components["schemas"]["AgentInspectionOwnerCopyDto"] | null;
+            /** @description The caller (a principal) can sign the agency’s report off now. */
+            canSignOff: boolean;
+            /** @description The caller (a principal) can move this agency job to another agency inspector. */
+            canReassign: boolean;
+        };
+        RejectInspectionReportDto: {
+            /** @description Why the report was rejected and what the inspector must fix. */
+            reason: string;
+        };
+        AgentReassignAgencyInspectionDto: {
+            /**
+             * Format: uuid
+             * @description The team member (an active agency inspector) taking over.
+             */
+            userId: string;
         };
         MeProfileResponseDto: {
             /** Format: uuid */
@@ -24553,6 +25411,1023 @@ export interface operations {
                 content?: never;
             };
             /** @description The property is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_authoriseUrgentWork: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthoriseUrgentWorkDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description A required contractor, scope, spending limit or reason is missing. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job changed since it was opened. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_splitJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SplitMaintenanceFlowDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_listCombineCandidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceCombineCandidatesResponseDto"];
+                };
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_combineInto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CombineMaintenanceCasesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The jobs cannot be combined, or commitments on them have not been acknowledged. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_sendQuestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendMaintenanceQuestionsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_recordAnswers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordMaintenanceIssueAnswersDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_dismissIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DismissMaintenanceIssueDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_inviteContractors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentSelfManagedInviteContractorsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_createQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentSelfManagedCreateQuoteDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The tradie was not invited to quote on this job. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_submitScheduleAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentSelfManagedScheduleAvailabilityDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The job is not at the scheduling step. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_recordScheduleArranged: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentSelfManagedScheduleArrangedDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The job is not at the scheduling step, or no contractor is assigned. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_resolveInvoiceMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+                matchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveMaintenanceInvoiceMatchDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The invoice match was already resolved. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_recordPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+                matchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentSelfManagedRecordPaymentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_uploadCompletionFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentSelfManagedUploadDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The file is too large or of an unsupported type. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_recordTenantSignOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedMaintenanceController_approveCompletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMaintenanceDetailDto"];
+                };
+            };
+            /** @description No completion evidence has been uploaded. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The property is not Self-Manage — CROSSUB runs this step on other plans. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The job is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedInspectionController_createAgencyInspection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentCreateAgencyInspectionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentInspectionDetailDto"];
+                };
+            };
+            /** @description The user is not an active agency inspector, or the time is in the past / inside the routine notice period. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This is available on Self-Manage properties only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The inspection or property is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A live inspection of this type already exists for the property. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedInspectionController_getInspection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentInspectionDetailDto"];
+                };
+            };
+            /** @description The inspection or property is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedInspectionController_downloadReportPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The PDF. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description The inspection or property is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedInspectionController_signOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentInspectionDetailDto"];
+                };
+            };
+            /** @description This is available on Self-Manage properties only Also for a CROSSUB job. Principal only — a team member gets the same 404 as for a job outside the book. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The inspection or property is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The report is not submitted yet, or is already signed off. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedInspectionController_rejectReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectInspectionReportDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentInspectionDetailDto"];
+                };
+            };
+            /** @description A reason is required; routine reports cannot be sent back. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This is available on Self-Manage properties only Also for a CROSSUB job. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The inspection or property is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No submitted report, or it is already signed off or tenant-signed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentSelfManagedInspectionController_reassign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentReassignAgencyInspectionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentInspectionDetailDto"];
+                };
+            };
+            /** @description The user is not an active agency inspector. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This is available on Self-Manage properties only Also for a CROSSUB job. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The inspection or property is not in this agent’s book. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The inspection is already completed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentInspectorTeamController_addInspector: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                /** @description The team member’s user id. */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTeamResponseDto"];
+                };
+            };
+            /** @description The user is not an active member of this agency team. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This is available on Self-Manage properties only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The agency is not in the caller’s book, or the caller is not its principal. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The member is already a CROSSUB (or another agency’s) inspector. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentInspectorTeamController_removeInspector: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                /** @description The team member’s user id. */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTeamResponseDto"];
+                };
+            };
+            /** @description The agency is not in the caller’s book, or the caller is not its principal. */
             404: {
                 headers: {
                     [name: string]: unknown;

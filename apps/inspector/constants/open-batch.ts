@@ -6,6 +6,8 @@
  * names the values the screen renders and the strings it shows.
  */
 
+import { PROPERTY_TIME_ZONE } from '@/constants/time-zone';
+
 /**
  * Every open time is a Sydney wall-clock time.
  *
@@ -13,7 +15,7 @@
  * 2:00pm Sydney open as 12:00pm — two hours out, and entirely plausible-looking, which is
  * what makes it dangerous. Never format one of these instants without this zone.
  */
-export const OPEN_BATCH_TIMEZONE = 'Australia/Sydney';
+export const OPEN_BATCH_TIMEZONE = PROPERTY_TIME_ZONE;
 
 /** Batch lifecycle, as returned by the API. */
 export const OPEN_BATCH_STATE = {

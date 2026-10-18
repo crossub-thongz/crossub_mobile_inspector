@@ -5,6 +5,7 @@ import { Calendar } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { JobTypeBadge } from '@/components/inspector/status-badge';
+import { useInspectorData } from '@/components/providers/inspector-data-provider';
 import { jobHistory } from '@/constants/routes';
 import { CORE_INSPECTION_TYPES, type CoreInspectionType } from '@/constants/inspection';
 import { jobInspectionStarted, jobPrimaryAction } from '@/lib/inspection-job-cta';
@@ -34,7 +35,8 @@ export function InspectionListCard({
     job.propertyAddress,
   );
   const paymentBlocked = Boolean(job.awaitingAgentPayment);
-  const action = jobPrimaryAction(job, jobInspectionStarted(job));
+  const { agencyMode } = useInspectorData();
+  const action = jobPrimaryAction(job, jobInspectionStarted(job), agencyMode);
   const actionHref = completed ? jobHistory(job.id) : action.href;
 
   return (

@@ -6,6 +6,7 @@ import { StripEmojisGuard } from '@/components/providers/strip-emojis-guard';
 import { InspectorDataProvider } from '@/components/providers/inspector-data-provider';
 import { ProviderErrorBoundary } from '@/components/providers/provider-error-boundary';
 import { RegistrationGate } from '@/components/inspector/registration-gate';
+import { AgencyModeGate } from '@/components/inspector/agency-mode-gate';
 import { PoolUrgentAlerts } from '@/components/inspector/pool-urgent-alerts';
 import { SystemAccessAgreementGate } from '@/components/auth/system-access-agreement-gate';
 import { MustChangePasswordGate } from '@/components/auth/must-change-password-gate';
@@ -55,8 +56,10 @@ export default function RootLayout({
               <SystemAccessAgreementGate>
                 <MustChangePasswordGate>
                   <RegistrationGate>
-                    <PoolUrgentAlerts />
-                    {children}
+                    <AgencyModeGate>
+                      <PoolUrgentAlerts />
+                      {children}
+                    </AgencyModeGate>
                   </RegistrationGate>
                 </MustChangePasswordGate>
               </SystemAccessAgreementGate>

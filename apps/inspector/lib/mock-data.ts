@@ -115,6 +115,7 @@ export const INSPECTOR_PROFILE: InspectorProfile = {
   lateArrivals: 1,
   registration: null,
   registrationComplete: false,
+  agency: null,
 };
 
 export const JOBS: InspectionJob[] = [
