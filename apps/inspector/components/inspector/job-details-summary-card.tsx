@@ -15,7 +15,7 @@ import type { InspectionJob } from '@/lib/types';
 import { formatScheduleWhen } from '@/lib/utils';
 
 export function JobDetailsSummaryCard({ job }: { job: InspectionJob }) {
-  const { deviceLocation, profile } = useInspectorData();
+  const { deviceLocation, profile, agencyMode } = useInspectorData();
   const { street, locality } = propertyAddressLines(job);
   const directionsHref = buildMapUrl(
     'google',
@@ -66,14 +66,17 @@ export function JobDetailsSummaryCard({ job }: { job: InspectionJob }) {
         </a>
       </Button>
 
-      <div className="border-border border-t pt-3">
-        <PayBreakdown
-          hours={job.estimatedHours}
-          laborAmount={job.laborAmount}
-          durationLabel={job.durationLabel}
-          label={job.status === 'completed' ? 'Fee' : 'Est. Fee'}
-        />
-      </div>
+      {/* Agency inspectors are not paid by CROSSUB, so there is no fee to show. */}
+      {agencyMode ? null : (
+        <div className="border-border border-t pt-3">
+          <PayBreakdown
+            hours={job.estimatedHours}
+            laborAmount={job.laborAmount}
+            durationLabel={job.durationLabel}
+            label={job.status === 'completed' ? 'Fee' : 'Est. Fee'}
+          />
+        </div>
+      )}
     </div>
   );
 }

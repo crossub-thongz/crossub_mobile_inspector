@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-19
+
+### Fixed
+- Agency mode hides the job fee on job details, the job summary and job history
+
 ## 2026-10-18
 
 ### Added

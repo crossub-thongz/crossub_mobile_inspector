@@ -22,7 +22,7 @@ export function JobSummaryCard({
   job: InspectionJob;
   showPayout?: boolean;
 }) {
-  const { deviceLocation, profile } = useInspectorData();
+  const { deviceLocation, profile, agencyMode } = useInspectorData();
   const { street, locality } = propertyAddressLines(job);
   const directionsHref = buildMapUrl(
     'google',
@@ -73,7 +73,7 @@ export function JobSummaryCard({
 
       <JobTravelInfo job={job} deviceLocation={deviceLocation} />
 
-      {showPayout && (
+      {showPayout && !agencyMode && (
         <div className="border-border border-t pt-3">
           <p className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-wide">
             Job payout

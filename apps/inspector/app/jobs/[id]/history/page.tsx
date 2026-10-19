@@ -47,14 +47,16 @@ export default function JobHistoryDetailPage() {
             <p className="text-sm font-semibold">{job.propertyAddress}</p>
             <p className="text-muted-foreground text-xs">{job.suburb}</p>
           </div>
-          <div className="shrink-0 text-right">
-            <p className="text-primary text-lg font-bold leading-none tabular-nums">
-              {formatCurrency(job.laborAmount)}
-            </p>
-            <p className="text-muted-foreground mt-1 text-[9px] font-medium uppercase tracking-wide">
-              Fee
-            </p>
-          </div>
+          {agencyMode ? null : (
+            <div className="shrink-0 text-right">
+              <p className="text-primary text-lg font-bold leading-none tabular-nums">
+                {formatCurrency(job.laborAmount)}
+              </p>
+              <p className="text-muted-foreground mt-1 text-[9px] font-medium uppercase tracking-wide">
+                Fee
+              </p>
+            </div>
+          )}
         </div>
 
         <JobHistoryReport job={job} />
