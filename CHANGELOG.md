@@ -3,11 +3,18 @@
 ## 2026-11-13
 
 ### Added
+- `pnpm verify` (production build with type check) and `pnpm typecheck`
+- `.github/workflows/ci.yml`: runs `pnpm verify` on every pull request
 - `.github/pull_request_template.md`: pull request checklist (real data only, no loosened checks, every behaviour change listed, AI tool use)
 - `.github/CODEOWNERS`: list of guard files (rules files, contract client, CI, lint and type settings) whose changes need senior developer review
 - `AGENTS.md`: rules file for AI coding tools, ten shared rules identical across all CROSSUB repos plus this repo's notes
 - `.cursor/rules/shared-rules.mdc`: pointer so Cursor reads `AGENTS.md`
 
+### Fixed
+- Type errors 12 to 0 (key return checks, room list typing, timer type, icon import, cookie and camera typings)
+
+### Changed
+- Build now fails on a type error: `typescript.ignoreBuildErrors` removed from `next.config.mjs`
 
 ## 2026-10-19
 

@@ -78,7 +78,7 @@ function itemsFromDetailArea(
     if (!name || SKIP_ITEM_NAMES.has(name)) continue;
     if (!sections.includes(name)) sections.push(name);
     itemMarks[name] = parseItemMarks(item.conditionTags);
-    const note = stripItemMarksSummaryFromComment(item.comment, itemMarks[name]);
+    const note = stripItemMarksSummaryFromComment(item.comment ?? undefined, itemMarks[name]);
     if (note) itemComments[name] = note;
     const photos = item.photos.map((photo) => photo.url).filter(isPersistedPhotoUrl);
     if (photos.length > 0) itemPhotos[name] = photos;

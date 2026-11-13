@@ -73,3 +73,15 @@ Talk to the backend through the **published contract**, never hand-written types
 
 - Cookie session (`csb_at`) via `/auth/login`; every call goes through the BFF proxy
   `apps/inspector/app/api/[...path]/route.ts` → `API_INTERNAL_URL`.
+
+### Checks
+
+- `pnpm verify` is the check to run before handing work back. It is the production build
+  (`pnpm build:inspector`), and since 13 Nov 2026 the build type checks: `typescript.ignoreBuildErrors`
+  was removed from `next.config.mjs` and must not come back (shared rule 7). A type error now
+  fails the build here, in CI and on Render.
+- `pnpm typecheck` is the faster `tsc --noEmit` for use while working. It needs one earlier
+  build or dev run, because `next-env.d.ts` imports route types that Next generates.
+- `.github/workflows/ci.yml` runs `pnpm verify` on every pull request.
+- The app type checked at zero errors when this was written. Keep it there.
+- There is no lint config and no test suite yet; `pnpm lint` does not work. Do not claim either passed.
