@@ -61,6 +61,9 @@ export function allowsEmoji(dataset: DOMStringMap | undefined): boolean {
   return flag === '' || flag === 'true';
 }
 
+/** Opt-in attribute that lets one field keep emojis: `<Input data-allow-emoji />`. */
+export type EmojiOptInProps = { 'data-allow-emoji'?: boolean | 'true' | '' };
+
 export function propAllowsEmoji(value: unknown): boolean {
   return value === '' || value === true || value === 'true';
 }

@@ -126,7 +126,8 @@ export default function OpenInspectionPage() {
   const isCompleted = job?.status === 'completed';
   const workflowFinished = job ? isInspectionWorkflowFinished(job) : false;
   const returnPending =
-    Boolean(job?.keyAccess) &&
+    job != null &&
+    Boolean(job.keyAccess) &&
     workflowFinished &&
     !isKeyReturnComplete(job) &&
     !isCompleted;
@@ -175,7 +176,7 @@ export default function OpenInspectionPage() {
       setCompleting(true);
       try {
         const needsKeyReturn =
-          Boolean(job?.keyAccess) && !isKeyReturnComplete(job);
+          job != null && Boolean(job.keyAccess) && !isKeyReturnComplete(job);
 
         if (needsKeyReturn) {
           const outcome = finishInspectionWorkflow(id);

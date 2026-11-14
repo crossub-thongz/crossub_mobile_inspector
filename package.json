@@ -12,7 +12,9 @@
     "build:inspector": "pnpm --filter @crossub-thongz/api-contract build && pnpm --filter @crossub/inspector build",
     "start": "pnpm -r --parallel run start",
     "start:inspector": "pnpm --filter @crossub/inspector start",
-    "lint": "pnpm -r run lint"
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm --filter @crossub-thongz/api-contract build && pnpm --filter @crossub/inspector exec tsc --noEmit",
+    "verify": "pnpm build:inspector"
   },
   "packageManager": "pnpm@9.12.0",
   "engines": {

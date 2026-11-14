@@ -36,8 +36,10 @@ export function readUpstreamSetCookies(headers: Headers): string[] {
     if (cookies.length > 0) return cookies;
   }
 
-  if (typeof headers.getAll === 'function') {
-    const all = headers.getAll('set-cookie');
+  // Older fetch implementations expose every Set-Cookie through a non-standard getAll.
+  const legacy = headers as Headers & { getAll?: (name: string) => string[] };
+  if (typeof legacy.getAll === 'function') {
+    const all = legacy.getAll('set-cookie');
     if (all.length > 0) return all;
   }
 
