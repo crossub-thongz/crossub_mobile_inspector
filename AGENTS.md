@@ -66,8 +66,11 @@ Talk to the backend through the **published contract**, never hand-written types
 ### Where things live (sibling repos under `~/Desktop/crossub/`)
 
 - **Backend (NestJS):** `crossub_web/apps/api` — the inspector facade is `/api/v1/inspector/*`.
-- **Contract (vendored):** `packages/api-contract` — copied from `crossub_web/packages/api-contract`.
-  Re-sync after backend OpenAPI changes (`pnpm build:inspector` builds it before the app).
+- **Contract:** the published `@crossub-thongz/api-contract` package (GitHub Packages), generated in
+  `crossub_web/packages/api-contract`. There is no copy in this repo since 24 Nov 2026.
+  To take a newer contract: publish it from `crossub_web`, raise the version in
+  `apps/inspector/package.json`, run `pnpm install`, commit `package.json` and `pnpm-lock.yaml`.
+  Never copy contract files into this repo.
 
 ### Auth & data flow
 
