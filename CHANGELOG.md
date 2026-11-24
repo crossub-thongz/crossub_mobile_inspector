@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-24
+
+### Changed
+- API contract now comes from published `@crossub-thongz/api-contract` 0.80.1 instead of copied-in `packages/api-contract` (was a 0.72 era copy)
+- `pnpm build:inspector` and `pnpm typecheck` no longer build contract first
+
+### Removed
+- `packages/api-contract` folder
+
 ## 2026-11-13
 
 ### Added

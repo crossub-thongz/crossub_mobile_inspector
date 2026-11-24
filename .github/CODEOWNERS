@@ -15,7 +15,6 @@
 /.github/                       @aznelite89
 
 # Contract client and the contract copy (AGENTS.md rule 5)
-/packages/api-contract/         @aznelite89
 /apps/*/lib/crossub-api/client.ts @aznelite89
 /apps/*/src/api/client.ts       @aznelite89
 
